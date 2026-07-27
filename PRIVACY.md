@@ -48,12 +48,24 @@ A web host, including GitHub Pages, can receive ordinary request metadata such
 as IP address, browser type, requested path, and time while serving files.
 That hosting data is governed by the host's policies, not by Math Quest.
 
-The planned public beta uses a dedicated custom domain or subdomain so its
-browser storage is isolated from unrelated projects. The initial hosted page
-load uses the network; gameplay does not require third-party requests, remote
-assets, telemetry, or cloud services. A same-origin service worker caches only
-the public app-shell files listed in `sw.js`; it does not cache a display name,
-progress record, backup, analytics event, or personalized response.
+The approved public-beta origin is `https://openmathquest.github.io`, served
+from the organization root repository
+`OpenMathQuest/openmathquest.github.io`. The organization is reserved
+exclusively for Math Quest Pages, and the release uses no CNAME or custom
+domain. This separates its browser storage from Pages projects under other
+GitHub accounts.
+
+Browser storage is origin-wide, not path-specific. Any future Pages site under
+the `OpenMathQuest` organization would share this origin and could access the
+same browser storage. For that reason, unrelated Pages sites must not be
+published from the organization. The root service worker also controls this
+origin's `/` scope.
+
+The initial hosted page load uses the network; gameplay does not require
+third-party requests, remote assets, telemetry, or cloud services. The
+same-origin service worker caches only the public app-shell files listed in
+`sw.js`; it does not cache a display name, progress record, backup, analytics
+event, or personalized response.
 
 Speech synthesis uses only voices that the browser reports as locally
 installed. Math Quest does not include speech recognition.

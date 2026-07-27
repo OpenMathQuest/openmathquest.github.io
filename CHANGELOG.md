@@ -14,8 +14,12 @@ All notable public changes to Math Quest are recorded here.
   excluded from gameplay backups.
 - Added first-party sound effects, the open-licensed Inter font, complete
   component provenance, and a fail-closed open-source policy.
+- Added original first-party web app and Apple touch icons with exact
+  provenance and metadata checks.
 - Added deterministic, semantic, mutation, coverage, browser, privacy,
   accessibility, metadata, and public-candidate release checks.
+- Prepared a fail-closed organization-root GitHub Pages workflow for the exact
+  annotated beta tag at `https://openmathquest.github.io/`.
 
 Publication remains blocked until the external gates in
 `docs/release/publication-gates.md` are completed.

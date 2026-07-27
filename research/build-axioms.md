@@ -1,8 +1,8 @@
 # Math Quest — Public Beta Decision Register
 
-- **Register revision:** `AR-PUBLIC-3`
+- **Register revision:** `AR-PUBLIC-4`
 - **Contract:** `docs/development/build-spec.md` version `3.0`
-- **Contract SHA-256:** `0058eb40efb78d51a92cce0af955724762c98a5c8e137f096cf5f0274b3709d9`
+- **Contract SHA-256:** `77866043bc6ee75bd9648689ab6eee85a535545fb65ef00b3c771f6eb1527be5`
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `49e5265eed2fe6d17d660d8136de1b55b05398e6b86b2b8761571480580e1048`
 - **Engine SHA-256:** `07ec69208431d24698ba5f3e07b17e6428075d888b9f2127bee7035d1ab3392a`
@@ -45,6 +45,7 @@
 | PB-029 | Task witnesses | Each skill declares semantic task types. Every required task type needs a clean evidentiary witness before the skill can become solid. |
 | PB-030 | Hosted offline use | The reviewed hosted shell registers a same-origin service worker and caches only the versioned first-party runtime allowlist for offline reopening after a successful first load. |
 | PB-031 | Open components | Every bundled asset, adapted or quoted source, and executable workflow component must be original MIT work, verified public domain/CC0, or under a compatible reviewed open licence permitting commercial use, redistribution, and modification. Exact assets are hash-registered, Actions are commit-pinned, restrictive or unknown terms fail closed, and BBC RemArc recordings and platform emoji artwork are ineligible. |
+| PB-032 | Public origin | The public beta uses the organization-root origin `https://openmathquest.github.io`, served only from `OpenMathQuest/openmathquest.github.io`, with no CNAME or custom domain. The `OpenMathQuest` organization remains exclusive to Math Quest Pages so unrelated sites cannot share its origin-wide storage or root service-worker scope. |
 
 ## Frozen release identifiers
 

@@ -41,11 +41,13 @@ const REQUIRED_RIGHTS_PATHS = Object.freeze([
   EVIDENCE_DECLARATION_PATH,
   FIRST_PARTY_DECLARATION_PATH,
   "licenses/Inter-OFL.txt",
+  "licenses/app-icons.md",
   "licenses/sound-effects.md",
 ]);
 const APPROVED_LICENCES = new Set(["MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
 const KIND_LICENCES = Object.freeze({
   font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
+  image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
   audio: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
   "source-tool": new Set(["MIT"]),
 });
@@ -386,6 +388,61 @@ function wavMetadataFindings(relativePath, bytes) {
     if (unexpected.length) findings.push(`${relativePath}: WAV contains unexpected metadata chunks ${[...new Set(unexpected)].join(", ")}`);
   } catch (error) {
     findings.push(`${relativePath}: WAV metadata could not be validated (${error.message})`);
+  }
+  return findings;
+}
+
+function pngMetadataFindings(relativePath, bytes) {
+  const findings = [];
+  try {
+    const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    if (bytes.length < 33 || !bytes.subarray(0, signature.length).equals(signature)) {
+      throw new Error("invalid PNG signature");
+    }
+    const chunks = [];
+    let offset = signature.length;
+    let width = null;
+    let height = null;
+    while (offset + 12 <= bytes.length) {
+      const length = bytes.readUInt32BE(offset);
+      const type = bytes.toString("ascii", offset + 4, offset + 8);
+      const dataStart = offset + 8;
+      const dataEnd = dataStart + length;
+      const chunkEnd = dataEnd + 4;
+      if (!/^[A-Za-z]{4}$/u.test(type) || chunkEnd > bytes.length) {
+        throw new Error("truncated or invalid PNG chunk");
+      }
+      chunks.push(type);
+      if (chunks.length === 1) {
+        if (type !== "IHDR" || length !== 13) throw new Error("PNG must begin with one standard IHDR chunk");
+        width = bytes.readUInt32BE(dataStart);
+        height = bytes.readUInt32BE(dataStart + 4);
+        const bitDepth = bytes[dataStart + 8];
+        const colourType = bytes[dataStart + 9];
+        const compression = bytes[dataStart + 10];
+        const filter = bytes[dataStart + 11];
+        const interlace = bytes[dataStart + 12];
+        if (
+          !width || !height || width > 4096 || height > 4096
+          || bitDepth !== 8 || colourType !== 6
+          || compression !== 0 || filter !== 0 || interlace !== 0
+        ) {
+          throw new Error("PNG dimensions or encoding contract is invalid");
+        }
+      }
+      if (type === "pHYs" && length !== 9) throw new Error("PNG physical-density chunk is invalid");
+      if (type === "IEND" && length !== 0) throw new Error("PNG end chunk is invalid");
+      offset = chunkEnd;
+      if (type === "IEND") break;
+    }
+    if (offset !== bytes.length || chunks.at(-1) !== "IEND" || chunks.filter((type) => type === "IHDR").length !== 1 || !chunks.includes("IDAT")) {
+      throw new Error("PNG chunk stream is incomplete or has trailing bytes");
+    }
+    const unexpected = chunks.filter((type) => !["IHDR", "pHYs", "IDAT", "IEND"].includes(type));
+    if (unexpected.length) findings.push(`${relativePath}: PNG contains unexpected metadata chunks ${[...new Set(unexpected)].join(", ")}`);
+    if (chunks.filter((type) => type === "pHYs").length > 1) findings.push(`${relativePath}: PNG contains duplicate physical-density metadata`);
+  } catch (error) {
+    findings.push(`${relativePath}: PNG metadata could not be validated (${error.message})`);
   }
   return findings;
 }
@@ -985,6 +1042,7 @@ async function inspectPublicCandidate() {
       const extension = path.extname(relativePath).toLowerCase();
       if (extension === ".ttf" || extension === ".otf") findings.push(...fontMetadataFindings(relativePath, bytes));
       else if (extension === ".wav") findings.push(...wavMetadataFindings(relativePath, bytes));
+      else if (extension === ".png") findings.push(...pngMetadataFindings(relativePath, bytes));
       else findings.push(`${relativePath}: unexpected binary file type in the public candidate`);
     } else {
       findings.push(...contentFindings(relativePath, bytes.toString("utf8")));

@@ -15,9 +15,9 @@ treat desktop viewport emulation as evidence from a real iPhone or iPad.
 | Environment | Delivery | Offline behaviour | Release status |
 |---|---|---|---|
 | Windows Edge or Chrome | `Math Quest.bat` starts the dependency-free loopback server at `127.0.0.1:8771` | Fully local after the folder is downloaded | Verified in Edge 150, including reload and offline reopen |
-| Windows Edge, Chrome, or Firefox | Static HTTPS host | First successful load installs a same-origin offline app shell | Compatible target; hosted-origin smoke pending |
-| iPhone Safari | Static HTTPS host | First successful load is designed to install the same-origin offline app shell | Phone-width touch layout passed in Edge emulation; real-device smoke pending |
-| iPad Safari | Static HTTPS host | First successful load is designed to install the same-origin offline app shell | Tablet-width touch layout passed in Edge emulation; real-device smoke pending |
+| Windows Edge, Chrome, or Firefox | `https://openmathquest.github.io/` | First successful load installs a same-origin offline app shell | Compatible target; hosted-origin smoke pending |
+| iPhone Safari | `https://openmathquest.github.io/` | First successful load is designed to install the same-origin offline app shell | Phone-width touch layout passed in Edge emulation; real-device smoke pending |
+| iPad Safari | `https://openmathquest.github.io/` | First successful load is designed to install the same-origin offline app shell | Tablet-width touch layout passed in Edge emulation; real-device smoke pending |
 | Direct `file://` open | None | Browser-dependent | Not a supported launch path |
 
 The Windows launcher intentionally binds only to loopback. An iPhone or iPad
@@ -71,6 +71,11 @@ capabilities, not from hard-coded curriculum identifiers.
   and active-session state unchanged.
 - Storage is origin-specific. A loopback save and a hosted save are separate;
   backup and restore are the deliberate transfer mechanism.
+- The approved hosted origin is the organization root
+  `https://openmathquest.github.io`, with no CNAME or custom domain. The
+  `OpenMathQuest` organization must not host unrelated Pages sites because
+  every Pages path under that organization shares origin-wide storage and the
+  root Math Quest service worker controls `/`.
 
 ## Sound and speech
 
@@ -99,7 +104,8 @@ capabilities, not from hard-coded curriculum identifiers.
 - Both tenths/hundredths models, all four remainder interpretations, all eight
   declared volume facet combinations, and both timetable formats rendered and
   passed their effect-sensitive browser checks.
-- The service worker cached all eight shell assets, and an offline navigation
+- The service worker cached all 16 shell entries, including the install icons
+  and their shipped provenance record, and an offline navigation
   reopened the exact manifest-bound engine after the audit server stopped.
 - Parent Test, preview, reset, backup/restore, name storage, and private
   pre-beta storage boundaries passed without progress contamination.
@@ -108,14 +114,20 @@ capabilities, not from hard-coded curriculum identifiers.
 
 1. Use an actual iPhone and iPad, or record those items explicitly as release
    limitations; desktop emulation alone is not real-device evidence.
-2. Confirm the deployed static host requests only allowlisted same-origin runtime
-   assets, proves an offline reopen after disconnect, and sends no gameplay,
-   nickname, or progress data.
+2. Confirm `OpenMathQuest/openmathquest.github.io` is configured with GitHub
+   Actions as its Pages source, an empty base path, no CNAME, and HTTPS.
+3. Deploy only the exact cleared `v1.0.0-beta.1` tag, then confirm the live
+   root URL requests only allowlisted same-origin runtime assets, proves an
+   offline reopen after disconnect, and sends no gameplay, nickname, or
+   progress data.
+4. Confirm the `OpenMathQuest` organization has no unrelated Pages deployment
+   sharing this origin.
 
 ## Current verdict
 
 **LOCAL BROWSER REVIEW PASS; HOSTED AND REAL-IOS REVIEW PENDING.** The exact
 manifest-bound candidate has a verified dependency-free offline Windows path
 and responsive, touch-first phone/tablet layouts. Public cross-device support
-must remain qualified until the deployed HTTPS origin and physical iPhone and
-iPad complete the remaining checks.
+must remain qualified until the exact tagged build is verified at
+`https://openmathquest.github.io/` and physical iPhone and iPad devices
+complete the remaining checks.

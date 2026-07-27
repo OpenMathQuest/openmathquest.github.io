@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Math Quest rocket app icon</title>
+  <rect width="512" height="512" fill="#087f8c"/>
+  <circle cx="116" cy="120" r="24" fill="#69d0c5"/>
+  <circle cx="402" cy="150" r="16" fill="#ffbd63"/>
+  <path d="m100 360 18 42 42 18-42 18-18 42-18-42-42-18 42-18Z" fill="#ffbd63"/>
+  <path d="m410 314 12 28 28 12-28 12-12 28-12-28-28-12 28-12Z" fill="#69d0c5"/>
+  <g transform="translate(94 46) scale(5.05)" fill="none" stroke="#18354a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M26 39c-7-13 0-27 16-34 5 17 1 31-12 38Z" fill="#fffdf7"/>
+    <path d="m25 35-9 1-7 9 13 1m11-5 1 10 9 5 1-17" fill="#69d0c5"/>
+    <circle cx="33" cy="24" r="5" fill="#ffbd63"/>
+    <path d="M27 45c-4 4-5 9-4 14 5-2 9-5 11-10Z" fill="#ff8c61"/>
+  </g>
+</svg>

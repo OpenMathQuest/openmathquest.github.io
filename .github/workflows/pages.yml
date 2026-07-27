@@ -2,6 +2,12 @@ name: Deploy Math Quest to Pages
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Exact annotated beta tag to deploy
+        required: true
+        type: string
+        default: v1.0.0-beta.1
 
 permissions:
   contents: read
@@ -12,15 +18,92 @@ concurrency:
 
 jobs:
   build:
+    outputs:
+      release_commit: ${{ steps.release_identity.outputs.commit }}
+      release_tag: ${{ steps.release_identity.outputs.tag }}
     permissions:
       contents: read
       pages: read
     runs-on: ubuntu-latest
     steps:
+      - name: Require approved release dispatch boundary
+        shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REPOSITORY" != "OpenMathQuest/openmathquest.github.io" ]] ||
+             [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
+             [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
+             [[ "$GITHUB_REF_NAME" != "main" ]] ||
+             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.1" ]]
+          then
+            echo "::error::Deploy only OpenMathQuest Public Beta 1 from the protected main branch."
+            exit 1
+          fi
+
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
+          ref: refs/tags/${{ inputs.release_tag }}
+
+      - name: Verify exact tagged release
+        id: release_identity
+        shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          expected_repository="OpenMathQuest/openmathquest.github.io"
+          if [[ "$GITHUB_REPOSITORY" != "$expected_repository" ]]; then
+            echo "::error::This release workflow may run only in $expected_repository."
+            exit 1
+          fi
+
+          mapfile -t version_lines < VERSION
+          if (( ${#version_lines[@]} != 1 )) ||
+             [[ ! "${version_lines[0]}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]
+          then
+            echo "::error::VERSION must contain exactly one beta semantic version."
+            exit 1
+          fi
+          version="${version_lines[0]}"
+          expected_tag="v${version}"
+          expected_ref="refs/tags/${expected_tag}"
+          if [[ "$RELEASE_TAG_INPUT" != "$expected_tag" ]]; then
+            echo "::error::The release_tag input must exactly match $expected_tag."
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
+             [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
+             [[ "$GITHUB_REF_NAME" != "main" ]]
+          then
+            echo "::error::Dispatch this release workflow from the protected main branch."
+            exit 1
+          fi
+          if ! git show-ref --verify --quiet "$expected_ref"; then
+            echo "::error::The expected release tag is not present in the checked-out repository."
+            exit 1
+          fi
+          if [[ "$(git cat-file -t "$expected_ref")" != "tag" ]]; then
+            echo "::error::$expected_tag must be an annotated tag."
+            exit 1
+          fi
+
+          tag_commit="$(git rev-parse "${expected_ref}^{commit}")"
+          head_commit="$(git rev-parse "HEAD^{commit}")"
+          event_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          if [[ "$head_commit" != "$tag_commit" ]] ||
+             [[ "$event_commit" != "$tag_commit" ]]
+          then
+            echo "::error::The main-branch dispatch, checkout, and annotated release tag do not resolve to one commit."
+            exit 1
+          fi
+          printf 'tag=%s\n' "$expected_tag" >> "$GITHUB_OUTPUT"
+          printf 'commit=%s\n' "$tag_commit" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -118,42 +201,41 @@ jobs:
           MQ_PUBLIC_PAYLOAD_TREE_OID: ${{ steps.public_payload.outputs.tree_oid }}
         run: node audit/validate-publication-clearance.mjs
 
-      - name: Validate dedicated custom domain
-        shell: bash
-        env:
-          PUBLIC_CUSTOM_DOMAIN: ${{ vars.PUBLIC_CUSTOM_DOMAIN }}
-        run: |
-          set -euo pipefail
-          domain="${PUBLIC_CUSTOM_DOMAIN,,}"
-          if [[ -z "$domain" ]]; then
-            echo "::error::Set PUBLIC_CUSTOM_DOMAIN to the approved dedicated hostname before deploying."
-            exit 1
-          fi
-          if (( ${#domain} > 253 )) ||
-             [[ ! "$domain" =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] ||
-             [[ "$domain" =~ ^[0-9.]+$ ]] ||
-             [[ "$domain" == "github.io" || "$domain" == *.github.io || "$domain" == "localhost" || "$domain" == *.localhost ]]
-          then
-            echo "::error::PUBLIC_CUSTOM_DOMAIN must be a valid dedicated non-github.io hostname."
-            exit 1
-          fi
-          printf '%s\n' "$domain" > validated-custom-domain.txt
-
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
-      - name: Verify configured Pages origin and HTTPS
+      - name: Verify organization-root Pages configuration
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_HOST: ${{ steps.pages.outputs.host }}
+          PAGES_ORIGIN: ${{ steps.pages.outputs.origin }}
         run: |
           set -euo pipefail
-          expected_domain="$(<validated-custom-domain.txt)"
+          expected_url="https://openmathquest.github.io"
+          expected_host="openmathquest.github.io"
+          if [[ "$PAGES_BASE_URL" != "$expected_url" ]] ||
+             [[ "$PAGES_ORIGIN" != "$expected_url" ]] ||
+             [[ "$PAGES_HOST" != "$expected_host" ]] ||
+             [[ -n "$PAGES_BASE_PATH" ]]
+          then
+            echo "::error::configure-pages did not resolve the exact OpenMathQuest organization-root site."
+            exit 1
+          fi
+
           actual_domain="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.cname // ""' | tr '[:upper:]' '[:lower:]')"
+          actual_url="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.html_url // ""')"
           build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type // ""')"
           https_enforced="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.https_enforced // false')"
-          if [[ "$actual_domain" != "$expected_domain" ]]; then
-            echo "::error::GitHub Pages custom domain '$actual_domain' does not match PUBLIC_CUSTOM_DOMAIN '$expected_domain'."
+          if [[ -n "$actual_domain" ]]; then
+            echo "::error::The organization-root Pages site must not have a custom CNAME."
+            exit 1
+          fi
+          if [[ "${actual_url%/}" != "$expected_url" ]]; then
+            echo "::error::GitHub Pages URL '$actual_url' is not the approved organization-root URL."
             exit 1
           fi
           if [[ "$build_type" != "workflow" ]]; then
@@ -161,7 +243,7 @@ jobs:
             exit 1
           fi
           if [[ "$https_enforced" != "true" ]]; then
-            echo "::error::Enforce HTTPS for the approved custom domain before deploying."
+            echo "::error::GitHub Pages must enforce HTTPS before deploying."
             exit 1
           fi
 
@@ -169,11 +251,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          install -d _site/assets/fonts _site/assets/sounds _site/curriculum
+          install -d _site/assets/fonts _site/assets/icons _site/assets/sounds _site/curriculum
           install -m 0644 index.html _site/index.html
           install -m 0644 manifest.webmanifest _site/manifest.webmanifest
           install -m 0644 sw.js _site/sw.js
           install -m 0644 assets/fonts/Inter-Variable.ttf _site/assets/fonts/Inter-Variable.ttf
+          install -m 0644 assets/icons/apple-touch-icon.png _site/assets/icons/apple-touch-icon.png
+          install -m 0644 assets/icons/icon-192.png _site/assets/icons/icon-192.png
+          install -m 0644 assets/icons/icon-512.png _site/assets/icons/icon-512.png
           install -m 0644 assets/sounds/tap.wav _site/assets/sounds/tap.wav
           install -m 0644 assets/sounds/confirm.wav _site/assets/sounds/confirm.wav
           install -m 0644 assets/sounds/incorrect.wav _site/assets/sounds/incorrect.wav
@@ -185,6 +270,7 @@ jobs:
           install -m 0644 THIRD_PARTY_NOTICES.md _site/THIRD_PARTY_NOTICES.md
           install -d _site/licenses
           install -m 0644 licenses/Inter-OFL.txt _site/licenses/Inter-OFL.txt
+          install -m 0644 licenses/app-icons.md _site/licenses/app-icons.md
           install -m 0644 licenses/component-register-v1.json _site/licenses/component-register-v1.json
           install -m 0644 licenses/sound-effects.md _site/licenses/sound-effects.md
           install -m 0644 curriculum/math-quest-manifest-v1.json _site/curriculum/math-quest-manifest-v1.json
@@ -197,6 +283,9 @@ jobs:
           set -euo pipefail
           printf '%s\n' \
             'assets/fonts/Inter-Variable.ttf' \
+            'assets/icons/apple-touch-icon.png' \
+            'assets/icons/icon-192.png' \
+            'assets/icons/icon-512.png' \
             'assets/sounds/close.wav' \
             'assets/sounds/confirm.wav' \
             'assets/sounds/incorrect.wav' \
@@ -204,7 +293,7 @@ jobs:
             | LC_ALL=C sort > expected-runtime-assets.txt
           grep -Eo \
             'assets/[A-Za-z0-9._/-]+\.(ttf|otf|woff|woff2|wav|mp3|ogg|png|svg|jpg|jpeg|gif|webp|json|webmanifest)' \
-            index.html \
+            index.html manifest.webmanifest \
             | LC_ALL=C sort -u > referenced-runtime-assets.txt
           diff -u expected-runtime-assets.txt referenced-runtime-assets.txt
 
@@ -213,6 +302,9 @@ jobs:
             printf '%s\n' \
               '.nojekyll' \
               'assets/fonts/Inter-Variable.ttf' \
+              'assets/icons/apple-touch-icon.png' \
+              'assets/icons/icon-192.png' \
+              'assets/icons/icon-512.png' \
               'assets/sounds/close.wav' \
               'assets/sounds/confirm.wav' \
               'assets/sounds/incorrect.wav' \
@@ -227,6 +319,7 @@ jobs:
               'PRIVACY.md' \
               'THIRD_PARTY_NOTICES.md' \
               'licenses/Inter-OFL.txt' \
+              'licenses/app-icons.md' \
               'licenses/component-register-v1.json' \
               'licenses/sound-effects.md'
           } | LC_ALL=C sort > expected-files.txt
@@ -266,3 +359,23 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+      - name: Verify deployed organization-root URL
+        shell: bash
+        env:
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.release_commit }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${DEPLOYED_URL%/}/" != "https://openmathquest.github.io/" ]]; then
+            echo "::error::The Pages deployment did not report the approved organization-root URL."
+            exit 1
+          fi
+          if [[ -z "$RELEASE_COMMIT" ]] ||
+             [[ ! "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]] ||
+             [[ "$RELEASE_TAG" != "v1.0.0-beta.1" ]]
+          then
+            echo "::error::The deployment is not bound to the verified Public Beta 1 tag and commit."
+            exit 1
+          fi

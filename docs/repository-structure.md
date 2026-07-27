@@ -7,7 +7,7 @@ records in distinct locations.
 |---|---|
 | `/` | Runtime entry points, Windows launchers, and standard project files |
 | `.github/` | Issue, pull-request, dependency, audit, and deployment automation |
-| `assets/` | Bundled fonts, sounds, and their first-party generation source |
+| `assets/` | Bundled app icons, fonts, sounds, and their first-party generation source |
 | `audit/` | Executable deterministic, semantic, coverage, mutation, and browser checks |
 | `curriculum/` | Canonical versioned curriculum manifest and provenance |
 | `docs/development/` | Stable development contract |

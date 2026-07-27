@@ -399,7 +399,7 @@ export async function runAudit({ browserPath = null } = {}) {
   const residualRisks = [];
   const unverifiedClaims = [];
   residualRisks.push("At 390×844, an adult who expands an optional teaching model in the Parent Test Lab may need to scroll to its Grade control; the live child flow and the approved question-first narrow Lab baseline remain within their tested viewport and size floors.");
-  unverifiedClaims.push("This local automated review does not verify GitHub/Pages configuration, custom-domain DNS or HTTPS, the deployed artifact, physical Windows/iPhone/iPad devices, or external legal/privacy review.");
+  unverifiedClaims.push("This local automated review does not verify control of the OpenMathQuest organization and OpenMathQuest/openmathquest.github.io repository, exclusive use of that organization for Math Quest Pages, the root Pages configuration, absence of a CNAME, HTTPS, deployment from the exact reviewed release tag, the deployed artifact, physical Windows/iPhone/iPad devices, or external legal/privacy review.");
   if (parentStrings.status !== "APPROVED") residualRisks.push("Child-facing strings are placeholders pending the project owner's parent approval; the game is not shippable.");
   if (browser.status !== "PASS") unverifiedClaims.push("The complete real-browser interaction flow is not verified.");
   if (coverage.status !== "PASS") unverifiedClaims.push("At least 90% branch coverage of the exact shipped engine bytes is not verified.");

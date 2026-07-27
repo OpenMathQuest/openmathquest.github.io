@@ -8,6 +8,7 @@ const TYPES = Object.freeze({
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".png": "image/png",
   ".ttf": "font/ttf",
   ".wav": "audio/wav",
 });
@@ -49,11 +50,15 @@ function serveWorkspace(root, requests) {
       "THIRD_PARTY_NOTICES.md",
       "audit/approved-visual-regression.js",
       "assets/fonts/Inter-Variable.ttf",
+      "assets/icons/apple-touch-icon.png",
+      "assets/icons/icon-192.png",
+      "assets/icons/icon-512.png",
       "assets/sounds/tap.wav",
       "assets/sounds/confirm.wav",
       "assets/sounds/incorrect.wav",
       "assets/sounds/close.wav",
       "licenses/Inter-OFL.txt",
+      "licenses/app-icons.md",
     ]);
     if (!resolved.startsWith(rootPrefix) || !allowed.has(relative.replaceAll("\\", "/"))) {
       response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); response.end("Not found"); return;
@@ -116,7 +121,7 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 45_000 })
       "--edge-skip-compat-layer-relaunch", "--no-first-run", "--disable-default-apps", "--disable-component-update",
       "--disable-background-networking", "--disable-sync", "--metrics-recording-only", "--safebrowsing-disable-auto-update",
       "--no-pings", "--hide-scrollbars", "--mute-audio", `--user-data-dir=${profile}`,
-      "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1", "--virtual-time-budget=20000", "--dump-dom", url,
+      "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1", "--virtual-time-budget=60000", "--dump-dom", url,
     ];
     const run = await spawnBrowser(browserPath, args, timeoutMs);
     const match = run.stdout.match(/<script[^>]+id=["']audit-json["'][^>]*>([\s\S]*?)<\/script>/iu);
@@ -140,11 +145,15 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 45_000 })
       "/THIRD_PARTY_NOTICES.md",
       "/audit/approved-visual-regression.js",
       "/assets/fonts/Inter-Variable.ttf",
+      "/assets/icons/apple-touch-icon.png",
+      "/assets/icons/icon-192.png",
+      "/assets/icons/icon-512.png",
       "/assets/sounds/tap.wav",
       "/assets/sounds/confirm.wav",
       "/assets/sounds/incorrect.wav",
       "/assets/sounds/close.wav",
       "/licenses/Inter-OFL.txt",
+      "/licenses/app-icons.md",
       "/favicon.ico",
       "/__audit_disconnect__",
     ]);

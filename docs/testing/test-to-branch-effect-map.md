@@ -119,7 +119,7 @@ a passing run.
 | `BR-19` | Reset requires a second action, clears only schema-2 progress, and leaves private pre-beta storage untouched. |
 | `BR-20` | Early child question, Help, and re-teach states keep Confirm visible at 1366×768, 820×1180, and 390×844, prevent horizontal overflow, keep models/decorations separated, and preserve 16 px text and 44 px control floors. |
 | `BR-21` | The exact approved child-string table reproduces its shipped canonicalization version and SHA-256. |
-| `BR-22` | The install manifest and controlled service worker cache the complete first-load shell; after the audit server disconnects, an offline navigation loads the same manifest-bound engine. |
+| `BR-22` | The install manifest declares the reviewed any/maskable and Apple-compatible icon set, and the controlled service worker caches the complete first-load shell; after the audit server disconnects, an offline navigation loads the same manifest-bound engine. |
 
 ## Manifest-driven visual and profile map
 

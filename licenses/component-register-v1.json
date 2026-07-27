@@ -22,6 +22,7 @@
     "CONTRIBUTING.md",
     "Math Quest.bat",
     "PRIVACY.md",
+    "PUBLICATION_CLEARANCE.md",
     "README.md",
     "SECURITY.md",
     "Serve-MathQuest.ps1",
@@ -99,6 +100,77 @@
       "licenceEvidence": "licenses/Inter-OFL.txt",
       "attributionRecord": "THIRD_PARTY_NOTICES.md",
       "modified": false
+    },
+    {
+      "id": "math-quest-icon-source",
+      "kind": "image",
+      "origin": "original-project",
+      "paths": [
+        "assets/icons/math-quest-icon.svg"
+      ],
+      "sha256": "2e84ab4fc3b1760cfc4baa6a64cce3d08e66510f9a29cd1dcb0769c2543098e2",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/icons/math-quest-icon.svg",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/app-icons.md",
+      "modified": false
+    },
+    {
+      "id": "math-quest-icon-192",
+      "kind": "image",
+      "origin": "original-project",
+      "paths": [
+        "assets/icons/icon-192.png"
+      ],
+      "sha256": "52256d6d01ff2640d2192f49f170fc5f5a34c319d7a640eb11743c8d5261d93b",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/icons/math-quest-icon.svg",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/app-icons.md",
+      "modified": true,
+      "modificationDescription": "Rasterized to a 192 by 192 pixel PNG for web app installation."
+    },
+    {
+      "id": "math-quest-icon-512",
+      "kind": "image",
+      "origin": "original-project",
+      "paths": [
+        "assets/icons/icon-512.png"
+      ],
+      "sha256": "3d55fb160e9a89fa734daf1c230dd1c78e228ec8a31acef1ba0ff00bf4a9cde5",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/icons/math-quest-icon.svg",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/app-icons.md",
+      "modified": true,
+      "modificationDescription": "Rasterized to a 512 by 512 pixel PNG for web app and maskable installation."
+    },
+    {
+      "id": "math-quest-apple-touch-icon",
+      "kind": "image",
+      "origin": "original-project",
+      "paths": [
+        "assets/icons/apple-touch-icon.png"
+      ],
+      "sha256": "77f7d34af811cf3bc5e8c07dce4d932cf105ccf97441c989160c15a48673ff51",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/icons/math-quest-icon.svg",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/app-icons.md",
+      "modified": true,
+      "modificationDescription": "Rasterized to a 180 by 180 pixel PNG for Apple touch installation."
     },
     {
       "id": "generated-sound-tool",

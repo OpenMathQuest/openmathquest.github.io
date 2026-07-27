@@ -26,20 +26,30 @@ repository.
 
 ### Hosted beta
 
-The planned GitHub Pages release uses a dedicated custom domain or subdomain.
-Open that address in a current desktop or mobile browser. The initial page load
-requires a network connection; after it loads, gameplay does not depend on
-remote scripts, fonts, audio, speech, analytics, or APIs. A same-origin service
-worker stores only the versioned first-party app shell, so the reviewed game
-can reopen offline after one complete successful load. Clearing site data
-removes that offline copy as well as local progress.
+The approved GitHub Pages release address is
+[https://openmathquest.github.io/](https://openmathquest.github.io/). It will
+remain a release target, rather than a claim of a live verified deployment,
+until the exact tagged beta passes the remaining publication gates.
+
+The `OpenMathQuest` organization and its root Pages repository,
+`OpenMathQuest/openmathquest.github.io`, are reserved exclusively for Math
+Quest Pages. No CNAME or custom domain is used. The initial page load requires
+a network connection; after it loads, gameplay does not depend on remote
+scripts, fonts, audio, speech, analytics, or APIs. A same-origin service worker
+stores only the versioned first-party app shell, so the reviewed game can
+reopen offline after one complete successful load. Clearing site data removes
+that offline copy as well as local progress.
 
 Progress belongs to the browser profile and origin where the game is played.
 There is no account or cloud synchronization. Moving between the desktop
 launcher and a hosted site requires a deliberate backup and restore.
 
-The public URL will be added only after the exact release candidate, custom
-domain, DNS, HTTPS, and deployment artifact have passed review.
+The Pages workflow is dispatched from protected `main` only while that branch
+and its exact `release_tag` input resolve to the same annotated
+`v1.0.0-beta.1` commit. Its product version and publication-clearance hashes
+must match the reviewed candidate. The hosted link is not considered verified
+until the repository identity, root Pages configuration, absence of a CNAME,
+HTTPS, and deployed artifact have passed review.
 
 ### Phones and tablets
 

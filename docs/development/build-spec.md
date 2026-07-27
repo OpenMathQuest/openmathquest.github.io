@@ -156,9 +156,14 @@ published file set. Keep the optional display name outside exported progress
 backups, and still treat those backups as sensitive because they contain
 learning history.
 
-Use a dedicated release origin so browser storage is isolated from unrelated
-projects. Do not claim a hosted release until the exact reviewed commit,
-custom-domain configuration, and HTTPS deployment have all been verified.
+Use the dedicated organization-root origin
+`https://openmathquest.github.io`, served from
+`OpenMathQuest/openmathquest.github.io`, with no CNAME or custom domain.
+Reserve the `OpenMathQuest` organization exclusively for Math Quest Pages
+because browser storage is origin-wide and the root service worker controls
+`/`. Do not claim a hosted release until the exact reviewed tag, repository
+identity, empty Pages base path, GitHub Actions publishing source, HTTPS, and
+deployed artifact have all been verified.
 
 ## Release audit
 

@@ -29,10 +29,17 @@ compatible with public redistribution.
 
 ## Storage origin
 
-Browser-local storage is separated by origin. Use a dedicated custom domain or
-subdomain for the public beta so the save is not mixed with unrelated hosted
-projects. Verify the exact reviewed commit, domain configuration, and HTTPS
-deployment before publishing a release link.
+Browser-local storage is separated by origin. The approved public-beta origin
+is `https://openmathquest.github.io`, served only from
+`OpenMathQuest/openmathquest.github.io`. Reserve the `OpenMathQuest`
+organization exclusively for Math Quest Pages: another Pages repository under
+that organization would share the same origin-wide storage, and the root Math
+Quest service worker controls `/`. Do not configure a CNAME or custom domain
+for this release.
+
+Verify the exact reviewed tag, organization and repository identity, empty
+Pages base path, absent CNAME, GitHub Actions publishing source, HTTPS, and
+deployed artifact before treating the release link as verified.
 
 Changing domains or moving between a local desktop URL and the hosted origin
 does not automatically transfer progress. A grown-up uses transactional

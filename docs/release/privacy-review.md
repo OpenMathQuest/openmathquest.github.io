@@ -4,7 +4,7 @@
 - **Public product:** Math Quest
 - **Release target:** `1.0.0-beta.1`
 - **Review scope:** prospective public release artifact
-- **Status:** **STAGED PUBLIC ARTIFACT SCAN PASS; EXTERNAL REVIEW PENDING**
+- **Status:** **LOCAL PRIVACY AND DE-IDENTIFICATION REVIEW PASS; EXTERNAL REVIEW PENDING**
 
 The public beta is designed as a neutral product. The exact staged candidate
 is enumerated by the release guard and
@@ -51,6 +51,12 @@ archive, site artifact, or release attachment.
 - The same-origin service worker caches only the explicit static app shell. It
   does not cache or transmit a name, progress record, backup, or personalized
   response.
+- The approved hosted origin is `https://openmathquest.github.io`, served from
+  `OpenMathQuest/openmathquest.github.io` with no CNAME or custom domain.
+- The `OpenMathQuest` organization must remain exclusively reserved for Math
+  Quest Pages. Browser storage is origin-wide, and the root service worker
+  controls `/`; an unrelated Pages deployment in that organization would
+  violate the intended isolation boundary.
 
 ## Public artifact boundary
 
@@ -67,16 +73,19 @@ The public curriculum artifact may include only its neutral manifest,
 provenance, licence notices, and benchmark attributions. It must not include a
 historical-to-neutral crosswalk.
 
-## Final staged-artifact scan evidence
+## Current staged-artifact scan evidence
 
-The final local review regenerated its evidence from the staged candidate:
+The local release review regenerated its evidence from the staged public
+candidate:
 
 1. all tracked paths and their current working-tree bytes passed personal
    name, account, workstation-path, contact, credential, encoded-identity, and
    filename scans;
 2. no archive or metadata-bearing office/reference document is tracked;
-3. the bundled Inter name table contains only upstream font metadata, and every
-   bundled WAV contains only required `fmt ` and `data` chunks;
+3. the bundled Inter name table contains only upstream font metadata, every
+   bundled WAV contains only required `fmt ` and `data` chunks, and every
+   bundled PNG has the registered dimensions and only the approved structural
+   chunks;
 4. no tracked file has an alternate data stream, reparse-point attribute, or
    unexpected hidden attribute;
 5. legacy curriculum identifiers, publisher markers, copied private taxonomy,
@@ -88,8 +97,9 @@ The final local review regenerated its evidence from the staged candidate:
    and manifest SHA-256
    `49e5265eed2fe6d17d660d8136de1b55b05398e6b86b2b8761571480580e1048`.
 
-Any later staged-file or runtime change invalidates this evidence and requires
-the same scans again.
+The scan is fail-closed: any later byte or path change alters the staged
+payload identity and requires the same checks and publication-clearance
+binding to be regenerated before release.
 
 ## Residual privacy considerations
 
@@ -98,6 +108,10 @@ the same scans again.
   data.
 - Saves are origin-specific. A local desktop record is separate from a hosted
   mobile record unless a grown-up deliberately transfers a backup.
+- The organization-root origin is isolated from Pages projects under other
+  GitHub accounts, but not from future project Pages under `OpenMathQuest`.
+  Organization governance, the empty CNAME, and the absence of unrelated Pages
+  deployments remain external checks.
 - Public repository discussions, issue attachments, and screenshots can reveal
   information outside the application; repository maintainers need a separate
   moderation practice.
@@ -105,8 +119,9 @@ the same scans again.
 ## Current verdict
 
 The neutral beta's storage separation, local-only nickname handling,
-non-evidentiary test lab, loopback launcher, and explicit publication boundary
-meet the implementation-level privacy design. The exact local public candidate
-passed the scans above. Publication clearance still depends on the external
-repository, deployment, legal/privacy, and real-device reviews listed in
-`docs/release/publication-gates.md`.
+non-evidentiary test lab, loopback launcher, dedicated organization-root
+design, explicit publication boundary, and staged-candidate de-identification
+scan meet the local implementation-level privacy review. The external
+repository, organization governance, deployment, legal/privacy, and
+real-device reviews listed in `docs/release/publication-gates.md` remain
+required.

@@ -63,36 +63,56 @@ Target tag: `v1.0.0-beta.1`
 - [x] Run desktop, phone, and tablet visual/accessibility reviews.
 - [x] Reconcile predicted and actual counts and document all failures, skips,
   and residual risks.
-- [ ] Before the final independent review, add
+- [x] Before the final independent review, add
   `PUBLICATION_CLEARANCE.md` with `Status: PENDING`, then synchronize and
   inspect the component register and public-file manifest.
-- [ ] Promote that pending record to `Status: APPROVED` only after successful
+- [x] Promote that pending record to `Status: APPROVED` only after successful
   independent review, bound to the exact manifest, engine, open-component
   rights state, public-payload digest, and payload-tree OID.
-- [ ] Re-run the fail-closed audit with that exact clearance record.
+- [x] Re-run the fail-closed audit with that exact clearance record.
 
 ## Repository and Pages settings
 
+- [ ] Confirm control of the dedicated `OpenMathQuest` GitHub organization.
+- [ ] Reserve that organization exclusively for Math Quest Pages; do not
+  publish an unrelated Pages site under its shared browser origin.
+- [ ] Create or verify the public root repository
+  `OpenMathQuest/openmathquest.github.io`.
 - [ ] Enable private vulnerability reporting.
 - [ ] Enable secret scanning and push protection where available.
 - [ ] Protect the default branch and require release checks.
+- [ ] Protect `v1.0.0-beta.1` from deletion or movement after it is created.
 - [ ] Configure GitHub Pages to deploy through GitHub Actions.
-- [ ] Select a dedicated custom domain or subdomain.
-- [ ] Configure DNS and enforce HTTPS.
-- [ ] Set `PUBLIC_CUSTOM_DOMAIN` to the exact configured hostname.
-- [ ] Confirm the Pages API setting, repository variable, DNS, certificate, and
-  browser origin all agree.
+- [ ] Confirm no CNAME or custom domain is configured.
+- [ ] Enforce HTTPS for `https://openmathquest.github.io/`.
+- [ ] Require the deployment workflow to run only in
+  `OpenMathQuest/openmathquest.github.io`, dispatched from protected `main`
+  while it points to the exact annotated tag supplied as `release_tag`,
+  `v1.0.0-beta.1`, with `VERSION` equal to `1.0.0-beta.1`.
+- [ ] Confirm the Pages action and API report the root origin
+  `https://openmathquest.github.io`, an empty base path, an empty CNAME, and
+  the GitHub Actions publishing source.
 - [ ] Obtain any privacy or legal review appropriate to intended child-facing
   jurisdictions.
 
 ## Release
 
-- [ ] Run the manual **Deploy Math Quest to Pages** workflow.
+- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.1` tag without
+  altering the reviewed tree.
+- [ ] Run the manual **Deploy Math Quest to Pages** workflow from protected
+  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.1`; the
+  workflow must check out and deploy that tag and reject any commit mismatch.
 - [ ] Verify the deployed artifact contains only the explicit runtime
   allowlist.
+- [ ] Verify `https://openmathquest.github.io/` serves the tagged artifact over
+  HTTPS with no unexpected redirect, base path, CNAME, or third-party request.
 - [ ] Test Windows desktop, iPhone, and iPad.
 - [ ] Verify nickname entry/removal, touch controls, local sound and speech,
   reload persistence, backup, restore, reset, and Parent Test isolation.
-- [ ] Verify storage is absent from unrelated origins.
-- [ ] Add the verified public URL to `README.md`.
-- [ ] Create tag `v1.0.0-beta.1` and beta-labelled release notes.
+- [ ] Verify storage is absent from unrelated origins and confirm the
+  `OpenMathQuest` organization has no unrelated Pages deployment sharing this
+  origin.
+- [ ] Change the hosted URL in `README.md` from an approved target to a
+  verified live deployment only after the hosted checks pass.
+- [ ] Publish beta-labelled GitHub release notes from the verified
+  `v1.0.0-beta.1` tag.

@@ -42,8 +42,12 @@ Before the first public push or deployment:
    hash- or commit-pinned, attribution-complete, and covered by the approved
    open-licence/public-domain policy. Reject non-commercial, no-derivatives,
    personal/educational-only, permission-only, unknown, and BBC RemArc terms.
-7. Verify the dedicated custom domain, Pages configuration, DNS, HTTPS, and
-   deployed artifact.
+7. Verify control of the dedicated `OpenMathQuest` organization and
+   `OpenMathQuest/openmathquest.github.io` repository. Reserve the organization
+   exclusively for Math Quest Pages, and verify the root
+   `https://openmathquest.github.io/` origin, empty Pages base path, absent
+   CNAME, GitHub Actions publishing source, HTTPS, exact tagged workflow, and
+   deployed allowlisted artifact.
 8. Complete real-device spot checks on Windows, iPhone, and iPad.
 
 ## Publication-clearance record

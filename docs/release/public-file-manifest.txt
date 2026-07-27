@@ -15,12 +15,17 @@ LICENSE
 Math Quest.bat
 OPEN_SOURCE_POLICY.md
 PRIVACY.md
+PUBLICATION_CLEARANCE.md
 README.md
 SECURITY.md
 Serve-MathQuest.ps1
 THIRD_PARTY_NOTICES.md
 VERSION
 assets/fonts/Inter-Variable.ttf
+assets/icons/apple-touch-icon.png
+assets/icons/icon-192.png
+assets/icons/icon-512.png
+assets/icons/math-quest-icon.svg
 assets/sounds/close.wav
 assets/sounds/confirm.wav
 assets/sounds/generate-sounds.ps1
@@ -67,6 +72,7 @@ docs/repository-structure.md
 docs/testing/test-to-branch-effect-map.md
 index.html
 licenses/Inter-OFL.txt
+licenses/app-icons.md
 licenses/component-register-v1.json
 licenses/evidence-paths-v1.json
 licenses/first-party-paths-v1.txt

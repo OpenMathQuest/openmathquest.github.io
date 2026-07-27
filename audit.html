@@ -916,10 +916,12 @@
           const cache = cacheName ? await win.caches.open(cacheName) : null;
           const coreRelative = [
             "./", "./index.html", "./manifest.webmanifest", "./assets/fonts/Inter-Variable.ttf",
+            "./assets/icons/apple-touch-icon.png", "./assets/icons/icon-192.png",
+            "./assets/icons/icon-512.png",
             "./assets/sounds/tap.wav", "./assets/sounds/confirm.wav",
             "./assets/sounds/incorrect.wav", "./assets/sounds/close.wav",
             "./LICENSE", "./PRIVACY.md", "./THIRD_PARTY_NOTICES.md",
-            "./licenses/Inter-OFL.txt",
+            "./licenses/Inter-OFL.txt", "./licenses/app-icons.md",
           ];
           const core = await Promise.all(coreRelative.map(async (relative) => {
             const url = new URL(relative, win.location.href).href;
@@ -934,7 +936,14 @@
           const cachedIndexText = cachedIndex?.ok ? await cachedIndex.clone().text() : "";
           const manifestValid = Boolean(manifestJson?.name === "Math Quest"
             && manifestJson?.start_url === "./" && manifestJson?.scope === "./"
-            && manifestJson?.display === "standalone" && manifestJson?.lang === "en-CA");
+            && manifestJson?.display === "standalone" && manifestJson?.lang === "en-CA"
+            && Array.isArray(manifestJson?.icons) && manifestJson.icons.length === 2
+            && manifestJson.icons.some((icon) => icon?.src === "./assets/icons/icon-192.png"
+              && icon?.sizes === "192x192" && icon?.type === "image/png"
+              && icon?.purpose === "any")
+            && manifestJson.icons.some((icon) => icon?.src === "./assets/icons/icon-512.png"
+              && icon?.sizes === "512x512" && icon?.type === "image/png"
+              && icon?.purpose === "any maskable"));
           let disconnectAcknowledged = false;
           let originUnreachable = false;
           let offlineNavigation = false;

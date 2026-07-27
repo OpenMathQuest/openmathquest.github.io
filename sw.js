@@ -5,6 +5,9 @@ const CORE_URLS = Object.freeze([
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./assets/icons/apple-touch-icon.png",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
   "./assets/fonts/Inter-Variable.ttf",
   "./assets/sounds/tap.wav",
   "./assets/sounds/confirm.wav",
@@ -14,6 +17,7 @@ const CORE_URLS = Object.freeze([
   "./PRIVACY.md",
   "./THIRD_PARTY_NOTICES.md",
   "./licenses/Inter-OFL.txt",
+  "./licenses/app-icons.md",
 ]);
 const CORE_PATHS = new Set(CORE_URLS.map((relative) => new URL(relative, self.registration.scope).pathname));
 const APP_ENTRY_PATHS = new Set([
