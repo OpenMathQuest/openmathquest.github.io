@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-src 'self'; connect-src 'self'; media-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Math Quest — browser audit</title>
+  <style>
+    :root { color-scheme: light; font: 16px/1.45 system-ui, sans-serif; background: #eef7fb; color: #17324d; }
+    body { max-width: 76rem; margin: 0 auto; padding: 1.25rem; }
+    h1 { margin-bottom: .25rem; }
+    .note { margin-top: 0; color: #405d73; }
+    #summary { font-weight: 700; padding: .75rem 1rem; border-radius: .75rem; background: #fff; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: .55rem; border: 1px solid #bfd3df; text-align: left; vertical-align: top; }
+    .PASS { color: #12633a; font-weight: 700; }
+    .FAIL { color: #9b2424; font-weight: 700; }
+    iframe { width: 100%; min-height: 42rem; margin-top: 1rem; border: 2px solid #8eafc2; border-radius: .75rem; background: white; }
+    details { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Browser audit</h1>
+  <p class="note">This page tests the exact shipped game and curriculum manifest from the same local origin. It does not contact the internet.</p>
+  <p id="summary" aria-live="polite">Running…</p>
+  <table aria-label="Browser audit results">
+    <thead><tr><th>ID</th><th>Result</th><th>Check</th><th>Details</th></tr></thead>
+    <tbody id="results"></tbody>
+  </table>
+  <details><summary>Shipped game under test</summary><iframe id="game" title="Math Quest under browser audit"></iframe></details>
+  <script src="audit/approved-visual-regression.js"></script>
+  <script>
+  (() => {
+    "use strict";
+
+    const TEST_SAVE_KEY = "math-quest:v2";
+    const LEGACY_SAVE_KEY = "math-quest:v1";
+    const TEST_CHILD_NAME_KEY = "math-quest:child-name:v1";
+    const TEST_CHILD_NAME_RECORD = JSON.stringify({
+      schemaVersion: 1,
+      savedAt: "2000-01-01T00:00:00.000Z",
+      name: "Pip",
+    });
+    const results = [];
+    const resultBody = document.getElementById("results");
+    const summary = document.getElementById("summary");
+    const iframe = document.getElementById("game");
+    const originalStorage = new Map([
+      [TEST_SAVE_KEY, localStorage.getItem(TEST_SAVE_KEY)],
+      [LEGACY_SAVE_KEY, localStorage.getItem(LEGACY_SAVE_KEY)],
+      [TEST_CHILD_NAME_KEY, localStorage.getItem(TEST_CHILD_NAME_KEY)],
+    ]);
+    const restoreOriginalStorage = () => {
+      for (const [key, value] of originalStorage) {
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      }
+    };
+    window.addEventListener("pagehide", restoreOriginalStorage, { once: true });
+
+    const add = (id, title, pass, details = "") => results.push({
+      id,
+      title,
+      status: pass ? "PASS" : "FAIL",
+      details: typeof details === "string" ? details : JSON.stringify(details),
+    });
+    const normalized = (value) => String(value ?? "").normalize("NFC").trim();
+    const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const waitUntil = async (predicate, attempts = 150, intervalMs = 20) => {
+      for (let index = 0; index < attempts; index += 1) {
+        try {
+          const value = await predicate();
+          if (value) return value;
+        } catch {}
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+      return null;
+    };
+    const childSetKeys = /^(?:ritualSetMembership|ritualSetMembers|allowedLiteralVocabulary|setMembership)$/u;
+    const compareCodeUnits = (left, right) => String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0;
+    const normalizeChildValue = (value, key = "") => {
+      if (typeof value === "string") return value.normalize("NFC").replace(/\r\n?/gu, "\n");
+      if (Array.isArray(value)) {
+        const list = value.map((entry) => normalizeChildValue(entry, key));
+        return childSetKeys.test(key) ? list.sort(compareCodeUnits) : list;
+      }
+      if (value && typeof value === "object") {
+        return Object.fromEntries(Object.keys(value).sort(compareCodeUnits).map((name) => [name, normalizeChildValue(value[name], name)]));
+      }
+      return value;
+    };
+    const jcsSerialize = (value) => {
+      if (value === null) return "null";
+      if (typeof value === "boolean") return value ? "true" : "false";
+      if (typeof value === "number") {
+        if (!Number.isFinite(value)) throw new TypeError("Child-string canonicalization rejects non-finite numbers.");
+        return JSON.stringify(value);
+      }
+      if (typeof value === "string") return JSON.stringify(value);
+      if (Array.isArray(value)) return `[${value.map(jcsSerialize).join(",")}]`;
+      if (value && typeof value === "object") {
+        return `{${Object.keys(value).sort(compareCodeUnits).map((key) => `${JSON.stringify(key)}:${jcsSerialize(value[key])}`).join(",")}}`;
+      }
+      throw new TypeError(`Child-string canonicalization cannot serialize ${typeof value}.`);
+    };
+    const canonicalChildStrings = (table) => {
+      const records = (Array.isArray(table)
+        ? table.map((record) => ({ ...record }))
+        : Object.entries(table || {}).map(([id, record]) => ({ id, ...record })))
+        .map((record) => normalizeChildValue(record))
+        .sort((left, right) => compareCodeUnits(left.id, right.id));
+      return jcsSerialize(records);
+    };
+    const halifaxPlayDay = () => {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Halifax",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date()).filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+      return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86400000);
+    };
+    const renderResults = () => {
+      resultBody.replaceChildren(...results.map((item) => {
+        const row = document.createElement("tr");
+        for (const text of [item.id, item.status, item.title, item.details]) {
+          const cell = document.createElement("td");
+          cell.textContent = text;
+          row.append(cell);
+        }
+        row.children[1].className = item.status;
+        return row;
+      }));
+      const fail = results.filter((item) => item.status === "FAIL").length;
+      summary.textContent = `${results.length - fail} passed; ${fail} failed.`;
+      summary.className = fail ? "FAIL" : "PASS";
+      const payload = { completed: true, generatedAt: new Date().toISOString(), results, fail, skipped: 0 };
+      let node = document.getElementById("audit-json");
+      if (!node) {
+        node = document.createElement("script");
+        node.id = "audit-json";
+        node.type = "application/json";
+        document.body.append(node);
+      }
+      node.textContent = JSON.stringify(payload).replace(/</gu, "\\u003c");
+      document.documentElement.dataset.auditComplete = "true";
+    };
+
+    const waitFrame = (frame, timeoutMs = 7000) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`${frame.title || "frame"} did not load within ${timeoutMs} ms`)), timeoutMs);
+      frame.addEventListener("load", () => { clearTimeout(timer); resolve(); }, { once: true });
+      frame.addEventListener("error", () => { clearTimeout(timer); reject(new Error(`${frame.title || "frame"} failed to load`)); }, { once: true });
+    });
+
+    function baseUi(question, {
+      screen = "session",
+      phase = "question",
+      candidates = [],
+      hintUsed = false,
+      isReteach = false,
+    } = {}) {
+      return {
+        version: 1,
+        screen,
+        phase,
+        question,
+        choiceCandidates: candidates,
+        choiceResolved: {},
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        modelTouched: false,
+        hintUsed,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach,
+        capstoneSubmitted: false,
+      };
+    }
+
+    function questionArgs(skill, overrides = {}) {
+      return {
+        skillId: skill.skillId,
+        tier: "HARD/TARGET",
+        representation: skill.phases.includes("P") ? "PICTORIAL" : "ABSTRACT",
+        seed: 1732050807,
+        ordinal: 0,
+        eligibleQuestionOrdinal: 0,
+        scheduledReview: false,
+        coldTest: false,
+        preview: false,
+        theme: "ocean",
+        scaffolded: true,
+        ...overrides,
+      };
+    }
+
+    function findQuestion(engine, predicate, overrides = {}) {
+      for (const skill of engine.SKILLS) {
+        for (const tier of ["EASY", "HARD/TARGET"]) {
+          const declaredTaskTypes = Array.isArray(skill.constraints?.taskTypes) ? skill.constraints.taskTypes : [];
+          const ordinalCount = Math.max(3, declaredTaskTypes.length);
+          for (let ordinal = 0; ordinal < ordinalCount; ordinal += 1) {
+            const question = engine.makeQuestion(questionArgs(skill, { tier, ordinal, eligibleQuestionOrdinal: ordinal, ...overrides }));
+            if (predicate(question, skill)) return { question, skill, tier, ordinal };
+          }
+        }
+      }
+      throw new Error("The manifest/runtime does not provide the requested question capability.");
+    }
+
+    function activeStateFor(engine, playDay, question, {
+      phase = "question",
+      screen = "session",
+      hintUsed = false,
+      isReteach = false,
+      previewLevel = null,
+      stopReason = null,
+    } = {}) {
+      const state = engine.createInitialState(playDay);
+      if (previewLevel === null) state.earnedLevel = question.level;
+      state.previewLevel = previewLevel;
+      if (isReteach) state.reteachQueue = [{ skillId: question.skillId, reason: "SAME_SESSION" }];
+      const built = engine.buildSessionQueue(state, { playDay, seed: state.seed });
+      const slot = {
+        ordinal: 0,
+        baseOrdinal: 0,
+        skillId: question.skillId,
+        tier: question.tier,
+        representation: question.representation,
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: false,
+        mandatorySecondExposure: false,
+        obligation: isReteach ? "FORCED_RECOVERY" : previewLevel === null ? "NEW" : "PREVIEW",
+        preview: previewLevel !== null,
+      };
+      state.activeSession = {
+        ...built,
+        level: question.level,
+        queue: [slot],
+        index: 0,
+        world: "ocean",
+        servedCount: 0,
+        servedOrdinals: [],
+        elapsedMs: 100,
+        stopReason,
+        classifications: stopReason ? [stopReason] : [],
+        oneMore: false,
+        uiState: baseUi(question, { phase, screen, hintUsed, isReteach }),
+      };
+      return state;
+    }
+
+    async function scenarioFrame(engine, name, state, width = 1024, height = 900) {
+      localStorage.setItem(TEST_SAVE_KEY, engine.exportState(state));
+      const frame = document.createElement("iframe");
+      frame.title = `Browser audit ${name}`;
+      Object.assign(frame.style, {
+        position: "fixed",
+        left: "-20000px",
+        top: "0",
+        width: `${width}px`,
+        height: `${height}px`,
+        opacity: "0",
+        pointerEvents: "none",
+      });
+      frame.src = `index.html?browser-audit=${encodeURIComponent(name)}-${Date.now()}-${Math.random()}`;
+      document.body.append(frame);
+      await waitFrame(frame);
+      await pause();
+      return { frame, doc: frame.contentDocument, win: frame.contentWindow };
+    }
+
+    async function resizeScenario(scenario, width, height) {
+      scenario.frame.style.width = `${width}px`;
+      scenario.frame.style.height = `${height}px`;
+      scenario.win.dispatchEvent(new scenario.win.Event("resize"));
+      await pause();
+      await pause();
+    }
+
+    function dispatchKey(scenario, key) {
+      const target = scenario.doc.activeElement && scenario.doc.activeElement !== scenario.doc.documentElement
+        ? scenario.doc.activeElement
+        : scenario.doc.body;
+      target.dispatchEvent(new scenario.win.KeyboardEvent("keydown", {
+        key,
+        code: /^[0-9]$/u.test(key) ? `Digit${key}` : key === " " ? "Space" : key,
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      }));
+    }
+
+    async function answerCorrect(scenario, question, { keyboard = false } = {}) {
+      if (question.inputClass === "SELECTION") {
+        if (keyboard) {
+          dispatchKey(scenario, String(question.correctIndex + 1));
+          await pause();
+          dispatchKey(scenario, "Enter");
+        } else {
+          scenario.doc.querySelector(`[data-action="select"][data-id="${CSS.escape(question.options[question.correctIndex].optionId)}"]`)?.click();
+          await pause();
+          scenario.doc.querySelector('[data-action="confirm"]:not([disabled])')?.click();
+        }
+        await pause();
+        return;
+      }
+      const answer = String(question.answer.value);
+      if (question.inputMethod === "FRACTION_ENTRY" || question.inputMethod === "MIXED_NUMBER_ENTRY") {
+        const match = answer.match(/^(?:(-?\d+)\s+)?(-?\d+)\/(\d+)$/u);
+        if (!match) throw new Error(`Cannot enter fraction audit answer ${answer}.`);
+        const values = { whole: match[1] || "", numerator: match[2], denominator: match[3] };
+        for (const [part, value] of Object.entries(values)) {
+          const input = scenario.doc.querySelector(`[data-control-part="${part}"]`);
+          if (!input) continue;
+          input.value = value;
+          input.dispatchEvent(new scenario.win.Event("input", { bubbles: true }));
+          await pause();
+        }
+        scenario.doc.querySelector('[data-action="confirm"]:not([disabled])')?.click();
+        await pause();
+        return;
+      }
+      if (keyboard && /^[0-9.-]+$/u.test(answer)) {
+        for (const char of answer) {
+          dispatchKey(scenario, char);
+          await pause();
+        }
+        dispatchKey(scenario, "Enter");
+        await pause();
+        return;
+      }
+      const controls = scenario.doc.querySelector(".answer-controls");
+      for (const char of answer) {
+        controls?.querySelector(`[data-action="key"][data-key="${CSS.escape(char)}"]`)?.click();
+        await pause();
+      }
+      scenario.doc.querySelector('[data-action="confirm"]:not([disabled])')?.click();
+      await pause();
+    }
+
+    function progressProjection(engine, state) {
+      return engine.canonical({
+        earnedLevel: state.earnedLevel,
+        skills: state.skills,
+        practiceCountByDay: state.practiceCountByDay,
+        currentLevelColdWindow: state.currentLevelColdWindow,
+        sessionLog: state.sessionLog,
+      });
+    }
+
+    function visibleMetrics(scenario, scopeSelector = "body") {
+      const scope = scenario.doc.querySelector(scopeSelector);
+      if (!scope) return { minFont: 0, minControl: 0, inter: false };
+      const visible = (element) => {
+        const style = scenario.win.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      };
+      const text = [...scope.querySelectorAll("h1,h2,h3,p,label,button,input,select,output,.prompt,.small")].filter(visible);
+      const controls = [...scope.querySelectorAll("button,input,select")].filter(visible);
+      return {
+        minFont: text.length ? Math.min(...text.map((element) => Number.parseFloat(scenario.win.getComputedStyle(element).fontSize))) : 0,
+        minControl: controls.length ? Math.min(...controls.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return Math.min(rect.width, rect.height);
+        })) : 0,
+        inter: text.length > 0 && text.every((element) => /Inter/iu.test(scenario.win.getComputedStyle(element).fontFamily)),
+      };
+    }
+
+    localStorage.removeItem(TEST_SAVE_KEY);
+    localStorage.setItem(TEST_CHILD_NAME_KEY, TEST_CHILD_NAME_RECORD);
+    const legacyBefore = localStorage.getItem(LEGACY_SAVE_KEY);
+    iframe.src = "index.html?audit=1";
+
+    (async () => {
+      const openFrames = [];
+      try {
+        await waitFrame(iframe, 12000);
+        const win = iframe.contentWindow;
+        const doc = iframe.contentDocument;
+        const engine = win?.MathQuestEngine;
+
+        add("BR-01", "The shipped game document loads", Boolean(doc?.documentElement), doc?.title || "");
+        add("BR-02", "The browser executes the shipped deterministic engine", Boolean(engine && typeof engine === "object"));
+        const apiNames = [
+          "createInitialState", "loadState", "importState", "exportState", "makeQuestion",
+          "makeQuestionChoices", "gradeAnswer", "submitAnswer", "buildSessionQueue",
+          "applyAttempt", "completeSession",
+        ];
+        add("BR-03", "Stable engine APIs are exposed", Boolean(engine) && apiNames.every((name) => typeof engine[name] === "function"), {
+          missing: apiNames.filter((name) => typeof engine?.[name] !== "function"),
+        });
+        const storageKey = engine?.CONSTANTS?.STORAGE_NAMESPACE || engine?.CONSTANTS?.STORAGE_KEY;
+        const namedRecordBeforeAnonymous = localStorage.getItem(TEST_CHILD_NAME_KEY);
+        const saveBeforeAnonymous = localStorage.getItem(TEST_SAVE_KEY);
+        let anonymousProfile = {
+          skipped: false,
+          record: null,
+          homeAfterSkip: false,
+          homeAfterReload: false,
+          progressAfterSkip: false,
+          progressAfterReload: false,
+        };
+        let anonymousScenario = null;
+        try {
+          localStorage.removeItem(TEST_CHILD_NAME_KEY);
+          const anonymousState = engine.createInitialState(halifaxPlayDay());
+          anonymousState.earnedLevel = Math.min(2, engine.CONSTANTS.LEVEL_MAX);
+          anonymousState.practiceCountByDay[String(anonymousState.maxSeenPlayDay)] = 1;
+          const expectedAnonymousProgress = progressProjection(engine, anonymousState);
+          anonymousScenario = await scenarioFrame(engine, "anonymous-first-use", anonymousState, 1024, 900);
+          anonymousScenario.doc.querySelector('[data-action="name-skip"]')?.click();
+          await pause();
+          const record = JSON.parse(localStorage.getItem(TEST_CHILD_NAME_KEY) || "null");
+          const afterSkip = engine.loadState(localStorage.getItem(TEST_SAVE_KEY), anonymousState.maxSeenPlayDay);
+          anonymousProfile = {
+            ...anonymousProfile,
+            skipped: Boolean(record && record.schemaVersion === 1 && record.name === "" && record.mode === "anonymous"),
+            record,
+            homeAfterSkip: Boolean(anonymousScenario.doc.querySelector('[data-action="start"]')),
+            progressAfterSkip: Boolean(afterSkip.ok && progressProjection(engine, afterSkip.state) === expectedAnonymousProgress),
+          };
+          const reloaded = waitFrame(anonymousScenario.frame);
+          anonymousScenario.frame.src = `index.html?browser-audit=anonymous-reload-${Date.now()}`;
+          await reloaded;
+          await pause();
+          const afterReload = engine.loadState(localStorage.getItem(TEST_SAVE_KEY), anonymousState.maxSeenPlayDay);
+          anonymousProfile.homeAfterReload = Boolean(anonymousScenario.doc.querySelector('[data-action="start"]'))
+            && !anonymousScenario.doc.querySelector('[data-action="name-skip"]');
+          anonymousProfile.progressAfterReload = Boolean(afterReload.ok
+            && progressProjection(engine, afterReload.state) === expectedAnonymousProgress);
+        } finally {
+          anonymousScenario?.frame.remove();
+          if (saveBeforeAnonymous === null) localStorage.removeItem(TEST_SAVE_KEY);
+          else localStorage.setItem(TEST_SAVE_KEY, saveBeforeAnonymous);
+          if (namedRecordBeforeAnonymous === null) localStorage.removeItem(TEST_CHILD_NAME_KEY);
+          else localStorage.setItem(TEST_CHILD_NAME_KEY, namedRecordBeforeAnonymous);
+        }
+        const anonymousPass = anonymousProfile.skipped && anonymousProfile.homeAfterSkip
+          && anonymousProfile.homeAfterReload && anonymousProfile.progressAfterSkip
+          && anonymousProfile.progressAfterReload;
+        add("BR-04", "Version-2 progress and an optional anonymous first-use choice persist independently", storageKey === TEST_SAVE_KEY
+          && engine?.CONSTANTS?.STATE_SCHEMA_VERSION === 2 && localStorage.getItem(LEGACY_SAVE_KEY) === legacyBefore
+          && anonymousPass, {
+          storageKey,
+          schemaVersion: engine?.CONSTANTS?.STATE_SCHEMA_VERSION,
+          legacyUntouched: localStorage.getItem(LEGACY_SAVE_KEY) === legacyBefore,
+          anonymousProfile,
+        });
+        add("BR-05", "A child-facing application landmark renders", Boolean(doc?.querySelector('[data-audit="app"], main')));
+        const actionable = [...(doc?.querySelectorAll("button, input, select, [tabindex]") || [])].filter((node) => !node.disabled);
+        const unnamed = actionable.filter((node) => !normalized(node.getAttribute("aria-label") || node.textContent || node.value));
+        add("BR-06", "Focusable controls render with accessible names", actionable.length > 0 && unnamed.length === 0, {
+          controls: actionable.length,
+          unnamed: unnamed.length,
+        });
+
+        const soundIndependence = {
+          voicesEmpty: false,
+          instantiated: 0,
+          played: 0,
+          bundledSource: false,
+          uncaught: 0,
+          intendedSettingOnly: false,
+          testSoundStorageUnchanged: false,
+        };
+        const savedBeforeSound = localStorage.getItem(TEST_SAVE_KEY);
+        const soundBaseline = savedBeforeSound || engine.exportState(engine.createInitialState(halifaxPlayDay()));
+        if (savedBeforeSound === null) localStorage.setItem(TEST_SAVE_KEY, soundBaseline);
+        const childNameBeforeSound = localStorage.getItem(TEST_CHILD_NAME_KEY);
+        const originalAudio = win.Audio;
+        const speech = win.speechSynthesis;
+        const originalGetVoices = speech?.getVoices;
+        const uncaught = [];
+        const captureError = (event) => { uncaught.push(String(event?.error?.message || event?.message || "error")); };
+        const captureRejection = (event) => {
+          uncaught.push(String(event?.reason?.message || event?.reason || "rejection"));
+          event.preventDefault();
+        };
+        win.addEventListener("error", captureError);
+        win.addEventListener("unhandledrejection", captureRejection);
+        try {
+          if (speech) speech.getVoices = () => [];
+          soundIndependence.voicesEmpty = !speech || speech.getVoices().length === 0;
+          win.Audio = class AuditAudio {
+            constructor(source) {
+              this.src = String(source);
+              this.currentTime = 0;
+              this.volume = 1;
+              soundIndependence.instantiated += 1;
+              soundIndependence.bundledSource ||= /(?:^|\/)assets\/sounds\/confirm\.wav(?:$|[?#])/u.test(this.src);
+            }
+            play() {
+              soundIndependence.played += 1;
+              return Promise.reject(new Error("intentional browser-audit audio rejection"));
+            }
+          };
+          doc.querySelector('[data-action="grown"]')?.click();
+          await pause();
+          doc.querySelector('[data-action="grown-tab"][data-tab="settings"]')?.click();
+          await pause();
+          const soundToggle = doc.querySelector('[data-setting="sound"]');
+          if (soundToggle) {
+            soundToggle.checked = true;
+            soundToggle.dispatchEvent(new win.Event("change", { bubbles: true }));
+            await pause();
+          }
+          const savedAfterEnable = localStorage.getItem(TEST_SAVE_KEY);
+          const beforeState = JSON.parse(soundBaseline);
+          const enabledState = savedAfterEnable ? JSON.parse(savedAfterEnable) : null;
+          if (beforeState && enabledState) {
+            const normalizedEnabled = JSON.parse(JSON.stringify(enabledState));
+            normalizedEnabled.settings.soundEnabled = beforeState.settings.soundEnabled;
+            soundIndependence.intendedSettingOnly = enabledState.settings.soundEnabled === true
+              && engine.canonical(normalizedEnabled) === engine.canonical(beforeState);
+          }
+          doc.querySelector('[data-action="test-sound"]')?.click();
+          await Promise.resolve();
+          await pause();
+          await pause();
+          soundIndependence.testSoundStorageUnchanged = localStorage.getItem(TEST_SAVE_KEY) === savedAfterEnable
+            && localStorage.getItem(TEST_CHILD_NAME_KEY) === childNameBeforeSound;
+          soundIndependence.uncaught = uncaught.length;
+        } finally {
+          win.Audio = originalAudio;
+          if (speech && originalGetVoices) speech.getVoices = originalGetVoices;
+          win.removeEventListener("error", captureError);
+          win.removeEventListener("unhandledrejection", captureRejection);
+          if (savedBeforeSound === null) localStorage.removeItem(TEST_SAVE_KEY);
+          else localStorage.setItem(TEST_SAVE_KEY, savedBeforeSound);
+          if (childNameBeforeSound === null) localStorage.removeItem(TEST_CHILD_NAME_KEY);
+          else localStorage.setItem(TEST_CHILD_NAME_KEY, childNameBeforeSound);
+        }
+        const resourceEntries = [
+          ...performance.getEntriesByType("resource"),
+          ...(win?.performance?.getEntriesByType("resource") || []),
+        ];
+        const external = resourceEntries.map((entry) => entry.name).filter((url) => {
+          try {
+            const parsed = new URL(url, location.href);
+            return parsed.origin !== location.origin && parsed.protocol !== "data:";
+          } catch {
+            return true;
+          }
+        });
+        const soundPass = soundIndependence.voicesEmpty && soundIndependence.instantiated === 1
+          && soundIndependence.played === 1 && soundIndependence.bundledSource
+          && soundIndependence.uncaught === 0 && soundIndependence.intendedSettingOnly
+          && soundIndependence.testSoundStorageUnchanged;
+        add("BR-07", "Runtime resources stay local and sound works without a speech voice", external.length === 0 && soundPass, {
+          external,
+          soundIndependence,
+        });
+
+        const manifest = engine.CURRICULUM_MANIFEST;
+        const exactSkillIds = manifest.skills.map((skill) => skill.id);
+        const declaredSkillsPerLevel = Number(manifest.counts?.skillsPerLevel);
+        const uniformSkillsPerLevel = Number.isInteger(declaredSkillsPerLevel) && declaredSkillsPerLevel > 0
+          && engine.LEVELS.every((level) => engine.SKILLS.filter((skill) => skill.level === level.number).length === declaredSkillsPerLevel);
+        add("BR-08", "Runtime order and limits derive from the exact versioned manifest", Boolean(
+          manifest?.manifestId === engine.CONSTANTS.CURRICULUM_MANIFEST_ID
+          && manifest?.version === engine.CONSTANTS.CURRICULUM_VERSION
+          && engine.CURRICULUM_MANIFEST_SHA256 === engine.CONSTANTS.CURRICULUM_SHA256
+          && manifest.levels.length === engine.LEVELS.length
+          && engine.CONSTANTS.LEVEL_MAX === engine.LEVELS.length
+          && engine.SKILLS.length === manifest.skills.length
+          && engine.SKILLS.every((skill, index) => skill.skillId === exactSkillIds[index] && skill.ordinal === index)
+          && uniformSkillsPerLevel
+        ), {
+          manifestId: manifest?.manifestId,
+          version: manifest?.version,
+          sha256: engine.CURRICULUM_MANIFEST_SHA256,
+          levels: engine.LEVELS.length,
+          skills: engine.SKILLS.length,
+          skillsPerLevel: declaredSkillsPerLevel,
+          uniformSkillsPerLevel,
+        });
+
+        const playDay = halifaxPlayDay();
+        const initial = engine.createInitialState(playDay);
+        add("BR-09", "New saves bind transactionally to the manifest identity and digest", initial.schemaVersion === 2
+          && initial.curriculumManifestId === manifest.manifestId
+          && initial.curriculumVersion === manifest.version
+          && initial.curriculumSha256 === engine.CURRICULUM_MANIFEST_SHA256
+          && engine.validateState(initial) === null, {
+          schemaVersion: initial.schemaVersion,
+          manifestId: initial.curriculumManifestId,
+          version: initial.curriculumVersion,
+          sha256: initial.curriculumSha256,
+        });
+
+        const validCandidate = JSON.parse(engine.exportState(initial));
+        validCandidate.settings.grownUpPracticeCap = 7;
+        const validImport = engine.importState(initial, JSON.stringify(validCandidate), playDay);
+        const invalidCandidate = { ...validCandidate, curriculumSha256: "0".repeat(64) };
+        const invalidImport = engine.importState(initial, JSON.stringify(invalidCandidate), playDay);
+        add("BR-10", "Backup restore accepts this manifest and rejects a different curriculum without mutation", validImport.ok
+          && validImport.state.settings.grownUpPracticeCap === 7
+          && !invalidImport.ok && engine.canonical(invalidImport.state) === engine.canonical(initial), {
+          valid: validImport.ok,
+          invalidRejected: !invalidImport.ok,
+          error: invalidImport.error,
+        });
+
+        const selectionCase = findQuestion(engine, (question) => question.inputClass === "SELECTION");
+        const constructionCase = findQuestion(engine, (question) => question.inputClass === "CONSTRUCTION"
+          && question.inputMethod === "NUMBER_PAD" && /^[0-9.-]+$/u.test(String(question.answer.value)));
+        add("BR-11", "Manifest skills generate both selection and construction controls", Boolean(selectionCase && constructionCase), {
+          selection: { skillId: selectionCase.skill.skillId, method: selectionCase.question.inputMethod },
+          construction: { skillId: constructionCase.skill.skillId, method: constructionCase.question.inputMethod },
+        });
+
+        const twoChoice = (() => {
+          for (const skill of engine.SKILLS) for (let ordinal = 0; ordinal < 8; ordinal += 1) {
+            const choices = engine.makeQuestionChoices(questionArgs(skill, { ordinal, eligibleQuestionOrdinal: ordinal, preview: true }));
+            if (choices.length === 2) return choices;
+          }
+          return null;
+        })();
+        const oneChoice = (() => {
+          for (const skill of engine.SKILLS) for (let ordinal = 0; ordinal < 8; ordinal += 1) {
+            const choices = engine.makeQuestionChoices(questionArgs(skill, { ordinal, eligibleQuestionOrdinal: ordinal, preview: true }));
+            if (choices.length === 1) return choices;
+          }
+          return null;
+        })();
+        const sameContract = twoChoice && engine.canonical({
+          skillId: twoChoice[0].skillId,
+          tier: twoChoice[0].tier,
+          representation: twoChoice[0].representation,
+          inputClass: twoChoice[0].inputClass,
+          inputMethod: twoChoice[0].inputMethod,
+          answerKind: twoChoice[0].answer.kind,
+        }) === engine.canonical({
+          skillId: twoChoice[1].skillId,
+          tier: twoChoice[1].tier,
+          representation: twoChoice[1].representation,
+          inputClass: twoChoice[1].inputClass,
+          inputMethod: twoChoice[1].inputMethod,
+          answerKind: twoChoice[1].answer.kind,
+        });
+        add("BR-12", "Question-pick variation is honest and invariant tasks bypass false choice", Boolean(
+          twoChoice && oneChoice && sameContract
+          && twoChoice[0].sampleKey !== twoChoice[1].sampleKey
+          && twoChoice[0].prompt !== twoChoice[1].prompt
+        ), {
+          twoChoiceCount: twoChoice?.length || 0,
+          oneChoiceCount: oneChoice?.length || 0,
+          sameContract,
+          distinctSamples: twoChoice ? twoChoice[0].sampleKey !== twoChoice[1].sampleKey : false,
+        });
+
+        const childFlow = await scenarioFrame(engine, "child-flow", engine.createInitialState(playDay), 1366, 768);
+        openFrames.push(childFlow.frame);
+        childFlow.doc.querySelector('[data-action="start"]')?.click();
+        await pause();
+        const pickButtons = [...childFlow.doc.querySelectorAll('[data-action="choose-question"]')];
+        const pickPreviewKeys = pickButtons.map((button) => button.querySelector("[data-pick-preview-key]")?.dataset.pickPreviewKey || button.dataset.sampleKey);
+        if (pickButtons.length === 2) {
+          dispatchKey(childFlow, "2");
+          await pause();
+        }
+        if (childFlow.doc.querySelector('[data-action="physical-done"]')) {
+          dispatchKey(childFlow, "Enter");
+          await pause();
+        }
+        const pickedSave = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        const pickedQuestion = pickedSave.activeSession?.uiState?.question;
+        const numericServedOrdinals = Array.isArray(pickedSave.activeSession?.servedOrdinals)
+          && pickedSave.activeSession.servedOrdinals.length > 0
+          && pickedSave.activeSession.servedOrdinals.every((value) => Number.isInteger(value) && value >= 0);
+        if (pickedQuestion?.inputClass === "SELECTION") {
+          dispatchKey(childFlow, String(pickedQuestion.correctIndex + 1));
+          await pause();
+          dispatchKey(childFlow, "Enter");
+          await pause();
+        }
+        add("BR-13", "Child pick cards are visibly distinct and keyboard-operable", pickButtons.length === 2
+          && new Set(pickPreviewKeys).size === 2
+          && pickedSave.activeSession?.uiState?.phase !== "pick"
+          && numericServedOrdinals
+          && Boolean(childFlow.doc.querySelector('[data-action="next"]')), {
+          cards: pickButtons.length,
+          previewKeys: pickPreviewKeys,
+          phase: pickedSave.activeSession?.uiState?.phase,
+          servedOrdinals: pickedSave.activeSession?.servedOrdinals,
+          numericServedOrdinals,
+        });
+        childFlow.frame.remove();
+        openFrames.splice(openFrames.indexOf(childFlow.frame), 1);
+
+        const constructionState = activeStateFor(engine, playDay, constructionCase.question);
+        const constructionScenario = await scenarioFrame(engine, "construction-keyboard", constructionState, 1366, 768);
+        openFrames.push(constructionScenario.frame);
+        const resumePrompt = constructionScenario.doc.querySelector(".question .prompt")?.textContent.trim();
+        await answerCorrect(constructionScenario, constructionCase.question, { keyboard: true });
+        add("BR-14", "Same-day reopen restores construction work and keyboard submission", resumePrompt === constructionCase.question.prompt
+          && Boolean(constructionScenario.doc.querySelector('[data-action="next"]')), {
+          skillId: constructionCase.question.skillId,
+          inputMethod: constructionCase.question.inputMethod,
+          restoredPrompt: resumePrompt,
+        });
+        constructionScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(constructionScenario.frame), 1);
+
+        const reteachQuestion = engine.makeQuestion(questionArgs(selectionCase.skill, {
+          tier: "EASY",
+          ordinal: 9000,
+          eligibleQuestionOrdinal: 0,
+          scaffolded: true,
+          reteachStep: true,
+        }));
+        const reteachState = activeStateFor(engine, playDay, reteachQuestion, { phase: "reteach", isReteach: true });
+        const reteachScenario = await scenarioFrame(engine, "reteach-resume", reteachState, 1366, 768);
+        openFrames.push(reteachScenario.frame);
+        const reteachVisible = Boolean(reteachScenario.doc.querySelector(".phase-reteach .parent-cue"));
+        await answerCorrect(reteachScenario, reteachQuestion);
+        const reteachSaved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        add("BR-15", "An active re-teach resumes, renders support, and completes non-evidentially", reteachVisible
+          && reteachSaved.activeSession?.uiState?.phase === "feedback"
+          && reteachSaved.reteachQueue.length === 0
+          && Object.values(reteachSaved.skills).every((record) => record.evidence.length === 0), {
+          visible: reteachVisible,
+          phase: reteachSaved.activeSession?.uiState?.phase,
+          reteachQueue: reteachSaved.reteachQueue.length,
+        });
+        reteachScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(reteachScenario.frame), 1);
+
+        const capstoneQuestion = engine.makeQuestion(questionArgs(selectionCase.skill, {
+          tier: "EASY",
+          ordinal: 1001,
+          capstone: true,
+          scaffolded: true,
+        }));
+        const capstoneState = activeStateFor(engine, playDay, capstoneQuestion, { screen: "capstone", stopReason: "ADULT_STOPPED" });
+        const capstoneScenario = await scenarioFrame(engine, "capstone-resume", capstoneState, 1366, 768);
+        openFrames.push(capstoneScenario.frame);
+        const capstoneVisible = Boolean(capstoneScenario.doc.querySelector("section.done [data-action=\"confirm\"]"));
+        await answerCorrect(capstoneScenario, capstoneQuestion);
+        const finish = capstoneScenario.doc.querySelector('[data-action="finish"]');
+        finish?.click();
+        await pause();
+        const capstoneSaved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        add("BR-16", "A non-evidentiary capstone resumes, completes, and closes the session", capstoneVisible
+          && Boolean(capstoneScenario.doc.querySelector('[data-action="home"]'))
+          && capstoneSaved.activeSession === null
+          && capstoneSaved.sessionLog.at(-1)?.endedReason === "ADULT_STOPPED"
+          && Object.values(capstoneSaved.skills).every((record) => record.evidence.length === 0), {
+          visible: capstoneVisible,
+          activeSession: capstoneSaved.activeSession,
+          ending: capstoneSaved.sessionLog.at(-1)?.endedReason,
+        });
+        capstoneScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(capstoneScenario.frame), 1);
+
+        const previewLevel = engine.LEVELS[Math.min(1, engine.LEVELS.length - 1)].number;
+        const previewSkill = engine.SKILLS.find((skill) => skill.level === previewLevel);
+        const previewQuestion = engine.makeQuestion(questionArgs(previewSkill, { preview: true, tier: "EASY" }));
+        const previewState = activeStateFor(engine, playDay, previewQuestion, { previewLevel });
+        const beforePreview = progressProjection(engine, previewState);
+        const previewScenario = await scenarioFrame(engine, "preview-isolation", previewState, 1366, 768);
+        openFrames.push(previewScenario.frame);
+        await answerCorrect(previewScenario, previewQuestion);
+        const afterPreviewState = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        add("BR-17", "Level preview answers remain isolated from progress and evidence", afterPreviewState.activeSession?.uiState?.phase === "feedback"
+          && progressProjection(engine, afterPreviewState) === beforePreview, {
+          level: previewLevel,
+          phase: afterPreviewState.activeSession?.uiState?.phase,
+          progressUnchanged: progressProjection(engine, afterPreviewState) === beforePreview,
+        });
+        previewScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(previewScenario.frame), 1);
+
+        const adultCapState = engine.createInitialState(playDay);
+        adultCapState.settings.grownUpPracticeCap = 0;
+        const dailyCapState = engine.createInitialState(playDay);
+        dailyCapState.practiceCountByDay[String(playDay)] = engine.CONSTANTS.DAILY_PRACTICE_MAX;
+        const adultQueue = engine.buildSessionQueue(adultCapState, { playDay, seed: adultCapState.seed });
+        const dailyQueue = engine.buildSessionQueue(dailyCapState, { playDay, seed: dailyCapState.seed });
+        const adultCapScenario = await scenarioFrame(engine, "adult-cap", adultCapState, 1366, 768);
+        openFrames.push(adultCapScenario.frame);
+        adultCapScenario.doc.querySelector('[data-action="start"]')?.click();
+        await pause();
+        const adultCapVisible = Boolean(adultCapScenario.doc.querySelector("section.done [data-action=\"confirm\"]"));
+        adultCapScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(adultCapScenario.frame), 1);
+        const dailyCapScenario = await scenarioFrame(engine, "daily-cap", dailyCapState, 1366, 768);
+        openFrames.push(dailyCapScenario.frame);
+        dailyCapScenario.doc.querySelector('[data-action="start"]')?.click();
+        await pause();
+        const dailyCapVisible = Boolean(dailyCapScenario.doc.querySelector("section.done [data-action=\"confirm\"]"));
+        add("BR-18", "Adult and daily caps both lead to the required closing question", adultQueue.effectivePracticeLimit === 0
+          && adultQueue.classifications.includes("ADULT_CAPPED") && adultCapVisible
+          && dailyQueue.effectivePracticeLimit === 0 && dailyQueue.classifications.includes("DAILY_CAPPED") && dailyCapVisible, {
+          adult: { limit: adultQueue.effectivePracticeLimit, classifications: adultQueue.classifications, capstone: adultCapVisible },
+          daily: { limit: dailyQueue.effectivePracticeLimit, classifications: dailyQueue.classifications, capstone: dailyCapVisible },
+        });
+        dailyCapScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(dailyCapScenario.frame), 1);
+
+        const resetScenario = await scenarioFrame(engine, "reset-guard", engine.createInitialState(playDay), 1366, 768);
+        openFrames.push(resetScenario.frame);
+        resetScenario.doc.querySelector('[data-action="grown"]')?.click();
+        await pause();
+        resetScenario.doc.querySelector('[data-action="grown-tab"][data-tab="backup"]')?.click();
+        await pause();
+        const beforeReset = localStorage.getItem(TEST_SAVE_KEY);
+        resetScenario.doc.querySelector('[data-action="reset"]')?.click();
+        await pause();
+        const armed = /confirm reset/iu.test(resetScenario.doc.body.textContent) && localStorage.getItem(TEST_SAVE_KEY) === beforeReset;
+        resetScenario.doc.querySelector('[data-action="reset"]')?.click();
+        await pause();
+        const resetState = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        add("BR-19", "Reset requires a second action and clears only version-2 progress", armed
+          && resetState.schemaVersion === 2 && resetState.earnedLevel === engine.CONSTANTS.LEVEL_MIN
+          && resetState.activeSession === null && Object.values(resetState.skills).every((record) => record.evidence.length === 0)
+          && localStorage.getItem(LEGACY_SAVE_KEY) === legacyBefore, {
+          armed,
+          schemaVersion: resetState.schemaVersion,
+          earnedLevel: resetState.earnedLevel,
+          legacyUntouched: localStorage.getItem(LEGACY_SAVE_KEY) === legacyBefore,
+        });
+        resetScenario.frame.remove();
+        openFrames.splice(openFrames.indexOf(resetScenario.frame), 1);
+
+        const earlySkill = engine.SKILLS[0];
+        const earlyQuestion = engine.makeQuestion(questionArgs(earlySkill, { tier: "EASY" }));
+        const layoutRows = [];
+        for (const mode of ["question", "hint", "reteach"]) {
+          const layoutQuestion = mode === "reteach"
+            ? engine.makeQuestion(questionArgs(earlySkill, { tier: "EASY", ordinal: 9000, scaffolded: true, reteachStep: true }))
+            : earlyQuestion;
+          const layoutState = activeStateFor(engine, playDay, layoutQuestion, {
+            phase: mode === "reteach" ? "reteach" : "question",
+            hintUsed: mode === "hint",
+            isReteach: mode === "reteach",
+          });
+          const layoutScenario = await scenarioFrame(engine, `child-layout-${mode}`, layoutState, 1366, 768);
+          openFrames.push(layoutScenario.frame);
+          for (const [width, height, viewport] of [
+            [1366, 768, "desktop"],
+            [820, 1180, "tablet"],
+            [390, 844, "phone"],
+          ]) {
+            await resizeScenario(layoutScenario, width, height);
+            const confirm = layoutScenario.doc.querySelector('.question-submit [data-action="confirm"], section.done [data-action="confirm"]');
+            const confirmRect = confirm?.getBoundingClientRect();
+            const decoration = layoutScenario.doc.querySelector(".world-decoration");
+            const question = layoutScenario.doc.querySelector(".question, section.done");
+            const modelRendered = mode === "question" || Boolean(layoutScenario.doc.querySelector('.math-model[data-model-derived="true"]'));
+            const metrics = visibleMetrics(layoutScenario, ".play-shell");
+            const pass = Boolean(confirmRect && confirmRect.bottom <= layoutScenario.win.innerHeight + 1
+              && layoutScenario.doc.documentElement.scrollWidth <= layoutScenario.doc.documentElement.clientWidth + 1
+              && metrics.minFont >= 16 && metrics.minControl >= 44 && metrics.inter
+              && modelRendered && decoration && decoration.getAttribute("aria-hidden") === "true" && !question?.contains(decoration));
+            layoutRows.push({
+              mode,
+              viewport,
+              pass,
+              confirmBottom: confirmRect && Math.round(confirmRect.bottom),
+              viewportHeight: layoutScenario.win.innerHeight,
+              noHorizontalOverflow: layoutScenario.doc.documentElement.scrollWidth <= layoutScenario.doc.documentElement.clientWidth + 1,
+              modelRendered,
+              ...metrics,
+            });
+          }
+          layoutScenario.frame.remove();
+          openFrames.splice(openFrames.indexOf(layoutScenario.frame), 1);
+        }
+        add("BR-20", "Early child question, Help, and re-teach fit desktop, tablet, and phone without shrinking text or controls", layoutRows.every((row) => row.pass), {
+          inspected: layoutRows.length,
+          failures: layoutRows.filter((row) => !row.pass),
+        });
+
+        const canonicalStrings = canonicalChildStrings(engine.CHILD_STRINGS);
+        const digestBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalStrings));
+        const childDigest = [...new Uint8Array(digestBytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+        add("BR-21", "The exact approved child-string table matches its shipped digest", !engine.CONSTANTS.CHILD_STRINGS_PENDING_APPROVAL
+          && engine.CONSTANTS.CHILD_STRING_CANONICALIZATION_VERSION === "child-strings-v1"
+          && childDigest === engine.CONSTANTS.CHILD_STRING_APPROVAL_SHA256, {
+          pending: engine.CONSTANTS.CHILD_STRINGS_PENDING_APPROVAL,
+          version: engine.CONSTANTS.CHILD_STRING_CANONICALIZATION_VERSION,
+          actual: childDigest,
+          expected: engine.CONSTANTS.CHILD_STRING_APPROVAL_SHA256,
+        });
+
+        const manifestLink = doc.querySelector('link[rel~="manifest"]');
+        let offlineDetails = { manifestHref: manifestLink?.getAttribute("href") || null };
+        let offlineReady = false;
+        try {
+          const registration = "serviceWorker" in win.navigator
+            ? await Promise.race([
+              win.navigator.serviceWorker.ready,
+              new Promise((_, reject) => setTimeout(() => reject(new Error("service worker readiness timeout")), 12000)),
+            ])
+            : null;
+          const controller = registration
+            ? await waitUntil(() => win.navigator.serviceWorker.controller, 150, 20)
+            : null;
+          const cacheNames = "caches" in win ? await win.caches.keys() : [];
+          const cacheName = cacheNames.find((name) => name.startsWith("math-quest-static-"));
+          const cache = cacheName ? await win.caches.open(cacheName) : null;
+          const coreRelative = [
+            "./", "./index.html", "./manifest.webmanifest", "./assets/fonts/Inter-Variable.ttf",
+            "./assets/sounds/tap.wav", "./assets/sounds/confirm.wav",
+            "./assets/sounds/incorrect.wav", "./assets/sounds/close.wav",
+            "./LICENSE", "./PRIVACY.md", "./THIRD_PARTY_NOTICES.md",
+            "./licenses/Inter-OFL.txt",
+          ];
+          const core = await Promise.all(coreRelative.map(async (relative) => {
+            const url = new URL(relative, win.location.href).href;
+            const response = cache ? await cache.match(url) : null;
+            return { relative, cached: Boolean(response?.ok), status: response?.status ?? null };
+          }));
+          const manifestResponse = cache ? await cache.match(new URL("./manifest.webmanifest", win.location.href).href) : null;
+          const manifestJson = manifestResponse?.ok ? await manifestResponse.clone().json() : null;
+          const cachedRoot = cache ? await cache.match(new URL("./", win.location.href).href) : null;
+          const cachedRootText = cachedRoot?.ok ? await cachedRoot.clone().text() : "";
+          const cachedIndex = cache ? await cache.match(new URL("./index.html", win.location.href).href) : null;
+          const cachedIndexText = cachedIndex?.ok ? await cachedIndex.clone().text() : "";
+          const manifestValid = Boolean(manifestJson?.name === "Math Quest"
+            && manifestJson?.start_url === "./" && manifestJson?.scope === "./"
+            && manifestJson?.display === "standalone" && manifestJson?.lang === "en-CA");
+          let disconnectAcknowledged = false;
+          let originUnreachable = false;
+          let offlineNavigation = false;
+          let offlineManifestSha = null;
+          if (new URLSearchParams(location.search).has("autorun")) {
+            const disconnectResponse = await fetch("/__audit_disconnect__", { cache: "no-store" });
+            disconnectAcknowledged = disconnectResponse.ok;
+            await disconnectResponse.text();
+            await new Promise((resolve) => setTimeout(resolve, 150));
+            try {
+              await fetch(`/__audit_network_probe__?nonce=${Date.now()}`, { cache: "no-store" });
+            } catch {
+              originUnreachable = true;
+            }
+            const offlineFrame = document.createElement("iframe");
+            offlineFrame.title = "Genuine offline cached Math Quest reload";
+            Object.assign(offlineFrame.style, {
+              position: "fixed",
+              left: "-20000px",
+              top: "0",
+              width: "390px",
+              height: "844px",
+              opacity: "0",
+              pointerEvents: "none",
+            });
+            offlineFrame.src = `index.html?offline-reload=${Date.now()}`;
+            document.body.append(offlineFrame);
+            try {
+              await waitFrame(offlineFrame, 7000);
+              await pause();
+              const offlineEngine = offlineFrame.contentWindow?.MathQuestEngine;
+              offlineManifestSha = offlineEngine?.CURRICULUM_MANIFEST_SHA256 || null;
+              offlineNavigation = Boolean(
+                offlineFrame.contentDocument?.documentElement
+                && offlineEngine
+                && offlineManifestSha === engine.CURRICULUM_MANIFEST_SHA256
+              );
+            } finally {
+              offlineFrame.remove();
+            }
+          } else {
+            disconnectAcknowledged = true;
+            originUnreachable = true;
+            offlineNavigation = true;
+          }
+          offlineReady = Boolean(
+            manifestLink && new URL(manifestLink.href).pathname.endsWith("/manifest.webmanifest")
+            && registration?.active && controller && cache
+            && core.every((entry) => entry.cached) && manifestValid
+            && cachedRootText.includes("ENGINE-START") && cachedRootText.includes("ENGINE-END")
+            && cachedIndexText.includes("ENGINE-START") && cachedIndexText.includes("ENGINE-END")
+            && disconnectAcknowledged && originUnreachable && offlineNavigation
+          );
+          offlineDetails = {
+            ...offlineDetails,
+            registrationScope: registration?.scope || null,
+            active: Boolean(registration?.active),
+            controlled: Boolean(controller),
+            cacheName: cacheName || null,
+            core,
+            manifestValid,
+            cachedRootEngineMarkers: cachedRootText.includes("ENGINE-START") && cachedRootText.includes("ENGINE-END"),
+            cachedEngineMarkers: cachedIndexText.includes("ENGINE-START") && cachedIndexText.includes("ENGINE-END"),
+            disconnectAcknowledged,
+            originUnreachable,
+            offlineNavigation,
+            offlineManifestSha,
+          };
+        } catch (error) {
+          offlineDetails.error = String(error?.message || error);
+        }
+        add("BR-22", "The install manifest and controlled service worker cache the complete first-load shell for offline reopen", offlineReady, offlineDetails);
+
+        const visualRegression = window.MathQuestApprovedVisualRegression;
+        if (!visualRegression || typeof visualRegression.run !== "function") throw new Error("Manifest visual regression helper did not load.");
+        const visual = await visualRegression.run({
+          engine,
+          hostWindow: win,
+          hostDocument: document,
+          storageKey,
+          childNameKey: TEST_CHILD_NAME_KEY,
+          pause,
+        });
+        for (const [id, title] of Object.entries(visual.titles)) {
+          const check = visual.tests[id];
+          add(id, title, Boolean(check?.pass), check?.details || "No result returned.");
+        }
+      } catch (error) {
+        add("BR-00", "Browser harness completes", false, String(error?.stack || error?.message || error));
+      } finally {
+        for (const frame of openFrames) frame.remove();
+        iframe.src = "about:blank";
+        restoreOriginalStorage();
+        renderResults();
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>

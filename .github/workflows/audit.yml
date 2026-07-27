@@ -1,0 +1,41 @@
+name: Math Quest audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-audit:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Reject private, legacy, or unregistered material
+        run: node audit/public-candidate-guard.mjs
+
+      - name: Validate versioned curriculum manifest
+        shell: powershell
+        run: |
+          node --input-type=module -e 'import { CURRICULUM_PATH, loadManifest } from "./audit/lib/curriculum-manifest.mjs"; const loaded = await loadManifest(CURRICULUM_PATH); const strands = new Set(loaded.manifest.skills.map((skill) => skill.strand)); const completeLevels = loaded.manifest.levels.every((level) => loaded.manifest.skills.filter((skill) => skill.level === level.number).length === loaded.manifest.counts.skillsPerLevel); if (loaded.manifest.levels.length !== 21 || strands.size !== 6 || loaded.manifest.skills.length !== 126 || !completeLevels) throw new Error(`Expected 21 six-skill levels and 126 skills across 6 declared strands; found ${loaded.manifest.levels.length} levels, ${strands.size} strands, and ${loaded.manifest.skills.length} skills.`); console.log(`${loaded.manifest.manifestId} v${loaded.manifest.version} sha256:${loaded.sha256}`);'
+
+      - name: Run deterministic engine and browser audit
+        shell: powershell
+        run: |
+          $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly

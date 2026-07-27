@@ -1,0 +1,79 @@
+# Local assistant, editor, and operating-system state
+/.agents/
+/.codex/
+/.tmp_node_coverage/
+/.artifacts/
+audit/Review-MathQuest-Reminder.ps1
+/.vscode/
+/.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.code-workspace
+*.suo
+*.user
+*.swp
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.local
+*.p12
+*.pem
+*.pfx
+
+# Dependencies, caches, and build output
+node_modules/
+coverage/
+.nyc_output/
+*.lcov
+_site/
+dist/
+build/
+
+# Temporary and generated audit output
+*.bak
+*.log
+*.orig
+*.tmp
+audit/.tmp-*/
+audit/.tmp-*
+audit/**/.last-run*
+audit/**/.instrumented-*.html
+audit/last-report.json
+audit/last-report.md
+audit/final-build-report.md
+audit/child-visual-review/
+audit/visual-review/
+audit/visual-qa/
+audit/**/*.png
+
+# Local gameplay data
+math-quest-backup*.json
+
+# Private pre-beta material is never part of the public repository
+/.private-prebeta/
+
+# Archive and metadata-bearing document formats are not public-source inputs
+*.7z
+*.bz2
+*.doc
+*.docm
+*.docx
+*.gz
+*.ods
+*.odt
+*.pdf
+*.ppt
+*.pptm
+*.pptx
+*.rar
+*.tar
+*.tgz
+*.xls
+*.xlsm
+*.xlsx
+*.xz
+*.zip

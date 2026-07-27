@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "policy": "../OPEN_SOURCE_POLICY.md",
+  "approvedLicences": [
+    "MIT",
+    "OFL-1.1",
+    "OGL-UK-3.0",
+    "CC-BY-4.0",
+    "CC0-1.0",
+    "LicenseRef-Public-Domain"
+  ],
+  "firstPartyPaths": [
+    ".gitattributes",
+    ".github/ISSUE_TEMPLATE/bug-report.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    ".github/workflows/audit.yml",
+    ".github/workflows/pages.yml",
+    ".gitignore",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "Math Quest.bat",
+    "PRIVACY.md",
+    "README.md",
+    "SECURITY.md",
+    "Serve-MathQuest.ps1",
+    "VERSION",
+    "audit.bat",
+    "audit.html",
+    "audit/approved-visual-regression.js",
+    "audit/exhaustive-generator-audit.mjs",
+    "audit/extract-child-strings.mjs",
+    "audit/fixtures/coverage-calibration.test.mjs",
+    "audit/fixtures/mq-coverage-calibration-aggregate.js",
+    "audit/fixtures/mq-coverage-calibration-full.js",
+    "audit/fixtures/mq-coverage-calibration-partial.js",
+    "audit/lib/browser-smoke.mjs",
+    "audit/lib/child-strings.mjs",
+    "audit/lib/curriculum-manifest.mjs",
+    "audit/lib/engine-loader.mjs",
+    "audit/lib/native-coverage.mjs",
+    "audit/lib/publication-clearance.mjs",
+    "audit/lib/rights-state.mjs",
+    "audit/lib/test-harness.mjs",
+    "audit/mutation-runner.mjs",
+    "audit/on-change-audit.ps1",
+    "audit/public-candidate-guard.mjs",
+    "audit/run-audit.mjs",
+    "audit/run-audit.ps1",
+    "audit/run-browser-smoke.mjs",
+    "audit/run-coverage.mjs",
+    "audit/tests/engine-suite.mjs",
+    "audit/tests/manifest-semantic-suite.mjs",
+    "audit/tests/node-engine.test.mjs",
+    "audit/validate-publication-clearance.mjs",
+    "curriculum/math-quest-manifest-v1.json",
+    "docs/development/build-spec.md",
+    "docs/release/checklist.md",
+    "docs/release/cross-device-play-report.md",
+    "docs/release/privacy-review.md",
+    "docs/release/public-file-manifest.txt",
+    "docs/release/publication-gates.md",
+    "docs/release/readiness.md",
+    "docs/repository-structure.md",
+    "docs/testing/test-to-branch-effect-map.md",
+    "index.html",
+    "licenses/component-register-v1.json",
+    "licenses/evidence-paths-v1.json",
+    "licenses/first-party-paths-v1.txt",
+    "manifest.webmanifest",
+    "research/build-axioms.md",
+    "research/clean-room-curriculum-log.md",
+    "research/curriculum-benchmark-crosswalk.md",
+    "research/pedagogy-notes.md",
+    "research/privacy-cross-device-register.md",
+    "sw.js",
+    "tools/normalize-curriculum-manifest.mjs",
+    "tools/sync-curriculum-manifest.mjs",
+    "tools/sync-public-inventory.mjs"
+  ],
+  "bundledComponents": [
+    {
+      "id": "inter-variable-font",
+      "kind": "font",
+      "origin": "third-party-open",
+      "paths": [
+        "assets/fonts/Inter-Variable.ttf"
+      ],
+      "sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
+      "licence": "OFL-1.1",
+      "version": "4.1 release; embedded 4.001;git-9221beed3; tag commit e3a3d4c57d5ecc01453a575621882a384c1995a3",
+      "creator": "The Inter Project Authors",
+      "copyright": "Copyright 2016 The Inter Project Authors",
+      "sourceUrl": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+      "sourceCommit": "e3a3d4c57d5ecc01453a575621882a384c1995a3",
+      "sourceArtifactSha256": "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e",
+      "sourceInnerPath": "InterVariable.ttf",
+      "licenceEvidence": "licenses/Inter-OFL.txt",
+      "attributionRecord": "THIRD_PARTY_NOTICES.md",
+      "modified": false
+    },
+    {
+      "id": "generated-sound-tool",
+      "kind": "source-tool",
+      "origin": "original-project",
+      "paths": [
+        "assets/sounds/generate-sounds.ps1"
+      ],
+      "sha256": "8dcb268a51d0e0d6e2a56f19014cfe7a5c79953b3de258f9943db1d22a624890",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/sounds/generate-sounds.ps1",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/sound-effects.md",
+      "modified": false
+    },
+    {
+      "id": "generated-tap-sound",
+      "kind": "audio",
+      "origin": "original-project",
+      "paths": [
+        "assets/sounds/tap.wav"
+      ],
+      "sha256": "376d43a4dab1e9e4d1ae192bcf6927568c3e2e00696e20282362fd94ba2b0eab",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/sounds/generate-sounds.ps1",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/sound-effects.md",
+      "modified": false
+    },
+    {
+      "id": "generated-confirm-sound",
+      "kind": "audio",
+      "origin": "original-project",
+      "paths": [
+        "assets/sounds/confirm.wav"
+      ],
+      "sha256": "465a3589bb280d4b217ed64e6b8906df248de6d205565579edd75a0cc00cf2e8",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/sounds/generate-sounds.ps1",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/sound-effects.md",
+      "modified": false
+    },
+    {
+      "id": "generated-incorrect-sound",
+      "kind": "audio",
+      "origin": "original-project",
+      "paths": [
+        "assets/sounds/incorrect.wav"
+      ],
+      "sha256": "655d1882fe4750e2b80163c2c3e825c7cd7028119630d947ff01876411569506",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/sounds/generate-sounds.ps1",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/sound-effects.md",
+      "modified": false
+    },
+    {
+      "id": "generated-close-sound",
+      "kind": "audio",
+      "origin": "original-project",
+      "paths": [
+        "assets/sounds/close.wav"
+      ],
+      "sha256": "cb059c9481fc88c3c97598e205f2c91d68e8ac459bb91e68d65d33a639d07a16",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/sounds/generate-sounds.ps1",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/sound-effects.md",
+      "modified": false
+    }
+  ],
+  "referenceComponents": [
+    {
+      "id": "england-public-curriculum-benchmarks",
+      "kind": "open-reference",
+      "sourceIds": [
+        "SRC-ENG-MATH",
+        "SRC-ENG-EYFS",
+        "SRC-UK-OGL"
+      ],
+      "licence": "OGL-UK-3.0",
+      "sourceUrl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attributionRecord": "THIRD_PARTY_NOTICES.md",
+      "reuseBoundary": "Concept-level comparison and named section references; excluded third-party material is not copied."
+    },
+    {
+      "id": "australian-public-curriculum-benchmarks",
+      "kind": "open-reference",
+      "sourceIds": [
+        "SRC-AUS-MRAC",
+        "SRC-AUS-MATH",
+        "SRC-AUS-VERSION",
+        "SRC-AUS-TERMS"
+      ],
+      "licence": "CC-BY-4.0",
+      "sourceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "attributionRecord": "THIRD_PARTY_NOTICES.md",
+      "reuseBoundary": "Stable benchmark codes and high-level concept comparison; excluded material is not copied."
+    },
+    {
+      "id": "non-copied-factual-citations",
+      "kind": "factual-citation",
+      "sourceIds": [
+        "SRC-NS-MATH-P",
+        "SRC-NS-MATH-1",
+        "SRC-NS-MATH-2",
+        "SRC-NS-MATH-3",
+        "SRC-NS-MATH-4",
+        "SRC-NS-MATH-5",
+        "SRC-CA-MINT",
+        "SRC-CA-SI"
+      ],
+      "licence": null,
+      "sourceUrl": "curriculum/PROVENANCE.md",
+      "attributionRecord": "curriculum/PROVENANCE.md",
+      "reuseBoundary": "Facts-only citations. No source wording, image, recording, taxonomy, data compilation, or other copyrightable material is copied or adapted."
+    }
+  ],
+  "workflowComponents": [
+    {
+      "id": "github-checkout",
+      "kind": "workflow-action",
+      "uses": "actions/checkout",
+      "commit": "d23441a48e516b6c34aea4fa41551a30e30af803",
+      "version": "v6",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/actions/checkout/tree/d23441a48e516b6c34aea4fa41551a30e30af803",
+      "licenceEvidence": "https://github.com/actions/checkout/blob/d23441a48e516b6c34aea4fa41551a30e30af803/LICENSE"
+    },
+    {
+      "id": "github-setup-node",
+      "kind": "workflow-action",
+      "uses": "actions/setup-node",
+      "commit": "249970729cb0ef3589644e2896645e5dc5ba9c38",
+      "version": "v6",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/actions/setup-node/tree/249970729cb0ef3589644e2896645e5dc5ba9c38",
+      "licenceEvidence": "https://github.com/actions/setup-node/blob/249970729cb0ef3589644e2896645e5dc5ba9c38/LICENSE"
+    },
+    {
+      "id": "github-configure-pages",
+      "kind": "workflow-action",
+      "uses": "actions/configure-pages",
+      "commit": "983d7736d9b0ae728b81ab479565c72886d7745b",
+      "version": "v5",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/actions/configure-pages/tree/983d7736d9b0ae728b81ab479565c72886d7745b",
+      "licenceEvidence": "https://github.com/actions/configure-pages/blob/983d7736d9b0ae728b81ab479565c72886d7745b/LICENSE"
+    },
+    {
+      "id": "github-upload-pages-artifact",
+      "kind": "workflow-action",
+      "uses": "actions/upload-pages-artifact",
+      "commit": "7b1f4a764d45c48632c6b24a0339c27f5614fb0b",
+      "version": "v4",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/actions/upload-pages-artifact/tree/7b1f4a764d45c48632c6b24a0339c27f5614fb0b",
+      "licenceEvidence": "https://github.com/actions/upload-pages-artifact/blob/7b1f4a764d45c48632c6b24a0339c27f5614fb0b/LICENSE"
+    },
+    {
+      "id": "github-deploy-pages",
+      "kind": "workflow-action",
+      "uses": "actions/deploy-pages",
+      "commit": "d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e",
+      "version": "v4",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/actions/deploy-pages/tree/d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e",
+      "licenceEvidence": "https://github.com/actions/deploy-pages/blob/d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e/LICENSE"
+    }
+  ],
+  "toolchain": [
+    {
+      "id": "nodejs-24",
+      "kind": "build-and-audit-tool",
+      "version": "24.14.0",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/nodejs/node/tree/v24.14.0",
+      "licenceEvidence": "https://github.com/nodejs/node/blob/v24.14.0/LICENSE",
+      "bundled": false
+    }
+  ],
+  "prohibitedSources": [
+    {
+      "id": "bbc-sound-effects-remarc",
+      "reason": "Non-commercial personal, educational, and research limitations do not satisfy the open-licence policy.",
+      "url": "https://sound-effects.bbcrewind.co.uk/faqs"
+    }
+  ]
+}

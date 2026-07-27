@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "Math Quest",
+  "short_name": "Math Quest",
+  "description": "An offline-first, grown-up-supported mathematics game.",
+  "lang": "en-CA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#dff4f5",
+  "theme_color": "#087f8c",
+  "categories": ["education", "games"]
+}

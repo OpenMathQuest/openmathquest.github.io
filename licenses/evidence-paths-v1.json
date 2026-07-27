@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "path": "LICENSE",
+      "kind": "licence-text",
+      "origin": "standard-open-text",
+      "licenceExpression": "MIT",
+      "purpose": "Repository MIT grant and evidence for original project components.",
+      "sha256": "98403b9bd1ddf1a23c83e607ee80abb52fd5d3968853998aff71cf533ba1d4c1"
+    },
+    {
+      "path": "OPEN_SOURCE_POLICY.md",
+      "kind": "policy",
+      "origin": "original-project",
+      "licenceExpression": "MIT",
+      "purpose": "Fail-closed component, provenance, and licence eligibility policy.",
+      "sha256": "03aa0e848c3caef5bf58de0258a21b69d6fe18ef4ff34c460690af72218d42e5"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "kind": "attribution",
+      "origin": "mixed-open",
+      "licenceExpression": "MIT AND OFL-1.1 AND OGL-UK-3.0 AND CC-BY-4.0",
+      "purpose": "Required notices and attribution for open font and curriculum reference expression.",
+      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb"
+    },
+    {
+      "path": "curriculum/PROVENANCE.md",
+      "kind": "provenance",
+      "origin": "mixed-open",
+      "licenceExpression": "MIT AND OGL-UK-3.0 AND CC-BY-4.0",
+      "purpose": "Source boundaries, factual citations, open-reference attribution, and independent-authorship record.",
+      "sha256": "708bde71d88445c5236dc9d0658ff7faa37890220fad792f0aeb15a976093a7b"
+    },
+    {
+      "path": "licenses/Inter-OFL.txt",
+      "kind": "licence-text",
+      "origin": "third-party-open",
+      "licenceExpression": "OFL-1.1",
+      "purpose": "Exact upstream SIL Open Font License 1.1 text for the bundled Inter font.",
+      "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+    },
+    {
+      "path": "licenses/sound-effects.md",
+      "kind": "attribution",
+      "origin": "original-project",
+      "licenceExpression": "MIT",
+      "purpose": "Generation provenance and exact hashes for original project sound effects.",
+      "sha256": "cb62d2bbc35c71a8168d4c2eb66810b83751aac5315dc001d59b1c5233e2749f"
+    }
+  ]
+}

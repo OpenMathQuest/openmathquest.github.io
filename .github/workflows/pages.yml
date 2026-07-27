@@ -1,0 +1,268 @@
+name: Deploy Math Quest to Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      pages: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Reject private, legacy, or unregistered material
+        id: public_payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          guard_output="$(node audit/public-candidate-guard.mjs)"
+          printf '%s\n' "$guard_output"
+          mapfile -t payload_sha256 < <(printf '%s\n' "$guard_output" | sed -n 's/^PUBLIC_PAYLOAD_SHA256=//p')
+          mapfile -t payload_tree_oid < <(printf '%s\n' "$guard_output" | sed -n 's/^PUBLIC_PAYLOAD_TREE_OID=//p')
+          if (( ${#payload_sha256[@]} != 1 )) ||
+             (( ${#payload_tree_oid[@]} != 1 )) ||
+             [[ ! "${payload_sha256[0]}" =~ ^[a-f0-9]{64}$ ]] ||
+             [[ ! "${payload_tree_oid[0]}" =~ ^([a-f0-9]{40}|[a-f0-9]{64})$ ]]
+          then
+            echo "::error::The public-candidate guard did not emit one valid payload identity."
+            exit 1
+          fi
+          printf 'sha256=%s\n' "${payload_sha256[0]}" >> "$GITHUB_OUTPUT"
+          printf 'tree_oid=%s\n' "${payload_tree_oid[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate versioned curriculum manifest
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_output="$(node --input-type=module -e '
+            import { CURRICULUM_PATH, loadManifest } from "./audit/lib/curriculum-manifest.mjs";
+            const loaded = await loadManifest(CURRICULUM_PATH);
+            const strands = new Set(loaded.manifest.skills.map((skill) => skill.strand));
+            const completeLevels = loaded.manifest.levels.every((level) => {
+              const skills = loaded.manifest.skills.filter((skill) => skill.level === level.number);
+              return skills.length === loaded.manifest.counts.skillsPerLevel;
+            });
+            if (loaded.manifest.levels.length !== 21 || strands.size !== 6 || loaded.manifest.skills.length !== 126 || !completeLevels) {
+              throw new Error(`Expected 21 six-skill levels and 126 skills across 6 declared strands; found ${loaded.manifest.levels.length} levels, ${strands.size} strands, and ${loaded.manifest.skills.length} skills.`);
+            }
+            process.stdout.write(`${loaded.manifest.version}\n${loaded.sha256}\n${loaded.manifest.levels.length}\n${strands.size}\n${loaded.manifest.skills.length}\n`);
+          ')"
+          mapfile -t manifest_metadata <<< "$manifest_output"
+          if (( ${#manifest_metadata[@]} != 5 )) ||
+             [[ ! "${manifest_metadata[0]}" =~ ^1\.[0-9]+\.[0-9]+$ ]] ||
+             [[ ! "${manifest_metadata[1]}" =~ ^[a-f0-9]{64}$ ]] ||
+             [[ "${manifest_metadata[2]}" != "21" ]] ||
+             [[ "${manifest_metadata[3]}" != "6" ]] ||
+             [[ "${manifest_metadata[4]}" != "126" ]]
+          then
+            echo "::error::The canonical curriculum manifest metadata is invalid."
+            exit 1
+          fi
+          printf 'version=%s\n' "${manifest_metadata[0]}" >> "$GITHUB_OUTPUT"
+          printf 'sha256=%s\n' "${manifest_metadata[1]}" >> "$GITHUB_OUTPUT"
+
+      - name: Run exact-engine and semantic tests
+        run: node --test audit/tests/node-engine.test.mjs
+
+      - name: Require calibrated exact-engine branch coverage
+        run: node audit/run-coverage.mjs
+
+      - name: Kill all representative mutation families
+        run: node audit/mutation-runner.mjs
+
+      - name: Exhaust every manifest generator contract
+        run: node audit/exhaustive-generator-audit.mjs
+
+      - name: Verify the public payload remained unchanged
+        shell: bash
+        env:
+          INITIAL_PAYLOAD_SHA256: ${{ steps.public_payload.outputs.sha256 }}
+          INITIAL_PAYLOAD_TREE_OID: ${{ steps.public_payload.outputs.tree_oid }}
+        run: |
+          set -euo pipefail
+          guard_output="$(node audit/public-candidate-guard.mjs)"
+          printf '%s\n' "$guard_output"
+          mapfile -t payload_sha256 < <(printf '%s\n' "$guard_output" | sed -n 's/^PUBLIC_PAYLOAD_SHA256=//p')
+          mapfile -t payload_tree_oid < <(printf '%s\n' "$guard_output" | sed -n 's/^PUBLIC_PAYLOAD_TREE_OID=//p')
+          if (( ${#payload_sha256[@]} != 1 )) ||
+             (( ${#payload_tree_oid[@]} != 1 )) ||
+             [[ "${payload_sha256[0]}" != "$INITIAL_PAYLOAD_SHA256" ]] ||
+             [[ "${payload_tree_oid[0]}" != "$INITIAL_PAYLOAD_TREE_OID" ]]
+          then
+            echo "::error::The public payload changed while release checks were running."
+            exit 1
+          fi
+
+      - name: Require reviewed publication clearance
+        env:
+          MQ_PUBLIC_PAYLOAD_SHA256: ${{ steps.public_payload.outputs.sha256 }}
+          MQ_PUBLIC_PAYLOAD_TREE_OID: ${{ steps.public_payload.outputs.tree_oid }}
+        run: node audit/validate-publication-clearance.mjs
+
+      - name: Validate dedicated custom domain
+        shell: bash
+        env:
+          PUBLIC_CUSTOM_DOMAIN: ${{ vars.PUBLIC_CUSTOM_DOMAIN }}
+        run: |
+          set -euo pipefail
+          domain="${PUBLIC_CUSTOM_DOMAIN,,}"
+          if [[ -z "$domain" ]]; then
+            echo "::error::Set PUBLIC_CUSTOM_DOMAIN to the approved dedicated hostname before deploying."
+            exit 1
+          fi
+          if (( ${#domain} > 253 )) ||
+             [[ ! "$domain" =~ ^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] ||
+             [[ "$domain" =~ ^[0-9.]+$ ]] ||
+             [[ "$domain" == "github.io" || "$domain" == *.github.io || "$domain" == "localhost" || "$domain" == *.localhost ]]
+          then
+            echo "::error::PUBLIC_CUSTOM_DOMAIN must be a valid dedicated non-github.io hostname."
+            exit 1
+          fi
+          printf '%s\n' "$domain" > validated-custom-domain.txt
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Verify configured Pages origin and HTTPS
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected_domain="$(<validated-custom-domain.txt)"
+          actual_domain="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.cname // ""' | tr '[:upper:]' '[:lower:]')"
+          build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type // ""')"
+          https_enforced="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.https_enforced // false')"
+          if [[ "$actual_domain" != "$expected_domain" ]]; then
+            echo "::error::GitHub Pages custom domain '$actual_domain' does not match PUBLIC_CUSTOM_DOMAIN '$expected_domain'."
+            exit 1
+          fi
+          if [[ "$build_type" != "workflow" ]]; then
+            echo "::error::GitHub Pages publishing source must be GitHub Actions."
+            exit 1
+          fi
+          if [[ "$https_enforced" != "true" ]]; then
+            echo "::error::Enforce HTTPS for the approved custom domain before deploying."
+            exit 1
+          fi
+
+      - name: Build explicit runtime allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d _site/assets/fonts _site/assets/sounds _site/curriculum
+          install -m 0644 index.html _site/index.html
+          install -m 0644 manifest.webmanifest _site/manifest.webmanifest
+          install -m 0644 sw.js _site/sw.js
+          install -m 0644 assets/fonts/Inter-Variable.ttf _site/assets/fonts/Inter-Variable.ttf
+          install -m 0644 assets/sounds/tap.wav _site/assets/sounds/tap.wav
+          install -m 0644 assets/sounds/confirm.wav _site/assets/sounds/confirm.wav
+          install -m 0644 assets/sounds/incorrect.wav _site/assets/sounds/incorrect.wav
+          install -m 0644 assets/sounds/close.wav _site/assets/sounds/close.wav
+          test -f LICENSE
+          install -m 0644 LICENSE _site/LICENSE
+          install -m 0644 OPEN_SOURCE_POLICY.md _site/OPEN_SOURCE_POLICY.md
+          install -m 0644 PRIVACY.md _site/PRIVACY.md
+          install -m 0644 THIRD_PARTY_NOTICES.md _site/THIRD_PARTY_NOTICES.md
+          install -d _site/licenses
+          install -m 0644 licenses/Inter-OFL.txt _site/licenses/Inter-OFL.txt
+          install -m 0644 licenses/component-register-v1.json _site/licenses/component-register-v1.json
+          install -m 0644 licenses/sound-effects.md _site/licenses/sound-effects.md
+          install -m 0644 curriculum/math-quest-manifest-v1.json _site/curriculum/math-quest-manifest-v1.json
+          install -m 0644 curriculum/PROVENANCE.md _site/curriculum/PROVENANCE.md
+          touch _site/.nojekyll
+
+      - name: Verify Pages artifact allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            'assets/fonts/Inter-Variable.ttf' \
+            'assets/sounds/close.wav' \
+            'assets/sounds/confirm.wav' \
+            'assets/sounds/incorrect.wav' \
+            'assets/sounds/tap.wav' \
+            | LC_ALL=C sort > expected-runtime-assets.txt
+          grep -Eo \
+            'assets/[A-Za-z0-9._/-]+\.(ttf|otf|woff|woff2|wav|mp3|ogg|png|svg|jpg|jpeg|gif|webp|json|webmanifest)' \
+            index.html \
+            | LC_ALL=C sort -u > referenced-runtime-assets.txt
+          diff -u expected-runtime-assets.txt referenced-runtime-assets.txt
+
+          find _site -type f -printf '%P\n' | LC_ALL=C sort > actual-files.txt
+          {
+            printf '%s\n' \
+              '.nojekyll' \
+              'assets/fonts/Inter-Variable.ttf' \
+              'assets/sounds/close.wav' \
+              'assets/sounds/confirm.wav' \
+              'assets/sounds/incorrect.wav' \
+              'assets/sounds/tap.wav' \
+              'curriculum/math-quest-manifest-v1.json' \
+              'curriculum/PROVENANCE.md' \
+              'index.html' \
+              'manifest.webmanifest' \
+              'sw.js' \
+              'LICENSE' \
+              'OPEN_SOURCE_POLICY.md' \
+              'PRIVACY.md' \
+              'THIRD_PARTY_NOTICES.md' \
+              'licenses/Inter-OFL.txt' \
+              'licenses/component-register-v1.json' \
+              'licenses/sound-effects.md'
+          } | LC_ALL=C sort > expected-files.txt
+          diff -u expected-files.txt actual-files.txt
+          test -z "$(find _site -type l -print -quit)"
+          cmp manifest.webmanifest _site/manifest.webmanifest
+          cmp sw.js _site/sw.js
+          cmp curriculum/math-quest-manifest-v1.json _site/curriculum/math-quest-manifest-v1.json
+          cmp curriculum/PROVENANCE.md _site/curriculum/PROVENANCE.md
+          grep -F '"./manifest.webmanifest"' sw.js
+
+          if grep -RIlE \
+            '([A-Za-z]:\\Us[e]rs\\|file:///[A-Za-z]:/Us[e]rs/|/Us[e]rs/[^/]+/|/ho[m]e/[^/]+/)' \
+            _site \
+            --exclude='*.wav' \
+            --exclude='*.ttf'
+          then
+            echo "A machine-specific path was found in the public artifact."
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

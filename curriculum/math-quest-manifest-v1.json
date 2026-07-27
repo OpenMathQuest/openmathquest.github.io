@@ -1,0 +1,7412 @@
+{
+  "manifestId": "math-quest-curriculum",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "locale": "en-CA",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "MIT covers only original Math Quest expression and code. It does not claim mathematical ideas or relicense upstream expression, marks, or excluded material.",
+    "originalManifest": "MIT",
+    "benchmarkAdaptationNotices": [
+      "England Department for Education Crown material is used under the Open Government Licence v3.0 except where otherwise stated.",
+      "Australian Curriculum material is used under Creative Commons Attribution 4.0 International, subject to ACARA attribution terms and exclusions."
+    ],
+    "thirdPartyMarksExcluded": true
+  },
+  "authorshipMethod": {
+    "method": "clean-room-benchmark-synthesis",
+    "summary": "Original objectives, neutral taxonomy, three-trail sequence, constraints and prerequisite links were written before concept-level comparison with the listed official benchmarks.",
+    "levelChoice": "Twenty-one levels create a regular three-trail rhythm in each of seven learner bands.",
+    "skillChoice": "Six coherent mastery checkpoints per level give 126 skills; every checkpoint declares the task types that must be witnessed for mastery.",
+    "wordingPolicy": "No benchmark sentence is reproduced. England ids identify named year/domain sections and AC9 ids are stable Australian Curriculum Version 9 content-description codes.",
+    "excludedInputs": [
+      "proprietary curricula",
+      "commercial textbook sequences",
+      "pre-existing pre-beta curriculum artifacts"
+    ]
+  },
+  "counts": {
+    "bands": 7,
+    "levels": 21,
+    "skills": 126,
+    "skillsPerLevel": 6
+  },
+  "bands": [
+    {
+      "id": "PREK",
+      "title": "Pre-K Foundations",
+      "purpose": "Build attention to amount, attributes, order and repeat through play with small collections."
+    },
+    {
+      "id": "K",
+      "title": "Kindergarten",
+      "purpose": "Connect small quantities to numerals, parts, actions, shapes, measures and simple evidence."
+    },
+    {
+      "id": "G1",
+      "title": "Grade 1",
+      "purpose": "Develop two-digit structure, facts within twenty and useful everyday representations."
+    },
+    {
+      "id": "G2",
+      "title": "Grade 2",
+      "purpose": "Extend place value to one thousand while linking operations, fractions, metric measures and data."
+    },
+    {
+      "id": "G3",
+      "title": "Grade 3",
+      "purpose": "Use regrouping, fact families, fractions and measurement in connected problems."
+    },
+    {
+      "id": "G4",
+      "title": "Grade 4",
+      "purpose": "Coordinate efficient operations with decimals, equivalence, area, symmetry and investigations."
+    },
+    {
+      "id": "G5",
+      "title": "Grade 5",
+      "purpose": "Model with large numbers, rational forms, factors, metric measures, geometry and evidence."
+    }
+  ],
+  "strandEnum": [
+    "amount-order",
+    "operation-systems",
+    "rule-structure",
+    "attribute-scaling",
+    "spatial-models",
+    "evidence-uncertainty"
+  ],
+  "phaseLegend": {
+    "C": "concrete action or manipulable representation",
+    "P": "pictorial, spatial or diagrammatic representation",
+    "A": "abstract notation, generalisation or symbolic reasoning"
+  },
+  "representationEnum": [
+    "objects-and-actions",
+    "objects-pictures-symbols",
+    "pictures-and-symbols",
+    "instruments-and-diagrams",
+    "tables-graphs-symbols",
+    "symbols-and-models"
+  ],
+  "generatorProfileEnum": [
+    "quantity-identify",
+    "quantity-order",
+    "quantity-compare",
+    "placevalue-compose",
+    "pattern-extend",
+    "pattern-rule",
+    "operation-model",
+    "operation-fluency",
+    "operation-equation",
+    "grouping-model",
+    "fraction-model",
+    "decimal-model",
+    "money-model",
+    "time-read",
+    "measure-compare",
+    "measure-instrument",
+    "geometry-classify",
+    "geometry-transform",
+    "data-display",
+    "data-investigate",
+    "chance-experiment",
+    "expression-solve",
+    "rounding-estimate",
+    "factor-classify",
+    "area-model",
+    "volume-model"
+  ],
+  "constraintConventions": {
+    "numberPolicy": {
+      "keys": [
+        "minNumber",
+        "maxNumber",
+        "positiveMax",
+        "negativeMin",
+        "decimalPlacesMax"
+      ],
+      "valueTypes": [
+        "number"
+      ]
+    },
+    "operationPolicy": {
+      "keys": [
+        "operations",
+        "operandMax",
+        "resultMax",
+        "regrouping",
+        "remainderAllowed",
+        "strategies"
+      ],
+      "valueTypes": [
+        "number",
+        "boolean",
+        "string",
+        "array"
+      ]
+    },
+    "unitPolicy": {
+      "keys": [
+        "metric",
+        "units",
+        "unitFamilies",
+        "decimalPlacesMax"
+      ],
+      "valueTypes": [
+        "boolean",
+        "number",
+        "array"
+      ]
+    },
+    "currencyPolicy": {
+      "keys": [
+        "currency",
+        "denominationsCents",
+        "amountMaxCents",
+        "priceMaxCents",
+        "incrementCents"
+      ],
+      "valueTypes": [
+        "string",
+        "number",
+        "array"
+      ]
+    },
+    "displayPolicy": {
+      "keys": [
+        "categoryCountMax",
+        "responsesMax",
+        "scale",
+        "scaleValues",
+        "displayTypes",
+        "trials"
+      ],
+      "valueTypes": [
+        "number",
+        "array"
+      ]
+    },
+    "geometryPolicy": {
+      "keys": [
+        "shapes",
+        "properties",
+        "gridMax",
+        "transformations",
+        "degreesMin",
+        "degreesMax"
+      ],
+      "valueTypes": [
+        "number",
+        "array"
+      ]
+    },
+    "rule": "Profiles select a semantic runtime; constraints carry ranges, units, denominations, representations and variation policies."
+  },
+  "levels": [
+    {
+      "number": 1,
+      "id": "L01",
+      "band": "PREK",
+      "title": "Match and Notice",
+      "purpose": "Coordinate objects, tiny amounts, order and a two-part repeat.",
+      "skillRange": [
+        "MQ-001",
+        "MQ-006"
+      ]
+    },
+    {
+      "number": 2,
+      "id": "L02",
+      "band": "PREK",
+      "title": "Small-Set Workshop",
+      "purpose": "Name, compare and compose collections through five.",
+      "skillRange": [
+        "MQ-007",
+        "MQ-012"
+      ]
+    },
+    {
+      "number": 3,
+      "id": "L03",
+      "band": "PREK",
+      "title": "Change and Story",
+      "purpose": "Act out small changes, shares, positions and records.",
+      "skillRange": [
+        "MQ-013",
+        "MQ-018"
+      ]
+    },
+    {
+      "number": 4,
+      "id": "L04",
+      "band": "K",
+      "title": "Ten Lab",
+      "purpose": "Connect quantities through ten to parts, comparisons and shapes.",
+      "skillRange": [
+        "MQ-019",
+        "MQ-024"
+      ]
+    },
+    {
+      "number": 5,
+      "id": "L05",
+      "band": "K",
+      "title": "Twenty Path",
+      "purpose": "Extend ordered number, notation and early equations through twenty.",
+      "skillRange": [
+        "MQ-025",
+        "MQ-030"
+      ]
+    },
+    {
+      "number": 6,
+      "id": "L06",
+      "band": "K",
+      "title": "World Records",
+      "purpose": "Use grouping, routes, attributes, repeats and simple data.",
+      "skillRange": [
+        "MQ-031",
+        "MQ-036"
+      ]
+    },
+    {
+      "number": 7,
+      "id": "L07",
+      "band": "G1",
+      "title": "Tens Trail",
+      "purpose": "Coordinate two-digit order, place value, skip patterns and facts.",
+      "skillRange": [
+        "MQ-037",
+        "MQ-042"
+      ]
+    },
+    {
+      "number": 8,
+      "id": "L08",
+      "band": "G1",
+      "title": "Fact Trail",
+      "purpose": "Use inverse relations, equal groups, fractions, measures and coins.",
+      "skillRange": [
+        "MQ-043",
+        "MQ-048"
+      ]
+    },
+    {
+      "number": 9,
+      "id": "L09",
+      "band": "G1",
+      "title": "Everyday Trail",
+      "purpose": "Bridge ten and apply two-digit ideas to money, space and data.",
+      "skillRange": [
+        "MQ-049",
+        "MQ-054"
+      ]
+    },
+    {
+      "number": 10,
+      "id": "L10",
+      "band": "G2",
+      "title": "Hundreds Trail",
+      "purpose": "Represent and calculate with three-digit place value.",
+      "skillRange": [
+        "MQ-055",
+        "MQ-060"
+      ]
+    },
+    {
+      "number": 11,
+      "id": "L11",
+      "band": "G2",
+      "title": "Group and Share",
+      "purpose": "Connect multiplication, division, fractions, money and time.",
+      "skillRange": [
+        "MQ-061",
+        "MQ-066"
+      ]
+    },
+    {
+      "number": 12,
+      "id": "L12",
+      "band": "G2",
+      "title": "Measure and Evidence",
+      "purpose": "Use place-value shifts, metric contexts, space and investigation.",
+      "skillRange": [
+        "MQ-067",
+        "MQ-072"
+      ]
+    },
+    {
+      "number": 13,
+      "id": "L13",
+      "band": "G3",
+      "title": "Thousands Trail",
+      "purpose": "Scale whole-number order, rounding, regrouping and facts.",
+      "skillRange": [
+        "MQ-073",
+        "MQ-078"
+      ]
+    },
+    {
+      "number": 14,
+      "id": "L14",
+      "band": "G3",
+      "title": "Product and Fraction Lab",
+      "purpose": "Link larger products, division, fractions, equations and rules.",
+      "skillRange": [
+        "MQ-079",
+        "MQ-084"
+      ]
+    },
+    {
+      "number": 15,
+      "id": "L15",
+      "band": "G3",
+      "title": "Map and Investigation Field",
+      "purpose": "Apply money, time, metric, geometric and evidence reasoning.",
+      "skillRange": [
+        "MQ-085",
+        "MQ-090"
+      ]
+    },
+    {
+      "number": 16,
+      "id": "L16",
+      "band": "G4",
+      "title": "Decimal Bridge",
+      "purpose": "Use large-number structure, efficient operations and parity.",
+      "skillRange": [
+        "MQ-091",
+        "MQ-096"
+      ]
+    },
+    {
+      "number": 17,
+      "id": "L17",
+      "band": "G4",
+      "title": "Equivalent Measures",
+      "purpose": "Connect fraction equivalence, decimals, equations, instruments and finance.",
+      "skillRange": [
+        "MQ-097",
+        "MQ-102"
+      ]
+    },
+    {
+      "number": 18,
+      "id": "L18",
+      "band": "G4",
+      "title": "Area and Evidence Studio",
+      "purpose": "Use algorithms, area, transformations, scaled data and chance.",
+      "skillRange": [
+        "MQ-103",
+        "MQ-108"
+      ]
+    },
+    {
+      "number": 19,
+      "id": "L19",
+      "band": "G5",
+      "title": "Factor Summit",
+      "purpose": "Coordinate extended number scales, estimation, factors and large operations.",
+      "skillRange": [
+        "MQ-109",
+        "MQ-114"
+      ]
+    },
+    {
+      "number": 20,
+      "id": "L20",
+      "band": "G5",
+      "title": "Rational Model Workshop",
+      "purpose": "Operate with rational forms, finance, variables and metric conversions.",
+      "skillRange": [
+        "MQ-115",
+        "MQ-120"
+      ]
+    },
+    {
+      "number": 21,
+      "id": "L21",
+      "band": "G5",
+      "title": "Metric Observatory",
+      "purpose": "Integrate area, volume, time, angle, coordinates and evidence.",
+      "skillRange": [
+        "MQ-121",
+        "MQ-126"
+      ]
+    }
+  ],
+  "designRationales": [
+    {
+      "id": "R-FOUND",
+      "claim": "Small-set perception and one-to-one coordination precede reliable symbolic work."
+    },
+    {
+      "id": "R-BOND",
+      "claim": "Part-whole images bridge number, fractions, decimals and operations."
+    },
+    {
+      "id": "R-REL",
+      "claim": "Patterns, equality, factors and inverse links grow as one relationship strand."
+    },
+    {
+      "id": "R-MODEL",
+      "claim": "Operation meanings are grounded in situations before efficient calculation is expected."
+    },
+    {
+      "id": "R-MEASURE",
+      "claim": "Direct comparison precedes unit iteration, scaled instruments and metric conversion."
+    },
+    {
+      "id": "R-SPACE",
+      "claim": "Movement and construction precede property language, coordinates and transformations."
+    },
+    {
+      "id": "R-DATA",
+      "claim": "Sorting and one-to-one records precede scaled displays, investigations and uncertainty claims."
+    }
+  ],
+  "benchmarkIndex": [
+    {
+      "id": "AC9M1A01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Algebra / content description AC9M1A01"
+    },
+    {
+      "id": "AC9M1M02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Measurement / content description AC9M1M02"
+    },
+    {
+      "id": "AC9M1N01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Number / content description AC9M1N01"
+    },
+    {
+      "id": "AC9M1N02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Number / content description AC9M1N02"
+    },
+    {
+      "id": "AC9M1N04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Number / content description AC9M1N04"
+    },
+    {
+      "id": "AC9M1N05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Number / content description AC9M1N05"
+    },
+    {
+      "id": "AC9M1N06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Number / content description AC9M1N06"
+    },
+    {
+      "id": "AC9M1SP01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Space / content description AC9M1SP01"
+    },
+    {
+      "id": "AC9M1SP02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Space / content description AC9M1SP02"
+    },
+    {
+      "id": "AC9M1ST01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Statistics / content description AC9M1ST01"
+    },
+    {
+      "id": "AC9M1ST02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 1 / Statistics / content description AC9M1ST02"
+    },
+    {
+      "id": "AC9M2A01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Algebra / content description AC9M2A01"
+    },
+    {
+      "id": "AC9M2A02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Algebra / content description AC9M2A02"
+    },
+    {
+      "id": "AC9M2A03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Algebra / content description AC9M2A03"
+    },
+    {
+      "id": "AC9M2M04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Measurement / content description AC9M2M04"
+    },
+    {
+      "id": "AC9M2N01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N01"
+    },
+    {
+      "id": "AC9M2N02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N02"
+    },
+    {
+      "id": "AC9M2N03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N03"
+    },
+    {
+      "id": "AC9M2N04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N04"
+    },
+    {
+      "id": "AC9M2N05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N05"
+    },
+    {
+      "id": "AC9M2N06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Number / content description AC9M2N06"
+    },
+    {
+      "id": "AC9M2SP01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Space / content description AC9M2SP01"
+    },
+    {
+      "id": "AC9M2SP02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Space / content description AC9M2SP02"
+    },
+    {
+      "id": "AC9M2ST01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Statistics / content description AC9M2ST01"
+    },
+    {
+      "id": "AC9M2ST02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 2 / Statistics / content description AC9M2ST02"
+    },
+    {
+      "id": "AC9M3A01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Algebra / content description AC9M3A01"
+    },
+    {
+      "id": "AC9M3A03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Algebra / content description AC9M3A03"
+    },
+    {
+      "id": "AC9M3M01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Measurement / content description AC9M3M01"
+    },
+    {
+      "id": "AC9M3M02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Measurement / content description AC9M3M02"
+    },
+    {
+      "id": "AC9M3M04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Measurement / content description AC9M3M04"
+    },
+    {
+      "id": "AC9M3M05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Measurement / content description AC9M3M05"
+    },
+    {
+      "id": "AC9M3M06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Measurement / content description AC9M3M06"
+    },
+    {
+      "id": "AC9M3N01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Number / content description AC9M3N01"
+    },
+    {
+      "id": "AC9M3N02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Number / content description AC9M3N02"
+    },
+    {
+      "id": "AC9M3N03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Number / content description AC9M3N03"
+    },
+    {
+      "id": "AC9M3N04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Number / content description AC9M3N04"
+    },
+    {
+      "id": "AC9M3N07",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Number / content description AC9M3N07"
+    },
+    {
+      "id": "AC9M3P02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Probability / content description AC9M3P02"
+    },
+    {
+      "id": "AC9M3SP02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 3 / Space / content description AC9M3SP02"
+    },
+    {
+      "id": "AC9M4A01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Algebra / content description AC9M4A01"
+    },
+    {
+      "id": "AC9M4M02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Measurement / content description AC9M4M02"
+    },
+    {
+      "id": "AC9M4N01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N01"
+    },
+    {
+      "id": "AC9M4N02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N02"
+    },
+    {
+      "id": "AC9M4N03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N03"
+    },
+    {
+      "id": "AC9M4N05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N05"
+    },
+    {
+      "id": "AC9M4N06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N06"
+    },
+    {
+      "id": "AC9M4N07",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N07"
+    },
+    {
+      "id": "AC9M4N08",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N08"
+    },
+    {
+      "id": "AC9M4N09",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Number / content description AC9M4N09"
+    },
+    {
+      "id": "AC9M4P01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Probability / content description AC9M4P01"
+    },
+    {
+      "id": "AC9M4SP03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Space / content description AC9M4SP03"
+    },
+    {
+      "id": "AC9M4ST01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Statistics / content description AC9M4ST01"
+    },
+    {
+      "id": "AC9M4ST03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 4 / Statistics / content description AC9M4ST03"
+    },
+    {
+      "id": "AC9M5M01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Measurement / content description AC9M5M01"
+    },
+    {
+      "id": "AC9M5M02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Measurement / content description AC9M5M02"
+    },
+    {
+      "id": "AC9M5M03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Measurement / content description AC9M5M03"
+    },
+    {
+      "id": "AC9M5M04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Measurement / content description AC9M5M04"
+    },
+    {
+      "id": "AC9M5N01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N01"
+    },
+    {
+      "id": "AC9M5N02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N02"
+    },
+    {
+      "id": "AC9M5N04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N04"
+    },
+    {
+      "id": "AC9M5N05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N05"
+    },
+    {
+      "id": "AC9M5N06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N06"
+    },
+    {
+      "id": "AC9M5N07",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N07"
+    },
+    {
+      "id": "AC9M5N08",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N08"
+    },
+    {
+      "id": "AC9M5N09",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Number / content description AC9M5N09"
+    },
+    {
+      "id": "AC9M5SP02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Space / content description AC9M5SP02"
+    },
+    {
+      "id": "AC9M5SP03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Space / content description AC9M5SP03"
+    },
+    {
+      "id": "AC9M5ST01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Statistics / content description AC9M5ST01"
+    },
+    {
+      "id": "AC9M5ST02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Year 5 / Statistics / content description AC9M5ST02"
+    },
+    {
+      "id": "AC9MFA01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Algebra / content description AC9MFA01"
+    },
+    {
+      "id": "AC9MFM01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Measurement / content description AC9MFM01"
+    },
+    {
+      "id": "AC9MFN01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN01"
+    },
+    {
+      "id": "AC9MFN02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN02"
+    },
+    {
+      "id": "AC9MFN03",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN03"
+    },
+    {
+      "id": "AC9MFN04",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN04"
+    },
+    {
+      "id": "AC9MFN05",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN05"
+    },
+    {
+      "id": "AC9MFN06",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Number / content description AC9MFN06"
+    },
+    {
+      "id": "AC9MFSP01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Space / content description AC9MFSP01"
+    },
+    {
+      "id": "AC9MFSP02",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Space / content description AC9MFSP02"
+    },
+    {
+      "id": "AC9MFST01",
+      "sourceId": "SRC-AUS-MRAC",
+      "section": "Foundation / Statistics / content description AC9MFST01"
+    },
+    {
+      "id": "ENG-EYFS-EDU-MATH",
+      "sourceId": "SRC-ENG-EYFS",
+      "section": "Section 1 / Educational Programmes / Mathematics"
+    },
+    {
+      "id": "ENG-EYFS-ELG-NPAT",
+      "sourceId": "SRC-ENG-EYFS",
+      "section": "Section 1 / Early Learning Goals / Numerical Patterns"
+    },
+    {
+      "id": "ENG-EYFS-ELG-NUM",
+      "sourceId": "SRC-ENG-EYFS",
+      "section": "Section 1 / Early Learning Goals / Number"
+    },
+    {
+      "id": "ENG-Y1-GPOS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Geometry - position and direction"
+    },
+    {
+      "id": "ENG-Y1-GSHAPE",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Geometry - properties of shapes"
+    },
+    {
+      "id": "ENG-Y1-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y1-NAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Number - addition and subtraction"
+    },
+    {
+      "id": "ENG-Y1-NFRAC",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Number - fractions"
+    },
+    {
+      "id": "ENG-Y1-NMD",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Number - multiplication and division"
+    },
+    {
+      "id": "ENG-Y1-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 1 programme of study / Number - number and place value"
+    },
+    {
+      "id": "ENG-Y2-GPOS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Geometry - position and direction"
+    },
+    {
+      "id": "ENG-Y2-GSHAPE",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Geometry - properties of shapes"
+    },
+    {
+      "id": "ENG-Y2-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y2-NAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Number - addition and subtraction"
+    },
+    {
+      "id": "ENG-Y2-NFRAC",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Number - fractions"
+    },
+    {
+      "id": "ENG-Y2-NMD",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Number - multiplication and division"
+    },
+    {
+      "id": "ENG-Y2-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Number - number and place value"
+    },
+    {
+      "id": "ENG-Y2-STAT",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 2 programme of study / Statistics"
+    },
+    {
+      "id": "ENG-Y3-GSHAPE",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Geometry - properties of shapes"
+    },
+    {
+      "id": "ENG-Y3-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y3-NAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Number - addition and subtraction"
+    },
+    {
+      "id": "ENG-Y3-NFRAC",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Number - fractions"
+    },
+    {
+      "id": "ENG-Y3-NMD",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Number - multiplication and division"
+    },
+    {
+      "id": "ENG-Y3-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 3 programme of study / Number - number and place value"
+    },
+    {
+      "id": "ENG-Y4-GPOS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Geometry - position and direction"
+    },
+    {
+      "id": "ENG-Y4-GSHAPE",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Geometry - properties of shapes"
+    },
+    {
+      "id": "ENG-Y4-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y4-NAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Number - addition and subtraction"
+    },
+    {
+      "id": "ENG-Y4-NFRAC",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Number - fractions (including decimals)"
+    },
+    {
+      "id": "ENG-Y4-NMD",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Number - multiplication and division"
+    },
+    {
+      "id": "ENG-Y4-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Number - number and place value"
+    },
+    {
+      "id": "ENG-Y4-STAT",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 4 programme of study / Statistics"
+    },
+    {
+      "id": "ENG-Y5-GPOS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Geometry - position and direction"
+    },
+    {
+      "id": "ENG-Y5-GSHAPE",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Geometry - properties of shapes"
+    },
+    {
+      "id": "ENG-Y5-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y5-NAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Number - addition and subtraction"
+    },
+    {
+      "id": "ENG-Y5-NFRAC",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Number - fractions (including decimals and percentages)"
+    },
+    {
+      "id": "ENG-Y5-NMD",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Number - multiplication and division"
+    },
+    {
+      "id": "ENG-Y5-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Number - number and place value"
+    },
+    {
+      "id": "ENG-Y5-STAT",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 5 programme of study / Statistics"
+    },
+    {
+      "id": "ENG-Y6-ALG",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 6 programme of study / Algebra"
+    },
+    {
+      "id": "ENG-Y6-MEAS",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 6 programme of study / Measurement"
+    },
+    {
+      "id": "ENG-Y6-NPV",
+      "sourceId": "SRC-ENG-MATH",
+      "section": "Year 6 programme of study / Number - number and place value"
+    }
+  ],
+  "skills": [
+    {
+      "id": "MQ-001",
+      "level": 1,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Pair Each Object",
+      "objective": "Match every item in one small collection with one item in another.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "classify",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "setSizeMax": 4,
+        "unmatchedMax": 1,
+        "taskTypes": [
+          "pair-each-object"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "pair-each-object"
+        ]
+      }
+    },
+    {
+      "id": "MQ-002",
+      "level": 1,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Count a Set to Three",
+      "objective": "Touch or move each object once to find a total through three.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-001"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 3,
+        "layouts": [
+          "line",
+          "scattered"
+        ],
+        "taskTypes": [
+          "count-a-set-to-three"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "count-a-set-to-three"
+        ]
+      }
+    },
+    {
+      "id": "MQ-003",
+      "level": 1,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Compare Tiny Sets",
+      "objective": "Use pairing to decide which set has more, fewer or the same amount.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-001",
+        "MQ-002"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "compare",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "setSizeMax": 3,
+        "differenceMax": 2,
+        "taskTypes": [
+          "compare-tiny-sets"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NPAT",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare-tiny-sets"
+        ]
+      }
+    },
+    {
+      "id": "MQ-004",
+      "level": 1,
+      "band": "PREK",
+      "strand": "rule-structure",
+      "title": "Continue an AB Repeat",
+      "objective": "Choose the next item or action in a two-part repeating pattern.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "pattern",
+      "generatorProfile": "pattern-extend",
+      "constraints": {
+        "unitForms": [
+          "AB"
+        ],
+        "repeatsShownMin": 2,
+        "taskTypes": [
+          "continue-an-ab-repeat"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFA01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "continue-an-ab-repeat"
+        ]
+      }
+    },
+    {
+      "id": "MQ-005",
+      "level": 1,
+      "band": "PREK",
+      "strand": "spatial-models",
+      "title": "Match Familiar Shapes",
+      "objective": "Match circles, triangles, squares and rectangles despite changes in colour, size or turn.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-001"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "geometry",
+      "generatorProfile": "geometry-classify",
+      "constraints": {
+        "shapes": [
+          "circle",
+          "triangle",
+          "square",
+          "rectangle"
+        ],
+        "rotationAllowed": true,
+        "taskTypes": [
+          "match-familiar-shapes"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFSP01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "match-familiar-shapes"
+        ]
+      }
+    },
+    {
+      "id": "MQ-006",
+      "level": 1,
+      "band": "PREK",
+      "strand": "attribute-scaling",
+      "title": "Compare Two Event Durations",
+      "objective": "Compare the durations of two familiar events when the difference is clear.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "measurement",
+      "generatorProfile": "measure-compare",
+      "constraints": {
+        "attributes": [
+          "duration"
+        ],
+        "items": 2,
+        "durationContrast": "large",
+        "taskTypes": [
+          "direct-compare"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFM01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "direct-compare"
+        ]
+      }
+    },
+    {
+      "id": "MQ-007",
+      "level": 2,
+      "band": "PREK",
+      "strand": "evidence-uncertainty",
+      "title": "Sort by One Feature",
+      "objective": "Sort familiar objects into two or three categories using one stated attribute.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-001"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "classify",
+      "generatorProfile": "data-display",
+      "constraints": {
+        "categoryCount": [
+          2,
+          3
+        ],
+        "itemCountMax": 8,
+        "attributes": [
+          "colour",
+          "shape",
+          "size"
+        ],
+        "taskTypes": [
+          "sort"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "AC9MFST01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "sort"
+        ]
+      }
+    },
+    {
+      "id": "MQ-008",
+      "level": 2,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Count a Set to Five",
+      "objective": "Coordinate one count word with each object and state the total through five.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-002"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 5,
+        "layouts": [
+          "line",
+          "scattered"
+        ],
+        "taskTypes": [
+          "count-a-set-to-five"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "count-a-set-to-five"
+        ]
+      }
+    },
+    {
+      "id": "MQ-009",
+      "level": 2,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Recognize Structured Sets to Three",
+      "objective": "Match a displayed dice or frame pattern through three to its number.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-002"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 1,
+        "maxNumber": 3,
+        "structures": [
+          "dice",
+          "frame"
+        ],
+        "taskTypes": [
+          "recognize-structured-set-to-three"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recognize-structured-set-to-three"
+        ]
+      }
+    },
+    {
+      "id": "MQ-010",
+      "level": 2,
+      "band": "PREK",
+      "strand": "amount-order",
+      "title": "Order Zero to Five",
+      "objective": "Place numeral cards from zero through five in sequence and connect each to a set.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-008"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 5,
+        "taskTypes": [
+          "order-zero-to-five"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "order-zero-to-five"
+        ]
+      }
+    },
+    {
+      "id": "MQ-011",
+      "level": 2,
+      "band": "PREK",
+      "strand": "operation-systems",
+      "title": "Make a Small Whole Two Ways",
+      "objective": "Split and recombine a quantity through five in at least two part pairs.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-009",
+        "MQ-010"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "bond",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "wholeMin": 2,
+        "wholeMax": 5,
+        "distinctPartitionsMin": 2,
+        "taskTypes": [
+          "make-a-small-whole-two-ways"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "make-a-small-whole-two-ways"
+        ]
+      }
+    },
+    {
+      "id": "MQ-012",
+      "level": 2,
+      "band": "PREK",
+      "strand": "attribute-scaling",
+      "title": "Compare One Attribute Directly",
+      "objective": "Compare two objects for length, mass or capacity without a numbered scale.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-007"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "measurement",
+      "generatorProfile": "measure-compare",
+      "constraints": {
+        "attributes": [
+          "length",
+          "mass",
+          "capacity"
+        ],
+        "objectCount": 2,
+        "taskTypes": [
+          "compare-one-attribute-directly"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFM01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare-one-attribute-directly"
+        ]
+      }
+    },
+    {
+      "id": "MQ-013",
+      "level": 3,
+      "band": "PREK",
+      "strand": "operation-systems",
+      "title": "Show One Joining",
+      "objective": "Act out adding one object and find the new total.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-008",
+        "MQ-011"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "addition",
+      "generatorProfile": "operation-model",
+      "constraints": {
+        "startMax": 4,
+        "change": 1,
+        "resultMax": 5,
+        "taskTypes": [
+          "show-one-joining"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "show-one-joining"
+        ]
+      }
+    },
+    {
+      "id": "MQ-014",
+      "level": 3,
+      "band": "PREK",
+      "strand": "operation-systems",
+      "title": "Show One Leaving",
+      "objective": "Act out removing one object and find how many remain.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-008",
+        "MQ-011"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "subtraction",
+      "generatorProfile": "operation-model",
+      "constraints": {
+        "startMin": 1,
+        "startMax": 5,
+        "change": 1,
+        "taskTypes": [
+          "show-one-leaving"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "show-one-leaving"
+        ]
+      }
+    },
+    {
+      "id": "MQ-015",
+      "level": 3,
+      "band": "PREK",
+      "strand": "operation-systems",
+      "title": "Share Small Sets Fairly",
+      "objective": "Deal through six objects between two recipients and decide whether shares are equal.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-001",
+        "MQ-008"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "division",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "divisor": 2,
+        "dividendMax": 6,
+        "remainderMax": 1,
+        "taskTypes": [
+          "share-small-sets-fairly"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFN06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "share-small-sets-fairly"
+        ]
+      }
+    },
+    {
+      "id": "MQ-016",
+      "level": 3,
+      "band": "PREK",
+      "strand": "rule-structure",
+      "title": "Copy a Three-Part Repeat",
+      "objective": "Copy and continue an AAB, ABB or ABC repeating unit.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-004"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "pattern",
+      "generatorProfile": "pattern-extend",
+      "constraints": {
+        "unitForms": [
+          "AAB",
+          "ABB",
+          "ABC"
+        ],
+        "repeatsShownMin": 2,
+        "taskTypes": [
+          "copy-a-three-part-repeat"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFA01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "copy-a-three-part-repeat"
+        ]
+      }
+    },
+    {
+      "id": "MQ-017",
+      "level": 3,
+      "band": "PREK",
+      "strand": "spatial-models",
+      "title": "Place It by a Landmark",
+      "objective": "Act on in, on, under, beside and between using a visible landmark.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-005"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "relations": [
+          "in",
+          "on",
+          "under",
+          "beside",
+          "between"
+        ],
+        "stepCount": 1,
+        "taskTypes": [
+          "place-it-by-a-landmark"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFSP02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "place-it-by-a-landmark"
+        ]
+      }
+    },
+    {
+      "id": "MQ-018",
+      "level": 3,
+      "band": "PREK",
+      "strand": "evidence-uncertainty",
+      "title": "Record a Two-Group Sort",
+      "objective": "Sort a displayed collection into two categories and determine its one-mark-per-item record.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-007",
+        "MQ-008"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "data",
+      "generatorProfile": "data-display",
+      "constraints": {
+        "categoryCount": 2,
+        "itemCountMax": 10,
+        "scale": 1,
+        "taskTypes": [
+          "record-a-two-group-sort"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "AC9MFST01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "record-a-two-group-sort"
+        ]
+      }
+    },
+    {
+      "id": "MQ-019",
+      "level": 4,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Connect Numbers Zero to Ten",
+      "objective": "Match number names, numerals, positions and collections from zero through ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-008",
+        "MQ-010"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 10,
+        "taskTypes": [
+          "connect-numbers-zero-to-ten"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "connect-numbers-zero-to-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-020",
+      "level": 4,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Recognize Structured Sets to Five",
+      "objective": "Match a displayed dice or five-frame pattern through five to its number.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-009"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 1,
+        "maxNumber": 5,
+        "structures": [
+          "dice",
+          "five-frame"
+        ],
+        "taskTypes": [
+          "recognize-structured-set-to-five"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recognize-structured-set-to-five"
+        ]
+      }
+    },
+    {
+      "id": "MQ-021",
+      "level": 4,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Compare Collections to Ten",
+      "objective": "Compare two collections through ten and justify with pairing, counting or a frame.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-003",
+        "MQ-019"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "compare",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "setSizeMax": 10,
+        "explanationRequired": true,
+        "taskTypes": [
+          "compare-collections-to-ten"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NPAT",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare-collections-to-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-022",
+      "level": 4,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Recall Parts of Five",
+      "objective": "Name a missing part when a whole through five and the other part are shown.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-011",
+        "MQ-020"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "bond",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "wholeMax": 5,
+        "unknownPart": true,
+        "taskTypes": [
+          "recall-parts-of-five"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recall-parts-of-five"
+        ]
+      }
+    },
+    {
+      "id": "MQ-023",
+      "level": 4,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Build and Break Ten",
+      "objective": "Compose and decompose quantities through ten with two labelled parts.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-022"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "bond",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "wholeMin": 6,
+        "wholeMax": 10,
+        "partCount": 2,
+        "taskTypes": [
+          "build-and-break-ten"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-EYFS-ELG-NUM",
+        "AC9MFN04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "build-and-break-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-024",
+      "level": 4,
+      "band": "K",
+      "strand": "spatial-models",
+      "title": "Classify Familiar Shapes and Solids",
+      "objective": "Classify familiar flat shapes and solids by one visible property.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-005",
+        "MQ-007"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "geometry",
+      "generatorProfile": "geometry-classify",
+      "constraints": {
+        "dimensions": [
+          2,
+          3
+        ],
+        "propertyCount": 1,
+        "orientationVaried": true,
+        "taskTypes": [
+          "classify-flat-shape",
+          "classify-solid"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-EYFS-EDU-MATH",
+        "AC9MFSP01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "classify-flat-shape",
+          "classify-solid"
+        ]
+      }
+    },
+    {
+      "id": "MQ-025",
+      "level": 5,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Order Numbers Zero to Twenty",
+      "objective": "Place, read and locate numbers from zero through twenty on a track or line.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-019"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 20,
+        "taskTypes": [
+          "order-numbers-zero-to-twenty"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9MFN01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "order-numbers-zero-to-twenty"
+        ]
+      }
+    },
+    {
+      "id": "MQ-026",
+      "level": 5,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "See Ten Inside Teen Numbers",
+      "objective": "Represent eleven through nineteen as one ten and some ones.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-023",
+        "MQ-025"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "minNumber": 11,
+        "maxNumber": 19,
+        "base": 10,
+        "taskTypes": [
+          "see-ten-inside-teen-numbers"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9MFN01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "see-ten-inside-teen-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-027",
+      "level": 5,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Find One More or Less",
+      "objective": "Find the number one greater or one smaller within zero through twenty.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-025"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "compare",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 20,
+        "changes": [
+          -1,
+          1
+        ],
+        "taskTypes": [
+          "find-one-more-or-less"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9MFN03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "find-one-more-or-less"
+        ]
+      }
+    },
+    {
+      "id": "MQ-028",
+      "level": 5,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Write Joining Equations to Ten",
+      "objective": "Choose or write an addition equation matching a joining model within ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-013",
+        "MQ-023"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "addition",
+      "generatorProfile": "operation-equation",
+      "constraints": {
+        "sumMax": 10,
+        "unknownPosition": "result",
+        "taskTypes": [
+          "write-joining-equations-to-ten"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9MFN05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "write-joining-equations-to-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-029",
+      "level": 5,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Write Leaving Equations to Ten",
+      "objective": "Choose or write a subtraction equation matching a take-away model within ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-014",
+        "MQ-023"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "subtraction",
+      "generatorProfile": "operation-equation",
+      "constraints": {
+        "minuendMax": 10,
+        "unknownPosition": "result",
+        "taskTypes": [
+          "write-leaving-equations-to-ten"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9MFN05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "write-leaving-equations-to-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-030",
+      "level": 5,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Make Two Equal Halves",
+      "objective": "Divide a shape or even collection into two equal parts and identify one part.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-015",
+        "MQ-023"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "fraction-model",
+      "constraints": {
+        "denominators": [
+          2
+        ],
+        "collectionMax": 10,
+        "taskTypes": [
+          "make-two-equal-halves"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y1-NFRAC",
+        "AC9MFN06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "make-two-equal-halves"
+        ]
+      }
+    },
+    {
+      "id": "MQ-031",
+      "level": 6,
+      "band": "K",
+      "strand": "amount-order",
+      "title": "Read and Form Numerals to Twenty",
+      "objective": "Read a shown numeral and form the numeral for a spoken number through twenty.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-019",
+        "MQ-025"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-identify",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 20,
+        "reversalChecks": true,
+        "taskTypes": [
+          "read-and-form-numerals-to-twenty"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9MFN01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-and-form-numerals-to-twenty"
+        ]
+      }
+    },
+    {
+      "id": "MQ-032",
+      "level": 6,
+      "band": "K",
+      "strand": "operation-systems",
+      "title": "Make Equal Groups to Ten",
+      "objective": "Arrange through ten objects into equal groups or shares and describe the structure.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-015",
+        "MQ-019"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "multiplication",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "totalMax": 10,
+        "groupCountMax": 5,
+        "remainderMax": 1,
+        "taskTypes": [
+          "make-equal-groups-to-ten"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NMD",
+        "AC9MFN06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "make-equal-groups-to-ten"
+        ]
+      }
+    },
+    {
+      "id": "MQ-033",
+      "level": 6,
+      "band": "K",
+      "strand": "rule-structure",
+      "title": "Continue a Marked Repeating Unit",
+      "objective": "Continue an AAB, ABB or ABC repeating pattern when its repeating unit is marked.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-016"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "pattern",
+      "generatorProfile": "pattern-extend",
+      "constraints": {
+        "unitForms": [
+          "AAB",
+          "ABB",
+          "ABC"
+        ],
+        "repeatsShownMin": 2,
+        "unitMarked": true,
+        "modalities": [
+          "visual"
+        ],
+        "taskTypes": [
+          "extend"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9MFA01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "extend"
+        ]
+      }
+    },
+    {
+      "id": "MQ-034",
+      "level": 6,
+      "band": "K",
+      "strand": "spatial-models",
+      "title": "Follow a Short Route",
+      "objective": "Follow two position or direction instructions in a familiar picture or play space.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-017"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "stepCount": 2,
+        "turnsMax": 1,
+        "taskTypes": [
+          "follow-a-short-route"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y1-GPOS",
+        "AC9MFSP02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "follow-a-short-route"
+        ]
+      }
+    },
+    {
+      "id": "MQ-035",
+      "level": 6,
+      "band": "K",
+      "strand": "attribute-scaling",
+      "title": "Explain a Direct Comparison",
+      "objective": "Compare length, mass, capacity or duration and name the attribute used.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-012"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-and-actions",
+      "family": "measurement",
+      "generatorProfile": "measure-compare",
+      "constraints": {
+        "attributes": [
+          "length",
+          "mass",
+          "capacity",
+          "duration"
+        ],
+        "items": 2,
+        "taskTypes": [
+          "explain-a-direct-comparison"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y1-MEAS",
+        "AC9MFM01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "explain-a-direct-comparison"
+        ]
+      }
+    },
+    {
+      "id": "MQ-036",
+      "level": 6,
+      "band": "K",
+      "strand": "evidence-uncertainty",
+      "title": "Display Two Shown Categories",
+      "objective": "Represent two displayed categories with one mark per object.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-018",
+        "MQ-019"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "data",
+      "generatorProfile": "data-display",
+      "constraints": {
+        "categoryCount": 2,
+        "itemCountMax": 12,
+        "scale": 1,
+        "taskTypes": [
+          "display-two-shown-categories"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "AC9MFST01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "display-two-shown-categories"
+        ]
+      }
+    },
+    {
+      "id": "MQ-037",
+      "level": 7,
+      "band": "G1",
+      "strand": "amount-order",
+      "title": "Read and Order to One Hundred Twenty",
+      "objective": "Represent, compare and order whole numbers through one hundred twenty.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-025",
+        "MQ-031"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 120,
+        "representations": [
+          "line",
+          "chart",
+          "numeral"
+        ],
+        "taskTypes": [
+          "read-and-order-to-one-hundred-twenty"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9M1N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-and-order-to-one-hundred-twenty"
+        ]
+      }
+    },
+    {
+      "id": "MQ-038",
+      "level": 7,
+      "band": "G1",
+      "strand": "amount-order",
+      "title": "Partition Two-Digit Numbers",
+      "objective": "Build a two-digit number as tens and ones and write its expanded parts.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-026",
+        "MQ-037"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "minNumber": 10,
+        "maxNumber": 99,
+        "base": 10,
+        "taskTypes": [
+          "partition-two-digit-numbers"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9M1N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "partition-two-digit-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-039",
+      "level": 7,
+      "band": "G1",
+      "strand": "rule-structure",
+      "title": "Count in Twos Fives and Tens",
+      "objective": "Continue forward and backward skip sequences within one hundred twenty.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-027",
+        "MQ-033",
+        "MQ-037"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "pattern",
+      "generatorProfile": "pattern-extend",
+      "constraints": {
+        "steps": [
+          2,
+          5,
+          10
+        ],
+        "minNumber": 0,
+        "maxNumber": 120,
+        "taskTypes": [
+          "count-in-twos-fives-and-tens"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9M1A01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "count-in-twos-fives-and-tens"
+        ]
+      }
+    },
+    {
+      "id": "MQ-040",
+      "level": 7,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Add Within Twenty",
+      "objective": "Find sums within twenty by counting on, making ten or using a known bond.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-023",
+        "MQ-028"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "addition",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "sumMax": 20,
+        "strategies": [
+          "count-on",
+          "make-ten",
+          "known-bond"
+        ],
+        "taskTypes": [
+          "add-within-twenty"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9M1N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "add-within-twenty"
+        ]
+      }
+    },
+    {
+      "id": "MQ-041",
+      "level": 7,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Subtract Within Twenty",
+      "objective": "Find differences within twenty by counting back, counting up or using a known bond.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-023",
+        "MQ-029"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "subtraction",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "minuendMax": 20,
+        "strategies": [
+          "count-back",
+          "count-up",
+          "known-bond"
+        ],
+        "taskTypes": [
+          "subtract-within-twenty"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9M1N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "subtract-within-twenty"
+        ]
+      }
+    },
+    {
+      "id": "MQ-042",
+      "level": 7,
+      "band": "G1",
+      "strand": "attribute-scaling",
+      "title": "Read Hour and Half Hour",
+      "objective": "Read analogue clocks at hour and half-hour times.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-006",
+        "MQ-025"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "time",
+      "generatorProfile": "time-read",
+      "constraints": {
+        "minuteValues": [
+          0,
+          30
+        ],
+        "clock": "12-hour-analogue",
+        "taskTypes": [
+          "read-hour-and-half-hour"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y1-MEAS",
+        "AC9M2M04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-hour-and-half-hour"
+        ]
+      }
+    },
+    {
+      "id": "MQ-043",
+      "level": 8,
+      "band": "G1",
+      "strand": "rule-structure",
+      "title": "Build an Add-Subtract Family",
+      "objective": "Write related addition and subtraction equations for one part-part-whole model.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-040",
+        "MQ-041"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "addsub",
+      "generatorProfile": "operation-equation",
+      "constraints": {
+        "wholeMax": 20,
+        "equationCount": 4,
+        "taskTypes": [
+          "build-an-add-subtract-family"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9M2A02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "build-an-add-subtract-family"
+        ]
+      }
+    },
+    {
+      "id": "MQ-044",
+      "level": 8,
+      "band": "G1",
+      "strand": "rule-structure",
+      "title": "Balance a Missing Part",
+      "objective": "Find a missing addend or subtrahend within twenty while preserving equality.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-043"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "expression",
+      "generatorProfile": "expression-solve",
+      "constraints": {
+        "valueMax": 20,
+        "unknownPositions": [
+          "addend",
+          "subtrahend"
+        ],
+        "taskTypes": [
+          "balance-a-missing-part"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9M1N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "balance-a-missing-part"
+        ]
+      }
+    },
+    {
+      "id": "MQ-045",
+      "level": 8,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Make Equal Groups and Shares",
+      "objective": "Represent equal grouping and sharing situations and write matching number statements.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-032",
+        "MQ-039"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "multiplication",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "totalMax": 30,
+        "groupSizes": [
+          2,
+          5,
+          10
+        ],
+        "remainder": 0,
+        "taskTypes": [
+          "make-equal-groups-and-shares"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NMD",
+        "AC9M1N06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "make-equal-groups-and-shares"
+        ]
+      }
+    },
+    {
+      "id": "MQ-046",
+      "level": 8,
+      "band": "G1",
+      "strand": "attribute-scaling",
+      "title": "Measure with Equal Informal Units",
+      "objective": "Measure a length by laying equal units end to end with no gaps or overlaps.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-035"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "measurement",
+      "generatorProfile": "measure-instrument",
+      "constraints": {
+        "attribute": "length",
+        "unitType": "informal-uniform",
+        "unitCountMax": 20,
+        "taskTypes": [
+          "measure-with-equal-informal-units"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y1-MEAS",
+        "AC9M1M02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "measure-with-equal-informal-units"
+        ]
+      }
+    },
+    {
+      "id": "MQ-047",
+      "level": 8,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Find Halves and Quarters",
+      "objective": "Split a shape or even collection into two or four equal parts and name one part.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-030",
+        "MQ-032"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "fraction-model",
+      "constraints": {
+        "denominators": [
+          2,
+          4
+        ],
+        "collectionMax": 20,
+        "taskTypes": [
+          "find-halves-and-quarters"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y1-NFRAC",
+        "AC9M2N03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "find-halves-and-quarters"
+        ]
+      }
+    },
+    {
+      "id": "MQ-048",
+      "level": 8,
+      "band": "G1",
+      "strand": "attribute-scaling",
+      "title": "Recognize Canadian Coin Values",
+      "objective": "Identify Canadian 5-cent, 10-cent, 25-cent, 1-dollar and 2-dollar coin values without size cues.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-031",
+        "MQ-037"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "denominationsCents": [
+          5,
+          10,
+          25,
+          100,
+          200
+        ],
+        "sizeCueDisabled": true,
+        "taskTypes": [
+          "recognize-canadian-coin-values"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-MEAS",
+        "AC9M1N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recognize-canadian-coin-values"
+        ]
+      }
+    },
+    {
+      "id": "MQ-049",
+      "level": 9,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Bridge Ten for Add and Subtract",
+      "objective": "Use a make-ten or through-ten strategy for one-digit facts that cross ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-040",
+        "MQ-041"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "addsub",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "operandMax": 19,
+        "resultMax": 20,
+        "requiredBridge": 10,
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-NAS",
+        "AC9M1N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-050",
+      "level": 9,
+      "band": "G1",
+      "strand": "amount-order",
+      "title": "Repartition a Two-Digit Number",
+      "objective": "Show standard tens and ones and one different valid partition for a two-digit number.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-037",
+        "MQ-038"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "minNumber": 20,
+        "maxNumber": 99,
+        "partitionsMin": 2,
+        "taskTypes": [
+          "repartition-a-two-digit-number"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y1-NPV",
+        "AC9M1N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "repartition-a-two-digit-number"
+        ]
+      }
+    },
+    {
+      "id": "MQ-051",
+      "level": 9,
+      "band": "G1",
+      "strand": "operation-systems",
+      "title": "Match Equivalent Coin Amounts",
+      "objective": "Complete an equivalent Canadian coin combination for a multiple-of-five amount through one dollar.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-040",
+        "MQ-048"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "denominationsCents": [
+          5,
+          10,
+          25,
+          100
+        ],
+        "amountMaxCents": 100,
+        "incrementCents": 5,
+        "waysMin": 2,
+        "taskTypes": [
+          "match-equivalent-coin-amounts"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y1-MEAS",
+        "AC9M1N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "match-equivalent-coin-amounts"
+        ]
+      }
+    },
+    {
+      "id": "MQ-052",
+      "level": 9,
+      "band": "G1",
+      "strand": "spatial-models",
+      "title": "Classify Flat Shapes and Solids",
+      "objective": "Sort common two-dimensional shapes and three-dimensional objects by named features.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-024"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "geometry",
+      "generatorProfile": "geometry-classify",
+      "constraints": {
+        "dimensions": [
+          2,
+          3
+        ],
+        "features": [
+          "side",
+          "corner",
+          "face",
+          "curved-surface"
+        ],
+        "taskTypes": [
+          "classify-flat-shape",
+          "classify-solid"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y1-GSHAPE",
+        "AC9M1SP01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "classify-flat-shape",
+          "classify-solid"
+        ]
+      }
+    },
+    {
+      "id": "MQ-053",
+      "level": 9,
+      "band": "G1",
+      "strand": "spatial-models",
+      "title": "Give and Follow Directions",
+      "objective": "Give or follow up to four movement and turn instructions in a familiar grid.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-034"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "stepCountMax": 4,
+        "turns": [
+          "left",
+          "right"
+        ],
+        "taskTypes": [
+          "give-and-follow-directions"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y1-GPOS",
+        "AC9M1SP02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "give-and-follow-directions"
+        ]
+      }
+    },
+    {
+      "id": "MQ-054",
+      "level": 9,
+      "band": "G1",
+      "strand": "evidence-uncertainty",
+      "title": "Make a One-to-One Data Display",
+      "objective": "Build and compare one-to-one frequency records from a shown categorical response list.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-036",
+        "MQ-037"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "data-display",
+      "constraints": {
+        "categoryCountMax": 4,
+        "responsesMax": 20,
+        "scale": 1,
+        "taskTypes": [
+          "make-a-one-to-one-data-display"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "AC9M1ST01",
+        "AC9M1ST02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "make-a-one-to-one-data-display"
+        ]
+      }
+    },
+    {
+      "id": "MQ-055",
+      "level": 10,
+      "band": "G2",
+      "strand": "amount-order",
+      "title": "Read and Order to One Thousand",
+      "objective": "Read, represent, compare and order whole numbers through one thousand.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-037",
+        "MQ-050"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 1000,
+        "taskTypes": [
+          "read-and-order-to-one-thousand"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y2-NPV",
+        "AC9M2N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-and-order-to-one-thousand"
+        ]
+      }
+    },
+    {
+      "id": "MQ-056",
+      "level": 10,
+      "band": "G2",
+      "strand": "amount-order",
+      "title": "Partition and Rename Three Digits",
+      "objective": "Partition a three-digit number into hundreds, tens and ones in standard and equivalent forms.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-038",
+        "MQ-050",
+        "MQ-055"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "minNumber": 100,
+        "maxNumber": 999,
+        "nonstandardPartition": true,
+        "taskTypes": [
+          "partition-and-rename-three-digits"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y2-NPV",
+        "AC9M2N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "partition-and-rename-three-digits"
+        ]
+      }
+    },
+    {
+      "id": "MQ-057",
+      "level": 10,
+      "band": "G2",
+      "strand": "amount-order",
+      "title": "Compare Positions to One Thousand",
+      "objective": "Compare the positions of two three-digit numbers on a marked or partly marked number line.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-021",
+        "MQ-055",
+        "MQ-056"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "compare",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 1000,
+        "intervals": [
+          10,
+          50,
+          100
+        ],
+        "lineMarking": [
+          "marked",
+          "partial"
+        ],
+        "taskTypes": [
+          "position-compare"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y2-NPV",
+        "AC9M2N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "position-compare"
+        ]
+      }
+    },
+    {
+      "id": "MQ-058",
+      "level": 10,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Recall Facts Within Twenty",
+      "objective": "Recall addition and subtraction facts within twenty and use inverse facts to check.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-043",
+        "MQ-049"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "addsub",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "wholeMax": 20,
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "inverseCheck": true,
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NAS",
+        "AC9M2A02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-059",
+      "level": 10,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Add Two-Digit Numbers",
+      "objective": "Add two two-digit numbers with place-value partitioning and optional regrouping.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-056",
+        "MQ-058"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "addition",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "addendMax": 99,
+        "sumMax": 198,
+        "regrouping": [
+          false,
+          true
+        ],
+        "taskTypes": [
+          "add-two-digit-numbers"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NAS",
+        "AC9M2N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "add-two-digit-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-060",
+      "level": 10,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Subtract Two-Digit Numbers",
+      "objective": "Subtract two-digit numbers with place-value partitioning and optional regrouping.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-056",
+        "MQ-058"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "subtraction",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "minuendMax": 99,
+        "nonnegative": true,
+        "regrouping": [
+          false,
+          true
+        ],
+        "taskTypes": [
+          "subtract-two-digit-numbers"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NAS",
+        "AC9M2N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "subtract-two-digit-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-061",
+      "level": 11,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Recall Two Times Facts",
+      "objective": "Represent and recall multiplication facts with a factor of two and connect them to doubles.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-039",
+        "MQ-045"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "fixedFactors": [
+          2
+        ],
+        "otherFactorMax": 12,
+        "taskTypes": [
+          "recall-two-times-facts"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NMD",
+        "AC9M2A03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recall-two-times-facts"
+        ]
+      }
+    },
+    {
+      "id": "MQ-062",
+      "level": 11,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Recall Five and Ten Times Facts",
+      "objective": "Represent and recall multiplication facts with a factor of five or ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-039",
+        "MQ-061"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "fixedFactors": [
+          5,
+          10
+        ],
+        "otherFactorMax": 12,
+        "taskTypes": [
+          "recall-five-and-ten-times-facts"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NMD",
+        "AC9M3A03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recall-five-and-ten-times-facts"
+        ]
+      }
+    },
+    {
+      "id": "MQ-063",
+      "level": 11,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Link Multiplication and Division",
+      "objective": "Use arrays or equal groups to write related multiplication and division equations.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-045",
+        "MQ-061",
+        "MQ-062"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "division",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "factors": [
+          2,
+          5,
+          10
+        ],
+        "productMax": 120,
+        "remainder": 0,
+        "taskTypes": [
+          "link-multiplication-and-division"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-NMD",
+        "AC9M2N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "link-multiplication-and-division"
+        ]
+      }
+    },
+    {
+      "id": "MQ-064",
+      "level": 11,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Partition Halves Quarters and Eighths",
+      "objective": "Represent one or several equal parts of shapes, lengths or collections.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-047",
+        "MQ-055"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "fraction-model",
+      "constraints": {
+        "denominators": [
+          2,
+          4,
+          8
+        ],
+        "numeratorMin": 1,
+        "taskTypes": [
+          "partition-halves-quarters-and-eighths"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y2-NFRAC",
+        "AC9M2N03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "partition-halves-quarters-and-eighths"
+        ]
+      }
+    },
+    {
+      "id": "MQ-065",
+      "level": 11,
+      "band": "G2",
+      "strand": "operation-systems",
+      "title": "Find Canadian Coin Change",
+      "objective": "Find change from a stated amount paid for a multiple-of-five Canadian price through five dollars.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-051",
+        "MQ-059",
+        "MQ-060"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "denominationsCents": [
+          5,
+          10,
+          25,
+          100,
+          200
+        ],
+        "amountMaxCents": 500,
+        "incrementCents": 5,
+        "taskTypes": [
+          "find-canadian-coin-change"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y2-MEAS",
+        "AC9M2N06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "find-canadian-coin-change"
+        ]
+      }
+    },
+    {
+      "id": "MQ-066",
+      "level": 11,
+      "band": "G2",
+      "strand": "attribute-scaling",
+      "title": "Read Quarter-Hour Clocks",
+      "objective": "Read analogue times at quarter-hour intervals.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-042"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "time",
+      "generatorProfile": "time-read",
+      "constraints": {
+        "minuteValues": [
+          0,
+          15,
+          30,
+          45
+        ],
+        "clock": "12-hour-analogue",
+        "taskTypes": [
+          "read"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y2-MEAS",
+        "AC9M2M04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read"
+        ]
+      }
+    },
+    {
+      "id": "MQ-067",
+      "level": 12,
+      "band": "G2",
+      "strand": "amount-order",
+      "title": "Shift by One Ten or Hundred",
+      "objective": "Mentally add or subtract one, ten or one hundred within one thousand.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-027",
+        "MQ-056"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "placevalue",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "changes": [
+          -100,
+          -10,
+          -1,
+          1,
+          10,
+          100
+        ],
+        "minResult": 0,
+        "maxResult": 1000,
+        "taskTypes": [
+          "shift-by-one-ten-or-hundred"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y2-NPV",
+        "AC9M2N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "shift-by-one-ten-or-hundred"
+        ]
+      }
+    },
+    {
+      "id": "MQ-068",
+      "level": 12,
+      "band": "G2",
+      "strand": "rule-structure",
+      "title": "Continue an Additive Rule",
+      "objective": "Continue an increasing or decreasing constant-step sequence and fill one missing term.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-039",
+        "MQ-067"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "pattern",
+      "generatorProfile": "pattern-rule",
+      "constraints": {
+        "stepMagnitudeMax": 10,
+        "termsMin": 5,
+        "missingTerms": 1,
+        "taskTypes": [
+          "continue-an-additive-rule"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y2-NPV",
+        "AC9M2A01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "continue-an-additive-rule"
+        ]
+      }
+    },
+    {
+      "id": "MQ-069",
+      "level": 12,
+      "band": "G2",
+      "strand": "attribute-scaling",
+      "title": "Choose and Use Early Metric Units",
+      "objective": "Choose and use centimetres, metres, grams, kilograms, millilitres or litres in familiar measures.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-046",
+        "MQ-055"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "measurement",
+      "generatorProfile": "measure-instrument",
+      "constraints": {
+        "metric": true,
+        "units": [
+          "cm",
+          "m",
+          "g",
+          "kg",
+          "mL",
+          "L"
+        ],
+        "scaleReadings": "whole-mark",
+        "taskTypes": [
+          "choose-and-use-early-metric-units"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y2-MEAS",
+        "AC9M3M01",
+        "AC9M3M02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "choose-and-use-early-metric-units"
+        ]
+      }
+    },
+    {
+      "id": "MQ-070",
+      "level": 12,
+      "band": "G2",
+      "strand": "spatial-models",
+      "title": "Describe Shape Features",
+      "objective": "Describe common flat shapes and solids using sides, vertices, edges, faces and surfaces.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-052"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "geometry",
+      "generatorProfile": "geometry-classify",
+      "constraints": {
+        "dimensions": [
+          2,
+          3
+        ],
+        "orientationVaried": true,
+        "taskTypes": [
+          "describe-flat-shape",
+          "describe-solid"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y2-GSHAPE",
+        "AC9M2SP01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "describe-flat-shape",
+          "describe-solid"
+        ]
+      }
+    },
+    {
+      "id": "MQ-071",
+      "level": 12,
+      "band": "G2",
+      "strand": "spatial-models",
+      "title": "Read a Simple Map Route",
+      "objective": "Use a key and position language to follow or describe a route on a simple map.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-053"
+      ],
+      "phases": [
+        "C",
+        "P"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "landmarksMax": 8,
+        "routeSegmentsMax": 5,
+        "keyRequired": true,
+        "taskTypes": [
+          "read-a-simple-map-route"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y2-GPOS",
+        "AC9M2SP02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-a-simple-map-route"
+        ]
+      }
+    },
+    {
+      "id": "MQ-072",
+      "level": 12,
+      "band": "G2",
+      "strand": "evidence-uncertainty",
+      "title": "Build and Interpret a Survey Display",
+      "objective": "Build a tally or one-to-one picture graph from shown categorical survey responses and identify the most or least frequent category.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-054"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "data-investigate",
+      "constraints": {
+        "investigationTypes": [
+          "categorical-survey"
+        ],
+        "responsesMax": 30,
+        "displayTypes": [
+          "tally",
+          "picture-graph"
+        ],
+        "scale": 1,
+        "taskTypes": [
+          "build-and-interpret-survey-display"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "ENG-Y2-STAT",
+        "AC9M2ST01",
+        "AC9M2ST02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "build-and-interpret-survey-display"
+        ]
+      }
+    },
+    {
+      "id": "MQ-073",
+      "level": 13,
+      "band": "G3",
+      "strand": "amount-order",
+      "title": "Read and Order beyond Ten Thousand",
+      "objective": "Read, represent, compare and order natural numbers through fifty thousand.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-055",
+        "MQ-057"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 50000,
+        "taskTypes": [
+          "read-and-order-beyond-ten-thousand"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y3-NPV",
+        "AC9M3N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-and-order-beyond-ten-thousand"
+        ]
+      }
+    },
+    {
+      "id": "MQ-074",
+      "level": 13,
+      "band": "G3",
+      "strand": "amount-order",
+      "title": "Partition Four- and Five-Digit Numbers",
+      "objective": "Partition, rearrange and rename numbers through fifty thousand using powers of ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-056",
+        "MQ-073"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "minNumber": 1000,
+        "maxNumber": 50000,
+        "nonstandardPartition": true,
+        "taskTypes": [
+          "partition-four-and-five-digit-numbers"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y3-NPV",
+        "AC9M3N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "partition-four-and-five-digit-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-075",
+      "level": 13,
+      "band": "G3",
+      "strand": "amount-order",
+      "title": "Round to Tens and Hundreds",
+      "objective": "Round a whole number to the nearest ten or hundred using bounding multiples.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-057",
+        "MQ-067"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "rounding",
+      "generatorProfile": "rounding-estimate",
+      "constraints": {
+        "maxNumber": 50000,
+        "roundingUnits": [
+          10,
+          100
+        ],
+        "ties": "up",
+        "taskTypes": [
+          "round-to-tens-and-hundreds"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y3-NPV",
+        "AC9M4N07"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "round-to-tens-and-hundreds"
+        ]
+      }
+    },
+    {
+      "id": "MQ-076",
+      "level": 13,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Add and Subtract Three Digits",
+      "objective": "Calculate with two- and three-digit numbers using partitioning and regrouping.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-059",
+        "MQ-060",
+        "MQ-074"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "addsub",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "operandMax": 999,
+        "nonnegativeResults": true,
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-NAS",
+        "AC9M3N03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-077",
+      "level": 13,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Recall Three Four and Eight Times Facts",
+      "objective": "Recall facts with factors three, four and eight using grouping and doubling links.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-061",
+        "MQ-062"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "fixedFactors": [
+          3,
+          4,
+          8
+        ],
+        "otherFactorMax": 12,
+        "strategies": [
+          "grouping",
+          "doubling"
+        ],
+        "taskTypes": [
+          "recall-three-four-and-eight-times-facts"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-NMD",
+        "AC9M3A03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "recall-three-four-and-eight-times-facts"
+        ]
+      }
+    },
+    {
+      "id": "MQ-078",
+      "level": 13,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Use Related Division Facts",
+      "objective": "Find quotients from known multiplication facts for twos, threes, fours, fives, eights and tens.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-063",
+        "MQ-077"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "division",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "divisors": [
+          2,
+          3,
+          4,
+          5,
+          8,
+          10
+        ],
+        "dividendMax": 120,
+        "remainder": 0,
+        "taskTypes": [
+          "use-related-division-facts"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-NMD",
+        "AC9M3A03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "use-related-division-facts"
+        ]
+      }
+    },
+    {
+      "id": "MQ-079",
+      "level": 14,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Multiply Two Digits by One Digit",
+      "objective": "Multiply a two-digit whole number by one digit using partitioning, an array or written layout.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-076",
+        "MQ-077"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "multiplicandMax": 99,
+        "multiplierMax": 9,
+        "productMax": 891,
+        "taskTypes": [
+          "multiply-two-digits-by-one-digit"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-NMD",
+        "AC9M3N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "multiply-two-digits-by-one-digit"
+        ]
+      }
+    },
+    {
+      "id": "MQ-080",
+      "level": 14,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Divide Two Digits with Remainders",
+      "objective": "Divide a two-digit number by one digit and show quotient and remainder in context.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-078",
+        "MQ-079"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "division",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "dividendMax": 99,
+        "divisorMax": 9,
+        "remainderAllowed": true,
+        "taskTypes": [
+          "divide-two-digits-with-remainders"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-NMD",
+        "AC9M3N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "divide-two-digits-with-remainders"
+        ]
+      }
+    },
+    {
+      "id": "MQ-081",
+      "level": 14,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Compare Proper Fractions",
+      "objective": "Compare proper unit and non-unit fractions from zero to one using fraction models.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-057",
+        "MQ-064"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "fraction-model",
+      "constraints": {
+        "denominators": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          10,
+          12
+        ],
+        "range": [
+          0,
+          1
+        ],
+        "comparisonTypes": [
+          "same-denominator",
+          "unit"
+        ],
+        "taskTypes": [
+          "compare-proper-fractions"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y3-NFRAC",
+        "AC9M3N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare-proper-fractions"
+        ]
+      }
+    },
+    {
+      "id": "MQ-082",
+      "level": 14,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Add and Subtract Like Fractions within One",
+      "objective": "Add or subtract fractions with a shared denominator when the result stays from zero to one.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-058",
+        "MQ-081"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "denominators": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          10
+        ],
+        "resultMax": 1,
+        "taskTypes": [
+          "add-and-subtract-like-fractions-within-one"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y3-NFRAC",
+        "AC9M3N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "add-and-subtract-like-fractions-within-one"
+        ]
+      }
+    },
+    {
+      "id": "MQ-083",
+      "level": 14,
+      "band": "G3",
+      "strand": "rule-structure",
+      "title": "Solve Additive Unknown Equations",
+      "objective": "Find an unknown in a one-step addition or subtraction equation using inverse reasoning.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-043",
+        "MQ-044",
+        "MQ-076"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "expression",
+      "generatorProfile": "expression-solve",
+      "constraints": {
+        "valueMax": 999,
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "unknownPositions": [
+          "operand",
+          "result"
+        ],
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y3-NAS",
+        "AC9M3A01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-084",
+      "level": 14,
+      "band": "G3",
+      "strand": "rule-structure",
+      "title": "Extend Number-Rule Patterns",
+      "objective": "Extend short addition, subtraction and multiplication number patterns.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-068",
+        "MQ-077"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "pattern",
+      "generatorProfile": "pattern-rule",
+      "constraints": {
+        "stepsMax": 2,
+        "operations": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ],
+        "termsMin": 5,
+        "taskTypes": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y3-NPV",
+        "AC9M3N07"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ]
+      }
+    },
+    {
+      "id": "MQ-085",
+      "level": 15,
+      "band": "G3",
+      "strand": "operation-systems",
+      "title": "Find Change from Canadian Prices",
+      "objective": "Find change from a whole-dollar payment for a multiple-of-five Canadian price.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-065",
+        "MQ-076"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "denominationsCents": [
+          5,
+          10,
+          25,
+          100,
+          200
+        ],
+        "priceMaxCents": 2000,
+        "incrementCents": 5,
+        "taskTypes": [
+          "find-change-from-canadian-price"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y3-MEAS",
+        "AC9M3M06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "find-change-from-canadian-price"
+        ]
+      }
+    },
+    {
+      "id": "MQ-086",
+      "level": 15,
+      "band": "G3",
+      "strand": "attribute-scaling",
+      "title": "Read Time to the Minute",
+      "objective": "Read analogue and digital time to the minute and find a duration within one hour.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-066"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "time",
+      "generatorProfile": "time-read",
+      "constraints": {
+        "clocks": [
+          "analogue",
+          "digital"
+        ],
+        "durationMinutesMax": 59,
+        "taskTypes": [
+          "read-time-to-the-minute"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y3-MEAS",
+        "AC9M3M04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-time-to-the-minute"
+        ]
+      }
+    },
+    {
+      "id": "MQ-087",
+      "level": 15,
+      "band": "G3",
+      "strand": "attribute-scaling",
+      "title": "Find Metric Perimeter",
+      "objective": "Measure side lengths and calculate the perimeter of a polygon in centimetres or metres.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-069",
+        "MQ-076"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "measurement",
+      "generatorProfile": "measure-instrument",
+      "constraints": {
+        "metric": true,
+        "units": [
+          "cm",
+          "m"
+        ],
+        "sideCountMax": 8,
+        "wholeUnits": true,
+        "taskTypes": [
+          "polygon-perimeter"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y3-MEAS",
+        "AC9M4M02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "polygon-perimeter"
+        ]
+      }
+    },
+    {
+      "id": "MQ-088",
+      "level": 15,
+      "band": "G3",
+      "strand": "spatial-models",
+      "title": "Classify Shapes by Angle and Line Properties",
+      "objective": "Classify flat shapes using right-angle, parallel and perpendicular properties.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-070"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "geometry",
+      "generatorProfile": "geometry-classify",
+      "constraints": {
+        "dimensions": [
+          2
+        ],
+        "properties": [
+          "right-angle",
+          "parallel",
+          "perpendicular"
+        ],
+        "orientationVaried": true,
+        "taskTypes": [
+          "property-classification"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y3-GSHAPE",
+        "AC9M2SP01",
+        "AC9M3M05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "property-classification"
+        ]
+      }
+    },
+    {
+      "id": "MQ-089",
+      "level": 15,
+      "band": "G3",
+      "strand": "spatial-models",
+      "title": "Locate Places on a Grid Map",
+      "objective": "Use a labelled square grid, key and route clues to locate and describe positions.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-071",
+        "MQ-073"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "gridMax": [
+          10,
+          10
+        ],
+        "coordinateForm": "letter-number",
+        "routeSegmentsMax": 6,
+        "taskTypes": [
+          "locate-places-on-a-grid-map"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y4-GPOS",
+        "AC9M3SP02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "locate-places-on-a-grid-map"
+        ]
+      }
+    },
+    {
+      "id": "MQ-090",
+      "level": 15,
+      "band": "G3",
+      "strand": "evidence-uncertainty",
+      "title": "Compare Repeated Chance Runs",
+      "objective": "Compare outcome frequencies from two repeated runs of the same chance experiment.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-072"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "chance-experiment",
+      "constraints": {
+        "outcomeCountMax": 6,
+        "trialsPerRun": [
+          10,
+          30
+        ],
+        "runsMin": 2,
+        "taskTypes": [
+          "repeat-and-compare"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "AC9M3P02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "repeat-and-compare"
+        ]
+      }
+    },
+    {
+      "id": "MQ-091",
+      "level": 16,
+      "band": "G4",
+      "strand": "amount-order",
+      "title": "Read and Order to One Hundred Thousand",
+      "objective": "Read, represent, compare and order whole numbers through one hundred thousand.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-073",
+        "MQ-074"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": 0,
+        "maxNumber": 100000,
+        "taskTypes": [
+          "read-and-order-to-one-hundred-thousand"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y5-NPV",
+        "AC9M3N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-and-order-to-one-hundred-thousand"
+        ]
+      }
+    },
+    {
+      "id": "MQ-092",
+      "level": 16,
+      "band": "G4",
+      "strand": "amount-order",
+      "title": "Scale Whole Numbers by Ten and One Hundred",
+      "objective": "Use place value to multiply a whole number by ten or one hundred.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-074",
+        "MQ-079"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "placevalue",
+      "generatorProfile": "placevalue-compose",
+      "constraints": {
+        "factors": [
+          10,
+          100
+        ],
+        "inputMax": 9999,
+        "wholeNumbers": true,
+        "taskTypes": [
+          "scale-whole-numbers-by-ten-and-one-hundred"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y4-NPV",
+        "AC9M4N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "scale-whole-numbers-by-ten-and-one-hundred"
+        ]
+      }
+    },
+    {
+      "id": "MQ-093",
+      "level": 16,
+      "band": "G4",
+      "strand": "amount-order",
+      "title": "Round to Ten Hundred or Thousand",
+      "objective": "Round a whole number to the requested ten, hundred or thousand place.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-075",
+        "MQ-091"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "rounding",
+      "generatorProfile": "rounding-estimate",
+      "constraints": {
+        "roundingUnits": [
+          10,
+          100,
+          1000
+        ],
+        "maxNumber": 100000,
+        "ties": "up",
+        "taskTypes": [
+          "round-to-ten-hundred-or-thousand"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y4-NPV",
+        "AC9M4N07"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "round-to-ten-hundred-or-thousand"
+        ]
+      }
+    },
+    {
+      "id": "MQ-094",
+      "level": 16,
+      "band": "G4",
+      "strand": "amount-order",
+      "title": "Read Negative Values in Context",
+      "objective": "Locate and compare negative and positive whole numbers on temperature or elevation scales.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-057",
+        "MQ-086"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "minNumber": -20,
+        "maxNumber": 20,
+        "contexts": [
+          "temperature",
+          "elevation"
+        ],
+        "taskTypes": [
+          "read-negative-values-in-context"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y4-NPV"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "read-negative-values-in-context"
+        ]
+      }
+    },
+    {
+      "id": "MQ-095",
+      "level": 16,
+      "band": "G4",
+      "strand": "operation-systems",
+      "title": "Add and Subtract Multi-Digit Numbers",
+      "objective": "Choose efficient mental or written strategies for whole-number addition and subtraction to four digits.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-076",
+        "MQ-091"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "addsub",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "operandMax": 9999,
+        "strategyChoiceRequired": true,
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y4-NAS",
+        "AC9M4N06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-096",
+      "level": 16,
+      "band": "G4",
+      "strand": "operation-systems",
+      "title": "Multiply Three Digits by One Digit",
+      "objective": "Multiply a whole number through three digits by one digit using known facts through twelve.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-077",
+        "MQ-079"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "multiplicandMax": 999,
+        "multiplierMax": 9,
+        "factFactorMax": 12,
+        "calculator": false,
+        "taskTypes": [
+          "multiply"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y4-NMD",
+        "AC9M4N06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "multiply"
+        ]
+      }
+    },
+    {
+      "id": "MQ-097",
+      "level": 17,
+      "band": "G4",
+      "strand": "rule-structure",
+      "title": "Use Odd and Even Properties",
+      "objective": "Predict and explain parity of sums, differences and products.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-077",
+        "MQ-091"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "factor",
+      "generatorProfile": "factor-classify",
+      "constraints": {
+        "operations": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ],
+        "proofMode": "example-and-generalisation",
+        "taskTypes": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y2-NMD",
+        "AC9M4N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction",
+          "multiplication"
+        ]
+      }
+    },
+    {
+      "id": "MQ-098",
+      "level": 17,
+      "band": "G4",
+      "strand": "operation-systems",
+      "title": "Generate Equivalent Fractions",
+      "objective": "Use scaling or a visual model to generate and verify equivalent fractions.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-081",
+        "MQ-082"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "fraction-model",
+      "constraints": {
+        "denominatorMax": 12,
+        "scaleFactors": [
+          2,
+          3,
+          4
+        ],
+        "taskTypes": [
+          "generate-equivalent-fractions"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y4-NFRAC",
+        "AC9M4N03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "generate-equivalent-fractions"
+        ]
+      }
+    },
+    {
+      "id": "MQ-099",
+      "level": 17,
+      "band": "G4",
+      "strand": "operation-systems",
+      "title": "Connect Tenths Hundredths and Decimals",
+      "objective": "Connect tenths and hundredths written as fractions and decimals from zero to one.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-081",
+        "MQ-092"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "decimal",
+      "generatorProfile": "decimal-model",
+      "constraints": {
+        "decimalPlacesMax": 2,
+        "range": [
+          0,
+          1
+        ],
+        "taskTypes": [
+          "connect-tenths-hundredths-and-decimals"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y4-NFRAC",
+        "AC9M4N01",
+        "AC9M4N03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "connect-tenths-hundredths-and-decimals"
+        ]
+      }
+    },
+    {
+      "id": "MQ-100",
+      "level": 17,
+      "band": "G4",
+      "strand": "amount-order",
+      "title": "Compare Decimals to Hundredths",
+      "objective": "Compare and order decimals through two places, including values greater than one.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-091",
+        "MQ-099"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "decimal",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "decimalPlacesMax": 2,
+        "minValue": 0,
+        "maxValue": 20,
+        "taskTypes": [
+          "compare-decimals",
+          "order-decimals"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y4-NFRAC",
+        "AC9M5N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare-decimals",
+          "order-decimals"
+        ]
+      }
+    },
+    {
+      "id": "MQ-101",
+      "level": 17,
+      "band": "G4",
+      "strand": "rule-structure",
+      "title": "Solve Multi-Digit Additive Equations",
+      "objective": "Find an unknown in an addition or subtraction equation and justify the inverse used.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-083",
+        "MQ-095"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "expression",
+      "generatorProfile": "expression-solve",
+      "constraints": {
+        "valueMax": 10000,
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "unknownPositions": [
+          "operand",
+          "result"
+        ],
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y4-NAS",
+        "AC9M4A01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-102",
+      "level": 17,
+      "band": "G4",
+      "strand": "attribute-scaling",
+      "title": "Solve Canadian Purchases and Change",
+      "objective": "Solve a one- or two-step Canadian purchase or change problem.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-085",
+        "MQ-095"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "denominationsCents": [
+          5,
+          10,
+          25,
+          100,
+          200
+        ],
+        "priceMaxCents": 10000,
+        "incrementCents": 5,
+        "stepsMax": 2,
+        "taskTypes": [
+          "purchase",
+          "change"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y4-MEAS",
+        "AC9M4N08"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "purchase",
+          "change"
+        ]
+      }
+    },
+    {
+      "id": "MQ-103",
+      "level": 18,
+      "band": "G4",
+      "strand": "rule-structure",
+      "title": "Extend Addition and Multiplication Patterns",
+      "objective": "Extend number patterns generated by one addition or multiplication rule.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-084",
+        "MQ-096"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "pattern",
+      "generatorProfile": "pattern-rule",
+      "constraints": {
+        "stepsMax": 1,
+        "operations": [
+          "addition",
+          "multiplication"
+        ],
+        "termsMin": 6,
+        "taskTypes": [
+          "addition",
+          "multiplication"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y4-NPV",
+        "AC9M4N09"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "multiplication"
+        ]
+      }
+    },
+    {
+      "id": "MQ-104",
+      "level": 18,
+      "band": "G4",
+      "strand": "operation-systems",
+      "title": "Operate with Fractions beyond One",
+      "objective": "Add or subtract common-denominator fractions, including results beyond one.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-082",
+        "MQ-098"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "denominatorMax": 12,
+        "maxValue": 3,
+        "mixedNumeralAllowed": true,
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y4-NFRAC",
+        "AC9M5N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-105",
+      "level": 18,
+      "band": "G4",
+      "strand": "attribute-scaling",
+      "title": "Find Rectangle Area",
+      "objective": "Determine the area of a rectangle by covering or calculating equal square units.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-087",
+        "MQ-088"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "area",
+      "generatorProfile": "area-model",
+      "constraints": {
+        "metric": true,
+        "lengthUnits": [
+          "mm",
+          "cm",
+          "m"
+        ],
+        "areaUnits": [
+          "square-unit",
+          "cm2",
+          "m2"
+        ],
+        "gridDimensionsMax": [
+          20,
+          20
+        ],
+        "taskTypes": [
+          "rectangle-area"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y4-MEAS",
+        "AC9M4M02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "rectangle-area"
+        ]
+      }
+    },
+    {
+      "id": "MQ-106",
+      "level": 18,
+      "band": "G4",
+      "strand": "spatial-models",
+      "title": "Explore Line and Rotational Symmetry",
+      "objective": "Identify and complete line or rotational symmetry in a flat figure.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-088"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "symmetryTypes": [
+          "line",
+          "rotational"
+        ],
+        "lineCountMax": 4,
+        "rotationOrders": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "taskTypes": [
+          "identify",
+          "complete"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y4-GSHAPE",
+        "AC9M4SP03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "identify",
+          "complete"
+        ]
+      }
+    },
+    {
+      "id": "MQ-107",
+      "level": 18,
+      "band": "G4",
+      "strand": "evidence-uncertainty",
+      "title": "Plan and Display a Scaled Survey",
+      "objective": "Plan a categorical or discrete survey and choose a many-to-one display to describe variation.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-090",
+        "MQ-095"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "data-investigate",
+      "constraints": {
+        "variableTypes": [
+          "categorical",
+          "discrete"
+        ],
+        "responsesMax": 100,
+        "scaleValues": [
+          2,
+          5,
+          10
+        ],
+        "digitalToolOptional": true,
+        "taskTypes": [
+          "plan-and-display-a-scaled-survey"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "ENG-Y4-STAT",
+        "AC9M4ST01",
+        "AC9M4ST03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "plan-and-display-a-scaled-survey"
+        ]
+      }
+    },
+    {
+      "id": "MQ-108",
+      "level": 18,
+      "band": "G4",
+      "strand": "evidence-uncertainty",
+      "title": "Test Whether Chance Trials Depend",
+      "objective": "Decide whether successive trials are independent or dependent in a stated chance experiment.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-090"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "chance-experiment",
+      "constraints": {
+        "dependencyTypes": [
+          "independent",
+          "dependent"
+        ],
+        "replacementModes": [
+          "with-replacement",
+          "without-replacement"
+        ],
+        "trials": [
+          20,
+          50
+        ],
+        "outcomeCountMax": 6,
+        "taskTypes": [
+          "dependency-test"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "AC9M4P01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "dependency-test"
+        ]
+      }
+    },
+    {
+      "id": "MQ-109",
+      "level": 19,
+      "band": "G5",
+      "strand": "amount-order",
+      "title": "Order Contextual Integers",
+      "objective": "Compare and order contextual integers from negative one hundred through positive one million.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-091",
+        "MQ-094"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "number",
+      "generatorProfile": "quantity-order",
+      "constraints": {
+        "negativeMin": -100,
+        "positiveMax": 1000000,
+        "contexts": [
+          "temperature",
+          "elevation",
+          "score"
+        ],
+        "taskTypes": [
+          "compare",
+          "order"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y6-NPV"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare",
+          "order"
+        ]
+      }
+    },
+    {
+      "id": "MQ-110",
+      "level": 19,
+      "band": "G5",
+      "strand": "amount-order",
+      "title": "Order Decimals to Thousandths",
+      "objective": "Compare and order decimals greater than one through three decimal places.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-100",
+        "MQ-109"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "pictures-and-symbols",
+      "family": "decimal",
+      "generatorProfile": "quantity-compare",
+      "constraints": {
+        "decimalPlacesMax": 3,
+        "minValue": 0,
+        "maxValue": 100,
+        "taskTypes": [
+          "compare",
+          "order"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y5-NFRAC",
+        "AC9M5N01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "compare",
+          "order"
+        ]
+      }
+    },
+    {
+      "id": "MQ-111",
+      "level": 19,
+      "band": "G5",
+      "strand": "amount-order",
+      "title": "Round Estimate and Check",
+      "objective": "Judge whether a calculation is plausible by using a stated rounding or compatible-number estimate.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-093",
+        "MQ-095",
+        "MQ-110"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "rounding",
+      "generatorProfile": "rounding-estimate",
+      "constraints": {
+        "wholeRoundingUnits": [
+          10,
+          100,
+          1000,
+          10000,
+          100000
+        ],
+        "decimalRoundingUnits": [
+          1,
+          0.1,
+          0.01
+        ],
+        "operations": [
+          "addition",
+          "subtraction",
+          "multiplication",
+          "division"
+        ],
+        "taskTypes": [
+          "plausibility-check"
+        ]
+      },
+      "rationaleId": "R-FOUND",
+      "benchmarkIds": [
+        "ENG-Y5-NPV",
+        "ENG-Y5-NAS",
+        "AC9M5N08"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "plausibility-check"
+        ]
+      }
+    },
+    {
+      "id": "MQ-112",
+      "level": 19,
+      "band": "G5",
+      "strand": "rule-structure",
+      "title": "Classify Factor Structure",
+      "objective": "Classify a whole number through one hundred as prime, composite, square or cube using its factors.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-096",
+        "MQ-097"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "factor",
+      "generatorProfile": "factor-classify",
+      "constraints": {
+        "numberMax": 100,
+        "squareBaseMax": 10,
+        "cubeBaseMax": 5,
+        "classifications": [
+          "prime",
+          "composite",
+          "square",
+          "cube"
+        ],
+        "taskTypes": [
+          "classify-prime",
+          "classify-composite",
+          "classify-square",
+          "classify-cube"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y5-NMD",
+        "AC9M5N02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "classify-prime",
+          "classify-composite",
+          "classify-square",
+          "classify-cube"
+        ]
+      }
+    },
+    {
+      "id": "MQ-113",
+      "level": 19,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Multiply Large Numbers",
+      "objective": "Multiply a whole number through four digits by a one- or two-digit whole number.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-095",
+        "MQ-096",
+        "MQ-109"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "multiplication",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "multiplicandMax": 9999,
+        "multiplierMax": 99,
+        "calculator": false,
+        "taskTypes": [
+          "multiply-large-numbers"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y5-NMD",
+        "AC9M5N06"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "multiply-large-numbers"
+        ]
+      }
+    },
+    {
+      "id": "MQ-114",
+      "level": 19,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Divide Large Numbers and Interpret Remainders",
+      "objective": "Divide through four digits by one digit and interpret the remainder for the context.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-080",
+        "MQ-096",
+        "MQ-109"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "division",
+      "generatorProfile": "grouping-model",
+      "constraints": {
+        "dividendMax": 9999,
+        "divisorMax": 9,
+        "remainderInterpretations": [
+          "whole-remainder",
+          "fraction",
+          "round-up",
+          "round-down"
+        ],
+        "taskTypes": [
+          "divide-large-numbers-and-interpret-remainders"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y5-NMD",
+        "AC9M5N07"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "divide-large-numbers-and-interpret-remainders"
+        ]
+      }
+    },
+    {
+      "id": "MQ-115",
+      "level": 20,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Operate with Related-Denominator Fractions",
+      "objective": "Add or subtract fractions with equal or factor-related denominators.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-098",
+        "MQ-104",
+        "MQ-112"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "fraction",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "denominatorMax": 12,
+        "relationship": "equal-or-factor-multiple",
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "mixedNumeralAllowed": true,
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y5-NFRAC",
+        "AC9M5N05"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-116",
+      "level": 20,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Convert Common Percents Fractions and Decimals",
+      "objective": "Convert common percentages to equivalent fractions and decimals.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-099",
+        "MQ-115"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "decimal",
+      "generatorProfile": "decimal-model",
+      "constraints": {
+        "percentages": [
+          1,
+          5,
+          10,
+          20,
+          25,
+          50,
+          75,
+          100
+        ],
+        "denominatorMax": 100,
+        "taskTypes": [
+          "percent-to-fraction",
+          "percent-to-decimal"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y5-NFRAC",
+        "AC9M5N04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "percent-to-fraction",
+          "percent-to-decimal"
+        ]
+      }
+    },
+    {
+      "id": "MQ-117",
+      "level": 20,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Add and Subtract Decimals",
+      "objective": "Add or subtract decimals through three places.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-095",
+        "MQ-110"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "decimal",
+      "generatorProfile": "operation-fluency",
+      "constraints": {
+        "decimalPlacesMax": 3,
+        "valueMax": 1000,
+        "operations": [
+          "addition",
+          "subtraction"
+        ],
+        "taskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      },
+      "rationaleId": "R-BOND",
+      "benchmarkIds": [
+        "ENG-Y5-NFRAC"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "addition",
+          "subtraction"
+        ]
+      }
+    },
+    {
+      "id": "MQ-118",
+      "level": 20,
+      "band": "G5",
+      "strand": "operation-systems",
+      "title": "Build a Canadian Budget Model",
+      "objective": "Solve a multi-step Canadian budget or total-cost problem using a numeric money model.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-102",
+        "MQ-111",
+        "MQ-113",
+        "MQ-117"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "symbols-and-models",
+      "family": "money",
+      "generatorProfile": "money-model",
+      "constraints": {
+        "currency": "CAD",
+        "amountMaxCents": 100000,
+        "incrementCents": 5,
+        "stepsMax": 4,
+        "taxExcluded": true,
+        "representations": [
+          "numeric-ledger"
+        ],
+        "taskTypes": [
+          "budget",
+          "total-cost"
+        ]
+      },
+      "rationaleId": "R-MODEL",
+      "benchmarkIds": [
+        "ENG-Y5-NAS",
+        "ENG-Y5-NMD",
+        "AC9M5N09"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "budget",
+          "total-cost"
+        ]
+      }
+    },
+    {
+      "id": "MQ-119",
+      "level": 20,
+      "band": "G5",
+      "strand": "rule-structure",
+      "title": "Use a One-Variable Rule",
+      "objective": "Write and evaluate a one-variable expression for a one-step number pattern.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-101",
+        "MQ-103"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "expression",
+      "generatorProfile": "expression-solve",
+      "constraints": {
+        "operations": [
+          "addition",
+          "subtraction",
+          "multiplication",
+          "division"
+        ],
+        "variableCount": 1,
+        "termIndexMax": 100,
+        "valueMax": 10000,
+        "taskTypes": [
+          "pattern-addition",
+          "pattern-subtraction",
+          "pattern-multiplication",
+          "pattern-division"
+        ]
+      },
+      "rationaleId": "R-REL",
+      "benchmarkIds": [
+        "ENG-Y6-ALG"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "pattern-addition",
+          "pattern-subtraction",
+          "pattern-multiplication",
+          "pattern-division"
+        ]
+      }
+    },
+    {
+      "id": "MQ-120",
+      "level": 20,
+      "band": "G5",
+      "strand": "attribute-scaling",
+      "title": "Choose and Convert Metric Units",
+      "objective": "Convert between two units in one metric length, mass or capacity family using a power of ten.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-087",
+        "MQ-092",
+        "MQ-117"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "measurement",
+      "generatorProfile": "measure-instrument",
+      "constraints": {
+        "metric": true,
+        "unitFamilies": [
+          [
+            "mm",
+            "cm",
+            "m",
+            "km"
+          ],
+          [
+            "g",
+            "kg"
+          ],
+          [
+            "mL",
+            "L"
+          ]
+        ],
+        "decimalPlacesMax": 3,
+        "conversionStepsMax": 1,
+        "taskTypes": [
+          "metric-conversion"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y5-MEAS",
+        "AC9M5M01"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "metric-conversion"
+        ]
+      }
+    },
+    {
+      "id": "MQ-121",
+      "level": 21,
+      "band": "G5",
+      "strand": "attribute-scaling",
+      "title": "Find Composite Rectilinear Area",
+      "objective": "Determine the area of a composite rectilinear shape by decomposing it into rectangles.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-105",
+        "MQ-120"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "area",
+      "generatorProfile": "area-model",
+      "constraints": {
+        "rectanglesMax": 4,
+        "lengthUnits": [
+          "mm",
+          "cm",
+          "m"
+        ],
+        "areaUnits": [
+          "cm2",
+          "m2"
+        ],
+        "taskTypes": [
+          "composite-area"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y5-MEAS",
+        "AC9M5M02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "composite-area"
+        ]
+      }
+    },
+    {
+      "id": "MQ-122",
+      "level": 21,
+      "band": "G5",
+      "strand": "attribute-scaling",
+      "title": "Find Rectangular-Prism Volume",
+      "objective": "Determine the volume of a rectangular prism by counting or multiplying unit-cube layers.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-105",
+        "MQ-113",
+        "MQ-120"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "objects-pictures-symbols",
+      "family": "volume",
+      "generatorProfile": "volume-model",
+      "constraints": {
+        "dimensionsMax": [
+          10,
+          10,
+          10
+        ],
+        "volumeUnits": [
+          "unit-cube",
+          "cm3"
+        ],
+        "solids": [
+          "cube",
+          "rectangular-prism"
+        ],
+        "representations": [
+          "unit-cubes",
+          "layers"
+        ],
+        "taskTypes": [
+          "rectangular-prism-volume"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y6-MEAS"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "rectangular-prism-volume"
+        ]
+      }
+    },
+    {
+      "id": "MQ-123",
+      "level": 21,
+      "band": "G5",
+      "strand": "attribute-scaling",
+      "title": "Find a Timetable Interval",
+      "objective": "Calculate one timetable interval of up to two days using 12- or 24-hour notation.",
+      "masteryRole": "SUPPORTING",
+      "prerequisites": [
+        "MQ-086"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "time",
+      "generatorProfile": "time-read",
+      "constraints": {
+        "formats": [
+          "12-hour",
+          "24-hour"
+        ],
+        "daySpanMax": 2,
+        "minutePrecision": 1,
+        "taskTypes": [
+          "timetable-interval"
+        ]
+      },
+      "rationaleId": "R-MEASURE",
+      "benchmarkIds": [
+        "ENG-Y5-MEAS",
+        "AC9M5M03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "timetable-interval"
+        ]
+      }
+    },
+    {
+      "id": "MQ-124",
+      "level": 21,
+      "band": "G5",
+      "strand": "spatial-models",
+      "title": "Measure Angles",
+      "objective": "Measure a given angle from zero to one hundred eighty degrees.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-088"
+      ],
+      "phases": [
+        "C",
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "measure-instrument",
+      "constraints": {
+        "degreesMin": 0,
+        "degreesMax": 180,
+        "toleranceDegrees": 2,
+        "taskTypes": [
+          "angle-measure"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y5-GSHAPE",
+        "AC9M5M04"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "angle-measure"
+        ]
+      }
+    },
+    {
+      "id": "MQ-125",
+      "level": 21,
+      "band": "G5",
+      "strand": "spatial-models",
+      "title": "Translate Points on a Coordinate Grid",
+      "objective": "Describe a translation of a plotted point on a first-quadrant coordinate grid.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-089",
+        "MQ-109"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "instruments-and-diagrams",
+      "family": "geometry",
+      "generatorProfile": "geometry-transform",
+      "constraints": {
+        "quadrants": [
+          1
+        ],
+        "coordinateMax": 20,
+        "transformations": [
+          "translation"
+        ],
+        "taskTypes": [
+          "describe-transform"
+        ]
+      },
+      "rationaleId": "R-SPACE",
+      "benchmarkIds": [
+        "ENG-Y5-GPOS",
+        "AC9M5SP02",
+        "AC9M5SP03"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "describe-transform"
+        ]
+      }
+    },
+    {
+      "id": "MQ-126",
+      "level": 21,
+      "band": "G5",
+      "strand": "evidence-uncertainty",
+      "title": "Interpret Comparative Data Displays",
+      "objective": "Interpret a line graph or comparative display by describing its mode and overall shape.",
+      "masteryRole": "GATEWAY",
+      "prerequisites": [
+        "MQ-107",
+        "MQ-110"
+      ],
+      "phases": [
+        "P",
+        "A"
+      ],
+      "representation": "tables-graphs-symbols",
+      "family": "data",
+      "generatorProfile": "data-investigate",
+      "constraints": {
+        "variableTypes": [
+          "nominal",
+          "ordinal",
+          "discrete"
+        ],
+        "displayTypes": [
+          "line-graph",
+          "comparative-display"
+        ],
+        "statistics": [
+          "mode",
+          "shape"
+        ],
+        "taskTypes": [
+          "interpret-distribution"
+        ]
+      },
+      "rationaleId": "R-DATA",
+      "benchmarkIds": [
+        "ENG-Y5-STAT",
+        "AC9M5ST01",
+        "AC9M5ST02"
+      ],
+      "assessment": {
+        "version": 1,
+        "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
+        "requiredTaskTypes": [
+          "interpret-distribution"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "SRC-ENG-MATH",
+      "title": "National curriculum in England: mathematics programmes of study",
+      "publisher": "England Department for Education",
+      "edition": "Published 11 September 2013; HTML updated 28 September 2021; key stages 1 and 2 PDF reference DFE-00180-2013",
+      "url": "https://www.gov.uk/government/publications/national-curriculum-in-england-mathematics-programmes-of-study/national-curriculum-in-england-mathematics-programmes-of-study",
+      "licence": "Open Government Licence v3.0 except where otherwise stated",
+      "accessed": "2026-07-27",
+      "use": "Normative concept check by named year/domain section; no statutory requirement sentence is reproduced."
+    },
+    {
+      "id": "SRC-ENG-EYFS",
+      "title": "Early years foundation stage statutory framework for group and school-based providers",
+      "publisher": "England Department for Education",
+      "edition": "Dated 14 July 2025; effective 1 September 2025; 55-page framework",
+      "url": "https://assets.publishing.service.gov.uk/media/68c024cb8c6d992f23edd79c/Early_years_foundation_stage_statutory_framework_-_for_group_and_school-based_providers.pdf.pdf",
+      "licence": "Open Government Licence v3.0 for Crown material except where otherwise stated",
+      "accessed": "2026-07-27",
+      "use": "Normative early-years concept check by named mathematics programme or early-learning-goal section; no requirement sentence is reproduced."
+    },
+    {
+      "id": "SRC-UK-OGL",
+      "title": "Open Government Licence for public sector information",
+      "publisher": "The National Archives",
+      "edition": "Version 3.0",
+      "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "licence": "Licence instrument",
+      "accessed": "2026-07-27",
+      "use": "Rights control and required fallback acknowledgement for Crown benchmark material."
+    },
+    {
+      "id": "SRC-AUS-MRAC",
+      "title": "Machine Readable Australian Curriculum Version 9: Mathematics",
+      "publisher": "Australian Curriculum, Assessment and Reporting Authority",
+      "edition": "MRAC/2024/04/LA/MAT; files updated 7 June 2024",
+      "url": "https://vocabulary.curriculum.edu.au/MRAC/2024/04/LA/MAT/export/MRAC/2024/04/LA/MAT.jsonld",
+      "sha256": "4d6b7a01d10517dc97ad709055c62c171b9b90ea33e0d0fc395e9bd2f96e48b1",
+      "licence": "Creative Commons Attribution 4.0 International unless otherwise indicated",
+      "accessed": "2026-07-27",
+      "use": "Normative concept check by stable Version 9 content-description code; benchmark expression is not reproduced."
+    },
+    {
+      "id": "SRC-AUS-MATH",
+      "title": "Australian Curriculum Version 9.0: Mathematics - learning-area structure",
+      "publisher": "Australian Curriculum, Assessment and Reporting Authority",
+      "edition": "Version 9.0, endorsed 10 May 2022",
+      "url": "https://www.australiancurriculum.edu.au/curriculum-information/understand-this-learning-area/mathematics",
+      "licence": "Creative Commons Attribution 4.0 International unless otherwise indicated",
+      "accessed": "2026-07-27",
+      "use": "High-level strand and proficiency structure check only."
+    },
+    {
+      "id": "SRC-AUS-VERSION",
+      "title": "Australian Curriculum version history",
+      "publisher": "Australian Curriculum, Assessment and Reporting Authority",
+      "edition": "Page records Version 9.0 as endorsed 10 May 2022",
+      "url": "https://www.australiancurriculum.edu.au/help/f-10-curriculum-overview/version-history",
+      "licence": "Creative Commons Attribution 4.0 International unless otherwise indicated",
+      "accessed": "2026-07-27",
+      "use": "Edition control for the Version 9 benchmark."
+    },
+    {
+      "id": "SRC-AUS-TERMS",
+      "title": "Australian Curriculum copyright and terms of use",
+      "publisher": "Australian Curriculum, Assessment and Reporting Authority",
+      "edition": "Terms last updated April 2021",
+      "url": "https://www.australiancurriculum.edu.au/copyright-and-terms-of-use/",
+      "licence": "Licence control documenting CC BY 4.0 coverage, attribution and exclusions",
+      "accessed": "2026-07-27",
+      "use": "Rights control; excluded material was not used."
+    },
+    {
+      "id": "SRC-NS-MATH-P",
+      "title": "Mathematics Primary",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 8 August 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-primary",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-NS-MATH-1",
+      "title": "Mathematics 1",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 26 July 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-1",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-NS-MATH-2",
+      "title": "Mathematics 2",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 26 July 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-2",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-NS-MATH-3",
+      "title": "Mathematics 3",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 26 July 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-3",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-NS-MATH-4",
+      "title": "Mathematics 4",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 26 July 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-4",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-NS-MATH-5",
+      "title": "Mathematics 5",
+      "publisher": "Nova Scotia Department of Education and Early Childhood Development",
+      "edition": "Updated 26 July 2022",
+      "url": "https://curriculum.novascotia.ca/english-programs/course/mathematics-5",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Grade-matched localization and local-scope review only; not a normative benchmark and no wording is copied."
+    },
+    {
+      "id": "SRC-CA-MINT",
+      "title": "Canadian Circulation",
+      "publisher": "Royal Canadian Mint",
+      "edition": "Live circulation-denomination index",
+      "url": "https://www.mint.ca/en/discover/canadian-circulation",
+      "licence": "Reference-only facts check; no reuse licence is relied upon",
+      "accessed": "2026-07-27",
+      "use": "Factual check for the selected Canadian circulation-coin denominations; no imagery or wording is reused."
+    },
+    {
+      "id": "SRC-CA-SI",
+      "title": "GEN-50 - Use in trade of units of measurement defined in the Weights and Measures Act",
+      "publisher": "Measurement Canada, Innovation, Science and Economic Development Canada",
+      "edition": "Published and effective 28 January 2026",
+      "url": "https://ised-isde.canada.ca/site/measurement-canada/en/laws-and-requirements/gen-50-use-trade-units-measurement-defined-weights-and-measures-act",
+      "licence": "Reference-only facts check",
+      "accessed": "2026-07-27",
+      "use": "Factual check that SI/metric units and symbols are defined for Canadian use; no wording is copied."
+    }
+  ],
+  "localization": {
+    "language": "en-CA",
+    "region": "CA-NS",
+    "currency": "CAD",
+    "currencyMinorUnit": "cent",
+    "measurementSystem": "metric",
+    "gradeSpan": "pre-K-foundations-through-grade-5"
+  },
+  "taskTypePolicy": {
+    "version": 1,
+    "rule": "Every generated question names one declared task type. A skill cannot become solid until each required task type has at least one clean evidentiary witness."
+  },
+  "familyEnum": [
+    "addition",
+    "addsub",
+    "area",
+    "bond",
+    "classify",
+    "compare",
+    "data",
+    "decimal",
+    "division",
+    "expression",
+    "factor",
+    "fraction",
+    "geometry",
+    "measurement",
+    "money",
+    "multiplication",
+    "number",
+    "pattern",
+    "placevalue",
+    "rounding",
+    "subtraction",
+    "time",
+    "volume"
+  ],
+  "constraintSchema": {
+    "version": 1,
+    "closed": true,
+    "keyTypes": {
+      "addendMax": [
+        "number"
+      ],
+      "amountMaxCents": [
+        "number"
+      ],
+      "areaUnits": [
+        "array:string"
+      ],
+      "attribute": [
+        "string"
+      ],
+      "attributes": [
+        "array:string"
+      ],
+      "base": [
+        "number"
+      ],
+      "calculator": [
+        "boolean"
+      ],
+      "categoryCount": [
+        "array:number",
+        "number"
+      ],
+      "categoryCountMax": [
+        "number"
+      ],
+      "change": [
+        "number"
+      ],
+      "changes": [
+        "array:number"
+      ],
+      "classifications": [
+        "array:string"
+      ],
+      "clock": [
+        "string"
+      ],
+      "clocks": [
+        "array:string"
+      ],
+      "collectionMax": [
+        "number"
+      ],
+      "comparisonTypes": [
+        "array:string"
+      ],
+      "contexts": [
+        "array:string"
+      ],
+      "conversionStepsMax": [
+        "number"
+      ],
+      "coordinateForm": [
+        "string"
+      ],
+      "coordinateMax": [
+        "number"
+      ],
+      "cubeBaseMax": [
+        "number"
+      ],
+      "currency": [
+        "string"
+      ],
+      "daySpanMax": [
+        "number"
+      ],
+      "decimalPlacesMax": [
+        "number"
+      ],
+      "decimalRoundingUnits": [
+        "array:number"
+      ],
+      "degreesMax": [
+        "number"
+      ],
+      "degreesMin": [
+        "number"
+      ],
+      "denominationsCents": [
+        "array:number"
+      ],
+      "denominatorMax": [
+        "number"
+      ],
+      "denominators": [
+        "array:number"
+      ],
+      "dependencyTypes": [
+        "array:string"
+      ],
+      "differenceMax": [
+        "number"
+      ],
+      "digitalToolOptional": [
+        "boolean"
+      ],
+      "dimensions": [
+        "array:number"
+      ],
+      "dimensionsMax": [
+        "array:number"
+      ],
+      "displayTypes": [
+        "array:string"
+      ],
+      "distinctPartitionsMin": [
+        "number"
+      ],
+      "dividendMax": [
+        "number"
+      ],
+      "divisor": [
+        "number"
+      ],
+      "divisorMax": [
+        "number"
+      ],
+      "divisors": [
+        "array:number"
+      ],
+      "durationContrast": [
+        "string"
+      ],
+      "durationMinutesMax": [
+        "number"
+      ],
+      "equationCount": [
+        "number"
+      ],
+      "explanationRequired": [
+        "boolean"
+      ],
+      "factFactorMax": [
+        "number"
+      ],
+      "factors": [
+        "array:number"
+      ],
+      "features": [
+        "array:string"
+      ],
+      "fixedFactors": [
+        "array:number"
+      ],
+      "formats": [
+        "array:string"
+      ],
+      "gridDimensionsMax": [
+        "array:number"
+      ],
+      "gridMax": [
+        "array:number"
+      ],
+      "groupCountMax": [
+        "number"
+      ],
+      "groupSizes": [
+        "array:number"
+      ],
+      "incrementCents": [
+        "number"
+      ],
+      "inputMax": [
+        "number"
+      ],
+      "intervals": [
+        "array:number"
+      ],
+      "inverseCheck": [
+        "boolean"
+      ],
+      "investigationTypes": [
+        "array:string"
+      ],
+      "itemCountMax": [
+        "number"
+      ],
+      "items": [
+        "number"
+      ],
+      "keyRequired": [
+        "boolean"
+      ],
+      "landmarksMax": [
+        "number"
+      ],
+      "layouts": [
+        "array:string"
+      ],
+      "lengthUnits": [
+        "array:string"
+      ],
+      "lineCountMax": [
+        "number"
+      ],
+      "lineMarking": [
+        "array:string"
+      ],
+      "maxNumber": [
+        "number"
+      ],
+      "maxResult": [
+        "number"
+      ],
+      "maxValue": [
+        "number"
+      ],
+      "metric": [
+        "boolean"
+      ],
+      "minNumber": [
+        "number"
+      ],
+      "minResult": [
+        "number"
+      ],
+      "minuendMax": [
+        "number"
+      ],
+      "minutePrecision": [
+        "number"
+      ],
+      "minuteValues": [
+        "array:number"
+      ],
+      "minValue": [
+        "number"
+      ],
+      "missingTerms": [
+        "number"
+      ],
+      "mixedNumeralAllowed": [
+        "boolean"
+      ],
+      "modalities": [
+        "array:string"
+      ],
+      "multiplicandMax": [
+        "number"
+      ],
+      "multiplierMax": [
+        "number"
+      ],
+      "negativeMin": [
+        "number"
+      ],
+      "nonnegative": [
+        "boolean"
+      ],
+      "nonnegativeResults": [
+        "boolean"
+      ],
+      "nonstandardPartition": [
+        "boolean"
+      ],
+      "numberMax": [
+        "number"
+      ],
+      "numeratorMin": [
+        "number"
+      ],
+      "objectCount": [
+        "number"
+      ],
+      "operandMax": [
+        "number"
+      ],
+      "operations": [
+        "array:string"
+      ],
+      "orientationVaried": [
+        "boolean"
+      ],
+      "otherFactorMax": [
+        "number"
+      ],
+      "outcomeCountMax": [
+        "number"
+      ],
+      "partCount": [
+        "number"
+      ],
+      "partitionsMin": [
+        "number"
+      ],
+      "percentages": [
+        "array:number"
+      ],
+      "positiveMax": [
+        "number"
+      ],
+      "priceMaxCents": [
+        "number"
+      ],
+      "productMax": [
+        "number"
+      ],
+      "proofMode": [
+        "string"
+      ],
+      "properties": [
+        "array:string"
+      ],
+      "propertyCount": [
+        "number"
+      ],
+      "quadrants": [
+        "array:number"
+      ],
+      "range": [
+        "array:number"
+      ],
+      "rectanglesMax": [
+        "number"
+      ],
+      "regrouping": [
+        "array:boolean"
+      ],
+      "relations": [
+        "array:string"
+      ],
+      "relationship": [
+        "string"
+      ],
+      "remainder": [
+        "number"
+      ],
+      "remainderAllowed": [
+        "boolean"
+      ],
+      "remainderInterpretations": [
+        "array:string"
+      ],
+      "remainderMax": [
+        "number"
+      ],
+      "repeatsShownMin": [
+        "number"
+      ],
+      "replacementModes": [
+        "array:string"
+      ],
+      "representations": [
+        "array:string"
+      ],
+      "requiredBridge": [
+        "number"
+      ],
+      "responsesMax": [
+        "number"
+      ],
+      "resultMax": [
+        "number"
+      ],
+      "reversalChecks": [
+        "boolean"
+      ],
+      "rotationAllowed": [
+        "boolean"
+      ],
+      "rotationOrders": [
+        "array:number"
+      ],
+      "roundingUnits": [
+        "array:number"
+      ],
+      "routeSegmentsMax": [
+        "number"
+      ],
+      "runsMin": [
+        "number"
+      ],
+      "scale": [
+        "number"
+      ],
+      "scaleFactors": [
+        "array:number"
+      ],
+      "scaleReadings": [
+        "string"
+      ],
+      "scaleValues": [
+        "array:number"
+      ],
+      "setSizeMax": [
+        "number"
+      ],
+      "shapes": [
+        "array:string"
+      ],
+      "sideCountMax": [
+        "number"
+      ],
+      "sizeCueDisabled": [
+        "boolean"
+      ],
+      "solids": [
+        "array:string"
+      ],
+      "squareBaseMax": [
+        "number"
+      ],
+      "startMax": [
+        "number"
+      ],
+      "startMin": [
+        "number"
+      ],
+      "statistics": [
+        "array:string"
+      ],
+      "stepCount": [
+        "number"
+      ],
+      "stepCountMax": [
+        "number"
+      ],
+      "stepMagnitudeMax": [
+        "number"
+      ],
+      "steps": [
+        "array:number"
+      ],
+      "stepsMax": [
+        "number"
+      ],
+      "strategies": [
+        "array:string"
+      ],
+      "strategyChoiceRequired": [
+        "boolean"
+      ],
+      "structures": [
+        "array:string"
+      ],
+      "sumMax": [
+        "number"
+      ],
+      "symmetryTypes": [
+        "array:string"
+      ],
+      "taskTypes": [
+        "array:string"
+      ],
+      "taxExcluded": [
+        "boolean"
+      ],
+      "termIndexMax": [
+        "number"
+      ],
+      "termsMin": [
+        "number"
+      ],
+      "ties": [
+        "string"
+      ],
+      "toleranceDegrees": [
+        "number"
+      ],
+      "totalMax": [
+        "number"
+      ],
+      "transformations": [
+        "array:string"
+      ],
+      "trials": [
+        "array:number"
+      ],
+      "trialsPerRun": [
+        "array:number"
+      ],
+      "turns": [
+        "array:string"
+      ],
+      "turnsMax": [
+        "number"
+      ],
+      "unitCountMax": [
+        "number"
+      ],
+      "unitFamilies": [
+        "array:array"
+      ],
+      "unitForms": [
+        "array:string"
+      ],
+      "unitMarked": [
+        "boolean"
+      ],
+      "units": [
+        "array:string"
+      ],
+      "unitType": [
+        "string"
+      ],
+      "unknownPart": [
+        "boolean"
+      ],
+      "unknownPosition": [
+        "string"
+      ],
+      "unknownPositions": [
+        "array:string"
+      ],
+      "unmatchedMax": [
+        "number"
+      ],
+      "valueMax": [
+        "number"
+      ],
+      "variableCount": [
+        "number"
+      ],
+      "variableTypes": [
+        "array:string"
+      ],
+      "volumeUnits": [
+        "array:string"
+      ],
+      "waysMin": [
+        "number"
+      ],
+      "wholeMax": [
+        "number"
+      ],
+      "wholeMin": [
+        "number"
+      ],
+      "wholeNumbers": [
+        "boolean"
+      ],
+      "wholeRoundingUnits": [
+        "array:number"
+      ],
+      "wholeUnits": [
+        "boolean"
+      ]
+    }
+  },
+  "localizationReview": {
+    "status": "reference-only-localization-check",
+    "normativeBenchmark": false,
+    "rule": "Nova Scotia sources never appear in skill benchmarkIds. Each school band is checked only against its grade-matched public course overview; pre-K foundations have no asserted Nova Scotia grade mapping.",
+    "bandSources": {
+      "PREK": [],
+      "K": [
+        "SRC-NS-MATH-P"
+      ],
+      "G1": [
+        "SRC-NS-MATH-1"
+      ],
+      "G2": [
+        "SRC-NS-MATH-2"
+      ],
+      "G3": [
+        "SRC-NS-MATH-3"
+      ],
+      "G4": [
+        "SRC-NS-MATH-4"
+      ],
+      "G5": [
+        "SRC-NS-MATH-5"
+      ]
+    },
+    "contextSources": [
+      "SRC-CA-MINT",
+      "SRC-CA-SI"
+    ]
+  }
+}
