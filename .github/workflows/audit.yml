@@ -32,7 +32,16 @@ jobs:
       - name: Validate versioned curriculum manifest
         shell: powershell
         run: |
-          node --input-type=module -e 'import { CURRICULUM_PATH, loadManifest } from "./audit/lib/curriculum-manifest.mjs"; const loaded = await loadManifest(CURRICULUM_PATH); const strands = new Set(loaded.manifest.skills.map((skill) => skill.strand)); const completeLevels = loaded.manifest.levels.every((level) => loaded.manifest.skills.filter((skill) => skill.level === level.number).length === loaded.manifest.counts.skillsPerLevel); if (loaded.manifest.levels.length !== 21 || strands.size !== 6 || loaded.manifest.skills.length !== 126 || !completeLevels) throw new Error(`Expected 21 six-skill levels and 126 skills across 6 declared strands; found ${loaded.manifest.levels.length} levels, ${strands.size} strands, and ${loaded.manifest.skills.length} skills.`); console.log(`${loaded.manifest.manifestId} v${loaded.manifest.version} sha256:${loaded.sha256}`);'
+          $manifestCheck = @'
+          import { CURRICULUM_PATH, loadManifest } from "./audit/lib/curriculum-manifest.mjs";
+          const loaded = await loadManifest(CURRICULUM_PATH);
+          const strands = new Set(loaded.manifest.skills.map((skill) => skill.strand));
+          const completeLevels = loaded.manifest.levels.every((level) => loaded.manifest.skills.filter((skill) => skill.level === level.number).length === loaded.manifest.counts.skillsPerLevel);
+          if (loaded.manifest.levels.length !== 21 || strands.size !== 6 || loaded.manifest.skills.length !== 126 || !completeLevels) throw new Error(`Expected 21 six-skill levels and 126 skills across 6 declared strands; found ${loaded.manifest.levels.length} levels, ${strands.size} strands, and ${loaded.manifest.skills.length} skills.`);
+          console.log(`${loaded.manifest.manifestId} v${loaded.manifest.version} sha256:${loaded.sha256}`);
+          '@
+          $manifestCheck | node --input-type=module
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run deterministic engine and browser audit
         shell: powershell
