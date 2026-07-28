@@ -429,6 +429,17 @@ export async function runAudit({ browserPath = null } = {}) {
 }
 
 const report = await runAudit({ browserPath: arg("browser") || process.env.MQ_BROWSER_PATH || null });
-process.stdout.write(`${JSON.stringify({ status: report.status, technicalShippable: report.technicalShippable, publication: report.publication.status, shippable: report.shippable, countsMatch: report.countsMatch, publicCandidate: { status: report.publicCandidate.status, payloadSha256: report.publicCandidate.payloadSha256, payloadTreeOid: report.publicCandidate.payloadTreeOid }, actual: report.actual, curriculumManifest: { status: report.curriculumManifest.status, manifestId: report.curriculumManifest.manifestId, version: report.curriculumManifest.version, sha256: report.curriculumManifest.sha256, counts: report.curriculumManifest.counts }, engine: report.engine.summary, semantic: { status: report.semantic.contractPass ? "PASS" : "FAIL", ...report.semantic.summary }, coverage: { status: report.coverage.status, branchPct: report.coverage.branchPct }, generator: report.generator.status, mutation: report.mutation.status, browser: report.browser.status, parentStrings: report.parentStrings.status }, null, 2)}\n`);
+const browserDiagnostic = report.browser.status === "PASS" ? null : {
+  reason: report.browser.reason ?? null,
+  timedOut: report.browser.process?.timedOut ?? false,
+  processStatus: report.browser.process?.status ?? null,
+  signal: report.browser.process?.signal ?? null,
+  error: report.browser.process?.error ?? null,
+  complete: report.browser.complete ?? false,
+  parseError: report.browser.parseError ?? null,
+  cleanupError: report.browser.cleanupError ?? null,
+  assertions: report.browser.results.length,
+};
+process.stdout.write(`${JSON.stringify({ status: report.status, technicalShippable: report.technicalShippable, publication: report.publication.status, shippable: report.shippable, countsMatch: report.countsMatch, publicCandidate: { status: report.publicCandidate.status, payloadSha256: report.publicCandidate.payloadSha256, payloadTreeOid: report.publicCandidate.payloadTreeOid }, actual: report.actual, curriculumManifest: { status: report.curriculumManifest.status, manifestId: report.curriculumManifest.manifestId, version: report.curriculumManifest.version, sha256: report.curriculumManifest.sha256, counts: report.curriculumManifest.counts }, engine: report.engine.summary, semantic: { status: report.semantic.contractPass ? "PASS" : "FAIL", ...report.semantic.summary }, coverage: { status: report.coverage.status, branchPct: report.coverage.branchPct }, generator: report.generator.status, mutation: report.mutation.status, browser: report.browser.status, browserDiagnostic, parentStrings: report.parentStrings.status }, null, 2)}\n`);
 const technicalOnly = process.argv.includes("--technical-only");
 process.exitCode = (technicalOnly ? report.technicalShippable : report.shippable) ? 0 : 1;

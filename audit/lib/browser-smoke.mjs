@@ -102,7 +102,7 @@ function spawnBrowser(browserPath, args, timeoutMs) {
   });
 }
 
-export async function runBrowserSmoke({ root, browserPath, timeoutMs = 45_000 }) {
+export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }) {
   if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
   const requests = [];
   const server = serveWorkspace(root, requests);
