@@ -177,6 +177,12 @@ across a simulated safe-boundary document transition instead of accepting a
 single event-loop sample. These checks protect hosted run `30513379330`, which
 preserved the correct anonymous record and progress but sampled Home during a
 reload, then later stalled while entering a re-teach scenario.
+Every scenario is now paintable before its first readiness wait, and the
+installed-browser argument vector disables Chromium's background timer,
+occluded-window, and renderer throttles for the synthetic multi-iframe audit.
+Executable style, call-order, and launch-argument checks protect hosted run
+`30514438006`, which otherwise left a complete hidden placement document inert
+and empty while its progress-lock bootstrap callback was background-starved.
 
 ## Page-adapter effect map
 

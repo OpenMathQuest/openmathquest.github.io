@@ -192,6 +192,13 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
     true,
   );
+  for (const argument of [
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-renderer-backgrounding",
+  ]) {
+    assert.equal(args.includes(argument), true, argument);
+  }
   assert.equal(args.includes("--dump-dom"), true);
   assert.equal(args.at(-1), url);
 });
@@ -252,11 +259,100 @@ test("browser scenarios await settled Home and release the writer lease before i
   };
   assert.equal(await requireScenarioHome(homeFrame), true);
 
+  const keepAuditFramePainted = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "keepAuditFramePainted")})`,
+  );
+  const paintedScenario = { frame: { style: {} } };
+  keepAuditFramePainted(paintedScenario);
+  assert.deepEqual(
+    paintedScenario.frame.style,
+    { left: "0", opacity: "0.01", zIndex: "9999" },
+  );
+
   const scenarioFrameSource = adapterFunction(browserAudit, "scenarioFrameBytes");
   assert.match(scenarioFrameSource, /armAuditFrameRemoval\(frame\)/u);
-  assert.match(
-    scenarioFrameSource,
-    /catch\s*\(error\)\s*\{\s*frame\.remove\(\);\s*throw error;\s*\}/u,
+  const bootEffects = [];
+  const bootFrame = {
+    style: {},
+    contentDocument: {},
+    contentWindow: {},
+    remove() {
+      bootEffects.push("remove");
+    },
+  };
+  let failBoot = false;
+  const scenarioFrameBytes = vm.runInNewContext(
+    `(${scenarioFrameSource})`,
+    {
+      TEST_SAVE_KEY: "test-progress",
+      auditWriterBarrier: async () => bootEffects.push("barrier"),
+      localStorage: {
+        setItem(key, value) {
+          bootEffects.push(`stored:${key}:${value}`);
+        },
+      },
+      document: {
+        createElement(tag) {
+          assert.equal(tag, "iframe");
+          return bootFrame;
+        },
+        body: {
+          append(candidate) {
+            assert.equal(candidate, bootFrame);
+            bootEffects.push("append");
+          },
+        },
+      },
+      armAuditFrameRemoval(candidate) {
+        assert.equal(candidate, bootFrame);
+        bootEffects.push("armed");
+      },
+      keepAuditFramePainted,
+      async waitFrame(candidate) {
+        assert.equal(candidate, bootFrame);
+        assert.equal(candidate.style.left, "0");
+        assert.equal(candidate.style.opacity, "0.01");
+        assert.equal(candidate.style.zIndex, "9999");
+        bootEffects.push("waited-while-painted");
+        if (failBoot) throw new Error("boot-failure");
+      },
+      pause: async () => bootEffects.push("paused"),
+      requireScenarioAppReady: async (candidate) => {
+        assert.equal(candidate, bootFrame);
+        bootEffects.push("ready");
+      },
+    },
+  );
+  const bootedScenario = await scenarioFrameBytes("paintable-boot", "bytes", 390, 844);
+  assert.equal(bootedScenario.frame, bootFrame);
+  assert.deepEqual(
+    bootEffects,
+    [
+      "barrier",
+      "stored:test-progress:bytes",
+      "armed",
+      "append",
+      "waited-while-painted",
+      "paused",
+      "ready",
+    ],
+  );
+  failBoot = true;
+  const failedBootStart = bootEffects.length;
+  await assert.rejects(
+    scenarioFrameBytes("failed-boot", "bad-bytes"),
+    /boot-failure/u,
+  );
+  assert.deepEqual(
+    bootEffects.slice(failedBootStart),
+    [
+      "barrier",
+      "stored:test-progress:bad-bytes",
+      "armed",
+      "append",
+      "waited-while-painted",
+      "remove",
+    ],
     "a failed boot must execute the same lease-releasing frame cleanup",
   );
   assert.match(

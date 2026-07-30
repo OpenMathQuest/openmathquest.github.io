@@ -423,6 +423,7 @@
         get doc() { return frame.contentDocument; },
         get win() { return frame.contentWindow; },
       };
+      keepAuditFramePainted(scenario);
       try {
         await waitFrame(frame);
         await pause();

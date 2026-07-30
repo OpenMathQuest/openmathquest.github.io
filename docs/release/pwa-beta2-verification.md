@@ -45,6 +45,12 @@ the next scenario. Anonymous first-use verification awaits the settled Home
 view across a possible service-worker safe-boundary reload. Both lifecycle
 effects have executable regressions after hosted run `30513379330` exposed
 their former scheduling dependence.
+Scenario frames are made minimally paintable before bootstrap readiness is
+awaited, and the synthetic Chromium launch disables background timer,
+occluded-window, and renderer throttling. These harness-only controls prevent
+hidden-iframe scheduling from starving the cross-process progress-lock
+callback; executable argument, style, and call-order checks protect the
+failure observed in hosted run `30514438006`.
 
 Immediately before the Pages upload action, the release workflow constructs a
 new `_site` solely from regular, non-executable Git blobs at the already
