@@ -15,7 +15,7 @@ MQ-002 count-a-set-to-three=question.countSet/visualPrompt
 MQ-003 compare-tiny-sets=question.compare/comparison
 MQ-004 continue-an-ab-repeat=question.patternNext/visualPrompt
 MQ-005 match-familiar-shapes=question.shape/visualPrompt
-MQ-006 direct-compare=question.directCompare/visualPrompt
+MQ-006 direct-compare=question.eventDuration/visualPrompt
 MQ-007 sort=question.sortRule/attributeSet
 MQ-008 count-a-set-to-five=question.countSet/visualPrompt
 MQ-009 recognize-structured-set-to-three=question.structuredQuantity/visualPrompt
@@ -25,7 +25,7 @@ MQ-012 compare-one-attribute-directly=question.directCompare/visualPrompt
 MQ-013 show-one-joining=question.addition/visualPrompt
 MQ-014 show-one-leaving=question.subtraction/visualPrompt
 MQ-015 share-small-sets-fairly=question.fairShare/array
-MQ-016 copy-a-three-part-repeat=question.patternNext/visualPrompt
+MQ-016 copy-a-three-part-repeat=question.copyPatternAction/visualPrompt
 MQ-017 place-it-by-a-landmark=question.landmarkPosition/visualPrompt
 MQ-018 record-a-two-group-sort=question.sortRecord/visualPrompt
 MQ-019 connect-numbers-zero-to-ten=question.numberConnection/visualPrompt
@@ -33,13 +33,13 @@ MQ-020 recognize-structured-set-to-five=question.structuredQuantity/visualPrompt
 MQ-021 compare-collections-to-ten=question.compare/comparison
 MQ-022 recall-parts-of-five=question.missingPart/numberBond
 MQ-023 build-and-break-ten=question.missingPart/numberBond
-MQ-024 classify-flat-shape=question.shapeProperty/visualPrompt,classify-solid=question.shapeProperty/visualPrompt
+MQ-024 classify-flat-shape=question.shapeProperty/attributeSet,classify-solid=question.shapeProperty/attributeSet
 MQ-025 order-numbers-zero-to-twenty=question.numberBetween/numberLine
 MQ-026 see-ten-inside-teen-numbers=question.teenBuild/tenFrame
 MQ-027 find-one-more-or-less=question.oneMoreLess/numberLine
 MQ-028 write-joining-equations-to-ten=question.addition/visualPrompt+question.appliedAddition/visualPrompt
 MQ-029 write-leaving-equations-to-ten=question.subtraction/visualPrompt+question.appliedSubtraction/visualPrompt
-MQ-030 make-two-equal-halves=question.fraction/fractionPair
+MQ-030 make-two-equal-halves=question.makeHalves/fractionPair
 MQ-031 read-and-form-numerals-to-twenty=question.numeralForm/visualPrompt
 MQ-032 make-equal-groups-to-ten=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
 MQ-033 extend=question.patternNext/visualPrompt
@@ -52,7 +52,7 @@ MQ-039 count-in-twos-fives-and-tens=question.patternNext/visualPrompt
 MQ-040 add-within-twenty=question.makeTen/numberBond
 MQ-041 subtract-within-twenty=question.subtraction/visualPrompt+question.appliedSubtraction/visualPrompt
 MQ-042 read-hour-and-half-hour=question.timeReadMinute/visualPrompt
-MQ-043 build-an-add-subtract-family=question.missingPart/numberBond+question.factFamily/numberBond
+MQ-043 build-an-add-subtract-family=question.factFamilyBuild/numberBond
 MQ-044 balance-a-missing-part=question.missingPart/numberBond+question.missingSubtrahend/numberBond
 MQ-045 make-equal-groups-and-shares=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
 MQ-046 measure-with-equal-informal-units=question.informalMeasure/visualPrompt
@@ -61,7 +61,7 @@ MQ-048 recognize-canadian-coin-values=question.coinValue/visualPrompt
 MQ-049 addition=question.makeTen/numberBond,subtraction=question.subtractMakeTen/numberBond
 MQ-050 repartition-a-two-digit-number=question.renamePlace/placeValue
 MQ-051 match-equivalent-coin-amounts=question.coinEquivalent/proportionalBar
-MQ-052 classify-flat-shape=question.shapeProperty/visualPrompt,classify-solid=question.shapeProperty/visualPrompt
+MQ-052 classify-flat-shape=question.shapeProperty/attributeSet,classify-solid=question.shapeProperty/attributeSet
 MQ-053 give-and-follow-directions=question.routeFinish/visualPrompt
 MQ-054 make-a-one-to-one-data-display=question.responseListDifference/visualPrompt
 MQ-055 read-and-order-to-one-thousand=question.numberOrder/visualPrompt
@@ -97,7 +97,7 @@ MQ-084 addition=question.patternNext/visualPrompt,subtraction=question.patternNe
 MQ-085 find-change-from-canadian-price=question.moneyOperation/proportionalBar
 MQ-086 read-time-to-the-minute=question.timeReadMinute/visualPrompt+question.durationMinutes/clockSpan+question.timeReadDigital/visualPrompt
 MQ-087 polygon-perimeter=question.polygonPerimeter/visualPrompt
-MQ-088 property-classification=question.shapeProperty/visualPrompt
+MQ-088 property-classification=question.shapeProperty/attributeSet
 MQ-089 locate-places-on-a-grid-map=question.routeFinish/visualPrompt
 MQ-090 repeat-and-compare=question.chanceRunCompare/visualPrompt
 MQ-091 read-and-order-to-one-hundred-thousand=question.numberOrder/visualPrompt
@@ -184,6 +184,242 @@ function answerNumber(question) {
   return rationalNumber(question.answer.value);
 }
 
+const STRUCTURED_RESPONSE_METHODS = new Set([
+  "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+  "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
+  "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
+  "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
+  "METRIC_SCALE", "ANGLE_MEASURE", "MEASURE_OBJECT", "AREA_DECOMPOSE", "VOLUME_INSPECT",
+]);
+
+const ATTRIBUTE_PROPERTY_TARGET = Object.freeze({
+  "3 sides": "triangle",
+  "4 equal sides": "square",
+  "6 flat faces": "cube",
+  "one curved surface and no flat faces": "sphere",
+  "a right angle": "rectangle",
+  "2 pairs of parallel sides and a right angle": "rectangle",
+  "perpendicular sides and 2 long sides": "rectangle",
+});
+
+function normalizedAttributeToken(value) {
+  return String(value ?? "").normalize("NFC").trim().toLowerCase();
+}
+
+function attributeItemMatchesRule(item, rule) {
+  const attribute = normalizedAttributeToken(rule?.attribute);
+  const value = normalizedAttributeToken(rule?.value);
+  if (attribute === "shape") return normalizedAttributeToken(item?.shape) === value;
+  if (attribute === "solid") return normalizedAttributeToken(item?.solid) === value;
+  if (attribute === "property") {
+    const target = ATTRIBUTE_PROPERTY_TARGET[value];
+    return Boolean(target)
+      && [item?.shape, item?.solid].some((candidate) => normalizedAttributeToken(candidate) === target);
+  }
+  return false;
+}
+
+function sortCategoryId(item, rule, categories) {
+  const attribute = String(rule?.attribute ?? "").trim();
+  const itemValue = normalizedAttributeToken(item?.[attribute]);
+  const category = categories.find((candidate) => {
+    const values = [candidate?.value, candidate?.id].map(normalizedAttributeToken);
+    return itemValue.length > 0 && values.includes(itemValue);
+  });
+  return category?.id === undefined ? null : String(category.id);
+}
+
+function sortPlacementsFromDescriptor(question) {
+  const values = question.modelDescriptor?.values ?? {};
+  const items = Array.isArray(values.items) ? values.items : [];
+  const categories = Array.isArray(values.categories) ? values.categories : [];
+  if (categories.length) {
+    return Object.fromEntries(items.map((item, index) => [
+      `i${index}`,
+      sortCategoryId(item, values.rule, categories) ?? "",
+    ]));
+  }
+  return Object.fromEntries(items.map((item, index) => [
+    `i${index}`,
+    attributeItemMatchesRule(item, values.rule) ? "matches" : "other",
+  ]));
+}
+
+function incorrectSortSubmission(question, payload) {
+  const categories = Array.isArray(question.modelDescriptor?.values?.categories)
+    ? question.modelDescriptor.values.categories
+    : [];
+  const categoryIds = categories.map((category) => String(category.id));
+  const placements = Object.fromEntries(Object.entries(payload.placements).map(([itemId, bin]) => {
+    if (categoryIds.length >= 2) {
+      const current = categoryIds.indexOf(String(bin));
+      return [itemId, categoryIds[(current + 1 + categoryIds.length) % categoryIds.length]];
+    }
+    return [itemId, bin === "matches" ? "other" : "matches"];
+  }));
+  return { ...payload, placements };
+}
+
+function repeatedItems(prefix, count) {
+  return Array.from({ length: Math.max(0, Number(count) || 0) }, (_, index) => `${prefix}${index}`);
+}
+
+function coinCents(label) {
+  const text = String(label ?? "").trim();
+  const amount = Number(text.replace(/[^\d]/gu, ""));
+  return text.startsWith("$") ? amount * 100 : amount;
+}
+
+export function correctStructuredResponse(engine, question) {
+  const state = engine.createResponseState(question);
+  const method = question.inputMethod;
+  const params = question.params || {};
+  if (method === "COUNT_TOUCH") {
+    state.touched = repeatedItems("i", Number(question.answer.value));
+    state.count = String(question.answer.value);
+  } else if (method === "ORDER_BUILD") {
+    state.order = [Number(params.before), Number(question.answer.value), Number(params.after)];
+  } else if (method === "PLACE_VALUE_BUILD") {
+    state.action = question.semanticPromptStringId === "question.renamePlace" ? "trade"
+      : question.semanticPromptStringId === "question.scalePlace" ? "shift"
+        : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId) ? "partition"
+          : "build";
+    state.value = Number(question.answer.value);
+  } else if (method === "COIN_BUILD") {
+    state.coins = Array.from({ length: Number(question.answer.value) }, () => coinCents(params.secondCoin));
+  } else if (method === "SYMMETRY_BUILD") {
+    state.lines = Array.isArray(params.requiredLineIds)
+      ? [...params.requiredLineIds]
+      : Array.from({ length: Number(question.answer.value) }, (_, index) => `line${index + 1}`);
+  } else if (method === "EXPRESSION_BUILD") {
+    state.rule = String(params.rule);
+    state.value = Number(question.answer.value);
+  } else if (method === "PAIR_LINK") {
+    state.links = Array.from(
+      { length: Math.min(Number(params.leftCount ?? params.count), Number(params.rightCount ?? params.count)) },
+      (_, index) => [`a${index}`, `b${index}`],
+    );
+  } else if (method === "SORT_BINS") {
+    state.placements = sortPlacementsFromDescriptor(question);
+  } else if (method === "SHARE_DEAL") {
+    const recipientCount = Number(params.recipients);
+    const total = Number(params.total);
+    const remainder = total % recipientCount;
+    let next = 1;
+    while (state.pool.length > remainder) {
+      const recipient = `r${next}`;
+      const item = state.pool.shift();
+      state.recipients[recipient].push(item);
+      state.history = (state.history || []).concat([[recipient, item]]);
+      next = next % recipientCount + 1;
+    }
+  } else if (method === "GROUP_BUILD") {
+    const groups = Number(params.groups ?? params.a);
+    let next = 1;
+    while (state.pool.length) {
+      const recipient = `g${next}`;
+      const item = state.pool.shift();
+      state.recipients[recipient].push(item);
+      state.history = (state.history || []).concat([[recipient, item]]);
+      next = next % groups + 1;
+    }
+  } else if (method === "BOND_SPLIT") {
+    const counts = question.semanticPromptStringId === "question.secondPartition"
+      ? [Number(params.secondA), Number(question.answer.value)]
+      : [Number(params.part), Number(question.answer.value)];
+    while (state.groups.g1.length < counts[0]) {
+      const item = state.pool.shift();
+      state.groups.g1.push(item);
+      state.history.push(["g1", item]);
+    }
+    while (state.groups.g2.length < counts[1]) {
+      const item = state.pool.shift();
+      state.groups.g2.push(item);
+      state.history.push(["g2", item]);
+    }
+  } else if (method === "PATTERN_BUILD") {
+    state.tokens = String(question.answer.value).trim().split(/\s+/u).filter(Boolean);
+  } else if (method === "LANDMARK_PLACE") {
+    state.relation = String(question.answer.value);
+  } else if (method === "SLOT_COMPOSER") {
+    const operator = /subtraction|leaving/iu.test(question.semanticPromptStringId) ? "\u2212" : "+";
+    state.slots = [String(params.a), operator, String(params.b), "=", String(question.answer.value)];
+  } else if (method === "FACT_FAMILY") {
+    const a = Number(params.a), b = Number(params.b), whole = Number(params.whole);
+    state.selected = [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
+  } else if (method === "GRAPH_BUILD") {
+    const keys = ["circles", "triangles", "cats", "dogs", "birds", "first", "second", "symbols"];
+    state.categories = Object.fromEntries(keys.filter((key) => Number.isFinite(Number(params[key]))).map((key) => [key, Number(params[key])]));
+    if (question.semanticPromptStringId === "question.surveyResponseList") state.interpretation = String(question.answer.value);
+    if (question.semanticPromptStringId === "question.scaledSurveyPlan") state.scale = Number(question.answer.value);
+  } else if (method === "FRACTION_PARTITION") {
+    const fraction = engine.parseRational(question.answer.value);
+    requireCondition(fraction, `${question.skillId}: direct fraction answer is not rational`);
+    state.templateId = "vertical";
+    const denominator = Number(state.denominator);
+    const shadedCount = Number(fraction.n) * denominator / Number(fraction.d);
+    requireCondition(Number.isInteger(shadedCount), `${question.skillId}: fraction partition is not reachable`);
+    state.shaded = repeatedItems("part", shadedCount);
+  } else if (method === "GRID_ROUTE") {
+    state.moves = Array.isArray(params.moves) ? [...params.moves] : [];
+    const coordinate = String(question.answer.value).match(/^\((\d+),(\d+)\)$/u);
+    const gridCell = String(question.answer.value).match(/^([A-Z])(\d+)$/u);
+    if (coordinate) state.end = { x: Number(coordinate[1]), y: Number(coordinate[2]) };
+    else if (gridCell) state.end = { x: gridCell[1].charCodeAt(0) - 64, y: Number(gridCell[2]) };
+    else state.value = String(question.answer.value);
+  } else if (method === "CLOCK_READ") {
+    const match = String(question.answer.value).match(/^(\d+):(\d{2})$/u);
+    requireCondition(match, `${question.skillId}: direct clock answer has no hour/minute`);
+    state.hour = Number(match[1]);
+    state.minute = Number(match[2]);
+  } else if (method === "METRIC_SCALE") {
+    state.value = Number(question.answer.value);
+  } else if (method === "ANGLE_MEASURE") {
+    state.degrees = Number(question.answer.value);
+  } else if (method === "ACTION_SCENE") {
+    state.actions = Array.from(
+      { length: Math.abs(Number(params.b)) },
+      () => /subtraction|leaving/iu.test(question.semanticPromptStringId) ? "remove" : "join",
+    );
+    state.value = String(question.answer.value);
+  } else if (method === "MEASURE_OBJECT") {
+    state.actions = Array.from({ length: Number(params.count) }, () => "place-unit");
+    state.value = String(params.count);
+  } else if (method === "AREA_DECOMPOSE") {
+    state.cutIds = ["cut1"];
+    state.part0 = String(Number(params.l1) * Number(params.w1));
+    state.part1 = String(Number(params.l2) * Number(params.w2));
+    state.total = String(question.answer.value);
+  } else if (method === "VOLUME_INSPECT") {
+    state.viewedLayers = Array.from({ length: Number(params.height) }, (_, index) => index + 1);
+    state.method = String(params.method);
+    state.value = String(question.answer.value);
+  } else {
+    throw new Error(`${question.skillId}: no structured response fixture for ${method}`);
+  }
+  return engine.serializeResponse(question, state);
+}
+
+function validateStructuredResponse(engine, question) {
+  if (!STRUCTURED_RESPONSE_METHODS.has(question.inputMethod)) return;
+  requireCondition(question.inputClass === "CONSTRUCTION", `${question.skillId}: ${question.inputMethod} is not construction`);
+  requireCondition(question.options.length === 0 && question.correctIndex === -1, `${question.skillId}: direct response exposes selection controls`);
+  const response = correctStructuredResponse(engine, question);
+  requireCondition(engine.gradeAnswer(question, response).correct, `${question.skillId}: ${question.inputMethod} cannot submit a canonical correct response`);
+  const scalar = engine.gradeAnswer(question, question.answer.value);
+  requireCondition(scalar.valid === false && scalar.reason === "structured-response-required", `${question.skillId}: ${question.inputMethod} accepts a scalar answer bypass`);
+  if (question.inputMethod === "SORT_BINS") {
+    const incorrectGrade = engine.gradeAnswer(question, incorrectSortSubmission(question, response));
+    requireCondition(incorrectGrade.valid === true && incorrectGrade.correct === false, `${question.skillId}: displaced sort placement was not valid-but-incorrect`);
+  }
+  if (question.inputMethod === "FRACTION_PARTITION") {
+    requireCondition(typeof response.templateId === "string" && response.templateId.length > 0, `${question.skillId}: fraction partition response omits templateId`);
+    const withoutTemplate = { ...response };
+    delete withoutTemplate.templateId;
+    requireCondition(engine.gradeAnswer(question, withoutTemplate).correct === false, `${question.skillId}: fraction partition accepts a missing templateId`);
+  }
+}
+
 function validateSelection(engine, question) {
   if (question.inputClass !== "SELECTION") return;
   requireCondition(Array.isArray(question.options) && question.options.length >= 2, `${question.skillId}: selection needs at least two choices`);
@@ -211,11 +447,36 @@ function validateModel(question) {
     requireCondition(typeof value.kind === "string" && value.kind, `${question.skillId}: visual prompt has no semantic kind`);
     const itemCount = Array.isArray(value.items) ? value.items.length : 0;
     const candidateCount = Array.isArray(value.candidates) ? value.candidates.length : 0;
-    requireCondition(itemCount + candidateCount > 0, `${question.skillId}: visual prompt has neither a diagram nor candidates`);
+    const dataCount = value.data && typeof value.data === "object" ? Object.keys(value.data).length : 0;
+    const notationCount = value.notation && typeof value.notation === "object" ? Object.keys(value.notation).length : 0;
+    requireCondition(itemCount + candidateCount + dataCount + notationCount > 0, `${question.skillId}: visual prompt has no answer-free stimulus data`);
   } else if (model.type === "attributeSet") {
     requireCondition(Array.isArray(value.items) && value.items.length >= 3, `${question.skillId}: attribute set is empty`);
-    requireCondition(Array.isArray(value.targetIndexes) && value.targetIndexes.length > 0, `${question.skillId}: attribute set has no targets`);
-    requireCondition(Array.isArray(value.nonTargetIndexes) && value.nonTargetIndexes.length > 0, `${question.skillId}: attribute set has no contrast`);
+    requireCondition(!Object.hasOwn(value, "targetIndexes") && !Object.hasOwn(value, "nonTargetIndexes"), `${question.skillId}: answer-bearing indexes leaked into the source stimulus`);
+    const categories = Array.isArray(value.categories) ? value.categories : [];
+    const ruleAttribute = String(value.rule?.attribute ?? "").trim();
+    if (categories.length) {
+      requireCondition([2, 3].includes(categories.length), `${question.skillId}: categorized attribute set does not have two or three categories`);
+      requireCondition(normalizedAttributeToken(ruleAttribute).length > 0, `${question.skillId}: categorized attribute set has no rule attribute`);
+      requireCondition(categories.every((category) => ["id", "label", "value"]
+        .every((key) => normalizedAttributeToken(category?.[key]).length > 0)), `${question.skillId}: sort category is incomplete`);
+      requireCondition(new Set(categories.map((category) => String(category.id))).size === categories.length, `${question.skillId}: sort category ids are not unique`);
+      requireCondition(new Set(categories.map((category) => normalizedAttributeToken(category.value))).size === categories.length, `${question.skillId}: sort category values are not unique`);
+      const assignments = value.items.map((item) => sortCategoryId(item, value.rule, categories));
+      requireCondition(assignments.every(Boolean), `${question.skillId}: an item does not map to a declared sort category`);
+      requireCondition(new Set(assignments).size === categories.length, `${question.skillId}: not every sort category is represented`);
+    } else {
+      const normalizedRuleAttribute = normalizedAttributeToken(ruleAttribute);
+      const ruleValue = normalizedAttributeToken(value.rule?.value);
+      requireCondition(["shape", "solid", "property"].includes(normalizedRuleAttribute), `${question.skillId}: attribute set has an unsupported rule attribute`);
+      requireCondition(ruleValue.length > 0, `${question.skillId}: attribute set has no rule value`);
+      if (normalizedRuleAttribute === "property") {
+        requireCondition(Boolean(ATTRIBUTE_PROPERTY_TARGET[ruleValue]), `${question.skillId}: attribute set has an unsupported semantic property`);
+      }
+      const matches = value.items.filter((item) => attributeItemMatchesRule(item, value.rule));
+      requireCondition(matches.length > 0, `${question.skillId}: attribute set has no rule-matching item`);
+      requireCondition(matches.length < value.items.length, `${question.skillId}: attribute set has no visible contrast`);
+    }
   } else if (model.type === "comparison") {
     requireCondition(Number.isFinite(Number(value.left?.magnitude)), `${question.skillId}: comparison left magnitude missing`);
     requireCondition(Number.isFinite(Number(value.right?.magnitude)), `${question.skillId}: comparison right magnitude missing`);
@@ -251,21 +512,32 @@ function validateModel(question) {
   } else if (model.type === "proportionalBar") {
     requireCondition(Array.isArray(value.bars) && value.bars.length > 0, `${question.skillId}: proportional-bar model is empty`);
     for (const bar of value.bars) {
-      const total = (bar.segments || []).reduce((sum, segment) => sum + rationalNumber(segment.value), 0);
-      requireCondition(nearlyEqual(total, rationalNumber(bar.total)), `${question.skillId}: proportional-bar segments do not match total`);
+      const segments = bar.segments || [];
+      requireCondition(segments.length > 0, `${question.skillId}: proportional bar has no segments`);
+      const known = segments.filter((segment) => segment.unknown !== true && segment.value !== undefined);
+      requireCondition(known.every((segment) => Number.isFinite(rationalNumber(segment.value))), `${question.skillId}: proportional bar contains an invalid known segment`);
+      if (bar.total !== undefined && known.length === segments.length) {
+        const total = known.reduce((sum, segment) => sum + rationalNumber(segment.value), 0);
+        requireCondition(nearlyEqual(total, rationalNumber(bar.total)), `${question.skillId}: proportional-bar segments do not match total`);
+      }
     }
   } else if (model.type === "areaGrid") {
     requireCondition(Array.isArray(value.parts) && value.parts.length > 0, `${question.skillId}: area model has no rectangles`);
+    requireCondition(value.parts.every((part) => Number(part.width) > 0 && Number(part.height) > 0), `${question.skillId}: area model contains an invalid rectangle`);
     const total = value.parts.reduce((sum, part) => sum + Number(part.width) * Number(part.height), 0);
     const declared = Number(value.total ?? value.value);
-    requireCondition(nearlyEqual(total, declared), `${question.skillId}: area rectangles do not match declared area`);
+    if (value.total !== undefined || value.value !== undefined) {
+      requireCondition(nearlyEqual(total, declared), `${question.skillId}: area rectangles do not match declared area`);
+    }
   } else if (model.type === "clockSpan") {
     const startDay = Number(value.startDay ?? 0);
     const endDay = Number(value.endDay ?? startDay);
     const start = startDay * 1440 + Number(value.startHour) * 60 + Number(value.startMinute || 0);
     const end = endDay * 1440 + Number(value.endHour) * 60 + Number(value.endMinute || 0);
     requireCondition(end >= start, `${question.skillId}: clock span runs backwards`);
-    requireCondition(nearlyEqual(end - start, Number(value.durationMinutes)), `${question.skillId}: clock span duration is inaccurate`);
+    if (value.durationMinutes !== undefined) {
+      requireCondition(nearlyEqual(end - start, Number(value.durationMinutes)), `${question.skillId}: clock span duration is inaccurate`);
+    }
   } else {
     throw new Error(`${question.skillId}: unsupported model family ${model.type}`);
   }
@@ -293,7 +565,7 @@ function validateSemanticMath(question) {
     requireCondition(Number(p.remainder) > 0 && Number(p.remainder) < Number(p.divisor), `${question.skillId}: remainder is outside its valid range`);
     requireCondition(question.answer.value === `${p.quotient} R ${p.remainder}`, `${question.skillId}: quotient/remainder answer text is inconsistent`);
   }
-  else if (id === "question.pairObjects") expect(Number(p.count));
+  else if (id === "question.pairObjects") expect(Math.min(Number(p.leftCount ?? p.count), Number(p.rightCount ?? p.count)));
   else if (id === "question.countSet") expect(String(p.marks || "").split(/\s+/u).filter(Boolean).length);
   else if (id === "question.structuredQuantity") {
     const pattern = String(p.pattern);
@@ -383,7 +655,7 @@ function validateSemanticMath(question) {
   else if (id === "question.directCompare") requireCondition(question.answer.value === (Number(p.first) > Number(p.second) ? "first" : "second"), `${question.skillId}: direct comparison is inconsistent`);
   else if (id === "question.attributeName") requireCondition(["length", "mass", "capacity", "duration"].includes(question.answer.value), `${question.skillId}: attribute name is invalid`);
   else if (id === "question.fairShare") requireCondition(question.answer.value === (Number(p.total) % Number(p.recipients) === 0 ? "yes" : "no"), `${question.skillId}: fair-share decision is inconsistent`);
-  else if (id === "question.eventDuration") requireCondition(question.answer.value === (Number(p.longMinutes) > Number(p.shortMinutes) ? "second" : "first"), `${question.skillId}: duration comparison is inconsistent`);
+  else if (id === "question.eventDuration") requireCondition(question.answer.value === (Number(p.first) > Number(p.second) ? "first" : "second"), `${question.skillId}: duration comparison is inconsistent`);
   else if (id === "question.compare") requireCondition(question.answer.value === (Number(p.a) > Number(p.b) ? "more" : Number(p.a) < Number(p.b) ? "fewer" : "same"), `${question.skillId}: quantity comparison is inconsistent`);
   else if (id === "question.decimalCompare") expect(Math.max(Number(p.left), Number(p.right)));
   else if (id === "question.contextIntegerCompare") expect(Math.max(Number(p.first), Number(p.second)));
@@ -468,6 +740,33 @@ function validateFacetCoverage(skill, questions) {
     requireCondition(values((question) => question.params.color).size >= 4, `${skill.id}: colour variation is not exercised`);
     requireSet(values((question) => question.params.size), ["small", "large"], "size");
     requireCondition([...values((question) => question.params.rotation)].some((rotation) => Number(rotation) !== 0), `${skill.id}: turn variation is not exercised`);
+  } else if (skill.id === "MQ-006") {
+    const sourcePairs = new Set(questions.map((question) => [question.params.firstObject, question.params.secondObject].sort().join("|")));
+    requireCondition(ids.size === 1 && ids.has("question.eventDuration"), `${skill.id}: early duration comparison uses the wrong prompt family`);
+    requireCondition(questions.every((question) => {
+      const first = Number(question.params.first), second = Number(question.params.second), descriptor = question.modelDescriptor?.values;
+      const optionValues = new Set(question.options.map((option) => String(option.value)));
+      const candidates = descriptor?.candidates || [], items = descriptor?.items || [];
+      return question.optionCount === 2
+        && optionValues.size === 2
+        && optionValues.has("first")
+        && optionValues.has("second")
+        && first > 0
+        && second > 0
+        && first !== second
+        && Math.max(first, second) >= 4 * Math.min(first, second)
+        && descriptor?.kind === "durationPair"
+        && items.length === 2
+        && candidates.length === 2
+        && items.every((item) => item.kind === "durationEvent" && item.magnitude > 0 && item.unit === "minutes")
+        && candidates.every((candidate) => candidate.kind === "durationEvent" && optionValues.has(String(candidate.optionValue)));
+    }), `${skill.id}: two-choice duration source/candidate contract drifted`);
+    requireCondition(sourcePairs.size >= 3, `${skill.id}: familiar activity variation is not exercised`);
+    requireSet(values((question) => question.answer.value), ["first", "second"], "correct answer position");
+  } else if (skill.id === "MQ-007") {
+    requireSet(values((question) => question.modelDescriptor.values.rule?.attribute), skill.constraints.attributes, "sort attribute");
+    requireSet(values((question) => question.modelDescriptor.values.categories?.length), skill.constraints.categoryCount, "sort category count");
+    requireCondition(questions.every((question) => question.modelDescriptor.values.items.length <= Number(skill.constraints.itemCountMax)), `${skill.id}: categorized sort exceeds its item-count bound`);
   } else if (skill.id === "MQ-009" || skill.id === "MQ-020") {
     requireSet(values((question) => question.params.structure), skill.constraints.structures, "structured-set representation");
     requireCondition(questions.every((question) => Number(question.answer.value) >= Number(skill.constraints.minNumber)
@@ -493,7 +792,7 @@ function validateFacetCoverage(skill, questions) {
     requireCondition(questions.every((question) => question.params.numberWord && question.params.beforeWord && question.modelDescriptor.values.data?.count === answerNumber(question)), `${skill.id}: number-connection facets drift`);
   } else if (skill.id === "MQ-024") {
     requireSet(taskTypes, ["classify-flat-shape", "classify-solid"], "dimension task type");
-    requireSet(values((question) => question.params.property), ["3 sides", "4 equal sides", "6 flat faces", "one curved surface"], "visible property");
+    requireSet(values((question) => question.params.property), ["3 sides", "4 equal sides", "6 flat faces", "one curved surface and no flat faces"], "visible property");
   } else if (skill.id === "MQ-033") {
     requireCondition(questions.every((question) => question.params.unitMarked === true
       && question.modelDescriptor.values.data?.unitMarked === true
@@ -532,11 +831,66 @@ function validateFacetCoverage(skill, questions) {
   } else if (skill.id === "MQ-069") {
     requireSet(ids, ["question.metricUnitChoice", "question.metricRead"], "choose/use prompt");
     const expected = ["centimetres", "metres", "grams", "kilograms", "millilitres", "litres"];
+    const familyByUnit = new Map([
+      ["centimetres", "length"],
+      ["metres", "length"],
+      ["grams", "mass"],
+      ["kilograms", "mass"],
+      ["millilitres", "capacity"],
+      ["litres", "capacity"],
+    ]);
+    const objectByUnit = new Map([
+      ["centimetres", "pencil"],
+      ["metres", "door"],
+      ["grams", "apple"],
+      ["kilograms", "child"],
+      ["millilitres", "cup"],
+      ["litres", "bucket"],
+    ]);
+    const situationByFamily = new Map([
+      ["length", "ruler-bench"],
+      ["mass", "mass-scale"],
+      ["capacity", "capacity-scale"],
+    ]);
     requireSet(values((question) => question.params.unit || question.answer.value), expected, "metric unit");
     for (const unit of expected) {
       requireCondition(questions.some((question) => question.semanticPromptStringId === "question.metricUnitChoice" && question.answer.value === unit), `${skill.id}: ${unit} is never chosen`);
       requireCondition(questions.some((question) => question.semanticPromptStringId === "question.metricRead" && question.params.unit === unit), `${skill.id}: ${unit} is never used`);
     }
+    const choices = questions.filter((question) => question.semanticPromptStringId === "question.metricUnitChoice");
+    const readings = questions.filter((question) => question.semanticPromptStringId === "question.metricRead");
+    requireCondition(choices.every((question) => question.prompt.includes(`measure the ${familyByUnit.get(question.answer.value)} of this ${question.params.object}`)), `${skill.id}: a unit-choice prompt does not name the intended measurable attribute and object`);
+    requireCondition(choices.every((question) => {
+      const family = familyByUnit.get(question.answer.value);
+      const item = question.modelDescriptor.values.items?.[0];
+      return question.params.object === objectByUnit.get(question.answer.value)
+        && question.params.measureKind === family
+        && question.params.situationId === situationByFamily.get(family)
+        && item?.kind === "metricObject"
+        && item.objectKind === question.params.object
+        && item.measureKind === family
+        && item.unit === undefined
+        && question.modelDescriptor.values.data?.suitableUnit === undefined
+        && question.options.filter((option) => String(option.value) === String(question.answer.value)).length === 1
+        && (question.tier === "EASY"
+          ? question.options.length === 2 && item.showFamilyCue === true
+          : question.options.length === 4
+            && item.showFamilyCue === false
+            && question.options.some((option) => (
+              option.value !== question.answer.value
+              && familyByUnit.get(option.value) === family
+            )));
+    }), `${skill.id}: unit-choice picture, answer-scrub, situation, or tier contract drifted`);
+    requireCondition(readings.every((question) => (
+      question.params.situationId === situationByFamily.get(familyByUnit.get(question.params.unit))
+      && Number(question.answer.value) >= 1
+      && Number(question.answer.value) <= (question.tier === "EASY" ? 10 : 20)
+      && Number(question.params.scaleMaximum) === (question.tier === "EASY" ? 10 : 20)
+    )), `${skill.id}: metric-reading family, bound, or scale maximum drifted`);
+    requireCondition(
+      readings.some((question) => question.tier === "HARD/TARGET" && Number(question.answer.value) > 10),
+      `${skill.id}: hard metric readings never exceed the Easy bound`,
+    );
   } else if (skill.id === "MQ-070") {
     requireSet(taskTypes, ["describe-flat-shape", "describe-solid"], "description dimension");
     requireCondition(questions.filter((question) => question.taskType === "describe-flat-shape").every((question) => ["circle", "triangle", "square", "rectangle"].includes(question.params.shape)), `${skill.id}: flat-shape descriptions leak solids`);
@@ -579,7 +933,27 @@ function validateFacetCoverage(skill, questions) {
     requireCondition(questions.every((question) => question.taskType === "compare"
       ? Number(question.params.first) < 0 || Number(question.params.second) < 0
       : sortedCsv(question.answer.value).some((value) => value < 0)), `${skill.id}: a contextual task omits negative integers`);
-    requireSet(values((question) => question.params.context), skill.constraints.contexts, "integer context");
+    requireSet(values((question) => question.params.contextKey), skill.constraints.contexts, "integer context");
+    const contextPolicies = {
+      temperature: { label: "temperature (°C)", min: -40, max: 45 },
+      elevation: { label: "elevation (metres)", min: -100, max: 1000 },
+      score: { label: "game score (points)", min: -100, max: Number(skill.constraints.positiveMax) },
+    };
+    requireCondition(questions.every((question) => {
+      const policy = contextPolicies[question.params.contextKey];
+      if (!policy || question.params.context !== policy.label) return false;
+      const generatedValues = question.taskType === "compare"
+        ? [Number(question.params.first), Number(question.params.second)]
+        : question.options.flatMap((option) => sortedCsv(option.value));
+      return generatedValues.every((value) => Number.isInteger(value)
+        && value >= policy.min
+        && value <= policy.max);
+    }), `${skill.id}: a contextual value or unit label is implausible`);
+    requireCondition(questions.some((question) => question.params.contextKey === "score"
+      && (question.taskType === "compare"
+        ? Math.max(Number(question.params.first), Number(question.params.second)) > 1000
+        : question.options.some((option) => sortedCsv(option.value).some((value) => value > 1000)))),
+    `${skill.id}: score context never preserves declared large-number coverage`);
   } else if (skill.id === "MQ-100") {
     requireSet(taskTypes, ["compare-decimals", "order-decimals"], "decimal comparison operation");
     requireCondition(questions.filter((question) => question.taskType === "compare-decimals").every((question) => Number(question.params.left) !== Number(question.params.right)), `${skill.id}: decimal compare repeats the same value`);
@@ -638,6 +1012,8 @@ function validateFacetCoverage(skill, questions) {
     requireCondition(questions.every((question) => {
       const p = question.params;
       const model = question.modelDescriptor.values;
+      const answerBearingFieldHidden = model.groups === undefined;
+      const divisorShown = Number(model.perGroup) === Number(p.divisor);
       return Number(p.quotient) * Number(p.divisor) + Number(p.remainder) === Number(p.total)
         && Number(p.total) <= Number(skill.constraints.dividendMax)
         && Number(p.divisor) <= Number(skill.constraints.divisorMax)
@@ -647,10 +1023,10 @@ function validateFacetCoverage(skill, questions) {
         && model.interpretation === p.interpretation
         && model.unknown === unknownByInterpretation[p.interpretation]
         && Number(model.total) === Number(p.total)
-        && Number(model.groups) === Number(p.quotient)
-        && Number(model.perGroup) === Number(p.divisor)
-        && Number(model.remainder) === Number(p.remainder);
-    }), `${skill.id}: remainder interpretation answer/model contract drifts`);
+        && divisorShown
+        && answerBearingFieldHidden
+        && model.remainder === undefined;
+    }), `${skill.id}: remainder interpretation or answer-free stimulus contract drifts`);
   } else if (skill.id === "MQ-116") {
     requireSet(taskTypes, ["percent-to-fraction", "percent-to-decimal"], "percent conversion");
     requireCondition(questions.every((question) => nearlyEqual(answerNumber(question), Number(question.params.percent) / 100)), `${skill.id}: percent conversion changes value`);
@@ -678,14 +1054,14 @@ function validateFacetCoverage(skill, questions) {
       const dimensionsValid = [length, width, height].every((value, index) => Number.isInteger(value) && value > 0 && value <= Number(skill.constraints.dimensionsMax[index]));
       const solidValid = p.solid === "cube" ? length === width && width === height : !(length === width && width === height);
       const representationValid = p.representation === "unit-cubes"
-        ? p.method === "count" && item?.kind === "prism" && Number(item.total) === total && total <= 48
+        ? p.method === "count" && item?.kind === "prism" && item.total === undefined && total <= 48
         : p.method === "multiply" && item?.kind === "cubeLayers" && Number(item.layers) === height
-          && Number(item.cubesPerLayer) === length * width && Number(item.total) === total;
+          && Number(item.cubesPerLayer) === length * width && item.total === undefined;
       return dimensionsValid && solidValid && answerNumber(question) === total && representationValid
         && data?.representation === p.representation && data?.method === p.method
         && data?.unit === p.unit && data?.solid === p.solid
         && Number(data?.length) === length && Number(data?.width) === width
-        && Number(data?.height) === height && Number(data?.total) === total;
+        && Number(data?.height) === height && data?.total === undefined;
     }), `${skill.id}: volume representation, dimensions, or product drifts`);
   } else if (skill.id === "MQ-123") {
     const display = (hour, minute, format) => format === "24-hour"
@@ -726,7 +1102,10 @@ function validateFacetCoverage(skill, questions) {
 }
 
 function submittedAttempt(engine, question, playDay = 30_000) {
-  return engine.submitAnswer(question, question.answer.value, {
+  const answer = STRUCTURED_RESPONSE_METHODS.has(question.inputMethod)
+    ? correctStructuredResponse(engine, question)
+    : question.answer.value;
+  return engine.submitAnswer(question, answer, {
     promptFinishedAt: 1_000,
     submittedAt: 5_000,
     manipulationMs: 0,
@@ -744,7 +1123,7 @@ function stateFrom(result) {
   return result?.state ?? result?.newState ?? result;
 }
 
-function masteryAttempt(skill, taskType, playDay, ordinal) {
+function masteryAttempt(engine, skill, taskType, playDay, ordinal, overrides = {}) {
   return {
     recordId: `semantic-${skill.skillId}-${taskType}-${ordinal}`,
     questionId: `semantic-q-${ordinal}`,
@@ -753,7 +1132,7 @@ function masteryAttempt(skill, taskType, playDay, ordinal) {
     stage: skill.stage,
     taskType,
     tier: "HARD/TARGET",
-    representation: skill.representation,
+    representation: "PICTORIAL",
     inputClass: "CONSTRUCTION",
     inputMethod: "NUMBER_PAD",
     selectionOptionCount: 0,
@@ -761,7 +1140,7 @@ function masteryAttempt(skill, taskType, playDay, ordinal) {
     feedbackClass: "FIRST_TRY_CLEAN",
     coldTest: true,
     scheduledReview: false,
-    sampleKey: `${skill.skillId}|${taskType}|${ordinal}`,
+    sampleKey: `${skill.skillId}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|${taskType}|${ordinal}`,
     firstAnswerCorrect: true,
     hintUsed: false,
     changed: false,
@@ -769,13 +1148,14 @@ function masteryAttempt(skill, taskType, playDay, ordinal) {
     idleMs: 0,
     validTelemetry: true,
     guessingLike: false,
-    modelUsed: true,
+    modelUsed: false,
     applied: false,
     preview: false,
     capstone: false,
     reteachStep: false,
     sessionId: "semantic-mastery",
     playDay,
+    ...overrides,
   };
 }
 
@@ -810,7 +1190,7 @@ export async function runManifestSemanticSuite({
       const candidate = engine.makeQuestion({
         skillId: skill.skillId,
         tier: "HARD/TARGET",
-        representation: skill.representation,
+        representation: "PICTORIAL",
         seed: 0x4d515631,
         ordinal: 3,
       });
@@ -918,7 +1298,7 @@ export async function runManifestSemanticSuite({
       const samples = [];
       for (const tier of ["EASY", "HARD/TARGET"]) {
         for (let ordinal = 0; ordinal < SAMPLE_ORDINALS; ordinal += 1) {
-          const args = { skillId: manifestSkill.id, tier, representation: skill.representation, seed: 0x51f15e, ordinal };
+          const args = { skillId: manifestSkill.id, tier, representation: "PICTORIAL", seed: 0x51f15e, ordinal };
           const question = engine.makeQuestion(args);
           const repeat = engine.makeQuestion(args);
           samples.push(question);
@@ -929,8 +1309,12 @@ export async function runManifestSemanticSuite({
           requireCondition(question.sampleKey.includes(engine.CURRICULUM_MANIFEST_SHA256), `${manifestSkill.id}: sample key omits curriculum hash`);
           requireCondition(typeof question.prompt === "string" && question.prompt.trim().length >= 3, `${manifestSkill.id}: empty child prompt`);
           requireCondition(!/\{[a-z][A-Za-z0-9]*\}/u.test(question.prompt), `${manifestSkill.id}: unresolved prompt slot`);
-          requireCondition(engine.gradeAnswer(question, question.answer.value).correct, `${manifestSkill.id}: generated answer does not self-grade`);
+          const generatedResponse = STRUCTURED_RESPONSE_METHODS.has(question.inputMethod)
+            ? correctStructuredResponse(engine, question)
+            : question.answer.value;
+          requireCondition(engine.gradeAnswer(question, generatedResponse).correct, `${manifestSkill.id}: generated answer does not self-grade`);
           validateSelection(engine, question);
+          validateStructuredResponse(engine, question);
           validateModel(question);
           validateSemanticMath(question);
           const attempt = submittedAttempt(engine, question);
@@ -946,22 +1330,44 @@ export async function runManifestSemanticSuite({
     });
   }
 
-  await check("SEM-MASTERY-COVERAGE", "SOLID mastery requires a clean witness for every declared task type", () => {
+  await check("SEM-MASTERY-COVERAGE", "SOLID mastery requires task coverage and a concrete or pictorial witness", () => {
     const skill = engine.SKILLS.find((candidate) => candidate.skillId === "MQ-049");
     requireCondition(skill.constraints.taskTypes.length === 2, "mastery fixture no longer has two task types");
     let state = engine.createInitialState(30_000);
-    state = stateFrom(engine.applyAttempt(state, masteryAttempt(skill, skill.constraints.taskTypes[0], 30_000, 0)));
+    state = stateFrom(engine.applyAttempt(state, masteryAttempt(engine, skill, skill.constraints.taskTypes[0], 30_000, 0)));
     requireCondition(state.skills[skill.skillId].acquisition !== "SOLID", "one task type incorrectly satisfied multi-type mastery");
-    state = stateFrom(engine.applyAttempt(state, masteryAttempt(skill, skill.constraints.taskTypes[1], 30_001, 1)));
-    requireCondition(state.skills[skill.skillId].acquisition === "SOLID", "complete task-type coverage did not satisfy otherwise-qualified mastery");
+    state = stateFrom(engine.applyAttempt(state, masteryAttempt(engine, skill, skill.constraints.taskTypes[1], 30_001, 1)));
+    requireCondition(state.skills[skill.skillId].acquisition === "SOLID", "complete task-type coverage with a pictorial witness did not satisfy mastery");
     const witnessed = new Set(state.skills[skill.skillId].evidence.map((attempt) => attempt.taskType));
     requireCondition(skill.constraints.taskTypes.every((taskType) => witnessed.has(taskType)), "solid record lacks a declared task-type witness");
+    requireCondition(state.skills[skill.skillId].evidence.every((attempt) => attempt.modelUsed === false), "modelUsed telemetry was required for a model witness");
+
+    let abstractOnly = engine.createInitialState(30_000);
+    for (let ordinal = 0; ordinal < skill.constraints.taskTypes.length; ordinal += 1) {
+      const taskType = skill.constraints.taskTypes[ordinal % skill.constraints.taskTypes.length];
+      abstractOnly = stateFrom(engine.applyAttempt(
+        abstractOnly,
+        masteryAttempt(engine, skill, taskType, 30_010 + ordinal, ordinal, { representation: "ABSTRACT" }),
+      ));
+    }
+    requireCondition(abstractOnly.skills[skill.skillId].acquisition !== "SOLID", "abstract-only witnesses satisfied a skill that declares concrete/pictorial phases");
+
+    const helped = engine.createInitialState(30_000);
+    const helpedResult = stateFrom(engine.applyAttempt(
+      helped,
+      masteryAttempt(engine, skill, skill.constraints.taskTypes[0], 30_020, 0, {
+        evidenceClass: "NON_EVIDENCE",
+        hintUsed: true,
+        modelUsed: true,
+      }),
+    ));
+    requireCondition(helpedResult.skills[skill.skillId].evidence.length === 0, "Help/model-assisted work entered mastery evidence");
   });
 
   await check("SEM-INVALID-TASK-TYPE", "Undeclared attempt task types are rejected without evidence mutation", () => {
     const skill = engine.SKILLS.find((candidate) => candidate.skillId === "MQ-049");
     const before = engine.createInitialState(30_000);
-    const result = engine.applyAttempt(before, masteryAttempt(skill, "undeclared-task", 30_000, 0));
+    const result = engine.applyAttempt(before, masteryAttempt(engine, skill, "undeclared-task", 30_000, 0));
     const after = stateFrom(result);
     requireCondition(after.skills[skill.skillId].evidence.length === 0, "undeclared task type was stored");
     requireCondition(result.effects?.some((effect) => effect.type === "REJECTED_ATTEMPT_TASK_TYPE"), "undeclared task type lacked rejection effect");

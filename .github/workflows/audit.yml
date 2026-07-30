@@ -14,6 +14,16 @@ jobs:
   full-audit:
     runs-on: windows-latest
     timeout-minutes: 25
+    env:
+      MQ_AUDIT_RUNNER_LABEL: windows-latest
+    outputs:
+      browser_product_name: ${{ steps.browser_evidence.outputs.product_name }}
+      browser_full_version: ${{ steps.browser_evidence.outputs.full_version }}
+      browser_executable_sha256: ${{ steps.browser_evidence.outputs.executable_sha256 }}
+      runner_image_os: ${{ steps.browser_evidence.outputs.image_os }}
+      runner_image_version: ${{ steps.browser_evidence.outputs.image_version }}
+      audit_artifact_id: ${{ steps.upload_audit_evidence.outputs.artifact-id }}
+      audit_artifact_digest: ${{ steps.upload_audit_evidence.outputs.artifact-digest }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -28,6 +38,9 @@ jobs:
 
       - name: Reject private, legacy, or unregistered material
         run: node audit/public-candidate-guard.mjs
+
+      - name: Verify publication and browser-evidence schemas
+        run: node --test audit/tests/publication-clearance.test.mjs
 
       - name: Validate versioned curriculum manifest
         shell: powershell
@@ -46,5 +59,75 @@ jobs:
       - name: Run deterministic engine and browser audit
         shell: powershell
         run: |
+          if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+              [string]::IsNullOrWhiteSpace($env:ImageOS) -or
+              [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'The audit requires exact ImageOS and ImageVersion metadata from a GitHub-hosted runner.'
+          }
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
           & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+
+      - name: Export exact browser and runner evidence
+        if: always()
+        id: browser_evidence
+        shell: powershell
+        run: |
+          if (-not (Test-Path -LiteralPath 'audit/last-report.json' -PathType Leaf)) {
+            throw 'The machine-readable audit report was not produced.'
+          }
+          $report = Get-Content -LiteralPath 'audit/last-report.json' -Raw | ConvertFrom-Json
+          $evidence = $report.browser.evidence
+          if ($null -eq $evidence -or
+              $evidence.status -cne 'OBSERVED_GITHUB_HOSTED' -or
+              $evidence.validForPublication -ne $true -or
+              $evidence.runnerKind -cne 'GITHUB_HOSTED' -or
+              $evidence.requestedRunnerLabel -cne 'windows-latest' -or
+              $evidence.runnerImageOS -cne $env:ImageOS -or
+              $evidence.runnerImageVersion -cne $env:ImageVersion) {
+            throw 'The report does not contain the exact current GitHub-hosted browser/runner evidence tuple.'
+          }
+          if ($evidence.browserProductName -cnotin @('Microsoft Edge', 'Google Chrome') -or
+              $evidence.browserFullVersion -cnotmatch '^\d+\.\d+\.\d+\.\d+$' -or
+              $evidence.browserExecutableSha256 -cnotmatch '^[a-f0-9]{64}$') {
+            throw 'The browser evidence tuple is malformed.'
+          }
+          $clearanceStatus = (Get-Content -LiteralPath 'PUBLICATION_CLEARANCE.md' -TotalCount 2)[1]
+          if ($clearanceStatus -ceq 'Status: APPROVED' -and $report.publication.status -cne 'APPROVED') {
+            throw 'Approved publication clearance does not match this exact browser/runner audit tuple.'
+          }
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "product_name=$($evidence.browserProductName)`n", $utf8NoBom)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "full_version=$($evidence.browserFullVersion)`n", $utf8NoBom)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "executable_sha256=$($evidence.browserExecutableSha256)`n", $utf8NoBom)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "image_os=$($evidence.runnerImageOS)`n", $utf8NoBom)
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "image_version=$($evidence.runnerImageVersion)`n", $utf8NoBom)
+          $summaryLines = @(
+            '### Exact browser and runner evidence'
+            ''
+            '> Candidate evidence only. This artifact does not approve publication.'
+            ''
+            "| Field | Value |"
+            "|---|---|"
+            "| Browser product | ``$($evidence.browserProductName)`` |"
+            "| Full product version | ``$($evidence.browserFullVersion)`` |"
+            "| Executable SHA-256 | ``$($evidence.browserExecutableSha256)`` |"
+            "| Requested runner label | ``windows-latest`` |"
+            "| ImageOS | ``$($evidence.runnerImageOS)`` |"
+            "| ImageVersion | ``$($evidence.runnerImageVersion)`` |"
+          )
+          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, (($summaryLines -join "`n") + "`n"), $utf8NoBom)
+
+      - name: Upload machine-readable audit evidence
+        if: always() && hashFiles('audit/last-report.json') != ''
+        id: upload_audit_evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-candidate-audit-evidence-${{ github.sha }}
+          path: audit/last-report.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Verify the exact offline PWA shell
+        run: |
+          node tools/build-pwa-release-manifest.mjs --check
+          node --test audit/tests/pwa-release.test.mjs

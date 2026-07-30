@@ -7,14 +7,128 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Port = 8771
-$ProductRelease = '1.0.0-beta.1'
-$ServerIdentity = 'math-quest-local-server:v1'
+$ProductRelease = '1.0.0-beta.2'
+$ServerIdentity = 'math-quest-local-server:v2'
+$HealthSchemaVersion = 1
 $HealthPath = '/__math_quest_health__'
-$Root = [System.IO.Path]::GetFullPath($PSScriptRoot)
+$Root = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $PSScriptRoot -ErrorAction Stop).ProviderPath)
 $RootPrefix = $Root.TrimEnd([char[]]@('\', '/')) + [System.IO.Path]::DirectorySeparatorChar
 $GameUrl = "http://127.0.0.1:$Port/index.html"
+$ExpectedHost = "127.0.0.1:$Port"
 $IdentityHeader = 'X-Math-Quest-Server'
-$HealthBody = "{`"identity`":`"$ServerIdentity`",`"product`":`"Math Quest`",`"release`":`"$ProductRelease`",`"port`":$Port}"
+$RuntimePathMap = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::Ordinal)
+foreach ($entry in @(
+    @('/', 'index.html'),
+    @('/index.html', 'index.html'),
+    @('/manifest.webmanifest', 'manifest.webmanifest'),
+    @('/release-shell-v1.json', 'release-shell-v1.json'),
+    @('/sw.js', 'sw.js'),
+    @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
+    @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
+    @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
+    @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'),
+    @('/assets/sounds/close.wav', 'assets/sounds/close.wav'),
+    @('/assets/sounds/confirm.wav', 'assets/sounds/confirm.wav'),
+    @('/assets/sounds/incorrect.wav', 'assets/sounds/incorrect.wav'),
+    @('/assets/sounds/tap.wav', 'assets/sounds/tap.wav'),
+    @('/LICENSE', 'LICENSE'),
+    @('/PRIVACY.md', 'PRIVACY.md'),
+    @('/THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md')
+)) {
+    $RuntimePathMap.Add($entry[0], $entry[1])
+}
+$RuntimeByteSnapshot = [System.Collections.Generic.Dictionary[string, byte[]]]::new(
+    [System.StringComparer]::Ordinal
+)
+
+function Get-Sha256Hex {
+    param([byte[]] $Bytes)
+
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-', '').ToLowerInvariant()
+    }
+    finally {
+        $algorithm.Dispose()
+    }
+}
+
+function Get-NormalizedRootIdentityInput {
+    param([string] $RootPath)
+
+    $resolved = (Resolve-Path -LiteralPath $RootPath -ErrorAction Stop).ProviderPath
+    $normalized = [System.IO.Path]::GetFullPath($resolved)
+    $normalized = $normalized.TrimEnd([char[]]@('\', '/'))
+    $normalized = $normalized.Replace('\', '/')
+    return $normalized.ToLowerInvariant()
+}
+
+function Get-CurrentRootId {
+    $normalizedRoot = Get-NormalizedRootIdentityInput -RootPath $PSScriptRoot
+    return Get-Sha256Hex -Bytes ([System.Text.Encoding]::UTF8.GetBytes($normalizedRoot))
+}
+
+function Test-NoReparsePoint {
+    param([string] $RelativePath)
+
+    $cursor = $Root
+    foreach ($segment in ($RelativePath -split '[\\/]')) {
+        if ([string]::IsNullOrWhiteSpace($segment)) {
+            continue
+        }
+        $cursor = [System.IO.Path]::Combine($cursor, $segment)
+        if (Test-Path -LiteralPath $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                return $false
+            }
+        }
+    }
+    return $true
+}
+
+function Get-CurrentServedPayloadSha256 {
+    $routes = [string[]]@($RuntimePathMap.Keys)
+    [System.Array]::Sort($routes, [System.StringComparer]::Ordinal)
+    $records = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($route in $routes) {
+        $relativePath = $RuntimePathMap[$route]
+        if ($route.IndexOfAny([char[]]@("`t", "`r", "`n")) -ge 0 -or
+            $relativePath.IndexOfAny([char[]]@("`t", "`r", "`n")) -ge 0) {
+            throw 'The reviewed runtime path map contains a non-canonical path.'
+        }
+        $absolutePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($Root, $relativePath))
+        if (-not $absolutePath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+            -not (Test-Path -LiteralPath $absolutePath -PathType Leaf) -or
+            -not (Test-NoReparsePoint -RelativePath $relativePath)) {
+            throw "The reviewed runtime file '$relativePath' is missing or outside the game folder."
+        }
+        $fileBytes = [System.IO.File]::ReadAllBytes($absolutePath)
+        if ($RuntimeByteSnapshot.ContainsKey($relativePath)) {
+            $existingBytes = $RuntimeByteSnapshot[$relativePath]
+            if ($existingBytes.Length -ne $fileBytes.Length -or
+                (Get-Sha256Hex -Bytes $existingBytes) -cne (Get-Sha256Hex -Bytes $fileBytes)) {
+                throw "The reviewed runtime file '$relativePath' changed while its startup snapshot was created."
+            }
+        }
+        else {
+            $RuntimeByteSnapshot.Add($relativePath, $fileBytes)
+        }
+        $length = $fileBytes.Length.ToString(
+            [System.Globalization.CultureInfo]::InvariantCulture
+        )
+        $fileSha256 = Get-Sha256Hex -Bytes $fileBytes
+        $records.Add("$route`t$relativePath`t$length`t$fileSha256")
+    }
+
+    $canonicalPayload = ($records -join "`n") + "`n"
+    return Get-Sha256Hex -Bytes ([System.Text.Encoding]::UTF8.GetBytes($canonicalPayload))
+}
+
+$RootId = Get-CurrentRootId
+$ServedPayloadSha256 = Get-CurrentServedPayloadSha256
+$HealthBody = "{`"schemaVersion`":$HealthSchemaVersion,`"identity`":`"$ServerIdentity`",`"release`":`"$ProductRelease`",`"port`":$Port,`"rootId`":`"$RootId`",`"servedPayloadSha256`":`"$ServedPayloadSha256`"}"
 
 function Open-GamePage {
     if ($NoBrowser) {
@@ -87,10 +201,42 @@ function Test-ExpectedServer {
             }
         }
 
-        $response = [System.Text.Encoding]::UTF8.GetString($collected.ToArray())
-        $headerMatch = $response -match "(?im)^$([System.Text.RegularExpressions.Regex]::Escape($IdentityHeader)):\s*$([System.Text.RegularExpressions.Regex]::Escape($ServerIdentity))\s*$"
-        $bodyMatch = $response.EndsWith($HealthBody, [System.StringComparison]::Ordinal)
-        return $headerMatch -and $bodyMatch
+        $responseBytes = $collected.ToArray()
+        $response = [System.Text.Encoding]::UTF8.GetString($responseBytes)
+        $separatorIndex = $response.IndexOf("`r`n`r`n", [System.StringComparison]::Ordinal)
+        if ($separatorIndex -lt 0) {
+            return $false
+        }
+
+        $headerText = $response.Substring(0, $separatorIndex)
+        $bodyText = $response.Substring($separatorIndex + 4)
+        $headerLines = $headerText -split "`r`n"
+        if ($headerLines.Count -lt 2 -or $headerLines[0] -cne 'HTTP/1.1 200 OK') {
+            return $false
+        }
+        $headers = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        for ($lineIndex = 1; $lineIndex -lt $headerLines.Count; $lineIndex += 1) {
+            $colon = $headerLines[$lineIndex].IndexOf(':')
+            if ($colon -le 0) {
+                return $false
+            }
+            $name = $headerLines[$lineIndex].Substring(0, $colon)
+            if ($headers.ContainsKey($name)) {
+                return $false
+            }
+            $headers.Add($name, $headerLines[$lineIndex].Substring($colon + 1).Trim())
+        }
+        if (-not $headers.ContainsKey($IdentityHeader) -or
+            $headers[$IdentityHeader] -cne $ServerIdentity -or
+            -not $headers.ContainsKey('Content-Type') -or
+            $headers['Content-Type'] -cne 'application/json; charset=utf-8' -or
+            -not $headers.ContainsKey('Content-Length') -or
+            $headers['Content-Length'] -cne ([System.Text.Encoding]::UTF8.GetByteCount($HealthBody)).ToString(
+                [System.Globalization.CultureInfo]::InvariantCulture
+            )) {
+            return $false
+        }
+        return $bodyText -ceq $HealthBody
     }
     catch {
         return $false
@@ -145,6 +291,9 @@ function Write-HttpResponse {
         'Cache-Control: no-store'
         'X-Content-Type-Options: nosniff'
         'Cross-Origin-Resource-Policy: same-origin'
+        'Referrer-Policy: no-referrer'
+        "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+        'Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()'
         "$IdentityHeader`: $ServerIdentity"
         'Connection: close'
         ''
@@ -172,29 +321,13 @@ function Write-TextResponse {
     Write-HttpResponse -Stream $Stream -StatusCode $StatusCode -Reason $Reason -Body $body -IncludeBody $IncludeBody
 }
 
-function Test-NoReparsePoint {
-    param([string] $RelativePath)
-
-    $cursor = $Root
-    foreach ($segment in ($RelativePath -split '[\\/]')) {
-        if ([string]::IsNullOrWhiteSpace($segment)) {
-            continue
-        }
-        $cursor = [System.IO.Path]::Combine($cursor, $segment)
-        if (Test-Path -LiteralPath $cursor) {
-            $item = Get-Item -LiteralPath $cursor -Force
-            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-                return $false
-            }
-        }
-    }
-    return $true
-}
-
-function Resolve-SafeFile {
+function Resolve-SafeRuntimePath {
     param([string] $RequestTarget)
 
     $rawPath = ($RequestTarget -split '\?', 2)[0]
+    if (-not $rawPath.StartsWith('/')) {
+        return $null
+    }
     try {
         $decodedPath = [System.Uri]::UnescapeDataString($rawPath)
     }
@@ -213,37 +346,19 @@ function Resolve-SafeFile {
         }
     }
 
-    $relativePath = $decodedPath.TrimStart([char[]]@('/', '\'))
-    if ([string]::IsNullOrWhiteSpace($relativePath)) {
-        $relativePath = 'index.html'
+    $normalizedPath = $decodedPath.Replace('\', '/')
+    if (-not $RuntimePathMap.ContainsKey($normalizedPath)) {
+        return $null
     }
-
-    $firstSegment = ($relativePath -split '[\\/]', 2)[0]
-    if ($firstSegment -in @('.git', '.agents', '.codex', '.private-prebeta')) {
+    $relativePath = $RuntimePathMap[$normalizedPath]
+    if (-not $RuntimeByteSnapshot.ContainsKey($relativePath)) {
         return $null
     }
 
-    try {
-        $candidate = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($Root, $relativePath))
-    }
-    catch {
-        return $null
-    }
-
-    if (-not $candidate.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return $null
-    }
-    if (-not (Test-NoReparsePoint -RelativePath $relativePath)) {
-        return $null
-    }
-    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
-        return $null
-    }
-
-    return $candidate
+    return $relativePath
 }
 
-function Read-RequestLine {
+function Read-HttpRequest {
     param([System.Net.Sockets.NetworkStream] $Stream)
 
     $reader = New-Object System.IO.StreamReader($Stream, [System.Text.Encoding]::ASCII, $false, 1024, $true)
@@ -252,19 +367,44 @@ function Read-RequestLine {
         return $null
     }
 
+    $headers = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $headerBytes = 0
+    $headersComplete = $false
     for ($headerCount = 0; $headerCount -lt 100; $headerCount += 1) {
         $line = $reader.ReadLine()
-        if ($null -eq $line -or $line.Length -eq 0) {
+        if ($null -eq $line) {
+            return $null
+        }
+        if ($line.Length -eq 0) {
+            $headersComplete = $true
             break
         }
         $headerBytes += $line.Length
         if ($headerBytes -gt 16384) {
             return $null
         }
+        if ($line[0] -eq ' ' -or $line[0] -eq "`t") {
+            return $null
+        }
+        $colon = $line.IndexOf(':')
+        if ($colon -le 0) {
+            return $null
+        }
+        $name = $line.Substring(0, $colon)
+        $value = $line.Substring($colon + 1).Trim()
+        if ($name -notmatch '^[A-Za-z0-9!#$%&''*+\-.^_`|~]+$' -or $headers.ContainsKey($name)) {
+            return $null
+        }
+        $headers.Add($name, $value)
+    }
+    if (-not $headersComplete) {
+        return $null
     }
 
-    return $requestLine
+    return [PSCustomObject]@{
+        RequestLine = $requestLine
+        Headers = $headers
+    }
 }
 
 function Invoke-ClientRequest {
@@ -276,15 +416,19 @@ function Invoke-ClientRequest {
     $stream = $Client.GetStream()
 
     try {
-        $requestLine = Read-RequestLine -Stream $stream
-        if ($null -eq $requestLine) {
+        $request = Read-HttpRequest -Stream $stream
+        if ($null -eq $request) {
             Write-TextResponse -Stream $stream -StatusCode 400 -Reason 'Bad Request' -Text 'Bad request.'
             return
         }
 
-        $parts = $requestLine -split ' '
-        if ($parts.Count -ne 3 -or -not $parts[2].StartsWith('HTTP/')) {
+        $parts = $request.RequestLine -split ' '
+        if ($parts.Count -ne 3 -or $parts[2] -notin @('HTTP/1.0', 'HTTP/1.1')) {
             Write-TextResponse -Stream $stream -StatusCode 400 -Reason 'Bad Request' -Text 'Bad request.'
+            return
+        }
+        if (-not $request.Headers.ContainsKey('Host') -or $request.Headers['Host'] -cne $ExpectedHost) {
+            Write-TextResponse -Stream $stream -StatusCode 421 -Reason 'Misdirected Request' -Text 'This server accepts only the Math Quest loopback address.'
             return
         }
 
@@ -303,14 +447,14 @@ function Invoke-ClientRequest {
             return
         }
 
-        $filePath = Resolve-SafeFile -RequestTarget $target
-        if ($null -eq $filePath) {
+        $relativePath = Resolve-SafeRuntimePath -RequestTarget $target
+        if ($null -eq $relativePath) {
             Write-TextResponse -Stream $stream -StatusCode 404 -Reason 'Not Found' -Text 'Not found.' -IncludeBody $includeBody
             return
         }
 
-        $fileBytes = [System.IO.File]::ReadAllBytes($filePath)
-        Write-HttpResponse -Stream $stream -StatusCode 200 -Reason 'OK' -Body $fileBytes -ContentType (Get-ContentType -FilePath $filePath) -IncludeBody $includeBody
+        $fileBytes = $RuntimeByteSnapshot[$relativePath]
+        Write-HttpResponse -Stream $stream -StatusCode 200 -Reason 'OK' -Body $fileBytes -ContentType (Get-ContentType -FilePath $relativePath) -IncludeBody $includeBody
     }
     catch {
         try {

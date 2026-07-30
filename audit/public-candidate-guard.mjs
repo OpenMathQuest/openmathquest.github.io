@@ -4,6 +4,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import {
+  BROWSER_RUNNER_EVIDENCE_PATH,
+  parseReviewedBrowserRunnerEvidence,
+} from "./lib/browser-runner-evidence.mjs";
 import { CURRICULUM_PATH, validateManifest } from "./lib/curriculum-manifest.mjs";
 import { parsePublicationClearance, PUBLICATION_CLEARANCE_PATH } from "./lib/publication-clearance.mjs";
 
@@ -21,6 +25,7 @@ const DENIED_ARCHIVE_OR_DOCUMENT_EXTENSION = /\.(?:7z|bz2|docm?|docx|gz|od[stp]|
 const REQUIRED_PUBLIC_RUNTIME_PATHS = Object.freeze([
   "index.html",
   "manifest.webmanifest",
+  "release-shell-v1.json",
   "sw.js",
   CURRICULUM_PATH,
 ]);
@@ -288,7 +293,9 @@ function privacyMutationFindings() {
     ["an AWS access key", ["AK", "IA", "A".repeat(16)].join(""), /embedded credential/u],
     ["a Slack token", ["xo", "xb-", "A".repeat(20)].join(""), /embedded credential/u],
     ["a bearer token", ["Authorization: Bearer ", "A".repeat(24)].join(""), /embedded credential/u],
-    ["a Unicode-escaped local path marker", [String.raw`\u0043`, String.raw`\u003a`, String.raw`\u005c`, String.raw`\u0055`, String.raw`\u0073`, String.raw`\u0065`, String.raw`\u0072`, String.raw`\u0073`, String.raw`\u005c`].join(""), /encoded personal identity/u],
+    ["a hex-encoded Windows user path", ["433a", "5c55", "7365", "7273", "5c"].join(""), /encoded personal identity/u],
+    ["a base64-encoded Unix user path", ["L1Vz", "ZXJz", "Lw=="].join(""), /encoded personal identity/u],
+    ["a Unicode-escaped Windows user path", [String.raw`\u0043`, String.raw`\u003a`, String.raw`\u005c`, String.raw`\u0055`, String.raw`\u0073`, String.raw`\u0065`, String.raw`\u0072`, String.raw`\u0073`, String.raw`\u005c`].join(""), /encoded personal identity/u],
   ];
   for (const [label, text, expected] of cases) {
     if (!contentFindings("privacy-mutation.fixture", text).some((finding) => expected.test(finding))) {
@@ -424,7 +431,7 @@ function pngMetadataFindings(relativePath, bytes) {
         const interlace = bytes[dataStart + 12];
         if (
           !width || !height || width > 4096 || height > 4096
-          || bitDepth !== 8 || colourType !== 6
+          || bitDepth !== 8 || ![2, 6].includes(colourType)
           || compression !== 0 || filter !== 0 || interlace !== 0
         ) {
           throw new Error("PNG dimensions or encoding contract is invalid");
@@ -984,6 +991,15 @@ async function inspectPublicCandidate() {
   if (clearanceBytes) {
     const parsedClearance = parsePublicationClearance(clearanceBytes.toString("utf8"));
     for (const issue of parsedClearance.issues) findings.push(`${PUBLICATION_CLEARANCE_PATH}: ${issue}`);
+  }
+  const browserEvidenceBytes = blobs.get(BROWSER_RUNNER_EVIDENCE_PATH);
+  if (!browserEvidenceBytes) {
+    findings.push(`${BROWSER_RUNNER_EVIDENCE_PATH}: reviewed browser/runner evidence record is required`);
+  } else {
+    const parsedBrowserEvidence = parseReviewedBrowserRunnerEvidence(browserEvidenceBytes.toString("utf8"));
+    for (const issue of parsedBrowserEvidence.issues) {
+      findings.push(`${BROWSER_RUNNER_EVIDENCE_PATH}: ${issue}`);
+    }
   }
   for (const requiredPath of REQUIRED_PUBLIC_RUNTIME_PATHS) {
     if (!tracked.has(requiredPath)) findings.push(`${requiredPath}: required public runtime file is not tracked`);

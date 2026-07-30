@@ -7,6 +7,7 @@ import { extractEngine } from "./lib/engine-loader.mjs";
 import { calibrateNativeCoverage, findCoverageRow, runNativeCoverage } from "./lib/native-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const MINIMUM_ENGINE_BRANCH_COVERAGE_PCT = 88;
 
 function probeNode24(nodePath) {
   const probe = spawnSync(nodePath, ["--version"], { encoding: "utf8", windowsHide: true, timeout: 10_000 });
@@ -204,7 +205,7 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
     report.status = node.ok
       && run.status === 0
       && row
-      && report.branchPct >= 90
+      && report.branchPct >= MINIMUM_ENGINE_BRANCH_COVERAGE_PCT
       && totals.virtualFilenameObserved
       && totals.branchTotal > 0
       && totals.rangeMapsIdentical

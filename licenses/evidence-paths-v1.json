@@ -47,7 +47,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Original artwork, deterministic rasterization, and exact hashes for the bundled app icons.",
-      "sha256": "d77e67216542ee529427e72080bb537ce26e21a0ed008056aeec6d00c7fd5b21"
+      "sha256": "f037f8e5704a707cb447ba5778738332ce15110bb2e96ed21fe3f1a285b5f8a1"
     },
     {
       "path": "licenses/sound-effects.md",

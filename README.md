@@ -1,11 +1,11 @@
 # Math Quest
 
 Math Quest is an offline-first, browser-based mathematics game for a child and
-a grown-up to use together. Public Beta 1 is driven by an independently
+a grown-up to use together. Public Beta 2 is driven by an independently
 authored, neutral curriculum manifest containing 126 skills across 21 ordered
 levels, from pre-kindergarten through Grade 5.
 
-Release target: **v1.0.0-beta.1**
+Release target: **v1.0.0-beta.2**
 
 > This is beta software. A grown-up should co-play, especially when a skill is
 > new, and report any ambiguous question or grading error.
@@ -22,14 +22,22 @@ Release target: **v1.0.0-beta.1**
 The launcher serves the game only to the same computer at
 `http://127.0.0.1:8771/index.html`. It does not expose the game to another
 device on the local network. All required runtime assets are included in the
-repository.
+repository. Before reusing anything already listening on that port, the
+launcher requires an exact health identity for this resolved game folder and
+the SHA-256-bound bytes of every route it can serve. A different copy of the
+folder, a changed runtime file, a missing runtime file, or an unrelated
+listener is rejected rather than opened as Math Quest. Once started, the
+server serves an in-memory snapshot of those exact verified bytes, so editing
+a file cannot silently change what an already-running game serves.
 
 ### Hosted beta
 
-The approved GitHub Pages release address is
-[https://openmathquest.github.io/](https://openmathquest.github.io/). It will
-remain a release target, rather than a claim of a live verified deployment,
-until the exact tagged beta passes the remaining publication gates.
+Public Beta 1 is hosted at
+[https://openmathquest.github.io/](https://openmathquest.github.io/). That
+origin is only a candidate host for Public Beta 2 until the child-facing
+host/privacy/legal gate is affirmatively cleared. If it cannot be cleared,
+the runnable child-facing build must move to a suitable host while the source
+repository can remain on GitHub.
 
 The `OpenMathQuest` organization and its root Pages repository,
 `OpenMathQuest/openmathquest.github.io`, are reserved exclusively for Math
@@ -46,16 +54,33 @@ launcher and a hosted site requires a deliberate backup and restore.
 
 The Pages workflow is dispatched from protected `main` only while that branch
 and its exact `release_tag` input resolve to the same annotated
-`v1.0.0-beta.1` commit. Its product version and publication-clearance hashes
-must match the reviewed candidate. The hosted link is not considered verified
+`v1.0.0-beta.2` commit. Its product version and publication-clearance hashes
+must match the reviewed candidate. Publication clearance also binds the exact
+audited browser product, full product version, executable SHA-256, and
+GitHub-hosted runner `ImageOS`/`ImageVersion`. The hosted link is not considered verified
 until the repository identity, root Pages configuration, absence of a CNAME,
 HTTPS, and deployed artifact have passed review.
 
-### Phones and tablets
+### Install on iPhone or iPad
 
-Open the hosted beta in a current standards-based browser. Essential actions
-use visible touch controls; a hardware keyboard is optional. Browser storage
-remains specific to that browser, device, and origin.
+Open the hosted beta in Safari. Tap **Share**, choose **Add to Home Screen**,
+leave **Open as Web App** enabled when it appears, and tap **Add**. Open Math
+Quest from its Home Screen icon once while online and use the in-game
+readiness check before testing an offline cold launch.
+
+Safari cannot let a web page install itself, and its ordinary tab and an
+installed Home Screen app can use separate local-data containers. Progress
+does not automatically move between them. Export in Safari, then import in the
+installed app only when a grown-up deliberately wants to transfer progress.
+See the [iPhone and iPad installation guide](docs/release/install-ios-ipados.md).
+
+Essential actions use visible touch controls; a hardware keyboard is optional.
+The exact supported Apple generations remain a Beta 2 release gate until the
+physical-device matrix is complete. Safari Lockdown Mode and managed
+configurations that disable Web Locks are outside the Beta 2 support claim:
+the game pauses before child play rather than using an unsafe persistence
+fallback. Do not weaken a security setting just for Math Quest; use another
+qualified device or browser configuration.
 
 ## Curriculum
 
@@ -89,7 +114,9 @@ Trigonometry is outside this pre-kindergarten-to-Grade-5 scope.
 - Large select-and-confirm choices and construction-style inputs
 - Ten-frames, number bonds, number lines, arrays, fractions, clocks, money,
   measurement, graphs, and bar models
-- Optional operating-system speech synthesis and gentle local sound effects
+- Optional operating-system speech synthesis and gentle local sound effects;
+  both automatic reading and effects are off by default, while Replay remains
+  available on demand
 - Touch, mouse, keyboard, switch-style scanning, and reduced-motion support
 - A progress-isolated Parent Test lab for inspecting every manifest skill
 - Local backup, transactional restore, reset, preview, limits, and evidence
@@ -127,6 +154,9 @@ The stable development contract is
 [`docs/development/build-spec.md`](docs/development/build-spec.md). The
 repository layout and generated-file boundary are documented in
 [`docs/repository-structure.md`](docs/repository-structure.md).
+The effect-only installation, readiness, repair, and update boundary is
+documented in
+[`docs/development/pwa-adapter-contract.md`](docs/development/pwa-adapter-contract.md).
 
 On Windows:
 
@@ -139,15 +169,49 @@ deterministic generation and grading, mastery behavior, native branch coverage,
 mutation families, state-schema isolation, privacy, runtime requests,
 accessibility, browser behavior, offline app-shell recovery, and visual layout.
 
-Public Beta 1 uses state schema version 2 and the progress key
-`math-quest:v2`. Earlier private pre-beta evidence is not translated into the
-new curriculum and remains under its separate legacy key.
+Public Beta 2 uses state schema version 3 and the protected progress key
+`math-quest:progress:v2`. The key keeps the established Public Beta 2 journey;
+its `v2` suffix is a storage-namespace label, not the state schema number. An
+exact schema-2 Public Beta save or backup is upgraded transactionally by
+adding the empty starting-point placement record, adding a zero-valued
+placement-draft generation, and validating the complete result before anything
+replaces live progress.
+
+When the protected key is empty, a valid Public Beta 1 record under
+`math-quest:v2` is copied transactionally after the Beta 2 writer lock is
+acquired; the Beta 1 record remains unchanged and later Beta 1 writes cannot
+replace Beta 2 progress. One of two constant non-identifying values under
+`math-quest:progress:v2:beta1-migration-guard:v1` encloses either the first
+protected save or a Beta 1 copy. Until its guarded retry succeeds, a later
+launch rechecks the incomplete empty cutover or uses the newest Beta 1 source
+rather than an unproven protected copy. Even if browser storage fails after
+marker removal, an exact validated untouched initial Beta 2 record cannot hide
+valid Beta 1 progress on the next readable launch; any changed Beta 2 state
+remains authoritative. New
+schema-3 backups cannot be opened by an older
+schema-2 build. Mixed-version tabs are not supported: the single-writer lock
+prevents concurrent mutation, and an older build must fail closed rather than
+overwrite schema-3 bytes. Earlier private pre-beta evidence is not translated
+into the new curriculum and remains under its separate legacy key.
+
+An unfinished starting-point check uses the separate local
+`math-quest:placement-draft:v1` key. It stores only bounded resume data and is
+not part of an exported learning backup; it contains no nickname, age,
+response timing, mastery evidence, logs, or analytics. Reset, import, and
+successful placement application commit a later draft generation before
+attempting removal, so a browser removal failure cannot revive old questions
+after reload. The replacement generation advances beyond the greatest valid
+generation in current progress, imported progress, or the surviving bounded
+draft—even when unreadable main progress has forced the recovery screen.
 
 The Pages workflow publishes an explicit runtime allowlist. It must fail closed
 unless a checked-in `PUBLICATION_CLEARANCE.md` binds approval to the exact
 manifest version and SHA-256, exact engine SHA-256, exact open-component
 rights-state SHA-256, public-payload digest, and clearance-excluded payload
-tree. No clearance should be inferred from this README.
+tree, as well as the exact reviewed browser executable and GitHub-hosted runner
+image tuple. A machine-readable audit artifact records those values; the
+floating `windows-latest` label alone is never approval. No clearance should
+be inferred from this README.
 
 Release preparation and remaining external gates are tracked in the
 [readiness record](docs/release/readiness.md),

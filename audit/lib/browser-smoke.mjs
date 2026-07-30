@@ -1,19 +1,23 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { browserRunnerTupleIssues } from "./browser-runner-evidence.mjs";
 
 const TYPES = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
   ".png": "image/png",
   ".ttf": "font/ttf",
   ".wav": "audio/wav",
 });
 
-function serveWorkspace(root, requests) {
+export function serveWorkspace(root, requests) {
   const server = createServer(async (request, response) => {
     let pathname = "/";
     try { pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname); } catch {}
@@ -44,6 +48,7 @@ function serveWorkspace(root, requests) {
       "audit.html",
       "index.html",
       "manifest.webmanifest",
+      "release-shell-v1.json",
       "sw.js",
       "LICENSE",
       "PRIVACY.md",
@@ -102,6 +107,75 @@ function spawnBrowser(browserPath, args, timeoutMs) {
   });
 }
 
+function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash("sha256");
+    const stream = createReadStream(filePath);
+    stream.on("error", reject);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex")));
+  });
+}
+
+export async function observeBrowserRunnerEvidence(browserPath, environment = process.env) {
+  const browserExecutableSha256 = await sha256File(browserPath);
+  const expectedExecutableSha256 = String(environment.MQ_BROWSER_EXECUTABLE_SHA256 || "");
+  const runnerKind = String(environment.MQ_AUDIT_RUNNER_KIND || "LOCAL");
+  const evidence = {
+    schemaVersion: 1,
+    status: "INVALID",
+    browserProductName: String(environment.MQ_BROWSER_PRODUCT_NAME || "") || null,
+    browserFullVersion: String(environment.MQ_BROWSER_PRODUCT_VERSION || "") || null,
+    browserExecutableSha256,
+    runnerImageOS: runnerKind === "GITHUB_HOSTED" ? (String(environment.MQ_AUDIT_RUNNER_IMAGE_OS || "") || null) : null,
+    runnerImageVersion: runnerKind === "GITHUB_HOSTED" ? (String(environment.MQ_AUDIT_RUNNER_IMAGE_VERSION || "") || null) : null,
+    runnerKind,
+    requestedRunnerLabel: String(environment.MQ_AUDIT_RUNNER_LABEL || "") || null,
+    browserExecutableName: path.basename(browserPath),
+    expectedExecutableSha256: expectedExecutableSha256 || null,
+    browserIdentityValid: false,
+    validForPublication: false,
+    issues: [],
+  };
+  const identityTuple = {
+    ...evidence,
+    runnerImageOS: evidence.runnerImageOS || "local",
+    runnerImageVersion: evidence.runnerImageVersion || "local",
+  };
+  const tupleIssues = browserRunnerTupleIssues(identityTuple)
+    .filter((issue) => !issue.startsWith("runnerImage"));
+  if (!/^[a-f0-9]{64}$/u.test(expectedExecutableSha256)) {
+    tupleIssues.push("the PowerShell wrapper did not provide a valid executable SHA-256");
+  } else if (expectedExecutableSha256 !== browserExecutableSha256) {
+    tupleIssues.push("the browser executable SHA-256 changed between wrapper selection and browser launch");
+  }
+  const expectedProductByExecutable = path.basename(browserPath).toLowerCase() === "msedge.exe"
+    ? "Microsoft Edge"
+    : path.basename(browserPath).toLowerCase() === "chrome.exe"
+      ? "Google Chrome"
+      : null;
+  if (!expectedProductByExecutable || evidence.browserProductName !== expectedProductByExecutable) {
+    tupleIssues.push("the browser product name does not match the selected executable");
+  }
+  evidence.browserIdentityValid = tupleIssues.length === 0;
+  if (runnerKind === "GITHUB_HOSTED") {
+    tupleIssues.push(...browserRunnerTupleIssues(evidence).filter((issue) => issue.startsWith("runnerImage")));
+    if (evidence.requestedRunnerLabel !== "windows-latest") {
+      tupleIssues.push("the hosted audit must record windows-latest as its requested runner label");
+    }
+  } else if (runnerKind !== "LOCAL") {
+    tupleIssues.push("runnerKind must be LOCAL or GITHUB_HOSTED");
+  }
+  evidence.issues = [...new Set(tupleIssues)];
+  evidence.validForPublication = runnerKind === "GITHUB_HOSTED" && evidence.issues.length === 0;
+  evidence.status = evidence.validForPublication
+    ? "OBSERVED_GITHUB_HOSTED"
+    : evidence.browserIdentityValid && runnerKind === "LOCAL"
+      ? "OBSERVED_LOCAL"
+      : "INVALID";
+  return evidence;
+}
+
 export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }) {
   if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
   const requests = [];
@@ -109,6 +183,7 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }
   const profile = await mkdtemp(path.join(root, "audit", ".tmp-browser-audit-"));
   let auditResult = null;
   try {
+    const evidence = await observeBrowserRunnerEvidence(browserPath);
     await new Promise((resolve, reject) => {
       server.once("error", reject);
       server.listen(0, "127.0.0.1", resolve);
@@ -121,9 +196,16 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }
       "--edge-skip-compat-layer-relaunch", "--no-first-run", "--disable-default-apps", "--disable-component-update",
       "--disable-background-networking", "--disable-sync", "--metrics-recording-only", "--safebrowsing-disable-auto-update",
       "--no-pings", "--hide-scrollbars", "--mute-audio", `--user-data-dir=${profile}`,
-      "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1", "--virtual-time-budget=60000", "--dump-dom", url,
+      "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1", "--virtual-time-budget=300000", "--dump-dom", url,
     ];
     const run = await spawnBrowser(browserPath, args, timeoutMs);
+    const executableSha256AfterRun = await sha256File(browserPath);
+    if (executableSha256AfterRun !== evidence.browserExecutableSha256) {
+      evidence.issues.push("the browser executable changed while the browser audit was running");
+      evidence.browserIdentityValid = false;
+      evidence.validForPublication = false;
+      evidence.status = "INVALID";
+    }
     const match = run.stdout.match(/<script[^>]+id=["']audit-json["'][^>]*>([\s\S]*?)<\/script>/iu);
     let payload = null;
     let parseError = null;
@@ -139,6 +221,7 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }
       "/audit.html",
       "/index.html",
       "/manifest.webmanifest",
+      "/release-shell-v1.json",
       "/sw.js",
       "/LICENSE",
       "/PRIVACY.md",
@@ -159,8 +242,17 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }
     ]);
     const unexpectedRequests = requests.filter((item) => !expectedPaths.has(item.pathname));
     auditResult = {
-      status: run.status === 0 && complete && fail === 0 && skipped === 0 && unexpectedRequests.length === 0 ? "PASS" : "FAIL",
+      status: run.status === 0
+        && complete
+        && fail === 0
+        && skipped === 0
+        && unexpectedRequests.length === 0
+        && evidence.browserIdentityValid
+        && evidence.status !== "INVALID"
+        ? "PASS"
+        : "FAIL",
       browserPath,
+      evidence,
       url,
       process: { status: run.status, signal: run.signal, error: run.error, timedOut: run.timedOut, stderr: run.stderr.slice(-4_000) },
       complete,
