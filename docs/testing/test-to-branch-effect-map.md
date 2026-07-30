@@ -169,6 +169,14 @@ resolver rule, isolated profile, DOM output, URL position, and virtual-time
 argument, and explicitly rejects the former 300-second ceiling. This protects
 the failure observed in hosted run `30505640570`, where Edge exited normally
 inside `BR-21` before the final audit payload existed.
+The same module effect-tests disposal of every ordinary scenario frame:
+`pagehide` must synchronously reach the game before physical iframe removal,
+so its exclusive progress-writer lease cannot survive nondeterministically
+into the next scenario. It also executes the anonymous first-use Home waiter
+across a simulated safe-boundary document transition instead of accepting a
+single event-loop sample. These checks protect hosted run `30513379330`, which
+preserved the correct anonymous record and progress but sampled Home during a
+reload, then later stalled while entering a re-teach scenario.
 
 ## Page-adapter effect map
 

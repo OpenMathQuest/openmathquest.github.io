@@ -39,6 +39,12 @@ therefore retains at least five minutes for runner setup, deterministic
 pre-browser checks, report export, and evidence upload. A permanent
 effect-sensitive regression constructs the actual browser arguments, rejects
 the former 300-second ceiling, and binds these limits to the hosted workflow.
+Each disposable scenario iframe also dispatches `pagehide` before removal so
+the game's exclusive progress-writer lease is released synchronously before
+the next scenario. Anonymous first-use verification awaits the settled Home
+view across a possible service-worker safe-boundary reload. Both lifecycle
+effects have executable regressions after hosted run `30513379330` exposed
+their former scheduling dependence.
 
 Immediately before the Pages upload action, the release workflow constructs a
 new `_site` solely from regular, non-executable Git blobs at the already

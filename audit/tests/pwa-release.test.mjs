@@ -196,6 +196,75 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   assert.equal(args.at(-1), url);
 });
 
+test("browser scenarios await settled Home and release the writer lease before iframe removal", async () => {
+  const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
+  const armAuditFrameRemoval = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "armAuditFrameRemoval")})`,
+  );
+  const effects = [];
+  class FrameEvent {
+    constructor(type) {
+      this.type = type;
+    }
+  }
+  const frame = {
+    contentWindow: {
+      Event: FrameEvent,
+      dispatchEvent(event) {
+        effects.push(event.type);
+      },
+    },
+    remove() {
+      effects.push("remove");
+    },
+  };
+  assert.equal(armAuditFrameRemoval(frame), frame);
+  frame.remove();
+  frame.remove();
+  assert.deepEqual(
+    effects,
+    ["pagehide", "remove", "remove"],
+    "pagehide must synchronously release the game's writer lease before the first physical removal",
+  );
+
+  let homeReady = false;
+  const requireScenarioHome = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "requireScenarioHome")})`,
+    {
+      scenarioAppReady: () => homeReady,
+      async waitUntil(predicate) {
+        assert.equal(await predicate(), false, "the transient pre-Home document must not pass");
+        homeReady = true;
+        assert.equal(await predicate(), true, "the settled Home document must pass");
+        return true;
+      },
+    },
+  );
+  const homeFrame = {
+    title: "anonymous first-use",
+    contentDocument: {
+      querySelector(selector) {
+        if (selector === '[data-action="start"]') return homeReady ? {} : null;
+        if (selector === '[data-action="name-skip"]') return homeReady ? null : {};
+        return null;
+      },
+    },
+  };
+  assert.equal(await requireScenarioHome(homeFrame), true);
+
+  const scenarioFrameSource = adapterFunction(browserAudit, "scenarioFrameBytes");
+  assert.match(scenarioFrameSource, /armAuditFrameRemoval\(frame\)/u);
+  assert.match(
+    scenarioFrameSource,
+    /catch\s*\(error\)\s*\{\s*frame\.remove\(\);\s*throw error;\s*\}/u,
+    "a failed boot must execute the same lease-releasing frame cleanup",
+  );
+  assert.match(
+    browserAudit,
+    /const homeAfterSkip = await requireScenarioHome\(\s*anonymousScenario\.frame,/u,
+  );
+});
+
 test("browser audit waits through safe-boundary navigation and opens only the bound physical cache", async () => {
   const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
   const waitForNavigation = vm.runInNewContext(

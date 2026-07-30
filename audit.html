@@ -348,8 +348,49 @@
     }
     async function requireScenarioAppReady(frame, label = frame.title || "scenario") {
       const ready = await waitUntil(() => scenarioAppReady(frame), 600, 20);
-      if (!ready) throw new Error(`${label} did not render a usable app within 12000 ms.`);
+      if (!ready) {
+        const frameDocument = frame.contentDocument;
+        const appRoot = frameDocument?.getElementById("app");
+        const diagnostic = {
+          connected: frame.isConnected,
+          documentReadyState: frameDocument?.readyState || null,
+          documentUrl: frameDocument?.URL || null,
+          appPresent: Boolean(appRoot),
+          appInert: appRoot ? Boolean(appRoot.inert) : null,
+          appBusy: appRoot?.getAttribute("aria-busy") || null,
+          appChildren: appRoot?.childElementCount ?? null,
+          progressProtection: Boolean(frameDocument?.querySelector('[data-action="progress-reload"]')),
+        };
+        throw new Error(`${label} did not render a usable app within 12000 ms: ${JSON.stringify(diagnostic)}`);
+      }
       return true;
+    }
+    async function requireScenarioHome(frame, label = frame.title || "scenario") {
+      const ready = await waitUntil(() => Boolean(
+        scenarioAppReady(frame)
+        && frame.contentDocument?.querySelector('[data-action="start"]')
+        && !frame.contentDocument?.querySelector('[data-action="name-skip"]')
+      ), 600, 20);
+      if (!ready) throw new Error(`${label} did not settle on Home within 12000 ms.`);
+      return true;
+    }
+    function armAuditFrameRemoval(frame) {
+      const nativeRemove = frame.remove.bind(frame);
+      let pagehideSent = false;
+      Object.defineProperty(frame, "remove", {
+        configurable: true,
+        value() {
+          if (!pagehideSent) {
+            pagehideSent = true;
+            const frameWindow = frame.contentWindow;
+            if (frameWindow) {
+              frameWindow.dispatchEvent(new frameWindow.Event("pagehide"));
+            }
+          }
+          return nativeRemove();
+        },
+      });
+      return frame;
     }
     async function auditWriterBarrier() {
       if (!primaryWriterLeaseReleased) {
@@ -364,6 +405,7 @@
       if (writerBarrier) await auditWriterBarrier();
       localStorage.setItem(TEST_SAVE_KEY, bytes);
       const frame = document.createElement("iframe");
+      armAuditFrameRemoval(frame);
       frame.title = `Browser audit ${name}`;
       Object.assign(frame.style, {
         position: "fixed",
@@ -376,14 +418,20 @@
       });
       frame.src = `index.html?browser-audit=${encodeURIComponent(name)}-${Date.now()}-${Math.random()}`;
       document.body.append(frame);
-      await waitFrame(frame);
-      await pause();
-      await requireScenarioAppReady(frame);
-      return {
+      const scenario = {
         frame,
         get doc() { return frame.contentDocument; },
         get win() { return frame.contentWindow; },
       };
+      try {
+        await waitFrame(frame);
+        await pause();
+        await requireScenarioAppReady(frame);
+        return scenario;
+      } catch (error) {
+        frame.remove();
+        throw error;
+      }
     }
 
     async function scenarioFrame(engine, name, state, width = 1024, height = 900) {
@@ -1140,14 +1188,17 @@
           const expectedAnonymousProgress = progressProjection(engine, anonymousState);
           anonymousScenario = await scenarioFrame(engine, "anonymous-first-use", anonymousState, 1024, 900);
           anonymousScenario.doc.querySelector('[data-action="name-skip"]')?.click();
-          await pause();
+          const homeAfterSkip = await requireScenarioHome(
+            anonymousScenario.frame,
+            "Anonymous first-use choice",
+          );
           const record = JSON.parse(localStorage.getItem(TEST_CHILD_NAME_KEY) || "null");
           const afterSkip = engine.loadState(localStorage.getItem(TEST_SAVE_KEY), anonymousState.maxSeenPlayDay);
           anonymousProfile = {
             ...anonymousProfile,
             skipped: Boolean(record && record.schemaVersion === 1 && record.name === "" && record.mode === "anonymous"),
             record,
-            homeAfterSkip: Boolean(anonymousScenario.doc.querySelector('[data-action="start"]')),
+            homeAfterSkip,
             progressAfterSkip: Boolean(afterSkip.ok && progressProjection(engine, afterSkip.state) === expectedAnonymousProgress),
           };
           const reloaded = waitFrame(anonymousScenario.frame);
