@@ -17,6 +17,53 @@ const TYPES = Object.freeze({
   ".wav": "audio/wav",
 });
 
+export const BROWSER_AUDIT_TIMING = Object.freeze({
+  virtualTimeBudgetMs: 720_000,
+  wallTimeoutMs: 900_000,
+  workflowTimeoutMinutes: 25,
+  requiredWorkflowHeadroomMs: 300_000,
+});
+
+export function browserLaunchArgs({
+  profile,
+  url,
+  virtualTimeBudgetMs = BROWSER_AUDIT_TIMING.virtualTimeBudgetMs,
+}) {
+  if (typeof profile !== "string" || profile.length === 0) {
+    throw new TypeError("The browser audit requires an isolated profile path.");
+  }
+  if (typeof url !== "string" || !url.startsWith("http://127.0.0.1:")) {
+    throw new TypeError("The browser audit requires an IPv4-loopback audit URL.");
+  }
+  if (!Number.isSafeInteger(virtualTimeBudgetMs) || virtualTimeBudgetMs <= 0) {
+    throw new TypeError("The browser audit virtual-time budget must be a positive integer.");
+  }
+  return [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-gpu-sandbox",
+    "--no-sandbox",
+    "--disable-breakpad",
+    "--disable-dev-shm-usage",
+    "--edge-skip-compat-layer-relaunch",
+    "--no-first-run",
+    "--disable-default-apps",
+    "--disable-component-update",
+    "--disable-background-networking",
+    "--disable-sync",
+    "--metrics-recording-only",
+    "--safebrowsing-disable-auto-update",
+    "--no-pings",
+    "--hide-scrollbars",
+    "--mute-audio",
+    `--user-data-dir=${profile}`,
+    "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1",
+    `--virtual-time-budget=${virtualTimeBudgetMs}`,
+    "--dump-dom",
+    url,
+  ];
+}
+
 export function serveWorkspace(root, requests) {
   const server = createServer(async (request, response) => {
     let pathname = "/";
@@ -176,7 +223,12 @@ export async function observeBrowserRunnerEvidence(browserPath, environment = pr
   return evidence;
 }
 
-export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }) {
+export async function runBrowserSmoke({
+  root,
+  browserPath,
+  timeoutMs = BROWSER_AUDIT_TIMING.wallTimeoutMs,
+  virtualTimeBudgetMs = BROWSER_AUDIT_TIMING.virtualTimeBudgetMs,
+}) {
   if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
   const requests = [];
   const server = serveWorkspace(root, requests);
@@ -191,13 +243,7 @@ export async function runBrowserSmoke({ root, browserPath, timeoutMs = 120_000 }
     const address = server.address();
     if (!address || typeof address === "string" || address.address !== "127.0.0.1") throw new Error("Audit server did not bind IPv4 loopback.");
     const url = `http://127.0.0.1:${address.port}/audit.html?autorun=1`;
-    const args = [
-      "--headless=new", "--disable-gpu", "--disable-gpu-sandbox", "--no-sandbox", "--disable-breakpad", "--disable-dev-shm-usage",
-      "--edge-skip-compat-layer-relaunch", "--no-first-run", "--disable-default-apps", "--disable-component-update",
-      "--disable-background-networking", "--disable-sync", "--metrics-recording-only", "--safebrowsing-disable-auto-update",
-      "--no-pings", "--hide-scrollbars", "--mute-audio", `--user-data-dir=${profile}`,
-      "--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1", "--virtual-time-budget=300000", "--dump-dom", url,
-    ];
+    const args = browserLaunchArgs({ profile, url, virtualTimeBudgetMs });
     const run = await spawnBrowser(browserPath, args, timeoutMs);
     const executableSha256AfterRun = await sha256File(browserPath);
     if (executableSha256AfterRun !== evidence.browserExecutableSha256) {

@@ -33,6 +33,12 @@ primary shipped frame becomes available and normally settles while the
 remaining browser groups run; `BR-24` later awaits that same promise. No reply
 still leaves the browser audit incomplete and the browser runner's independent
 wall-clock limit fails closed.
+The browser runner allocates 12 virtual minutes to the complete exhaustive
+matrix and a separate 15-minute wall limit. The 25-minute GitHub-hosted job
+therefore retains at least five minutes for runner setup, deterministic
+pre-browser checks, report export, and evidence upload. A permanent
+effect-sensitive regression constructs the actual browser arguments, rejects
+the former 300-second ceiling, and binds these limits to the hosted workflow.
 
 Immediately before the Pages upload action, the release workflow constructs a
 new `_site` solely from regular, non-executable Git blobs at the already

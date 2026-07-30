@@ -156,6 +156,20 @@ choice tier contract (including the same-family sibling), absence of
 pre-answer unit disclosure in the model, first-screen reachability, and real
 correct feedback.
 
+## Browser-runner capacity effect
+
+`audit/tests/pwa-release.test.mjs` constructs the real installed-browser
+argument vector from the exported browser-audit timing policy. Its hosted
+capacity regression requires at least 12 virtual minutes for the exhaustive
+child-layout, accessibility, interaction, PWA, and visual matrices; requires
+the independent wall limit to exceed that budget; and binds the policy to the
+25-minute GitHub-hosted job while preserving at least five minutes for setup,
+reporting, and evidence upload. It also effect-checks the exact loopback-only
+resolver rule, isolated profile, DOM output, URL position, and virtual-time
+argument, and explicitly rejects the former 300-second ceiling. This protects
+the failure observed in hosted run `30505640570`, where Edge exited normally
+inside `BR-21` before the final audit payload existed.
+
 ## Page-adapter effect map
 
 `audit/tests/page-adapter-effects.test.mjs` extracts and executes the shipped

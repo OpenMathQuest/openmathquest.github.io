@@ -18,7 +18,11 @@ import { promisify } from "node:util";
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
 import "./page-adapter-effects.test.mjs";
-import { serveWorkspace } from "../lib/browser-smoke.mjs";
+import {
+  BROWSER_AUDIT_TIMING,
+  browserLaunchArgs,
+  serveWorkspace,
+} from "../lib/browser-smoke.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const execFile = promisify(execFileCallback);
@@ -150,6 +154,46 @@ test("generator, worker, page, and browser audit share one exact explicit shell 
     explicitRelativePathArray(browserAudit, "const expectedShellEntryPaths = Object.freeze("),
     expectedEntries,
   );
+});
+
+test("hosted browser audit capacity covers the exhaustive matrix and preserves workflow headroom", async () => {
+  const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
+  const workflowTimeout = Number(workflow.match(/^\s*timeout-minutes:\s*(\d+)\s*$/mu)?.[1]);
+  assert.equal(
+    workflowTimeout,
+    BROWSER_AUDIT_TIMING.workflowTimeoutMinutes,
+    "the code policy and hosted workflow must share one reviewed job ceiling",
+  );
+  assert.ok(
+    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 720_000,
+    "the hosted audit must retain at least 12 virtual minutes for the exhaustive browser matrix",
+  );
+  assert.ok(
+    BROWSER_AUDIT_TIMING.wallTimeoutMs > BROWSER_AUDIT_TIMING.virtualTimeBudgetMs,
+    "the independent wall limit must not pre-empt the browser's virtual-time budget",
+  );
+  assert.ok(
+    BROWSER_AUDIT_TIMING.wallTimeoutMs
+      + BROWSER_AUDIT_TIMING.requiredWorkflowHeadroomMs
+      <= workflowTimeout * 60_000,
+    "the browser wall limit must preserve reviewed setup, reporting, and artifact-upload headroom",
+  );
+
+  const profile = "C:\\audit\\isolated-profile";
+  const url = "http://127.0.0.1:8771/audit.html?autorun=1";
+  const args = browserLaunchArgs({ profile, url });
+  assert.equal(
+    args.filter((argument) => argument.startsWith("--virtual-time-budget=")).join(""),
+    `--virtual-time-budget=${BROWSER_AUDIT_TIMING.virtualTimeBudgetMs}`,
+  );
+  assert.equal(args.includes("--virtual-time-budget=300000"), false);
+  assert.equal(args.includes(`--user-data-dir=${profile}`), true);
+  assert.equal(
+    args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
+    true,
+  );
+  assert.equal(args.includes("--dump-dom"), true);
+  assert.equal(args.at(-1), url);
 });
 
 test("browser audit waits through safe-boundary navigation and opens only the bound physical cache", async () => {
