@@ -165,12 +165,21 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     "the code policy and hosted workflow must share one reviewed job ceiling",
   );
   assert.ok(
-    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 720_000,
-    "the hosted audit must retain at least 12 virtual minutes for the exhaustive browser matrix",
+    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 1_080_000,
+    "the hosted audit must retain at least 18 virtual minutes for the exhaustive browser matrix",
+  );
+  assert.ok(
+    BROWSER_AUDIT_TIMING.wallTimeoutMs >= 1_200_000,
+    "the hosted audit must retain a separate wall-clock ceiling of at least 20 minutes",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.wallTimeoutMs > BROWSER_AUDIT_TIMING.virtualTimeBudgetMs,
     "the independent wall limit must not pre-empt the browser's virtual-time budget",
+  );
+  assert.ok(
+    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs
+      - BROWSER_AUDIT_TIMING.virtualWatchdogMs >= 30_000,
+    "the fail-closed in-page watchdog must retain at least 30 virtual seconds for DOM serialization",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.wallTimeoutMs
@@ -187,6 +196,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     `--virtual-time-budget=${BROWSER_AUDIT_TIMING.virtualTimeBudgetMs}`,
   );
   assert.equal(args.includes("--virtual-time-budget=300000"), false);
+  assert.equal(args.includes("--virtual-time-budget=720000"), false);
   assert.equal(args.includes(`--user-data-dir=${profile}`), true);
   assert.equal(
     args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
@@ -201,6 +211,103 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   }
   assert.equal(args.includes("--dump-dom"), true);
   assert.equal(args.at(-1), url);
+
+  const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
+  const watchdogLiteral = browserAudit.match(/const AUDIT_WATCHDOG_MS = ([\d_]+);/u)?.[1];
+  assert.equal(
+    Number(String(watchdogLiteral).replaceAll("_", "")),
+    BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+    "the browser page and installed-browser runner must share one watchdog policy",
+  );
+  const watchdogEffects = [];
+  let watchdogCallback = null;
+  const activeApp = {
+    getAttribute(name) {
+      return name === "aria-busy" ? "true" : null;
+    },
+    childElementCount: 7,
+  };
+  const activeFrame = {
+    title: "active scenario",
+    isConnected: true,
+    getAttribute(name) {
+      return name === "src" ? "index.html?browser-audit=active" : null;
+    },
+    contentDocument: {
+      readyState: "complete",
+      getElementById(id) {
+        return id === "app" ? activeApp : null;
+      },
+    },
+    remove() {
+      watchdogEffects.push("remove");
+    },
+  };
+  const primaryFrame = { src: "index.html" };
+  const armBrowserAuditWatchdog = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "armBrowserAuditWatchdog")})`,
+    {
+      AUDIT_WATCHDOG_MS: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+      auditFinalized: false,
+      results: [{ id: "BR-01" }],
+      document: {
+        querySelectorAll(selector) {
+          assert.equal(selector, "iframe");
+          return [activeFrame];
+        },
+      },
+      add(id, title, pass, details) {
+        watchdogEffects.push({
+          id,
+          title,
+          pass,
+          details: JSON.parse(JSON.stringify(details)),
+        });
+      },
+      iframe: primaryFrame,
+      restoreOriginalStorage() {
+        watchdogEffects.push("restore");
+      },
+      renderResults() {
+        watchdogEffects.push("render");
+      },
+      setTimeout(callback, delay) {
+        watchdogCallback = callback;
+        assert.equal(delay, BROWSER_AUDIT_TIMING.virtualWatchdogMs);
+        return 91;
+      },
+    },
+  );
+  assert.equal(armBrowserAuditWatchdog([activeFrame]), 91);
+  assert.equal(typeof watchdogCallback, "function");
+  watchdogCallback();
+  assert.equal(primaryFrame.src, "about:blank");
+  assert.deepEqual(
+    watchdogEffects,
+    [
+      {
+        id: "BR-00",
+        title: "Browser harness completes",
+        pass: false,
+        details: {
+          reason: "The whole-run virtual-time watchdog expired before the audit completed.",
+          watchdogMs: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+          completedResults: 1,
+          activeFrames: [{
+            title: "active scenario",
+            src: "index.html?browser-audit=active",
+            connected: true,
+            documentReadyState: "complete",
+            appBusy: "true",
+            appChildren: 7,
+          }],
+        },
+      },
+      "remove",
+      "restore",
+      "render",
+    ],
+  );
 });
 
 test("browser scenarios await settled Home and release the writer lease before iframe removal", async () => {

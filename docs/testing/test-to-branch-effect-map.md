@@ -160,15 +160,20 @@ correct feedback.
 
 `audit/tests/pwa-release.test.mjs` constructs the real installed-browser
 argument vector from the exported browser-audit timing policy. Its hosted
-capacity regression requires at least 12 virtual minutes for the exhaustive
+capacity regression requires at least 18 virtual minutes for the exhaustive
 child-layout, accessibility, interaction, PWA, and visual matrices; requires
-the independent wall limit to exceed that budget; and binds the policy to the
-25-minute GitHub-hosted job while preserving at least five minutes for setup,
-reporting, and evidence upload. It also effect-checks the exact loopback-only
-resolver rule, isolated profile, DOM output, URL position, and virtual-time
-argument, and explicitly rejects the former 300-second ceiling. This protects
-the failure observed in hosted run `30505640570`, where Edge exited normally
-inside `BR-21` before the final audit payload existed.
+at least a 20-minute independent wall limit that exceeds that budget; and
+binds the policy to the 25-minute GitHub-hosted job while preserving at least
+five minutes for setup, reporting, and evidence upload. It also effect-checks
+the exact loopback-only resolver rule, isolated profile, DOM output, URL
+position, and virtual-time argument, and explicitly rejects the former
+300-second and 720-second ceilings. This protects hosted run `30505640570`,
+where Edge exited normally inside `BR-21`, and run `30515361457`, which exited
+normally in the late MQ-121 visual-regression witness, both before the final
+audit payload existed. The same effect test executes the synchronized
+17.5-minute in-page watchdog and requires it to preserve the final 30 virtual
+seconds for a fail-closed BR-00 payload containing the active frame and
+completed-result count. Per-scenario readiness limits remain unchanged.
 The same module effect-tests disposal of every ordinary scenario frame:
 `pagehide` must synchronously reach the game before physical iframe removal,
 so its exclusive progress-writer lease cannot survive nondeterministically

@@ -33,12 +33,13 @@ primary shipped frame becomes available and normally settles while the
 remaining browser groups run; `BR-24` later awaits that same promise. No reply
 still leaves the browser audit incomplete and the browser runner's independent
 wall-clock limit fails closed.
-The browser runner allocates 12 virtual minutes to the complete exhaustive
-matrix and a separate 15-minute wall limit. The 25-minute GitHub-hosted job
+The browser runner allocates 18 virtual minutes to the complete exhaustive
+matrix and a separate 20-minute wall limit. The 25-minute GitHub-hosted job
 therefore retains at least five minutes for runner setup, deterministic
 pre-browser checks, report export, and evidence upload. A permanent
 effect-sensitive regression constructs the actual browser arguments, rejects
-the former 300-second ceiling, and binds these limits to the hosted workflow.
+the former 300-second and 720-second ceilings, and binds these limits to the
+hosted workflow.
 Each disposable scenario iframe also dispatches `pagehide` before removal so
 the game's exclusive progress-writer lease is released synchronously before
 the next scenario. Anonymous first-use verification awaits the settled Home
@@ -51,6 +52,15 @@ occluded-window, and renderer throttling. These harness-only controls prevent
 hidden-iframe scheduling from starving the cross-process progress-lock
 callback; executable argument, style, and call-order checks protect the
 failure observed in hosted run `30514438006`.
+Hosted run `30515361457` then advanced without a scenario failure into the
+late MQ-121 visual-regression witness, but Edge exited normally with no audit
+payload when the former 720-second global virtual-time budget expired. The
+18-minute virtual budget adds a bounded 50% whole-matrix margin while the
+independent 20-minute wall limit and five-minute workflow reserve remain
+fail-closed. A synchronized 17.5-minute in-page watchdog reserves the final
+30 virtual seconds for a machine-readable BR-00 payload containing the active
+frame and completed-result count if the matrix ever approaches that ceiling
+again. Per-scenario readiness limits are unchanged.
 
 Immediately before the Pages upload action, the release workflow constructs a
 new `_site` solely from regular, non-executable Git blobs at the already

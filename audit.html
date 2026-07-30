@@ -38,12 +38,14 @@
     const LEGACY_SAVE_KEY = "math-quest:v1";
     const TEST_CHILD_NAME_KEY = "math-quest:child-name:v1";
     const TEST_PLACEMENT_DRAFT_KEY = "math-quest:placement-draft:v1";
+    const AUDIT_WATCHDOG_MS = 1_050_000;
     const TEST_CHILD_NAME_RECORD = JSON.stringify({
       schemaVersion: 1,
       savedAt: "2000-01-01T00:00:00.000Z",
       name: "Pip",
     });
     const results = [];
+    let auditFinalized = false;
     const resultBody = document.getElementById("results");
     const summary = document.getElementById("summary");
     const iframe = document.getElementById("game");
@@ -62,12 +64,15 @@
     };
     window.addEventListener("pagehide", restoreOriginalStorage, { once: true });
 
-    const add = (id, title, pass, details = "") => results.push({
-      id,
-      title,
-      status: pass ? "PASS" : "FAIL",
-      details: typeof details === "string" ? details : JSON.stringify(details),
-    });
+    const add = (id, title, pass, details = "") => {
+      if (auditFinalized) return;
+      results.push({
+        id,
+        title,
+        status: pass ? "PASS" : "FAIL",
+        details: typeof details === "string" ? details : JSON.stringify(details),
+      });
+    };
     const normalized = (value) => String(value ?? "").normalize("NFC").trim();
     const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
     const waitUntil = async (predicate, attempts = 150, intervalMs = 20) => {
@@ -125,6 +130,8 @@
       return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86400000);
     };
     const renderResults = () => {
+      if (auditFinalized) return;
+      auditFinalized = true;
       resultBody.replaceChildren(...results.map((item) => {
         const row = document.createElement("tr");
         for (const text of [item.id, item.status, item.title, item.details]) {
@@ -149,6 +156,34 @@
       node.textContent = JSON.stringify(payload).replace(/</gu, "\\u003c");
       document.documentElement.dataset.auditComplete = "true";
     };
+
+    function armBrowserAuditWatchdog(openFrames) {
+      return setTimeout(() => {
+        if (auditFinalized) return;
+        const activeFrames = [...document.querySelectorAll("iframe")].map((frame) => {
+          const frameDocument = frame.contentDocument;
+          const appRoot = frameDocument?.getElementById("app");
+          return {
+            title: frame.title || null,
+            src: frame.getAttribute("src") || null,
+            connected: frame.isConnected,
+            documentReadyState: frameDocument?.readyState || null,
+            appBusy: appRoot?.getAttribute("aria-busy") || null,
+            appChildren: appRoot?.childElementCount ?? null,
+          };
+        });
+        add("BR-00", "Browser harness completes", false, {
+          reason: "The whole-run virtual-time watchdog expired before the audit completed.",
+          watchdogMs: AUDIT_WATCHDOG_MS,
+          completedResults: results.length,
+          activeFrames,
+        });
+        for (const frame of openFrames) frame.remove();
+        iframe.src = "about:blank";
+        restoreOriginalStorage();
+        renderResults();
+      }, AUDIT_WATCHDOG_MS);
+    }
 
     const waitFrame = (frame, timeoutMs = 7000) => new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`${frame.title || "frame"} did not load within ${timeoutMs} ms`)), timeoutMs);
@@ -1074,6 +1109,7 @@
 
     (async () => {
       const openFrames = [];
+      const auditWatchdog = armBrowserAuditWatchdog(openFrames);
       try {
         await waitFrame(iframe, 12000);
         const win = iframe.contentWindow;
@@ -6762,6 +6798,7 @@
       } catch (error) {
         add("BR-00", "Browser harness completes", false, String(error?.stack || error?.message || error));
       } finally {
+        clearTimeout(auditWatchdog);
         for (const frame of openFrames) frame.remove();
         iframe.src = "about:blank";
         restoreOriginalStorage();
