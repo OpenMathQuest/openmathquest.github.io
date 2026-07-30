@@ -621,6 +621,331 @@ test("QA-006/016 cold boot renders and focuses only after progress protection se
   );
 });
 
+test("QA-024 Home navigation appears only when it can change screens", () => {
+  const source = `(()=>{
+    "use strict";
+    const ui={screen:"home",world:"ocean"};
+    const worldInfo={ocean:{icon:"ocean"}};
+    const iconSvg=()=>"<svg></svg>";
+    const s=(id)=>id;
+    ${extractFunction("header")}
+    return {ui,header};
+  })()`;
+  const harness = new vm.Script(source, {
+    filename: "math-quest-home-navigation.js",
+  }).runInNewContext({});
+
+  assert.doesNotMatch(
+    harness.header(),
+    /data-action="home"/u,
+    "Home must not present a button that only rerenders the current screen",
+  );
+
+  for (const screen of ["session", "grown", "parents"]) {
+    harness.ui.screen = screen;
+    assert.match(
+      harness.header(),
+      /data-action="home"/u,
+      `${screen} must retain a working route back to Home`,
+    );
+  }
+});
+
+test("QA-025 fresh sessions rotate among eligible skills and advance each skill through CPA order", () => {
+  const state = engine.createInitialState(22_000);
+  const session = engine.buildSessionQueue(state, { playDay: 22_000, seed: 1 });
+  const initialIds = session.queue.slice(0, 3).map((slot) => slot.skillId);
+  assert.deepEqual(
+    plain(initialIds),
+    ["MQ-001", "MQ-004", "MQ-006"],
+    "the opening session must not collapse to repeated copies of one obligation",
+  );
+
+  const bySkill = new Map();
+  for (const slot of session.queue) {
+    if (!bySkill.has(slot.skillId)) bySkill.set(slot.skillId, []);
+    bySkill.get(slot.skillId).push(slot);
+  }
+  assert.ok(bySkill.size >= 3, "the first session samples several eligible skills");
+  for (const [skillId, slots] of bySkill) {
+    assert.ok(slots.length >= 2, `${skillId} receives the required young-learner second exposure`);
+    assert.deepEqual(
+      plain(slots.slice(0, 2).map((slot) => slot.representation)),
+      ["CONCRETE", "PICTORIAL"],
+      `${skillId} begins with concrete work before pictorial work`,
+    );
+  }
+});
+
+test("QA-026 mastery requires every declared representation phase in order", () => {
+  const skill = engine.SKILL_BY_ID["MQ-003"];
+  const attempt = (index, representation) => ({
+    recordId: `qa-026-${index}`,
+    questionId: `qa-026-question-${index}`,
+    skillId: skill.skillId,
+    level: skill.level,
+    stage: skill.stage,
+    taskType: skill.constraints.taskTypes[0],
+    tier: "HARD/TARGET",
+    representation,
+    inputClass: "CONSTRUCTION",
+    inputMethod: "PAIR_LINK",
+    selectionOptionCount: 0,
+    evidenceClass: "CONSTRUCTION",
+    feedbackClass: "FIRST_TRY_CLEAN",
+    coldTest: false,
+    scheduledReview: false,
+    sampleKey: `${skill.skillId}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|qa-026-${index}`,
+    firstAnswerCorrect: true,
+    hintUsed: false,
+    changed: false,
+    elapsed: 4_000,
+    idleMs: 0,
+    validTelemetry: true,
+    guessingLike: false,
+    modelUsed: false,
+    applied: false,
+    preview: false,
+    capstone: false,
+    reteachStep: false,
+    sessionId: `qa-026-session-${index}`,
+    playDay: 22_000 + index,
+  });
+  const apply = (state, row) => engine.applyAttempt(state, row).state;
+
+  let pictorialOnly = engine.createInitialState(22_000);
+  for (let index = 0; index < 3; index += 1) {
+    pictorialOnly = apply(pictorialOnly, attempt(index, "PICTORIAL"));
+  }
+  assert.notEqual(
+    pictorialOnly.skills[skill.skillId].acquisition,
+    "SOLID",
+    "repeated pictorial success cannot skip the declared concrete phase",
+  );
+
+  let reversed = engine.createInitialState(22_000);
+  reversed = apply(reversed, attempt(10, "PICTORIAL"));
+  reversed = apply(reversed, attempt(11, "CONCRETE"));
+  assert.notEqual(
+    reversed.skills[skill.skillId].acquisition,
+    "SOLID",
+    "seeing the required phases in reverse order does not satisfy CPA progression",
+  );
+
+  let ordered = engine.createInitialState(22_000);
+  ordered = apply(ordered, attempt(20, "CONCRETE"));
+  ordered = apply(ordered, attempt(21, "PICTORIAL"));
+  assert.equal(ordered.skills[skill.skillId].acquisition, "SOLID");
+  assert.equal(
+    ordered.skills[skill.skillId].masteryContractVersion,
+    engine.CONSTANTS.MASTERY_CONTRACT_VERSION,
+  );
+
+  const legacy = plain(pictorialOnly);
+  const legacyRecord = legacy.skills[skill.skillId];
+  legacyRecord.acquisition = "SOLID";
+  legacyRecord.witnessIds = legacyRecord.evidence.slice(0, 2).map((row) => row.recordId);
+  legacyRecord.masteryVerifiedPlayDay = legacyRecord.evidence[1].playDay;
+  legacyRecord.masteryContractVersion = engine.CONSTANTS.SAMPLE_KEY_VERSION;
+  const migrated = engine.loadState(JSON.stringify(legacy), 22_010);
+  assert.equal(migrated.ok, true, migrated.error);
+  assert.equal(migrated.migrated, true);
+  assert.equal(migrated.state.skills[skill.skillId].acquisition, "PRACTISING");
+  assert.deepEqual(plain(migrated.state.skills[skill.skillId].witnessIds), []);
+});
+
+test("QA-027 visual operands and concrete tasks remain available to sight, speech, and assistive technology", () => {
+  const source = `(()=>{
+    "use strict";
+    const MODEL_FAMILIES=new Set(["attributeSet","comparison","numberBond","tenFrame","array","fractionPair","placeValue","numberLine","proportionalBar","areaGrid","clockSpan","visualPrompt"]);
+    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const s=(id,slots={})=>({
+      "aria.mathModel":"Math model",
+      "instruction.physical":"Grown-up: make this with real objects, then choose We made it.",
+      "instruction.physicalModel":"Try "+slots.representation+" with large objects.",
+      "ui.physicalDone":"We made it"
+    })[id]||id;
+    const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8}};
+    const displayPrompt=q=>escape(q.prompt);
+    let ui={screen:"session",phase:"physical",question:{prompt:"Pair every shell with one shell."}};
+    ${extractFunction("modelOperandDescription")}
+    ${extractFunction("semanticModel")}
+    ${extractFunction("durationEvidenceSpeech")}
+    ${extractFunction("replayText")}
+    ${extractFunction("physicalTaskHtml")}
+    return {modelOperandDescription,semanticModel,durationEvidenceSpeech,replayText,physicalTaskHtml};
+  })()`;
+  const harness = new vm.Script(source, {
+    filename: "math-quest-complete-visual-operands.js",
+  }).runInNewContext({});
+
+  const models = [
+    {
+      label: "The clock shows 6:30",
+      model: { type: "visualPrompt", values: { kind: "clock", items: [{ hour: 6, minute: 30 }] } },
+    },
+    {
+      label: "The start clock shows 3:26. The end clock shows 3:55",
+      model: {
+        type: "clockSpan",
+        values: { startHour: 3, startMinute: 26, endHour: 3, endMinute: 55 },
+      },
+    },
+    {
+      label: "The angle measures 80 degrees",
+      model: {
+        type: "visualPrompt",
+        values: { kind: "geometry", items: [{ kind: "angle", degrees: 80 }] },
+      },
+    },
+    {
+      label: "The solid is 4 units long, 4 units wide, and 4 units high",
+      model: {
+        type: "visualPrompt",
+        values: { kind: "volume", items: [{ kind: "cubeLayers", length: 4, width: 4, height: 4 }] },
+      },
+    },
+    {
+      label: "The composite shape has first rectangle 3 by 11 cm and second rectangle 7 by 5 cm",
+      model: {
+        type: "areaGrid",
+        values: {
+          lengthUnitSymbol: "cm",
+          parts: [
+            { label: "first rectangle", width: 3, height: 11 },
+            { label: "second rectangle", width: 7, height: 5 },
+          ],
+        },
+      },
+    },
+  ];
+  for (const { label, model } of models) {
+    assert.equal(harness.modelOperandDescription(model), label);
+    assert.equal(harness.durationEvidenceSpeech({ modelDescriptor: model }), `${label}.`);
+    const rendered = harness.semanticModel(model, { prompt: "Use the model." }, "<span>visual</span>");
+    assert.match(rendered, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
+    assert.match(rendered, /role="img"/u);
+  }
+
+  assert.match(harness.replayText(), /Pair every shell with one shell\./u);
+  const physical = harness.physicalTaskHtml(
+    { level: 1, prompt: "Pair every shell with one shell." },
+    { representation: "objects-and-actions" },
+    "<span>two rows of shells</span>",
+  );
+  assert.match(physical, /Pair every shell with one shell\./u);
+  assert.match(physical, /two rows of shells/u);
+  assert.match(physical, /data-action="physical-done"/u);
+});
+
+test("QA-028 MQ-111 estimates use the rounded operands exactly and comparison wording is grammatical", () => {
+  const operations = new Set();
+  let fractionalQuotientSeen = false;
+  for (let ordinal = 0; ordinal < 96; ordinal += 1) {
+    const question = engine.makeQuestion({
+      skillId: "MQ-111",
+      tier: ordinal % 2 ? "HARD/TARGET" : "EASY",
+      representation: "PICTORIAL",
+      seed: 0x71313131,
+      ordinal,
+      eligibleQuestionOrdinal: ordinal,
+      theme: "forest",
+    });
+    if (question.taskType !== "plausibility-check") continue;
+    const { a, b, place, operation } = question.params;
+    const roundedA = Math.round(a / place) * place;
+    const roundedB = Math.round(b / place) * place;
+    const expected = operation === "sum"
+      ? roundedA + roundedB
+      : operation === "difference"
+        ? Math.abs(roundedA - roundedB)
+        : operation === "product"
+          ? roundedA * roundedB
+          : roundedA / roundedB;
+    operations.add(operation);
+    assert.equal(Number(question.answer.value), expected, question.prompt);
+    assert.equal(engine.gradeAnswer(question, String(expected)).correct, true, question.prompt);
+    if (operation === "quotient" && !Number.isInteger(expected)) fractionalQuotientSeen = true;
+  }
+  assert.deepEqual(
+    plain([...operations].sort()),
+    ["difference", "product", "quotient", "sum"],
+  );
+  assert.equal(fractionalQuotientSeen, true, "the oracle exercises the former rounded-quotient defect");
+
+  for (let ordinal = 0; ordinal < 48; ordinal += 1) {
+    const question = engine.makeQuestion({
+      skillId: "MQ-035",
+      tier: "EASY",
+      representation: "PICTORIAL",
+      seed: 0x61747472,
+      ordinal,
+      eligibleQuestionOrdinal: ordinal,
+      theme: "ocean",
+    });
+    assert.doesNotMatch(question.prompt, /\ba (?:apple|orange|acorn)\b/iu);
+  }
+});
+
+test("QA-029 child play renders an explicit large answer outcome for both result branches", () => {
+  const source = `(()=>{
+    "use strict";
+    const ui={screen:"session",isReteach:false};
+    const s=id=>({
+      "feedback.correctStatus":"Correct.",
+      "feedback.incorrectStatus":"Not correct yet.",
+      "feedback.placementIncorrectStatus":"Not correct."
+    })[id]||id;
+    const iconSvg=name=>"<i data-icon=\\""+name+"\\"></i>";
+    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    ${extractFunction("feedbackStateHtml")}
+    return feedbackStateHtml;
+  })()`;
+  const feedback = new vm.Script(source, {
+    filename: "math-quest-child-feedback.js",
+  }).runInNewContext({});
+  const correct = feedback({ firstAnswerCorrect: true }, "You matched the pattern.");
+  assert.match(correct, /data-feedback-state="correct"/u);
+  assert.match(correct, /<strong id="feedback-title">Correct\.<\/strong>/u);
+  assert.match(correct, /role="status"/u);
+  assert.match(correct, /tabindex="-1"/u);
+  const incorrect = feedback({ firstAnswerCorrect: false }, "Try the other piece.");
+  assert.match(incorrect, /data-feedback-state="incorrect"/u);
+  assert.match(incorrect, /<strong id="feedback-title">Not correct yet\.<\/strong>/u);
+});
+
+test("QA-030 early pattern choices always contain a visible and spoken token", () => {
+  const source = `(()=>{
+    "use strict";
+    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const colourName=value=>["red","blue","green","yellow"].includes(String(value))?String(value):"";
+    const categoryIconHtml=value=>"<i data-animal=\\""+escape(value)+"\\"></i>";
+    const shapeVisualHtml=value=>"<i data-shape=\\""+escape(value)+"\\"></i>";
+    const responseAction=()=>\"\";
+    const questionModelHtml=()=>\"\";
+    ${extractFunction("patternTokenVisualHtml")}
+    ${extractFunction("patternBuildConstructionHtml")}
+    return patternBuildConstructionHtml;
+  })()`;
+  const renderPattern = new vm.Script(source, {
+    filename: "math-quest-pattern-choices.js",
+  }).runInNewContext({});
+  const question = engine.makeQuestion({
+    skillId: "MQ-004",
+    tier: "EASY",
+    representation: "PICTORIAL",
+    seed: 1,
+    ordinal: 0,
+    eligibleQuestionOrdinal: 0,
+    theme: "forest",
+  });
+  const rendered = renderPattern(question, "play", { responseState: { tokens: [] } });
+  assert.equal((rendered.match(/<button data-token-kind=/gu) || []).length, 4);
+  assert.equal((rendered.match(/aria-label="(?:circle|triangle|square|diamond)"/gu) || []).length, 4);
+  assert.equal((rendered.match(/class="pattern-token-label"/gu) || []).length, 4);
+  assert.doesNotMatch(rendered, /<button[^>]*>\s*<\/button>/u);
+});
+
 test("speech and gentle sound effects remain off in every fresh game", () => {
   for (const playDay of [0, 1, 22_000]) {
     const state = engine.createInitialState(playDay);

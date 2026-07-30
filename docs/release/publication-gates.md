@@ -37,7 +37,7 @@ but it does not by itself approve publication.
 
 ## Remaining fail-closed review
 
-Before the Public Beta 2 push or deployment:
+Before the Public Beta 3 push or deployment:
 
 1. Freeze and canonicalize the exact manifest.
 2. Compute the exact manifest and engine SHA-256 values from shipped bytes.
@@ -153,7 +153,7 @@ record to the exact ordered schema below:
 - `Hosted-Windows evidence SHA-256: <SHA-256 of the exact canonical audit/browser-runner-evidence-v1.json bytes>`
 - `Owner authorization state: PR_PUSH_AUTHORIZED`
 - `Owner authorization evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Authorized release tag: v1.0.0-beta.2`
+- `Authorized release tag: v1.0.0-beta.3`
 - `Authorized protected ref: refs/heads/main`
 - `Review-bundle SHA-256: <64 lowercase hexadecimal characters>`
 

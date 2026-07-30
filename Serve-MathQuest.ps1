@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Port = 8771
-$ProductRelease = '1.0.0-beta.2'
+$ProductRelease = '1.0.0-beta.3'
 $ServerIdentity = 'math-quest-local-server:v2'
 $HealthSchemaVersion = 1
 $HealthPath = '/__math_quest_health__'

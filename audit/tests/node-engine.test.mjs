@@ -45,7 +45,7 @@ function findQuestion(engine, predicate) {
 
 function canonicalActiveSlot(engine, skill, index, { preview = false } = {}) {
   const available = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
-  const phase = available[index % Math.max(1, available.length)] || available[0] || "P";
+  const phase = available[Math.min(index, Math.max(0, available.length - 1))] || available[0] || "P";
   const representation = { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL";
   const choicePosition = engine.choicePositions({
     stage: skill.stage,
@@ -646,7 +646,7 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
     ["placement listed record not placed", (state) => { state.skills[placedSkillId].acquisition = "UNSEEN"; }],
     ["placement record fake mastery day", (state) => { state.skills[placedSkillId].masteryVerifiedPlayDay = 22_000; }],
     ["placement record fake mastery contract", (state) => {
-      state.skills[placedSkillId].masteryContractVersion = engine.CONSTANTS.SAMPLE_KEY_VERSION;
+      state.skills[placedSkillId].masteryContractVersion = engine.CONSTANTS.MASTERY_CONTRACT_VERSION;
     }],
     ["placement confirmation missing", (state) => { state.placement.lastConfirmed = null; }],
     ["placement confirmation unknown field", (state) => { state.placement.lastConfirmed.surprise = true; }],
@@ -795,7 +795,7 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   ].filter(Boolean);
   assert.ok(priorBeta2Questions.length > 0);
   for (const question of priorBeta2Questions) {
-    question.generatorContractVersion = "question-generator-v2";
+    question.generatorContractVersion = "question-generator-v3";
   }
   const priorBeta2Progress = clone(priorBeta2Active.skills);
   const priorBeta2History = clone(priorBeta2Active.sessionLog);
@@ -1386,7 +1386,7 @@ test("persisted event days cannot outrun the rollback-defense watermark", async 
     record.restoreNeeded = false;
     record.restoreAfterDay = null;
     record.masteryVerifiedPlayDay = maximum + 1;
-    record.masteryContractVersion = engine.CONSTANTS.SAMPLE_KEY_VERSION;
+    record.masteryContractVersion = engine.CONSTANTS.MASTERY_CONTRACT_VERSION;
   });
   await rejectFuture("DAY-BOUND session log", (state) => {
     state.sessionLog.push({ sessionId: "future-session", playDay: maximum + 1 });
@@ -1464,7 +1464,7 @@ test("legacy mastery witnesses cannot regain current SOLID status after one curr
     stage: skill.stage,
     taskType: skill.constraints.taskTypes[0],
     tier: "HARD/TARGET",
-    representation: "PICTORIAL",
+    representation: index === 0 ? "CONCRETE" : "PICTORIAL",
     inputClass: "SELECTION",
     inputMethod: "PICTURE_CHOICE",
     selectionOptionCount: 4,
@@ -1992,8 +1992,8 @@ test("one-more capstones bind to the just-answered slot in a multi-skill session
   const built = engine.buildSessionQueue(state, { playDay: 22_000, seed: state.seed });
   assert.deepEqual(
     clone(built.queue.slice(0, 3).map((slot) => slot.skillId)),
-    ["MQ-001", "MQ-004", "MQ-001"],
-    "fixture needs a due skill, a fresh skill, and then a repeated due skill",
+    ["MQ-001", "MQ-004", "MQ-006"],
+    "fixture needs a due skill followed by two distinct fresh skills",
   );
 
   const capstoneFor = (slot) => engine.makeQuestion({

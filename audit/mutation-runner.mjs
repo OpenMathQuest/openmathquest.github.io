@@ -56,8 +56,17 @@ function taskTypeMasteryOutcome(engine) {
   const skillId = skill.skillId ?? skill.id;
   const repeatedTaskType = skill.constraints.taskTypes[0];
   const witnessCount = engine.CONSTANTS.NORMAL_CONSTRUCTION_SUCCESSES;
+  const declaredPhases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+  const representationFor = (index) => ({
+    C: "CONCRETE",
+    P: "PICTORIAL",
+    A: "ABSTRACT",
+  })[declaredPhases[Math.min(index, declaredPhases.length - 1)]];
   if (!Number.isInteger(witnessCount) || witnessCount < 1) {
     return { ok: false, reason: "The construction mastery witness count is unavailable." };
+  }
+  if (declaredPhases.length === 0 || witnessCount < declaredPhases.length) {
+    return { ok: false, reason: "The task-type witness cannot cover the declared CPA phases." };
   }
   let state = engine.createInitialState(21_000);
   for (let index = 0; index < witnessCount; index += 1) {
@@ -68,7 +77,7 @@ function taskTypeMasteryOutcome(engine) {
       level: skill.level,
       stage: engine.stageForLevel(skill.level),
       tier: "HARD/TARGET",
-      representation: "PICTORIAL",
+      representation: representationFor(index),
       inputClass: "CONSTRUCTION",
       evidenceClass: "CONSTRUCTION",
       feedbackClass: "FIRST_TRY_CLEAN",

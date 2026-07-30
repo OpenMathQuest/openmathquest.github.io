@@ -1,4 +1,4 @@
-# Public Beta 2 release readiness
+# Public Beta 3 release readiness
 
 This document describes the release boundary; it is not publication approval.
 
@@ -68,7 +68,7 @@ A candidate is technically ready only when the generated
   project-owner `PR_PUSH_AUTHORIZED` authorization; and
 - a current (already reviewed and not expired) external-evidence window, exact
   evidence digest for every gate, zero open Critical/High findings, zero
-  unaccepted Medium findings, zero unrecorded Low findings, the Beta 2 tag and
+  unaccepted Medium findings, zero unrecorded Low findings, the Beta 3 tag and
   protected-main binding, and the canonical review-bundle digest.
 
 The generated report is intentionally ignored because it contains a run

@@ -1,9 +1,9 @@
-# Math Quest Public Beta 2 release checklist
+# Math Quest Public Beta 3 release checklist
 
-Target tag: `v1.0.0-beta.2`
+Target tag: `v1.0.0-beta.3`
 
 Checked items describe current, reviewed evidence only. Beta 1 evidence and
-focused development runs do not satisfy an unchecked Beta 2 release item. The
+focused development runs do not satisfy an unchecked Beta 3 release item. The
 exact-candidate items below remain unchecked until the working tree is frozen,
 synchronized, and rerun through the complete gate.
 
@@ -95,7 +95,7 @@ synchronized, and rerun through the complete gate.
 - [x] Verify required fonts, sounds, icons, and models are local or inline.
 - [x] Verify no post-load gameplay request, analytics, tracker, remote speech,
   cloud sync, or third-party runtime dependency.
-- [ ] Verify the exact detached Beta 2 shell manifest, byte hashes, MIME
+- [ ] Verify the exact detached Beta 3 shell manifest, byte hashes, MIME
   bindings, waiting-worker update, repair, and readiness protocol.
 - [ ] Verify Safari and installed-app storage-container wording, installation
   recovery, and offline cold launch on the required physical Apple matrix.
@@ -104,7 +104,7 @@ synchronized, and rerun through the complete gate.
 
 - [ ] Record the exact canonical manifest SHA-256 and exact engine SHA-256.
 - [x] Reproduce the approved 276-record `child-strings-v1` table and exact
-  SHA-256 `27b00a31f060b80390c3049c44258c35329b0b424538e11572a53971598833be`.
+  SHA-256 `c760fa2c04939547fd24ab61aa13dacc46ab1d91506720fbc22ef63eee03ebfd`.
 - [ ] Run the complete deterministic engine and grading suite.
 - [ ] Exercise all 126 skills through generator, grader, model, and Parent Test
   paths.
@@ -138,7 +138,7 @@ synchronized, and rerun through the complete gate.
   plus primary-iPad journey, six sealed reviewer reports, approved
   adjudication, complete finding dispositions, exact hosted-Windows evidence
   digest, and owner `PR_PUSH_AUTHORIZED` authorization for
-  `v1.0.0-beta.2` on `refs/heads/main`.
+  `v1.0.0-beta.3` on `refs/heads/main`.
 - [ ] Confirm the external evidence review window is current, every evidence
   digest and review-bundle digest is exact, Critical/High/open-unaccepted
   Medium/unrecorded Low counts are zero, and the audit reports all eight
@@ -156,14 +156,14 @@ synchronized, and rerun through the complete gate.
 - [ ] Enable secret scanning and push protection where available.
 - [ ] Protect the default branch and require release checks.
 - [x] Preserve and protect the immutable `v1.0.0-beta.1` release tag.
-- [ ] Protect `v1.0.0-beta.2` from deletion or movement after it is created.
+- [ ] Protect `v1.0.0-beta.3` from deletion or movement after it is created.
 - [ ] Configure GitHub Pages to deploy through GitHub Actions.
 - [x] Confirm no CNAME or custom domain is configured.
 - [x] Enforce HTTPS for `https://openmathquest.github.io/`.
 - [ ] Require the deployment workflow to run only in
   `OpenMathQuest/openmathquest.github.io`, dispatched from protected `main`
   while it points to the exact annotated tag supplied as `release_tag`,
-  `v1.0.0-beta.2`, with `VERSION` equal to `1.0.0-beta.2`.
+  `v1.0.0-beta.3`, with `VERSION` equal to `1.0.0-beta.3`.
 - [ ] Confirm the Pages action and API report the root origin
   `https://openmathquest.github.io`, an empty base path, an empty CNAME, and
   the GitHub Actions publishing source.
@@ -172,10 +172,10 @@ synchronized, and rerun through the complete gate.
 
 ## Release
 
-- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.2` tag without
+- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.3` tag without
   altering the reviewed tree.
 - [ ] Run the manual **Deploy Math Quest to Pages** workflow from protected
-  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.2`; the
+  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.3`; the
   workflow must check out and deploy that tag and reject any commit mismatch.
 - [ ] Verify the deployed artifact contains only the explicit runtime
   allowlist.
@@ -190,4 +190,4 @@ synchronized, and rerun through the complete gate.
 - [ ] Change the hosted URL in `README.md` from an approved target to a
   verified live deployment only after the hosted checks pass.
 - [ ] Publish beta-labelled GitHub release notes from the verified
-  `v1.0.0-beta.2` tag.
+  `v1.0.0-beta.3` tag.

@@ -222,7 +222,7 @@ export function parsePublicationClearance(text) {
       ["Finding-disposition state", "COMPLETE"],
       ["Hosted-Windows evidence state", "REVIEWED"],
       ["Owner authorization state", "PR_PUSH_AUTHORIZED"],
-      ["Authorized release tag", "v1.0.0-beta.2"],
+      ["Authorized release tag", "v1.0.0-beta.3"],
       ["Authorized protected ref", "refs/heads/main"],
     ]) {
       if (fields[key] !== expected) issues.push(`${key} must be ${expected}`);
@@ -366,12 +366,12 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.ownerAuthorizationState === "PR_PUSH_AUTHORIZED"
         && sha256(parsed?.ownerAuthorizationEvidenceSha256)
         && sha256(parsed?.reviewBundleSha256)
-        && parsed?.authorizedReleaseTag === "v1.0.0-beta.2"
+        && parsed?.authorizedReleaseTag === "v1.0.0-beta.3"
         && parsed?.authorizedProtectedRef === "refs/heads/main",
       parsed?.ownerAuthorizationState === "PR_PUSH_AUTHORIZED" ? null : `owner authorization is ${parsed?.ownerAuthorizationState || "UNKNOWN"}`,
       sha256(parsed?.ownerAuthorizationEvidenceSha256) ? null : "owner-authorization evidence digest is missing or malformed",
       sha256(parsed?.reviewBundleSha256) ? null : "review-bundle digest is missing or malformed",
-      parsed?.authorizedReleaseTag === "v1.0.0-beta.2" ? null : "owner authorization names a different release tag",
+      parsed?.authorizedReleaseTag === "v1.0.0-beta.3" ? null : "owner authorization names a different release tag",
       parsed?.authorizedProtectedRef === "refs/heads/main" ? null : "owner authorization names a different protected ref",
     ],
   ];

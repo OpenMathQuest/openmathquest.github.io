@@ -979,9 +979,19 @@ export async function runEngineSuite({
     assert.throws(() => engine.beginSkill(state, "missing-skill"), /Unknown skillId/u);
     assert.ok(engine.applyAttempt(state, null).effects.some((effect) => effect.type === "REJECTED_ATTEMPT"));
     const repeatedSampleKey = `${skill.id}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|same`;
-    const first = attemptFor(engine, skill, { playDay: 21_000, ordinal: 1, sampleKey: repeatedSampleKey });
+    const first = attemptFor(engine, skill, {
+      playDay: 21_000,
+      ordinal: 1,
+      representation: "CONCRETE",
+      sampleKey: repeatedSampleKey,
+    });
     state = appliedState(engine, state, first);
-    state = appliedState(engine, state, attemptFor(engine, skill, { playDay: 21_001, ordinal: 2, sampleKey: repeatedSampleKey }));
+    state = appliedState(engine, state, attemptFor(engine, skill, {
+      playDay: 21_001,
+      ordinal: 2,
+      representation: "PICTORIAL",
+      sampleKey: repeatedSampleKey,
+    }));
     assert.notEqual(state.skills[skill.id].acquisition, "SOLID");
     const priorFastTrack = state.skills[skill.id].fastTrack;
     state = appliedState(engine, state, attemptFor(engine, skill, { playDay: 21_002, feedbackClass: "INCORRECT", firstAnswerCorrect: false, evidenceClass: "NON_EVIDENCE" }));
@@ -996,6 +1006,7 @@ export async function runEngineSuite({
         ordinal: index,
         evidenceClass,
         inputClass: evidenceClass === "CONSTRUCTION" ? "CONSTRUCTION" : "SELECTION",
+        representation: index === 0 ? "CONCRETE" : "PICTORIAL",
         sampleKey: `${skill.id}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|distinct-${index}`,
       }));
     }
@@ -1454,22 +1465,32 @@ export async function runEngineSuite({
     ));
     assert.ok(replacementSkill, "a single-task placed skill is available for evidence replacement");
     let evidenceState = applied.state;
-    for (let index = 0; index < constants.NORMAL_CONSTRUCTION_SUCCESSES; index += 1) {
+    const replacementWitnessCount = Math.max(
+      constants.NORMAL_CONSTRUCTION_SUCCESSES,
+      replacementSkill.phases.length,
+      replacementSkill.constraints.taskTypes.length,
+    );
+    const phaseRepresentation = { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" };
+    for (let index = 0; index < replacementWitnessCount; index += 1) {
       const result = engine.applyAttempt(evidenceState, attemptFor(engine, replacementSkill, {
         ordinal: 120 + index,
         playDay: 21_020 + index,
         sessionId: `placement-evidence-${index}`,
+        taskType: replacementSkill.constraints.taskTypes[index % replacementSkill.constraints.taskTypes.length],
+        representation: phaseRepresentation[
+          replacementSkill.phases[Math.min(index, replacementSkill.phases.length - 1)]
+        ],
         applied: true,
       }));
       evidenceState = result.state;
-      if (index + 1 < constants.NORMAL_CONSTRUCTION_SUCCESSES) {
+      if (index + 1 < replacementWitnessCount) {
         assert.ok(evidenceState.placement.placedSkillIds.includes(replacementSkill.id));
       } else {
         assert.ok(result.effects.some((effect) => (
           effect.type === "PLACEMENT_REPLACED_BY_EVIDENCE" && effect.skillId === replacementSkill.id
         )));
         assert.ok(!evidenceState.placement.placedSkillIds.includes(replacementSkill.id));
-        assert.equal(evidenceState.skills[replacementSkill.id].witnessIds.length, constants.NORMAL_CONSTRUCTION_SUCCESSES);
+        assert.equal(evidenceState.skills[replacementSkill.id].witnessIds.length, replacementWitnessCount);
       }
     }
 

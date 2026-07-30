@@ -65,10 +65,10 @@ task-type/mastery checks. A green release run must also reconcile 126 skills,
 | `SEM-CORE` | The shipped engine and canonical manifest both load, and the embedded manifest bytes and SHA-256 exactly match the canonical artifact. |
 | `SEM-TAXONOMY` | Every skill has identical manifest generation task types, manifest mastery task types, and runtime task types; the explicit 126-skill semantic signature table is complete. |
 | `SEM-MQ-001` … `SEM-MQ-126` | For the named skill, both tiers across the deterministic ordinal cycle cover every declared task type and only its approved prompt/model signature; generation repeats exactly, prompt slots resolve, input and model descriptors are truthful, the answer self-grades, and answer submission preserves the task type. The facet checks additionally require both tenths/hundredths, all four remainder interpretations, both unit-cube/layer volume representations across the declared units and solids, and both 12-/24-hour timetable formats. |
-| `SEM-MASTERY-COVERAGE` | A multi-task-type skill cannot become `SOLID` until clean, otherwise-qualified evidence witnesses every required task type. |
+| `SEM-MASTERY-COVERAGE` | A skill cannot become `SOLID` until clean, otherwise-qualified evidence witnesses every required task type and every declared CPA phase in the declared order. |
 | `SEM-INVALID-TASK-TYPE` | An undeclared attempt task type is rejected with `REJECTED_ATTEMPT_TASK_TYPE` and cannot append evidence. |
 | `node:test` semantic-module import | Native coverage dynamically imports the semantic suite, verifies its exported runner, and requires the exact 130/126/156/6,048 result totals before accepting the engine coverage run. |
-| `SAVE-VALID` / `SAVE-REJECT` | Native coverage accepts valid question, construction, pick, feedback, capstone, fatigue, legacy, inactive, and placement-provenance snapshots, then independently rejects every malformed root field, skill record, settings field, placement field, placement-confirmation field, active-session field, queue-slot field, question field, attempt field, and resumable-UI discriminator. Placement rejection includes missing or unknown contracts and fields, invalid applied boundaries, duplicate, unknown, or selected-level placed skill IDs, future confirmation days, invalid recommendation/chosen/applied relationships, and question counts outside 10–20. The exact set of `PLACED` skill records must equal `placedSkillIds`; a placed record cannot carry a mastery day, mastery contract, mastery witness, recovery state, or review date beyond its 20-day placement-review horizon. Ordinary skill spacing remains capped at 12 days. A regular queue cannot contain skills above its active level; a preview queue is bound exactly to its selected preview level. Stage practice, planned-question, time, adult-reduction, queue-length, base-slot, served-count, served-ordinal, and maximum-seen-play-day relationships must all remain internally possible. Persisted questions and ordered pick candidates must reproduce byte-for-byte from their session seed, world, queue slot, and special re-teach/capstone context, so another self-consistent seed, swapped labels, altered prompts, or a mismatched one-more capstone cannot retain untouched hidden answers. Active feedback must regrade the saved response, bind the complete attempt and evidence record, and exactly reproduce the latest approved deterministic feedback-history line. Expired active work is discarded before strict current-question validation while progress/history is preserved and the caller's object remains unchanged; same-day corruption rejects. A prior `question-generator-v2` active question is treated as legacy under v3: only the paused session is discarded while progress and histories survive. A nested invalid snapshot also proves transactional import and throwing export without mutating live state. |
+| `SAVE-VALID` / `SAVE-REJECT` | Native coverage accepts valid question, construction, pick, feedback, capstone, fatigue, legacy, inactive, and placement-provenance snapshots, then independently rejects every malformed root field, skill record, settings field, placement field, placement-confirmation field, active-session field, queue-slot field, question field, attempt field, and resumable-UI discriminator. Placement rejection includes missing or unknown contracts and fields, invalid applied boundaries, duplicate, unknown, or selected-level placed skill IDs, future confirmation days, invalid recommendation/chosen/applied relationships, and question counts outside 10–20. The exact set of `PLACED` skill records must equal `placedSkillIds`; a placed record cannot carry a mastery day, mastery contract, mastery witness, recovery state, or review date beyond its 20-day placement-review horizon. Ordinary skill spacing remains capped at 12 days. A regular queue cannot contain skills above its active level; a preview queue is bound exactly to its selected preview level. Stage practice, planned-question, time, adult-reduction, queue-length, base-slot, served-count, served-ordinal, and maximum-seen-play-day relationships must all remain internally possible. Persisted questions and ordered pick candidates must reproduce byte-for-byte from their session seed, world, queue slot, and special re-teach/capstone context, so another self-consistent seed, swapped labels, altered prompts, or a mismatched one-more capstone cannot retain untouched hidden answers. Active feedback must regrade the saved response, bind the complete attempt and evidence record, and exactly reproduce the latest approved deterministic feedback-history line. Expired active work is discarded before strict current-question validation while progress/history is preserved and the caller's object remains unchanged; same-day corruption rejects. A prior `question-generator-v3` active question is treated as legacy under v4: only the paused session is discarded while progress and histories survive. A nested invalid snapshot also proves transactional import and throwing export without mutating live state. |
 | `API-PARSE` / `API-GRADE` / `API-SUBMIT` | Public parsing, grading, and submission APIs distinguish malformed, equivalent, wrong, normalized, defaulted, reduced-choice, named-candidate, construction, rapid, and invalid-telemetry inputs by asserting their exact canonical result, evidence class, feedback class, or telemetry status. |
 | `API-PROGRESSION` / `API-FATIGUE` | Public spacing, fast-track, level re-teaching, promotion, repeated-miss, fatigue, stop-classification, feedback, and child-string branches are checked through exact state, signal, target, and returned-text effects. |
 | `API-STATE` | Defensive load/apply/queue paths assert rejected-attempt effects, non-evidentiary isolation, task-type fallback or rejection, cap enforcement, gateway pull-back, restoration, promotion, level re-teach clearing, due-review representation, preview isolation, and empty-session results. |
@@ -177,9 +177,14 @@ watchdog and requires a fail-closed BR-00 payload containing the current
 progress marker, active frame, and completed-result count. Per-scenario
 readiness limits remain unchanged. The runner accepts evidence only after the
 page's synchronous `data-audit-complete` fence, captures the completed DOM over
-CDP, requests `Browser.close`, and makes timeout, early exit, malformed
-payload, nonzero exit, forced process-tree termination, or profile-cleanup
-failure non-passing.
+CDP, and validates a closed payload schema against the explicit 71-result ID
+oracle. It rejects missing, duplicate, unknown, extra-field,
+unsupported-status, or fabricated-aggregate payloads and recomputes failure
+totals from the trusted records. The same absolute browser deadline bounds the
+`Browser.close` request, graceful-exit allowance, and forced process-tree
+termination, so a hung close handshake cannot outlive the release budget.
+Timeout, early exit, malformed payload, nonzero exit, forced termination, or
+profile-cleanup failure remains non-passing.
 
 This protects hosted run `30505640570`, where Edge exited normally inside
 `BR-21`, and run `30515361457`, which exited normally in the late MQ-121
@@ -302,7 +307,38 @@ hosted, and physical-device evidence required by the release documents.
 | `QA-021` | Metric-reading construction uses unit-correct length, mass, and capacity instruments; the depicted endpoint, pointer, or liquid line shares the exact coordinate of its target tick and the accessible image name communicates that same value; all contiguous `0..maximum` answer marks remain unique 44 px controls with 18 px text in a wrapped, non-scrolling choice grid; Easy labels more scale landmarks than Hard/Target; adjacent marks grade incorrectly; and the zero-origin prompt cannot invite counting the zero tick as an extra unit. |
 | `QA-022` | Every metric-unit object maps to the correct measurement family and situation, appears as a meaningful first-party picture, and has a prompt that explicitly names the intended measurable attribute so another property of the same object cannot become a defensible answer. The exact unit stays out of the unanswered item/data descriptor while teaching support may reveal it. Seed-shifted paired choice/read cycles cover all six units. Easy uses a family cue and two evidentiary choices; Hard/Target removes the cue, uses four choices including the same-family sibling, and reads scales through 20 rather than Easy’s 10. |
 | `QA-023` | The rendered journey map and grown-up progress table retain the neutral `Inferred range` disclosure, while the starting-point entry/result explicitly say `unvalidated broad` and `Heuristic starting range`. Co-play, fresh sound/speech defaults, Replay, and Not sure guidance are present. The result renders exact correct/incorrect/Not sure counts, limited confidence, conservative handling, and fresh retry, while no surface describes inferred skills as covered, tested, completed, or mastered. |
+| `QA-024` | Home does not expose a misleading Home control that can only rerender the current screen. Session, grown-up, and parent-information headers retain their working route back to Home. |
+| `QA-025` | A new regular session rotates across the level's due obligations instead of repeating one skill, while each skill's early exposures preserve declared Concrete-to-Pictorial progression. |
+| `QA-026` | Pictorial-only or reversed-phase evidence cannot create mastery. Ordered Concrete-to-Pictorial evidence can, and obsolete Beta 2 P-only mastery records migrate to a safe non-solid state instead of retaining false mastery. |
+| `QA-027` | Every visually dependent model exposes its actual operands in accessible markup and speech, and Concrete physical-task instructions visibly and audibly name the current mathematical task instead of using a generic prompt. |
+| `QA-028` | MQ-111 estimates division from the displayed rounded operands exactly, including fractional quotients, under an independent oracle; MQ-035 uses neutral grammatical attribute-comparison wording. |
+| `QA-029` | Every child answer submission renders and focuses an explicit, large `Correct.` or `Not correct yet.` status before progression is offered. |
+| `QA-030` | Early pattern tasks render every answer token as a visible glyph with a spoken label, so blank or visually identical cards cannot be presented to a pre-reader. |
 | Fresh defaults | Every newly created state keeps automatic speech and bundled sound effects off until a grown-up deliberately enables them. |
+
+### Beta 3 affected-check validity classification
+
+- **Product defects corrected:** one-obligation session queues, incomplete CPA
+  mastery, inaccessible visual operands, generic physical instructions,
+  double-rounded MQ-111 estimates, and ambiguous MQ-035 wording.
+- **Obsolete test assumptions corrected:** fixtures that treated
+  Pictorial-only evidence as sufficient mastery or required a repeated
+  single-skill queue were test defects. They were replaced with stronger
+  ordered-phase, multi-skill, migration, and persistence assertions. The
+  visual-scenario constructor now holds a skill at its final declared phase
+  instead of cycling back to Concrete, and the task-type mutant witness covers
+  every CPA phase so only the mutated task-type rule can change its outcome.
+  The speech audit now requires Replay to contain the complete visible prompt
+  while permitting the approved task and model context that makes the audio
+  more comprehensible; exact bare-prompt equality was obsolete.
+- **Harness defects corrected:** `Browser.close` could exceed the intended
+  wall-clock budget, and a count-shaped browser payload could be trusted
+  without an exact closed result oracle. Bounded-close and payload-forgery
+  regressions now protect both effects.
+- **Environment or approval gates:** no external, hosted, privacy, or
+  physical-device result is converted into a pass by these corrections. Those
+  gates remain pending until the exact frozen Beta 3 candidate supplies the
+  evidence required by the release documents.
 
 ## Manifest-driven visual and profile map
 
@@ -378,7 +414,7 @@ branches:
 | `EXT-ADJUDICATION` | Independent adjudication must be `APPROVED`, recommend `RELEASE`, and carry its exact digest. Pending, missing, contrary, or malformed adjudication blocks. |
 | `EXT-FINDINGS` | Disposition must be `COMPLETE`, with zero open Critical/High, zero unaccepted Medium, and zero unrecorded Low findings. Each nonzero-count mutant blocks independently. |
 | `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest must equal the canonical reviewed browser/runner evidence bytes whose exact tuple also matches the live hosted run. Local, stale, or digest-mismatched evidence blocks. |
-| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.2`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
+| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.3`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
 
 `audit/run-audit.mjs` predicts and observes all eight branches separately,
 raising the fail-closed total from 254 to 262. The decision helper requires the

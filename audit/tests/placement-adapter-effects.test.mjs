@@ -335,6 +335,7 @@ test("placement speech uses evidence-rich prompts, visible option positions, and
       function setQuestion(){ui.phase="question";ui.placementFeedbackKind=null;return replayText();}
     `,
     functions: [
+      "modelOperandDescription",
       "durationEvidenceSpeech",
       "questionSpeechText",
       "placementFeedbackPresentation",

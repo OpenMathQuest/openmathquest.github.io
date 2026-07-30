@@ -20,8 +20,11 @@ import { webcrypto } from "node:crypto";
 import "./page-adapter-effects.test.mjs";
 import {
   BROWSER_AUDIT_TIMING,
+  EXPECTED_BROWSER_RESULT_IDS,
   browserLaunchArgs,
+  requestBrowserClose,
   serveWorkspace,
+  validateBrowserAuditPayload,
   waitForAuditPageCompletion,
 } from "../lib/browser-smoke.mjs";
 
@@ -344,6 +347,83 @@ test("hosted browser audit uses bounded real-time CDP completion and preserves w
   );
 });
 
+test("browser close and result reconciliation fail closed under hangs and malformed payloads", async (t) => {
+  let closeCalls = 0;
+  const startedAt = Date.now();
+  const close = await requestBrowserClose("ws://127.0.0.1:1/devtools/browser/test", {
+    timeoutMs: 25,
+    connect: async () => ({
+      send: async () => new Promise(() => {}),
+      close() { closeCalls += 1; },
+    }),
+  });
+  assert.equal(close.requested, true);
+  assert.match(close.error, /Browser\.close exceeded 25 ms/u);
+  assert.equal(closeCalls, 1, "the timed-out CDP client is closed exactly once");
+  assert.ok(Date.now() - startedAt < 1_000, "a nonresponsive Browser.close cannot hang the runner");
+
+  const validPayload = () => ({
+    completed: true,
+    generatedAt: "2026-07-30T12:00:00.000Z",
+    results: EXPECTED_BROWSER_RESULT_IDS.map((id) => ({
+      id,
+      title: `Result ${id}`,
+      status: "PASS",
+      details: "",
+    })),
+    fail: 0,
+    skipped: 0,
+  });
+  assert.equal(EXPECTED_BROWSER_RESULT_IDS.length, 71);
+  assert.equal(validateBrowserAuditPayload(validPayload()).valid, true);
+
+  const rejects = async (name, mutate, expected) => t.test(name, () => {
+    const payload = validPayload();
+    mutate(payload);
+    const validation = validateBrowserAuditPayload(payload);
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join("\n"), expected);
+  });
+  await rejects(
+    "duplicate id",
+    (payload) => { payload.results[1].id = payload.results[0].id; },
+    /duplicated|missing/u,
+  );
+  await rejects(
+    "missing result",
+    (payload) => { payload.results.pop(); },
+    /missing|count/u,
+  );
+  await rejects(
+    "unknown id",
+    (payload) => { payload.results[0].id = "BR-99"; },
+    /unknown|missing/u,
+  );
+  await rejects(
+    "malformed result field",
+    (payload) => { payload.results[0].surprise = true; },
+    /closed result schema/u,
+  );
+  await rejects(
+    "unsupported status",
+    (payload) => { payload.results[0].status = "SKIP"; },
+    /invalid status/u,
+  );
+  await rejects(
+    "fabricated aggregate",
+    (payload) => {
+      payload.results[0].status = "FAIL";
+      payload.fail = 0;
+    },
+    /fail count/u,
+  );
+  await rejects(
+    "unknown payload field",
+    (payload) => { payload.surprise = true; },
+    /closed result schema/u,
+  );
+});
+
 test("browser scenarios await settled Home and release the writer lease before iframe removal", async () => {
   const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
   const armAuditFrameRemoval = vm.runInNewContext(
@@ -575,7 +655,7 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
   const physicalCacheNames = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "pwaPhysicalCacheNames")})`,
   );
-  const logicalIdentity = "math-quest-static-v1.0.0-beta.2";
+  const logicalIdentity = "math-quest-static-v1.0.0-beta.3";
   const manifestSha = "a".repeat(64);
   const physicalName = `${logicalIdentity}-${manifestSha}`;
   assert.deepEqual(
@@ -701,9 +781,9 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       },
       {
         schemaVersion: 1,
-        release: "1.0.0-beta.2",
-        buildId: "math-quest-pwa-v1.0.0-beta.2",
-        cacheName: "math-quest-static-v1.0.0-beta.2",
+        release: "1.0.0-beta.3",
+        buildId: "math-quest-pwa-v1.0.0-beta.3",
+        cacheName: "math-quest-static-v1.0.0-beta.3",
         entryPath: "./index.html",
         excludedPaths: ["./release-shell-v1.json", "./sw.js"],
       },
@@ -729,13 +809,13 @@ test("the generator prepares a self-consistent candidate without mutating the fr
     if (priorManifestHash !== manifestHash) {
       assert.match(
         preparedWorker,
-        new RegExp(`  "math-quest-static-v1\\.0\\.0-beta\\.2-${priorManifestHash}",`, "u"),
+        new RegExp(`  "math-quest-static-v1\\.0\\.0-beta\\.3-${priorManifestHash}",`, "u"),
         "the prepared worker must retain the prior physical cache for post-claim cleanup",
       );
       assert.match(
         preparedWorker,
         new RegExp(
-          `  "math-quest-static-v1\\.0\\.0-beta\\.2-${priorManifestHash}-staging",`,
+          `  "math-quest-static-v1\\.0\\.0-beta\\.3-${priorManifestHash}-staging",`,
           "u",
         ),
         "the prepared worker must retain the prior staging cache for post-claim cleanup",
@@ -743,13 +823,13 @@ test("the generator prepares a self-consistent candidate without mutating the fr
     }
     assert.doesNotMatch(
       preparedWorker,
-      new RegExp(`  "math-quest-static-v1\\.0\\.0-beta\\.2-${manifestHash}",`, "u"),
+      new RegExp(`  "math-quest-static-v1\\.0\\.0-beta\\.3-${manifestHash}",`, "u"),
       "the current physical cache must never be listed for cleanup",
     );
     assert.doesNotMatch(
       preparedWorker,
       new RegExp(
-        `  "math-quest-static-v1\\.0\\.0-beta\\.2-${manifestHash}-staging",`,
+        `  "math-quest-static-v1\\.0\\.0-beta\\.3-${manifestHash}-staging",`,
         "u",
       ),
       "the current staging cache must never be listed for activation cleanup",
@@ -794,7 +874,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       await readFile(path.join(root, "tools", "build-pwa-release-manifest.mjs")),
     );
     await writeFile(path.join(freezeFixture, "sw.js"), originalWorker);
-    await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.2\n", "utf8");
+    await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.3\n", "utf8");
     for (const [entryPath] of RELEASE_ENTRY_SPECS) {
       const destination = path.join(freezeFixture, entryPath.slice(2));
       await mkdir(path.dirname(destination), { recursive: true });
@@ -828,7 +908,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       assert.match(
         secondFrozenWorker,
         new RegExp(
-          `  "math-quest-static-v1\\.0\\.0-beta\\.2-${firstFrozenHash}${suffix}",`,
+          `  "math-quest-static-v1\\.0\\.0-beta\\.3-${firstFrozenHash}${suffix}",`,
           "u",
         ),
         `the prior physical${suffix || " live"} cache must be an exact cleanup target`,
@@ -836,7 +916,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       assert.doesNotMatch(
         secondFrozenWorker,
         new RegExp(
-          `  "math-quest-static-v1\\.0\\.0-beta\\.2-${secondFrozenHash}${suffix}",`,
+          `  "math-quest-static-v1\\.0\\.0-beta\\.3-${secondFrozenHash}${suffix}",`,
           "u",
         ),
         `the current physical${suffix || " live"} cache must not be a cleanup target`,
@@ -849,7 +929,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
   }
 });
 
-test("Beta 2 release-shell manifest binds every declared byte", async () => {
+test("Beta 3 release-shell manifest binds every declared byte", async () => {
   const [text, worker] = await Promise.all([
     readFile(path.join(root, "release-shell-v1.json"), "utf8"),
     readFile(path.join(root, "sw.js"), "utf8"),
@@ -868,9 +948,9 @@ test("Beta 2 release-shell manifest binds every declared byte", async () => {
     },
     {
       schemaVersion: 1,
-      release: "1.0.0-beta.2",
-      buildId: "math-quest-pwa-v1.0.0-beta.2",
-      cacheName: "math-quest-static-v1.0.0-beta.2",
+      release: "1.0.0-beta.3",
+      buildId: "math-quest-pwa-v1.0.0-beta.3",
+      cacheName: "math-quest-static-v1.0.0-beta.3",
       entryPath: "./index.html",
       excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     },
@@ -1495,7 +1575,7 @@ test("Pages snapshot ignores a worktree mutation after the release commit", asyn
     const releaseManifestBytes = Buffer.from(
       `${JSON.stringify({
         schemaVersion: 1,
-        release: "1.0.0-beta.2",
+        release: "1.0.0-beta.3",
         buildId: "fixture",
         cacheName: "fixture",
         entryPath: "./index.html",
@@ -1607,9 +1687,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   }));
   const releaseManifest = {
     schemaVersion: 1,
-    release: "1.0.0-beta.2",
-    buildId: "math-quest-pwa-v1.0.0-beta.2",
-    cacheName: "math-quest-static-v1.0.0-beta.2",
+    release: "1.0.0-beta.3",
+    buildId: "math-quest-pwa-v1.0.0-beta.3",
+    cacheName: "math-quest-static-v1.0.0-beta.3",
     entryPath: "./index.html",
     excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     entries,
@@ -1627,7 +1707,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     workerText,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${expectedManifestHash}";`, "u"),
   );
-  const logicalBeta2Name = "math-quest-static-v1.0.0-beta.2";
+  const logicalBeta2Name = "math-quest-static-v1.0.0-beta.3";
   const beta2Name = `${logicalBeta2Name}-${expectedManifestHash}`;
   const beta2StagingName = `${beta2Name}-staging`;
   const handlers = new Map();

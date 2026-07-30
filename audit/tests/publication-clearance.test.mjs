@@ -84,7 +84,7 @@ function approvedClearance(overrides = {}) {
     "Hosted-Windows evidence SHA-256": expected.browserRunnerEvidenceSha256,
     "Owner authorization state": "PR_PUSH_AUTHORIZED",
     "Owner authorization evidence SHA-256": "e".repeat(64),
-    "Authorized release tag": "v1.0.0-beta.2",
+    "Authorized release tag": "v1.0.0-beta.3",
     "Authorized protected ref": "refs/heads/main",
     "Review-bundle SHA-256": "f".repeat(64),
     ...overrides,
@@ -172,7 +172,7 @@ test("all eight external release records are first-class fail-closed inputs", ()
     ["Hosted-Windows evidence state", "PENDING", "EXT-HOSTED-WINDOWS"],
     ["Owner authorization state", "PENDING", "EXT-OWNER"],
     ["Host qualification evidence SHA-256", "A".repeat(64), "EXT-HOST"],
-    ["Authorized release tag", "v1.0.0-beta.3", "EXT-OWNER"],
+    ["Authorized release tag", "v1.0.0-beta.2", "EXT-OWNER"],
     ["Authorized protected ref", "refs/heads/release", "EXT-OWNER"],
   ]) {
     const mutant = parsePublicationClearance(approvedClearance({ [field]: value }));
