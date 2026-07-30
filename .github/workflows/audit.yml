@@ -13,7 +13,7 @@ permissions:
 jobs:
   full-audit:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     env:
       MQ_AUDIT_RUNNER_LABEL: windows-latest
     outputs:

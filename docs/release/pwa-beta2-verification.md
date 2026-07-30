@@ -28,18 +28,34 @@ requires the suffix to equal the computed digest. It does not fetch the live
 worker again or open the logical identity as a cache name, so the audit cannot
 create an obsolete empty cache or accidentally certify bytes outside the
 content-addressed candidate. Its activation/readiness messages are not raced
-against renderer virtual-time timers. The no-timeout probe starts when the
+against an accelerated renderer clock. The no-timeout probe starts when the
 primary shipped frame becomes available and normally settles while the
 remaining browser groups run; `BR-24` later awaits that same promise. No reply
 still leaves the browser audit incomplete and the browser runner's independent
 wall-clock limit fails closed.
-The browser runner allocates 30 virtual minutes to the complete exhaustive
-matrix and a separate 20-minute wall limit. The 25-minute GitHub-hosted job
-therefore retains at least five minutes for runner setup, deterministic
-pre-browser checks, report export, and evidence upload. A permanent
-effect-sensitive regression constructs the actual browser arguments, rejects
-the former 300-second and 720-second ceilings, and binds these limits to the
-hosted workflow.
+The browser runner now executes the complete exhaustive matrix in real time.
+Node 24 launches a disposable Edge profile with a random debugging port bound
+explicitly to IPv4 loopback, discovers only the exact audit-page target, and
+polls its synchronous `data-audit-complete` fence over CDP. Only after that
+fence is observed does the runner serialize the finished page and parse the
+embedded audit payload. It then requests a graceful browser close; a crash,
+missing payload, nonzero exit, forced process-tree termination, or leaked
+profile fails the audit. The launch uses neither Chromium virtual time nor
+`--dump-dom`.
+
+The page has an owner-approved 38-minute real-time watchdog that emits a machine-readable
+BR-00 payload with the progress marker, active-frame diagnostics, and completed
+result count. The independent Node controller fails closed at 40 minutes,
+leaving two minutes for CDP serialization and browser shutdown after a
+watchdog record. The
+45-minute GitHub-hosted job therefore retains at least five minutes for setup,
+deterministic pre-browser checks, report export, and evidence upload.
+Per-scenario readiness limits remain unchanged. A permanent effect-sensitive
+regression constructs the actual browser arguments, rejects virtual time and
+initial-load DOM dumping, executes false/false/true completion polling, executes
+the page watchdog, and binds the real-time limits to the hosted workflow. These
+limits were doubled from 19/20 minutes by owner direction on 2026-07-30; the
+change adds capacity without reintroducing accelerated browser time.
 Each disposable scenario iframe also dispatches `pagehide` before removal so
 the game's exclusive progress-writer lease is released synchronously before
 the next scenario. Anonymous first-use verification awaits the settled Home
@@ -57,16 +73,24 @@ late MQ-121 visual-regression witness, but Edge exited normally with no audit
 payload when the former 720-second global virtual-time budget expired.
 Hosted run `30516325797` confirmed that even the provisional 18-minute budget
 was insufficient on Edge `.65`: its 17.5-minute watchdog emitted a complete
-BR-00 record after 22 successful browser groups, with no scenario error. The
-final 30-minute virtual budget gives the matrix a bounded 2.5-times allowance
-over the former ceiling. Virtual time is accelerated by Edge and is a
-different clock domain from the independent 20-minute wall limit; that wall
-limit and the five-minute workflow reserve remain fail-closed. A synchronized
-29-minute
-in-page watchdog reserves the final virtual minute for a machine-readable
-BR-00 payload containing the current progress marker, active frame, and
-completed-result count if the matrix ever approaches that ceiling again.
-Per-scenario readiness limits are unchanged.
+BR-00 record after 22 successful browser groups, with no scenario error.
+Increasing the virtual allowance did not solve the defect: hosted run
+`30517131201` preserved the expected state in BR-04 and BR-17 but failed to
+render only their post-reload UI, while a placement frame remained inert at
+the pre-render progress-lock boundary. The page returned a complete error
+payload before the global browser budget was exhausted. The shared pattern
+demonstrates that Chromium's
+virtual-time controller distorted the relative scheduling of renderer timers,
+navigation, service-worker lifecycle, and Web Lock callbacks; it was not an
+exhaustive-matrix capacity failure. Two independent antagonist reviews reached
+the same diagnosis and required completion-aware real-time CDP control.
+
+On 2026-07-30 the replacement controller completed the locally installed Edge
+matrix with 71 of 71 browser groups passing, zero unexpected requests, an
+observed completion fence, a clean CDP browser close, and no forced cleanup.
+This local result validates the mechanism but does not substitute for hosted
+evidence. Two consecutive 71-result GitHub-hosted passes on the exact same
+commit are required before this remediation can support release clearance.
 
 Immediately before the Pages upload action, the release workflow constructs a
 new `_site` solely from regular, non-executable Git blobs at the already

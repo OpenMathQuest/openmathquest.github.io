@@ -22,6 +22,7 @@ import {
   BROWSER_AUDIT_TIMING,
   browserLaunchArgs,
   serveWorkspace,
+  waitForAuditPageCompletion,
 } from "../lib/browser-smoke.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -156,7 +157,7 @@ test("generator, worker, page, and browser audit share one exact explicit shell 
   );
 });
 
-test("hosted browser audit capacity covers the exhaustive matrix and preserves workflow headroom", async () => {
+test("hosted browser audit uses bounded real-time CDP completion and preserves workflow headroom", async () => {
   const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
   const workflowTimeout = Number(workflow.match(/^\s*timeout-minutes:\s*(\d+)\s*$/mu)?.[1]);
   assert.equal(
@@ -164,22 +165,20 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     BROWSER_AUDIT_TIMING.workflowTimeoutMinutes,
     "the code policy and hosted workflow must share one reviewed job ceiling",
   );
-  assert.ok(
-    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 1_800_000,
-    "the hosted audit must retain at least 30 virtual minutes for the exhaustive browser matrix",
+  assert.equal(
+    BROWSER_AUDIT_TIMING.inPageWatchdogMs,
+    2_280_000,
+    "the page must retain the owner-approved doubled 38-minute real-time watchdog",
+  );
+  assert.equal(
+    BROWSER_AUDIT_TIMING.wallTimeoutMs,
+    2_400_000,
+    "the installed-browser controller must retain the doubled 40-minute fail-closed wall ceiling",
   );
   assert.ok(
-    BROWSER_AUDIT_TIMING.wallTimeoutMs >= 1_200_000,
-    "the hosted audit must retain a separate wall-clock ceiling of at least 20 minutes",
-  );
-  assert.ok(
-    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs > BROWSER_AUDIT_TIMING.wallTimeoutMs,
-    "accelerated virtual-time capacity and the independent wall clock must remain distinct limits",
-  );
-  assert.ok(
-    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs
-      - BROWSER_AUDIT_TIMING.virtualWatchdogMs >= 60_000,
-    "the fail-closed in-page watchdog must retain at least 60 virtual seconds for DOM serialization",
+    BROWSER_AUDIT_TIMING.wallTimeoutMs
+      - BROWSER_AUDIT_TIMING.inPageWatchdogMs >= 120_000,
+    "the fail-closed in-page watchdog must retain at least two real minutes for CDP serialization and shutdown",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.wallTimeoutMs
@@ -191,13 +190,10 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   const profile = "C:\\audit\\isolated-profile";
   const url = "http://127.0.0.1:8771/audit.html?autorun=1";
   const args = browserLaunchArgs({ profile, url });
-  assert.equal(
-    args.filter((argument) => argument.startsWith("--virtual-time-budget=")).join(""),
-    `--virtual-time-budget=${BROWSER_AUDIT_TIMING.virtualTimeBudgetMs}`,
-  );
-  assert.equal(args.includes("--virtual-time-budget=300000"), false);
-  assert.equal(args.includes("--virtual-time-budget=720000"), false);
-  assert.equal(args.includes("--virtual-time-budget=1080000"), false);
+  assert.equal(args.some((argument) => argument.startsWith("--virtual-time-budget=")), false);
+  assert.equal(args.includes("--dump-dom"), false);
+  assert.equal(args.includes("--remote-debugging-address=127.0.0.1"), true);
+  assert.equal(args.includes("--remote-debugging-port=0"), true);
   assert.equal(args.includes(`--user-data-dir=${profile}`), true);
   assert.equal(
     args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
@@ -210,14 +206,49 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   ]) {
     assert.equal(args.includes(argument), true, argument);
   }
-  assert.equal(args.includes("--dump-dom"), true);
   assert.equal(args.at(-1), url);
+
+  let completionClock = 0;
+  const completionEffects = [];
+  const completion = await waitForAuditPageCompletion({
+    timeoutMs: 1_000,
+    pollIntervalMs: 250,
+    now: () => completionClock,
+    evaluate: async () => {
+      completionEffects.push(`evaluate:${completionClock}`);
+      return completionClock === 500;
+    },
+    wait: async (delay) => {
+      completionEffects.push(`wait:${delay}`);
+      completionClock += delay;
+    },
+  });
+  assert.deepEqual(completion, { polls: 3, elapsedMs: 500 });
+  assert.deepEqual(completionEffects, [
+    "evaluate:0",
+    "wait:250",
+    "evaluate:250",
+    "wait:250",
+    "evaluate:500",
+  ]);
+  let timeoutClock = 0;
+  await assert.rejects(
+    waitForAuditPageCompletion({
+      timeoutMs: 1_000,
+      pollIntervalMs: 250,
+      now: () => timeoutClock,
+      evaluate: async () => false,
+      wait: async (delay) => { timeoutClock += delay; },
+    }),
+    /did not report completion within 1000 ms/u,
+  );
+  assert.equal(timeoutClock, 1_000);
 
   const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
   const watchdogLiteral = browserAudit.match(/const AUDIT_WATCHDOG_MS = ([\d_]+);/u)?.[1];
   assert.equal(
     Number(String(watchdogLiteral).replaceAll("_", "")),
-    BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+    BROWSER_AUDIT_TIMING.inPageWatchdogMs,
     "the browser page and installed-browser runner must share one watchdog policy",
   );
   const watchdogEffects = [];
@@ -248,7 +279,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   const armBrowserAuditWatchdog = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "armBrowserAuditWatchdog")})`,
     {
-      AUDIT_WATCHDOG_MS: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+      AUDIT_WATCHDOG_MS: BROWSER_AUDIT_TIMING.inPageWatchdogMs,
       auditFinalized: false,
       auditProgressMarker: "scenario:mq121-horizontal-containment-help:ready",
       results: [{ id: "BR-01" }],
@@ -275,7 +306,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
       },
       setTimeout(callback, delay) {
         watchdogCallback = callback;
-        assert.equal(delay, BROWSER_AUDIT_TIMING.virtualWatchdogMs);
+        assert.equal(delay, BROWSER_AUDIT_TIMING.inPageWatchdogMs);
         return 91;
       },
     },
@@ -292,8 +323,8 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
         title: "Browser harness completes",
         pass: false,
         details: {
-          reason: "The whole-run virtual-time watchdog expired before the audit completed.",
-          watchdogMs: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
+          reason: "The whole-run real-time watchdog expired before the audit completed.",
+          watchdogMs: BROWSER_AUDIT_TIMING.inPageWatchdogMs,
           completedResults: 1,
           progressMarker: "scenario:mq121-horizontal-containment-help:ready",
           activeFrames: [{

@@ -129,7 +129,7 @@ a passing run.
 | `BR-21` | Dense witnesses for every early response family, the exact MQ-004 pattern-support and MQ-031 numeral-support cases, and all three MQ-006 duration pairs keep child question, Help, and re-teach states on the first 1366×768, 820×1180, and 390×844 screen. Before each viewport measurement the harness requires the intended skill question, response controls, and Confirm to be rendered, so a transient blank iframe is reported as a harness-readiness error instead of a product-layout result. The check requires every response and Confirm to remain visible in natural DOM order, rejects document-level and question-panel horizontal overflow and any support-descendant collision with the response region, keeps essential support models visible and decorations separate, and preserves the 16 px text and 44 px target floors. |
 | `BR-22` | The exact approved child-string table reproduces its shipped canonicalization version and SHA-256. |
 | `BR-23` | Grown-up iPad installation help is present before nickname creation and in the Grown-ups corner, states Safari’s eight honest steps, reports readiness without pretending to install, warns about separate storage, offers recovery help, traps/restores focus, and preserves the 16 px/44 px/Inter/responsive floors at 390×844. |
-| `BR-24` | The install manifest preserves the reviewed app identity and icon set; independent explicit generator, worker, page, and audit oracles agree on the exact 13 shell-entry paths plus the detached manifest; the controlled Beta 2 worker reports the exact release/build/logical-cache identity and all 14 required cached URLs ready. The no-timeout readiness probe starts as soon as the shipped primary frame is available, settles during the rest of the browser audit, and is awaited at `BR-24`; it is not raced against renderer virtual-time timers, while a missing reply still leaves the audit incomplete so the runner's wall-clock gate fails closed. The audit requires exactly one physical cache whose name is that logical identity plus a 64-hex suffix, hashes the cached release manifest, requires the suffix to equal that digest, refuses to create or inspect the obsolete logical cache, and verifies every cached response in the bound physical cache. A fresh worker over that cache performs zero network fetches even when the network would never settle; corrupt bytes fail closed or repair transactionally; an offline navigation loads the same manifest-bound engine after the audit server disconnects; and the three exact public legal links remain hash-verified and usable offline without intercepting other document paths. |
+| `BR-24` | The install manifest preserves the reviewed app identity and icon set; independent explicit generator, worker, page, and audit oracles agree on the exact 13 shell-entry paths plus the detached manifest; the controlled Beta 2 worker reports the exact release/build/logical-cache identity and all 14 required cached URLs ready. The no-timeout readiness probe starts as soon as the shipped primary frame is available, settles during the rest of the real-time browser audit, and is awaited at `BR-24`; a missing reply still leaves the audit incomplete so the runner's wall-clock gate fails closed. The audit requires exactly one physical cache whose name is that logical identity plus a 64-hex suffix, hashes the cached release manifest, requires the suffix to equal that digest, refuses to create or inspect the obsolete logical cache, and verifies every cached response in the bound physical cache. A fresh worker over that cache performs zero network fetches even when the network would never settle; corrupt bytes fail closed or repair transactionally; an offline navigation loads the same manifest-bound engine after the audit server disconnects; and the three exact public legal links remain hash-verified and usable offline without intercepting other document paths. |
 | `BR-25` | Child answer controls and feedback actions remain before their submit/advance controls in natural document order, without nested vertical scrollers or clipping at the audited desktop, tablet, and phone viewports. Exact MQ-121 Help and re-teach witnesses at 1366×768 additionally require the composite-area response model to remain horizontally contained while allowing the outer document to grow and scroll vertically. The exact Batch 2 witnesses require the C9 MQ-034 Help case at 768×1024 to keep all four route arrows at least 44 px, center-unobscured, outside the route grid, horizontally contained in up/left/down/right order, Inter-rendered at 16 px or larger, free of nested scrolling, and followed by a fully visible Confirm; MQ-122 ordinary play at 390×844 must horizontally contain the unit-cube SVG, visual wrapper, construction task, both fieldsets, instructional status, and every essential 44 px control while preserving outer vertical page scrolling. |
 | `BR-26` | Correct and incorrect answers show exact persistent outcome text and distinct check/X symbols at both 1366×768 and 390×844; the large outcome receives focus for immediate child and assistive-technology feedback while Next remains fully visible and usable. Incorrect outcomes must retain their visible worked review model, so hiding instruction cannot satisfy the layout gate. The desktop incorrect witness permanently protects the former 772.08 px Next bottom against the 768 px viewport. |
 | `BR-27` | Automatic read-aloud and effects create and play no media while defaults are off; deliberate local Replay, Test Voice, and Test Sound remain explicit one-shot force paths without changing those defaults; non-English-only automatic fallback stays silent; cancelled callbacks cannot leak status; re-teach narration exactly matches its visible instruction and prompt plus every rendered selection option’s accessible label and position; interrupted Replay time is excluded before grading; and an active Replay cannot race a deferred, inert, keyboard-blocked transactional import. The import must advance exactly one generation beyond both live and imported records while otherwise preserving the imported projection, and a stale Replay callback cannot overwrite those exact committed bytes before reload. |
@@ -156,27 +156,44 @@ choice tier contract (including the same-family sibling), absence of
 pre-answer unit disclosure in the model, first-screen reachability, and real
 correct feedback.
 
-## Browser-runner capacity effect
+## Browser-runner completion and capacity effect
 
 `audit/tests/pwa-release.test.mjs` constructs the real installed-browser
-argument vector from the exported browser-audit timing policy. Its hosted
-capacity regression requires at least 30 virtual minutes for the exhaustive
-child-layout, accessibility, interaction, PWA, and visual matrices; separately
-requires at least a 20-minute wall limit in the unaccelerated clock domain; and
-binds the policy to the 25-minute GitHub-hosted job while preserving at least
-five minutes for setup, reporting, and evidence upload. It also effect-checks
-the exact loopback-only resolver rule, isolated profile, DOM output, URL
-position, and virtual-time argument, and explicitly rejects the former
-300-second and 720-second ceilings. This protects hosted run `30505640570`,
-where Edge exited normally inside `BR-21`, and run `30515361457`, which exited
-normally in the late MQ-121 visual-regression witness, both before the final
-audit payload existed. Hosted run `30516325797` then proved that the
-provisional 18-minute policy was still too small by emitting its watchdog
-record after 22 successful browser groups without a scenario error. The same
-effect test now executes the synchronized 29-minute in-page watchdog and
-requires it to preserve the final virtual minute for a fail-closed BR-00
-payload containing the current progress marker, active frame, and
-completed-result count. Per-scenario readiness limits remain unchanged.
+argument vector from the exported browser-audit timing policy. It requires an
+isolated profile, exact loopback-only resolver and debugging bindings, a random
+debugging port, unchanged anti-background flags, and the exact audit URL last.
+It rejects both `--virtual-time-budget` and `--dump-dom`. The executed
+completion-polling regression observes false, false, then true before capture
+and separately proves that a never-completing page rejects at its exact
+deadline. This prevents initial-load serialization from masquerading as a
+complete audit.
+
+The same test requires the exact owner-approved doubled limits: a 38-minute
+real-time in-page watchdog, a separate 40-minute Node wall limit, and the
+45-minute hosted job with at least five minutes for setup, reporting, and
+evidence upload. It also reserves at least two minutes between watchdog and
+wall termination for CDP serialization and clean browser shutdown. It executes the page
+watchdog and requires a fail-closed BR-00 payload containing the current
+progress marker, active frame, and completed-result count. Per-scenario
+readiness limits remain unchanged. The runner accepts evidence only after the
+page's synchronous `data-audit-complete` fence, captures the completed DOM over
+CDP, requests `Browser.close`, and makes timeout, early exit, malformed
+payload, nonzero exit, forced process-tree termination, or profile-cleanup
+failure non-passing.
+
+This protects hosted run `30505640570`, where Edge exited normally inside
+`BR-21`, and run `30515361457`, which exited normally in the late MQ-121
+visual-regression witness, both before the final payload existed. Run
+`30516325797` produced a 17.5-minute BR-00 record after 22 successful groups
+without a scenario error. A larger allowance then disproved simple capacity
+exhaustion: run `30517131201` returned a complete error payload without
+exhausting the global browser budget, preserved state while missing only
+post-reload UI in BR-04/BR-17, and left a placement frame inert before its Web
+Lock callback. Those cross-process
+scheduling symptoms are why accelerated virtual time is now prohibited. The
+replacement real-time controller completed the local installed-Edge matrix
+71/71 on 2026-07-30; two consecutive hosted 71-result passes on one exact
+commit remain mandatory evidence.
 The same module effect-tests disposal of every ordinary scenario frame:
 `pagehide` must synchronously reach the game before physical iframe removal,
 so its exclusive progress-writer lease cannot survive nondeterministically
