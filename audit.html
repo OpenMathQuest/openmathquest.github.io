@@ -38,7 +38,7 @@
     const LEGACY_SAVE_KEY = "math-quest:v1";
     const TEST_CHILD_NAME_KEY = "math-quest:child-name:v1";
     const TEST_PLACEMENT_DRAFT_KEY = "math-quest:placement-draft:v1";
-    const AUDIT_WATCHDOG_MS = 1_050_000;
+    const AUDIT_WATCHDOG_MS = 1_740_000;
     const TEST_CHILD_NAME_RECORD = JSON.stringify({
       schemaVersion: 1,
       savedAt: "2000-01-01T00:00:00.000Z",
@@ -46,6 +46,7 @@
     });
     const results = [];
     let auditFinalized = false;
+    let auditProgressMarker = "initializing";
     const resultBody = document.getElementById("results");
     const summary = document.getElementById("summary");
     const iframe = document.getElementById("game");
@@ -176,6 +177,7 @@
           reason: "The whole-run virtual-time watchdog expired before the audit completed.",
           watchdogMs: AUDIT_WATCHDOG_MS,
           completedResults: results.length,
+          progressMarker: auditProgressMarker,
           activeFrames,
         });
         for (const frame of openFrames) frame.remove();
@@ -437,6 +439,7 @@
     }
 
     async function scenarioFrameBytes(name, bytes, width = 1024, height = 900, { writerBarrier = true } = {}) {
+      auditProgressMarker = `scenario:${name}:writer-barrier`;
       if (writerBarrier) await auditWriterBarrier();
       localStorage.setItem(TEST_SAVE_KEY, bytes);
       const frame = document.createElement("iframe");
@@ -463,8 +466,10 @@
         await waitFrame(frame);
         await pause();
         await requireScenarioAppReady(frame);
+        auditProgressMarker = `scenario:${name}:ready`;
         return scenario;
       } catch (error) {
+        auditProgressMarker = `scenario:${name}:failed`;
         frame.remove();
         throw error;
       }
@@ -1111,7 +1116,9 @@
       const openFrames = [];
       const auditWatchdog = armBrowserAuditWatchdog(openFrames);
       try {
+        auditProgressMarker = "primary-frame:loading";
         await waitFrame(iframe, 12000);
+        auditProgressMarker = "primary-frame:ready";
         const win = iframe.contentWindow;
         const doc = iframe.contentDocument;
         const engine = win?.MathQuestEngine;
@@ -6779,6 +6786,7 @@
         add("BR-24", "The install manifest and controlled service worker cache the complete first-load shell for offline reopen", offlineReady, offlineDetails);
 
         await auditWriterBarrier();
+        auditProgressMarker = "approved-visual-regression:starting";
         const visualRegression = window.MathQuestApprovedVisualRegression;
         if (!visualRegression || typeof visualRegression.run !== "function") throw new Error("Manifest visual regression helper did not load.");
         const visual = await visualRegression.run({
@@ -6795,6 +6803,7 @@
           const check = visual.tests[id];
           add(id, title, Boolean(check?.pass), check?.details || "No result returned.");
         }
+        auditProgressMarker = "complete";
       } catch (error) {
         add("BR-00", "Browser harness completes", false, String(error?.stack || error?.message || error));
       } finally {

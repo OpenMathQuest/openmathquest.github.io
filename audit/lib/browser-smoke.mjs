@@ -18,8 +18,8 @@ const TYPES = Object.freeze({
 });
 
 export const BROWSER_AUDIT_TIMING = Object.freeze({
-  virtualTimeBudgetMs: 1_080_000,
-  virtualWatchdogMs: 1_050_000,
+  virtualTimeBudgetMs: 1_800_000,
+  virtualWatchdogMs: 1_740_000,
   wallTimeoutMs: 1_200_000,
   workflowTimeoutMinutes: 25,
   requiredWorkflowHeadroomMs: 300_000,

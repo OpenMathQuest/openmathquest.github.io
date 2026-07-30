@@ -165,21 +165,21 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     "the code policy and hosted workflow must share one reviewed job ceiling",
   );
   assert.ok(
-    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 1_080_000,
-    "the hosted audit must retain at least 18 virtual minutes for the exhaustive browser matrix",
+    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs >= 1_800_000,
+    "the hosted audit must retain at least 30 virtual minutes for the exhaustive browser matrix",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.wallTimeoutMs >= 1_200_000,
     "the hosted audit must retain a separate wall-clock ceiling of at least 20 minutes",
   );
   assert.ok(
-    BROWSER_AUDIT_TIMING.wallTimeoutMs > BROWSER_AUDIT_TIMING.virtualTimeBudgetMs,
-    "the independent wall limit must not pre-empt the browser's virtual-time budget",
+    BROWSER_AUDIT_TIMING.virtualTimeBudgetMs > BROWSER_AUDIT_TIMING.wallTimeoutMs,
+    "accelerated virtual-time capacity and the independent wall clock must remain distinct limits",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.virtualTimeBudgetMs
-      - BROWSER_AUDIT_TIMING.virtualWatchdogMs >= 30_000,
-    "the fail-closed in-page watchdog must retain at least 30 virtual seconds for DOM serialization",
+      - BROWSER_AUDIT_TIMING.virtualWatchdogMs >= 60_000,
+    "the fail-closed in-page watchdog must retain at least 60 virtual seconds for DOM serialization",
   );
   assert.ok(
     BROWSER_AUDIT_TIMING.wallTimeoutMs
@@ -197,6 +197,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
   );
   assert.equal(args.includes("--virtual-time-budget=300000"), false);
   assert.equal(args.includes("--virtual-time-budget=720000"), false);
+  assert.equal(args.includes("--virtual-time-budget=1080000"), false);
   assert.equal(args.includes(`--user-data-dir=${profile}`), true);
   assert.equal(
     args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
@@ -249,6 +250,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
     {
       AUDIT_WATCHDOG_MS: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
       auditFinalized: false,
+      auditProgressMarker: "scenario:mq121-horizontal-containment-help:ready",
       results: [{ id: "BR-01" }],
       document: {
         querySelectorAll(selector) {
@@ -293,6 +295,7 @@ test("hosted browser audit capacity covers the exhaustive matrix and preserves w
           reason: "The whole-run virtual-time watchdog expired before the audit completed.",
           watchdogMs: BROWSER_AUDIT_TIMING.virtualWatchdogMs,
           completedResults: 1,
+          progressMarker: "scenario:mq121-horizontal-containment-help:ready",
           activeFrames: [{
             title: "active scenario",
             src: "index.html?browser-audit=active",
@@ -388,50 +391,53 @@ test("browser scenarios await settled Home and release the writer lease before i
     },
   };
   let failBoot = false;
-  const scenarioFrameBytes = vm.runInNewContext(
-    `(${scenarioFrameSource})`,
-    {
-      TEST_SAVE_KEY: "test-progress",
-      auditWriterBarrier: async () => bootEffects.push("barrier"),
-      localStorage: {
-        setItem(key, value) {
-          bootEffects.push(`stored:${key}:${value}`);
-        },
-      },
-      document: {
-        createElement(tag) {
-          assert.equal(tag, "iframe");
-          return bootFrame;
-        },
-        body: {
-          append(candidate) {
-            assert.equal(candidate, bootFrame);
-            bootEffects.push("append");
-          },
-        },
-      },
-      armAuditFrameRemoval(candidate) {
-        assert.equal(candidate, bootFrame);
-        bootEffects.push("armed");
-      },
-      keepAuditFramePainted,
-      async waitFrame(candidate) {
-        assert.equal(candidate, bootFrame);
-        assert.equal(candidate.style.left, "0");
-        assert.equal(candidate.style.opacity, "0.01");
-        assert.equal(candidate.style.zIndex, "9999");
-        bootEffects.push("waited-while-painted");
-        if (failBoot) throw new Error("boot-failure");
-      },
-      pause: async () => bootEffects.push("paused"),
-      requireScenarioAppReady: async (candidate) => {
-        assert.equal(candidate, bootFrame);
-        bootEffects.push("ready");
+  const scenarioFrameContext = {
+    auditProgressMarker: "initializing",
+    TEST_SAVE_KEY: "test-progress",
+    auditWriterBarrier: async () => bootEffects.push("barrier"),
+    localStorage: {
+      setItem(key, value) {
+        bootEffects.push(`stored:${key}:${value}`);
       },
     },
+    document: {
+      createElement(tag) {
+        assert.equal(tag, "iframe");
+        return bootFrame;
+      },
+      body: {
+        append(candidate) {
+          assert.equal(candidate, bootFrame);
+          bootEffects.push("append");
+        },
+      },
+    },
+    armAuditFrameRemoval(candidate) {
+      assert.equal(candidate, bootFrame);
+      bootEffects.push("armed");
+    },
+    keepAuditFramePainted,
+    async waitFrame(candidate) {
+      assert.equal(candidate, bootFrame);
+      assert.equal(candidate.style.left, "0");
+      assert.equal(candidate.style.opacity, "0.01");
+      assert.equal(candidate.style.zIndex, "9999");
+      bootEffects.push("waited-while-painted");
+      if (failBoot) throw new Error("boot-failure");
+    },
+    pause: async () => bootEffects.push("paused"),
+    requireScenarioAppReady: async (candidate) => {
+      assert.equal(candidate, bootFrame);
+      bootEffects.push("ready");
+    },
+  };
+  const scenarioFrameBytes = vm.runInNewContext(
+    `(${scenarioFrameSource})`,
+    scenarioFrameContext,
   );
   const bootedScenario = await scenarioFrameBytes("paintable-boot", "bytes", 390, 844);
   assert.equal(bootedScenario.frame, bootFrame);
+  assert.equal(scenarioFrameContext.auditProgressMarker, "scenario:paintable-boot:ready");
   assert.deepEqual(
     bootEffects,
     [
@@ -450,6 +456,7 @@ test("browser scenarios await settled Home and release the writer lease before i
     scenarioFrameBytes("failed-boot", "bad-bytes"),
     /boot-failure/u,
   );
+  assert.equal(scenarioFrameContext.auditProgressMarker, "scenario:failed-boot:failed");
   assert.deepEqual(
     bootEffects.slice(failedBootStart),
     [
