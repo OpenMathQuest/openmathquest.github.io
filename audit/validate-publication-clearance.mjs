@@ -55,17 +55,18 @@ try {
   };
   if (!clearanceMatches(parsed, expected)) throw new Error("Publication clearance does not match the exact reviewed artifacts.");
   const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
-  if (externalReleaseEvidence.status !== "PASS") {
-    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => item.status !== "PASS").map((item) => `${item.id}: ${item.details}`).join("; ")}`);
+  if (!["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)) {
+    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => !["PASS", "WAIVED"].includes(item.status)).map((item) => `${item.id}: ${item.details}`).join("; ")}`);
   }
   process.stdout.write(`${JSON.stringify({
-    status: "APPROVED",
+    status: parsed.status,
     reviewDate: parsed.reviewDate,
     payloadSha256,
     payloadTreeOid,
     externalReleaseEvidence: {
       status: externalReleaseEvidence.status,
       passCount: externalReleaseEvidence.passCount,
+      waivedCount: externalReleaseEvidence.waivedCount,
       requiredCount: externalReleaseEvidence.requiredCount,
     },
     browserRunnerEvidence: {

@@ -1,4 +1,4 @@
-# Public Beta 2 release readiness
+# Public Beta 3 release readiness
 
 This document describes the release boundary; it is not publication approval.
 
@@ -68,7 +68,7 @@ A candidate is technically ready only when the generated
   project-owner `PR_PUSH_AUTHORIZED` authorization; and
 - a current (already reviewed and not expired) external-evidence window, exact
   evidence digest for every gate, zero open Critical/High findings, zero
-  unaccepted Medium findings, zero unrecorded Low findings, the Beta 2 tag and
+  unaccepted Medium findings, zero unrecorded Low findings, the Beta 3 tag and
   protected-main binding, and the canonical review-bundle digest.
 
 The generated report is intentionally ignored because it contains a run
@@ -104,6 +104,12 @@ as `PENDING_EVIDENCE_APPROVAL_GATE`. It must appear under pending checks and
 unverified claims, and it forces `External release evidence: BLOCKED` and
 `Shippable: NO`. An exit-zero technical-only evidence run is not release
 approval and does not alter those fields.
+
+For `v1.0.0-beta.3` only, the project owner authorized the emergency exception
+recorded in `AGENTS.md` and `publication-gates.md`. A conforming report must
+say `EMERGENCY_APPROVED`, preserve six external gates as visibly `WAIVED`,
+retain exact zero/unknown evidence counts, and still pass the hosted-Windows
+and exact owner-authorization gates. This is not reusable release clearance.
 
 The `windows-latest` audit selector remains a documented Medium residual
 because GitHub may move it to a newer hosted image. Publication is nevertheless

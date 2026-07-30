@@ -2,15 +2,15 @@
 
 The deterministic engine does not register a service worker, inspect install
 state, read Cache Storage, or perform network effects. The browser adapter
-outside the engine owns the Public Beta 2 PWA lifecycle.
+outside the engine owns the Public Beta 3 PWA lifecycle.
 
 ## Frozen identities
 
-- Release: `1.0.0-beta.2`
-- Build: `math-quest-pwa-v1.0.0-beta.2`
-- Reported logical cache identity: `math-quest-static-v1.0.0-beta.2`
+- Release: `1.0.0-beta.3`
+- Build: `math-quest-pwa-v1.0.0-beta.3`
+- Reported logical cache identity: `math-quest-static-v1.0.0-beta.3`
 - Physical cache storage:
-  `math-quest-static-v1.0.0-beta.2-<release-manifest-sha256>`
+  `math-quest-static-v1.0.0-beta.3-<release-manifest-sha256>`
 - Readiness request/reply: `MATH_QUEST_GET_READINESS_V1` /
   `MATH_QUEST_READINESS_V1`
 - Waiting-readiness request/reply:
@@ -67,7 +67,7 @@ manifest. Only when no valid cached copy exists may it request the manifest
 from the network. Thus readiness and navigation from an already populated
 exact cache cannot wait on a slow or never-settling network request.
 The physical cache name includes the worker's embedded exact manifest hash.
-Two worker scripts that accidentally reuse the same logical Beta 2 identity
+Two worker scripts that accidentally reuse the same logical Beta 3 identity
 therefore cannot read, overwrite, stage into, or delete each other's live shell
 storage. The logical identity remains the closed readiness-protocol value.
 
@@ -258,7 +258,7 @@ The adapter does not fall back to an unlocked read/compare/write when Web Locks
 are missing or fail. It pauses child play and shows a grown-up-only explanation,
 backup export for valid loaded state, and a supported-browser/reload path.
 Safari Lockdown Mode and managed configurations that disable Web Locks are
-outside the Beta 2 support claim; the explanation recommends another qualified
+outside the Beta 3 support claim; the explanation recommends another qualified
 configuration and does not ask a family to weaken a security setting. Physical
 Apple qualification still has to prove the supported release devices.
 

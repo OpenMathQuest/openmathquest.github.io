@@ -26,6 +26,120 @@ export const BROWSER_AUDIT_TIMING = Object.freeze({
   browserCloseGraceMs: 10_000,
 });
 
+export const EXPECTED_BROWSER_RESULT_IDS = Object.freeze([
+  "BR-01", "BR-02", "BR-03", "BR-04", "BR-05", "BR-06", "BR-07",
+  "BR-08", "BR-09", "BR-10", "BR-11", "BR-12", "BR-13", "BR-14",
+  "BR-15", "BR-16", "BR-17", "BR-18", "BR-19", "BR-20", "BR-21",
+  "BR-22", "BR-23", "BR-24", "BR-25", "BR-26", "BR-27", "BR-28",
+  "BR-29", "BR-30", "BR-31", "BR-32", "BR-33", "BR-34", "BR-35",
+  "PROFILE-AREA-MODEL",
+  "PROFILE-CHANCE-EXPERIMENT",
+  "PROFILE-DATA-DISPLAY",
+  "PROFILE-DATA-INVESTIGATE",
+  "PROFILE-DECIMAL-MODEL",
+  "PROFILE-EXPRESSION-SOLVE",
+  "PROFILE-FACTOR-CLASSIFY",
+  "PROFILE-FRACTION-MODEL",
+  "PROFILE-GEOMETRY-CLASSIFY",
+  "PROFILE-GEOMETRY-TRANSFORM",
+  "PROFILE-GROUPING-MODEL",
+  "PROFILE-MEASURE-COMPARE",
+  "PROFILE-MEASURE-INSTRUMENT",
+  "PROFILE-MONEY-MODEL",
+  "PROFILE-OPERATION-EQUATION",
+  "PROFILE-OPERATION-FLUENCY",
+  "PROFILE-OPERATION-MODEL",
+  "PROFILE-PATTERN-EXTEND",
+  "PROFILE-PATTERN-RULE",
+  "PROFILE-PLACEVALUE-COMPOSE",
+  "PROFILE-QUANTITY-COMPARE",
+  "PROFILE-QUANTITY-IDENTIFY",
+  "PROFILE-QUANTITY-ORDER",
+  "PROFILE-ROUNDING-ESTIMATE",
+  "PROFILE-TIME-READ",
+  "PROFILE-VOLUME-MODEL",
+  "VIS-MANIFEST",
+  "VIS-CONSTRAINTS",
+  "VIS-CAPABILITIES",
+  "VIS-CANADIAN-MONEY",
+  "VIS-PLACEMENT-LAYOUT",
+  "VIS-PWA-STATUS",
+  "VIS-LAB-CONTROLS",
+  "VIS-LAB-MODELS",
+  "VIS-DESKTOP-LAYOUT",
+  "VIS-MOBILE-LAYOUT",
+]);
+
+const exactObjectKeys = (value, expected) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  return actual.length === wanted.length && actual.every((key, index) => key === wanted[index]);
+};
+
+export function validateBrowserAuditPayload(payload) {
+  const errors = [];
+  const expected = new Set(EXPECTED_BROWSER_RESULT_IDS);
+  if (!exactObjectKeys(payload, ["completed", "generatedAt", "results", "fail", "skipped"])) {
+    errors.push("The browser payload does not use the closed result schema.");
+  }
+  if (payload?.completed !== true) errors.push("The browser payload is not marked complete.");
+  if (typeof payload?.generatedAt !== "string"
+    || !Number.isFinite(Date.parse(payload.generatedAt))
+    || new Date(payload.generatedAt).toISOString() !== payload.generatedAt) {
+    errors.push("The browser payload has an invalid generatedAt timestamp.");
+  }
+  if (!Array.isArray(payload?.results)) {
+    errors.push("The browser payload results field is not an array.");
+  }
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  const seen = new Set();
+  let recomputedFail = 0;
+  for (const [index, result] of results.entries()) {
+    if (!exactObjectKeys(result, ["id", "title", "status", "details"])) {
+      errors.push(`Browser result ${index} does not use the closed result schema.`);
+      continue;
+    }
+    if (typeof result.id !== "string" || !expected.has(result.id)) {
+      errors.push(`Browser result ${index} has an unknown id.`);
+    } else if (seen.has(result.id)) {
+      errors.push(`Browser result id ${result.id} is duplicated.`);
+    } else {
+      seen.add(result.id);
+    }
+    if (typeof result.title !== "string" || result.title.trim().length === 0) {
+      errors.push(`Browser result ${index} has an invalid title.`);
+    }
+    if (typeof result.details !== "string") {
+      errors.push(`Browser result ${index} has non-string details.`);
+    }
+    if (!["PASS", "FAIL"].includes(result.status)) {
+      errors.push(`Browser result ${index} has an invalid status.`);
+    } else if (result.status === "FAIL") {
+      recomputedFail += 1;
+    }
+  }
+  for (const id of EXPECTED_BROWSER_RESULT_IDS) {
+    if (!seen.has(id)) errors.push(`Browser result id ${id} is missing.`);
+  }
+  if (results.length !== EXPECTED_BROWSER_RESULT_IDS.length) {
+    errors.push(`Browser result count ${results.length} does not equal ${EXPECTED_BROWSER_RESULT_IDS.length}.`);
+  }
+  if (!Number.isInteger(payload?.fail) || payload.fail !== recomputedFail) {
+    errors.push("The browser payload fail count does not match its result records.");
+  }
+  if (payload?.skipped !== 0) {
+    errors.push("The browser payload must report exactly zero skipped checks.");
+  }
+  return Object.freeze({
+    valid: errors.length === 0,
+    errors: Object.freeze(errors),
+    results: Object.freeze(results),
+    fail: recomputedFail,
+    skipped: payload?.skipped,
+  });
+}
+
 export function browserLaunchArgs({
   profile,
   url,
@@ -334,16 +448,35 @@ async function captureCompletedAudit({ profile, url, timeoutMs, signal }) {
   }
 }
 
-async function requestBrowserClose(webSocketUrl) {
+export async function requestBrowserClose(webSocketUrl, {
+  timeoutMs = BROWSER_AUDIT_TIMING.browserCloseGraceMs,
+  connect = cdpClient,
+} = {}) {
   if (!webSocketUrl) return { requested: false, error: "The browser CDP endpoint was unavailable." };
   let client;
+  let timer;
   try {
-    client = await cdpClient(webSocketUrl, { connectionTimeoutMs: 5_000 });
-    await client.send("Browser.close");
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw new TypeError("Browser close requires a positive finite timeout.");
+    }
+    const operation = (async () => {
+      client = await connect(webSocketUrl, {
+        connectionTimeoutMs: Math.min(5_000, timeoutMs),
+      });
+      await client.send("Browser.close");
+    })();
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`Browser.close exceeded ${Math.round(timeoutMs)} ms`)),
+        timeoutMs,
+      );
+    });
+    await Promise.race([operation, timeout]);
     return { requested: true, error: null };
   } catch (error) {
     return { requested: true, error: String(error) };
   } finally {
+    clearTimeout(timer);
     client?.close();
   }
 }
@@ -400,6 +533,17 @@ async function spawnBrowser(browserPath, args, {
   child.stdout.on("data", (chunk) => { stdout = `${stdout}${chunk}`.slice(-64_000); });
   child.stderr.on("data", (chunk) => { stderr = `${stderr}${chunk}`.slice(-64_000); });
 
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new TypeError("Browser audit timeout must be a positive finite number.");
+  }
+  const deadline = Date.now() + timeoutMs;
+  const remainingMs = () => Math.max(0, deadline - Date.now());
+  const boundedWait = (promise, maximumMs = BROWSER_AUDIT_TIMING.browserCloseGraceMs) => (
+    Promise.race([
+      promise,
+      waitMs(Math.max(1, Math.min(maximumMs, remainingMs()))),
+    ])
+  );
   const controller = new AbortController();
   let wallTimer;
   const wallTimeout = new Promise((resolve) => {
@@ -425,12 +569,12 @@ async function spawnBrowser(browserPath, args, {
   let close = { requested: false, error: null };
   if (winner.kind === "capture") {
     capture = winner.capture;
-    close = await requestBrowserClose(capture.browserWebSocketUrl);
+    const closeBudget = Math.min(BROWSER_AUDIT_TIMING.browserCloseGraceMs, remainingMs());
+    close = closeBudget > 0
+      ? await requestBrowserClose(capture.browserWebSocketUrl, { timeoutMs: closeBudget })
+      : { requested: true, error: "Browser.close had no time remaining before the audit deadline." };
     if (!exitResult) {
-      await Promise.race([
-        exitPromise,
-        waitMs(BROWSER_AUDIT_TIMING.browserCloseGraceMs),
-      ]);
+      await boundedWait(exitPromise);
     }
   } else {
     controller.abort();
@@ -444,8 +588,8 @@ async function spawnBrowser(browserPath, args, {
   controller.abort();
   if (!exitResult) {
     forcedTermination = true;
-    await terminateBrowserTree(child);
-    await Promise.race([exitPromise, waitMs(BROWSER_AUDIT_TIMING.browserCloseGraceMs)]);
+    await boundedWait(terminateBrowserTree(child), Math.max(1, remainingMs()));
+    if (!exitResult) await boundedWait(exitPromise);
   }
   return {
     status: exitResult?.status ?? null,
@@ -569,9 +713,10 @@ export async function runBrowserSmoke({
       try { payload = JSON.parse(match[1].replace(/&quot;/gu, '"').replace(/&amp;/gu, "&")); }
       catch (error) { parseError = String(error); }
     }
-    const complete = Boolean(payload && payload.completed);
-    const fail = payload ? payload.fail : null;
-    const skipped = payload ? payload.skipped : null;
+    const payloadValidation = validateBrowserAuditPayload(payload);
+    const complete = Boolean(payloadValidation.valid && payload?.completed);
+    const fail = payloadValidation.valid ? payloadValidation.fail : null;
+    const skipped = payloadValidation.valid ? payloadValidation.skipped : null;
     const expectedPaths = new Set([
       "/",
       "/audit.html",
@@ -602,6 +747,7 @@ export async function runBrowserSmoke({
         && !run.forcedTermination
         && run.close.requested
         && run.close.error === null
+        && payloadValidation.valid
         && complete
         && fail === 0
         && skipped === 0
@@ -626,7 +772,11 @@ export async function runBrowserSmoke({
       },
       complete,
       parseError,
-      results: payload?.results || [],
+      payloadValidation: {
+        valid: payloadValidation.valid,
+        errors: [...payloadValidation.errors],
+      },
+      results: payloadValidation.valid ? [...payloadValidation.results] : [],
       requests,
       unexpectedRequests,
       dumpTail: complete ? "" : completedHtml.slice(-8_000),

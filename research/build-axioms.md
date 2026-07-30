@@ -6,7 +6,7 @@
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `49e5265eed2fe6d17d660d8136de1b55b05398e6b86b2b8761571480580e1048`
 - **Engine SHA-256:** `c206d4a348543b143d3eea1d7131da146d8fb65d1d70765cd7ceaf547b8542b3`
-- **Approved child-string table:** `child-strings-v1`, 276 records, SHA-256 `27b00a31f060b80390c3049c44258c35329b0b424538e11572a53971598833be`
+- **Approved child-string table:** `child-strings-v1`, 276 records, SHA-256 `c760fa2c04939547fd24ab61aa13dacc46ab1d91506720fbc22ef63eee03ebfd`
 - **State schema:** `3`
 - **Date:** `2026-07-29`
 

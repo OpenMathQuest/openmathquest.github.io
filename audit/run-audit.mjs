@@ -220,10 +220,10 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     const approved = curriculumManifest.status === "PASS"
       && publicCandidate.status === "PASS"
       && browserEvidenceMatches
-      && externalReleaseEvidence.status === "PASS"
+      && ["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)
       && clearanceMatches(parsed, expected);
     return {
-      status: approved ? "APPROVED" : "BLOCKED",
+      status: approved ? parsed.status : "BLOCKED",
       reviewDate: parsed.reviewDate,
       reviewResult: parsed.reviewResult,
       requiredFailures: parsed.requiredFailures,
@@ -244,7 +244,9 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
       externalReleaseEvidence,
       schemaIssues: parsed.issues,
       reason: approved
-        ? "Reviewed publication clearance matches the exact candidate, hosted-Windows tuple, all eight current external evidence gates, and project-owner authorization."
+        ? parsed.status === "EMERGENCY_APPROVED"
+          ? "Emergency Beta 3 clearance matches the exact candidate and hosted-Windows tuple; six external evidence gates are transparently owner-waived for this tag only."
+          : "Reviewed publication clearance matches the exact candidate, hosted-Windows tuple, all eight current external evidence gates, and project-owner authorization."
         : `PUBLICATION_CLEARANCE.md is absent, pending, stale, invalid, or does not match the exact candidate, live browser/runner tuple, and all eight external evidence gates${parsed.issues.length ? ` (${parsed.issues.join("; ")})` : ""}.`,
     };
   } catch (error) {
@@ -349,7 +351,7 @@ function markdown(report, { final = false } = {}) {
     ...report.externalReleaseEvidence.gates
       .filter((item) => item.status !== "PASS")
       .map((item) => `${item.id} [${item.classification}]: ${item.title} — ${item.details}`),
-    ...(report.publication.status === "APPROVED" ? [] : [`Public publication: ${report.publication.reason}`]),
+    ...(["APPROVED", "EMERGENCY_APPROVED"].includes(report.publication.status) ? [] : [`Public publication: ${report.publication.reason}`]),
   ];
   const title = final ? "Final build audit report" : "Last audit report";
   const lines = [
@@ -514,7 +516,7 @@ export async function runAudit({ browserPath = null } = {}) {
   }
   const gatesPass = engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
   const technicalShippable = gatesPass && parentStrings.status === "APPROVED";
-  if (publication.status !== "APPROVED") residualRisks.push(publication.reason);
+  if (!["APPROVED", "EMERGENCY_APPROVED"].includes(publication.status)) residualRisks.push(publication.reason);
   const shippable = computeReleaseDecision({
     technicalShippable,
     publicationStatus: publication.status,

@@ -2,7 +2,28 @@
 
 All notable public changes to Math Quest are recorded here.
 
-## 1.0.0-beta.2 — Unreleased
+## 1.0.0-beta.3 — Unreleased
+
+- Removed the inert Home control from the Home screen while retaining working
+  Home navigation from child-session, grown-up, and information screens.
+- Made every child answer stop on a large, focused **Correct.** or **Not
+  correct yet.** outcome before progression is offered.
+- Rotated ordinary sessions across due learning obligations instead of
+  repeating one skill, while preserving each skill's ordered Concrete,
+  Pictorial, and Abstract progression.
+- Required mastery evidence to cover every declared task type and CPA phase in
+  order; obsolete Pictorial-only mastery records now migrate conservatively.
+- Added task-specific visual operands, accessible descriptions, Replay text,
+  and physical-task instructions for clocks, elapsed time, angles, measures,
+  geometry, and other visually dependent questions.
+- Corrected fractional division-estimate generation and ambiguous
+  attribute-comparison wording.
+- Strengthened early pattern options so every card has a visible glyph and
+  spoken label.
+- Hardened the browser audit with a closed 71-result oracle and a bounded
+  browser-shutdown deadline.
+
+## 1.0.0-beta.2 — 2026-07-30
 
 - Added a Safari Home Screen installation and recovery flow for iPhone and
   iPad.
@@ -48,9 +69,6 @@ All notable public changes to Math Quest are recorded here.
   analytics, and exported backups. Each draft carries the persisted generation;
   reset, import, and successful application commit a later generation before
   attempting removal, so even a surviving old draft is rejected on reload.
-
-Public Beta 2 remains blocked until the host/privacy, physical-device,
-adversarial-review, clearance, tag, and live-artifact gates are complete.
 
 ## 1.0.0-beta.1 — 2026-07-28
 

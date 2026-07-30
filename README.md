@@ -1,11 +1,11 @@
 # Math Quest
 
 Math Quest is an offline-first, browser-based mathematics game for a child and
-a grown-up to use together. Public Beta 2 is driven by an independently
+a grown-up to use together. Public Beta 3 is driven by an independently
 authored, neutral curriculum manifest containing 126 skills across 21 ordered
 levels, from pre-kindergarten through Grade 5.
 
-Release target: **v1.0.0-beta.2**
+Release target: **v1.0.0-beta.3**
 
 > This is beta software. A grown-up should co-play, especially when a skill is
 > new, and report any ambiguous question or grading error.
@@ -34,7 +34,7 @@ a file cannot silently change what an already-running game serves.
 
 Public Beta 1 is hosted at
 [https://openmathquest.github.io/](https://openmathquest.github.io/). That
-origin is only a candidate host for Public Beta 2 until the child-facing
+origin is only a candidate host for Public Beta 3 until the child-facing
 host/privacy/legal gate is affirmatively cleared. If it cannot be cleared,
 the runnable child-facing build must move to a suitable host while the source
 repository can remain on GitHub.
@@ -54,7 +54,7 @@ launcher and a hosted site requires a deliberate backup and restore.
 
 The Pages workflow is dispatched from protected `main` only while that branch
 and its exact `release_tag` input resolve to the same annotated
-`v1.0.0-beta.2` commit. Its product version and publication-clearance hashes
+`v1.0.0-beta.3` commit. Its product version and publication-clearance hashes
 must match the reviewed candidate. Publication clearance also binds the exact
 audited browser product, full product version, executable SHA-256, and
 GitHub-hosted runner `ImageOS`/`ImageVersion`. The hosted link is not considered verified
@@ -75,9 +75,9 @@ installed app only when a grown-up deliberately wants to transfer progress.
 See the [iPhone and iPad installation guide](docs/release/install-ios-ipados.md).
 
 Essential actions use visible touch controls; a hardware keyboard is optional.
-The exact supported Apple generations remain a Beta 2 release gate until the
+The exact supported Apple generations remain a Beta 3 release gate until the
 physical-device matrix is complete. Safari Lockdown Mode and managed
-configurations that disable Web Locks are outside the Beta 2 support claim:
+configurations that disable Web Locks are outside the Beta 3 support claim:
 the game pauses before child play rather than using an unsafe persistence
 fallback. Do not weaken a security setting just for Math Quest; use another
 qualified device or browser configuration.

@@ -140,6 +140,26 @@ This directive has higher project priority than convenience, implementation
 speed, or minimizing tests and documentation. It does not override applicable
 security, privacy, legal, platform, or higher-authority agent instructions.
 
+## Owner-authorized emergency exception: Public Beta 3 only
+
+On 2026-07-30, the project owner explicitly authorized an emergency exception
+for `v1.0.0-beta.3` so the already-public child experience can receive urgent
+Home-navigation and answer-feedback repairs without waiting for the six-lane
+physical-device matrix or six new independent-reviewer reports.
+
+This exception is narrow and expires with that exact tag. It does not convert
+missing evidence into a pass. The release record and audit must report
+`EMERGENCY_APPROVED`, show the six affected external gates as `WAIVED`, retain
+their real zero/unknown counts, name the residual risk, and remain bound to the
+exact public payload, protected `main` ref, reviewed GitHub-hosted Windows
+browser tuple, and owner authorization. All deterministic, educational,
+privacy, licence, mutation, coverage, browser, PWA, immutable-snapshot, tag,
+and deployment checks remain mandatory and fail closed.
+
+No later release may reuse this exception. The ordinary holistic certification
+policy above resumes in full for Beta 4 and every subsequent candidate unless
+the project owner records a new explicit release-scoped directive.
+
 ## Certification framework entry points
 
 Treat the following as one modular certification system and keep their

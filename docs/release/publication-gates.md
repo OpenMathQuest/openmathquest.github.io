@@ -37,7 +37,7 @@ but it does not by itself approve publication.
 
 ## Remaining fail-closed review
 
-Before the Public Beta 2 push or deployment:
+Before the Public Beta 3 push or deployment:
 
 1. Freeze and canonicalize the exact manifest.
 2. Compute the exact manifest and engine SHA-256 values from shipped bytes.
@@ -153,7 +153,7 @@ record to the exact ordered schema below:
 - `Hosted-Windows evidence SHA-256: <SHA-256 of the exact canonical audit/browser-runner-evidence-v1.json bytes>`
 - `Owner authorization state: PR_PUSH_AUTHORIZED`
 - `Owner authorization evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Authorized release tag: v1.0.0-beta.2`
+- `Authorized release tag: v1.0.0-beta.3`
 - `Authorized protected ref: refs/heads/main`
 - `Review-bundle SHA-256: <64 lowercase hexadecimal characters>`
 
@@ -174,6 +174,24 @@ wrong-count, open-finding, digest-mismatched, tag-mismatched, or ref-mismatched
 input forces `External release evidence: BLOCKED`, `Shippable: NO`, and a
 nonzero ordinary release-audit result. `--technical-only` may still produce
 candidate evidence, but it neither changes nor conceals the release decision.
+
+### Emergency Beta 3 owner waiver
+
+On 2026-07-30, the project owner authorized a one-release emergency exception
+for `v1.0.0-beta.3` so urgent Home-navigation and answer-feedback repairs could
+replace the broken public build without waiting for the external review cycle.
+The exception waives `EXT-HOST`, `EXT-CANARY`, `EXT-DEVICE`,
+`EXT-REVIEWERS`, `EXT-ADJUDICATION`, and `EXT-FINDINGS` for this tag only.
+Those gates must be reported as `WAIVED`, never `PASS`; real device/reviewer
+counts remain zero and unevaluated findings remain `UNKNOWN`.
+
+`EXT-HOSTED-WINDOWS` and `EXT-OWNER` are not waived. The exact candidate must
+still pass the complete deterministic, educational, privacy, licensing,
+mutation, coverage, browser, PWA, tag, immutable-snapshot, and deployment
+checks; match the reviewed GitHub-hosted browser/runner tuple; and carry exact
+`EMERGENCY_BETA3_AUTHORIZED` owner evidence. The clearance status is
+`EMERGENCY_APPROVED`, and every later release returns to the ordinary
+fail-closed requirements.
 
 The audit workflow intentionally retains `runs-on: windows-latest`.
 **Residual risk (Medium):** that label is a floating GitHub-hosted image

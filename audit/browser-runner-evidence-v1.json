@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "status": "PENDING",
-  "browserProductName": "PENDING",
-  "browserFullVersion": "PENDING",
-  "browserExecutableSha256": "PENDING",
-  "runnerImageOS": "PENDING",
-  "runnerImageVersion": "PENDING"
+  "status": "REVIEWED",
+  "browserProductName": "Microsoft Edge",
+  "browserFullVersion": "150.0.4078.65",
+  "browserExecutableSha256": "d17f5ab0779e0a763cd70752833793a9e7073fcbdd1fba2c0e6ad13fcd135d91",
+  "runnerImageOS": "win25-vs2026",
+  "runnerImageVersion": "20260714.173.1"
 }

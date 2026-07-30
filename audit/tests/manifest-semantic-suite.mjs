@@ -1330,20 +1330,43 @@ export async function runManifestSemanticSuite({
     });
   }
 
-  await check("SEM-MASTERY-COVERAGE", "SOLID mastery requires task coverage and a concrete or pictorial witness", () => {
+  await check("SEM-MASTERY-COVERAGE", "SOLID mastery requires task coverage and every declared CPA phase in order", () => {
     const skill = engine.SKILLS.find((candidate) => candidate.skillId === "MQ-049");
     requireCondition(skill.constraints.taskTypes.length === 2, "mastery fixture no longer has two task types");
     let state = engine.createInitialState(30_000);
-    state = stateFrom(engine.applyAttempt(state, masteryAttempt(engine, skill, skill.constraints.taskTypes[0], 30_000, 0)));
+    state = stateFrom(engine.applyAttempt(state, masteryAttempt(
+      engine,
+      skill,
+      skill.constraints.taskTypes[0],
+      30_000,
+      0,
+      { representation: "CONCRETE" },
+    )));
     requireCondition(state.skills[skill.skillId].acquisition !== "SOLID", "one task type incorrectly satisfied multi-type mastery");
-    state = stateFrom(engine.applyAttempt(state, masteryAttempt(engine, skill, skill.constraints.taskTypes[1], 30_001, 1)));
-    requireCondition(state.skills[skill.skillId].acquisition === "SOLID", "complete task-type coverage with a pictorial witness did not satisfy mastery");
+    state = stateFrom(engine.applyAttempt(state, masteryAttempt(
+      engine,
+      skill,
+      skill.constraints.taskTypes[1],
+      30_001,
+      1,
+      { representation: "PICTORIAL" },
+    )));
+    requireCondition(state.skills[skill.skillId].acquisition !== "SOLID", "concrete and pictorial evidence skipped the declared abstract phase");
+    state = stateFrom(engine.applyAttempt(state, masteryAttempt(
+      engine,
+      skill,
+      skill.constraints.taskTypes[0],
+      30_002,
+      2,
+      { representation: "ABSTRACT" },
+    )));
+    requireCondition(state.skills[skill.skillId].acquisition === "SOLID", "ordered CPA evidence with complete task-type coverage did not satisfy mastery");
     const witnessed = new Set(state.skills[skill.skillId].evidence.map((attempt) => attempt.taskType));
     requireCondition(skill.constraints.taskTypes.every((taskType) => witnessed.has(taskType)), "solid record lacks a declared task-type witness");
     requireCondition(state.skills[skill.skillId].evidence.every((attempt) => attempt.modelUsed === false), "modelUsed telemetry was required for a model witness");
 
     let abstractOnly = engine.createInitialState(30_000);
-    for (let ordinal = 0; ordinal < skill.constraints.taskTypes.length; ordinal += 1) {
+    for (let ordinal = 0; ordinal < Math.max(3, skill.constraints.taskTypes.length); ordinal += 1) {
       const taskType = skill.constraints.taskTypes[ordinal % skill.constraints.taskTypes.length];
       abstractOnly = stateFrom(engine.applyAttempt(
         abstractOnly,

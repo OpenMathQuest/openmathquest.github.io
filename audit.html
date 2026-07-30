@@ -281,7 +281,7 @@
         C: "CONCRETE",
         P: "PICTORIAL",
         A: "ABSTRACT",
-      })[availablePhases[index % availablePhases.length]];
+      })[availablePhases[Math.min(index, availablePhases.length - 1)]];
       const activeIndex = isReteach
         ? Math.max(0, Number(reteachIndex) || 0)
         : Math.max(0, Number(canonicalIndex) || 0);
@@ -498,7 +498,7 @@
 
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
-        logicalIdentity !== "math-quest-static-v1.0.0-beta.2"
+        logicalIdentity !== "math-quest-static-v1.0.0-beta.3"
         || !Array.isArray(cacheNames)
       ) return [];
       const prefix = `${logicalIdentity}-`;
@@ -3476,7 +3476,10 @@
               stage: skill.stage,
               effectivePlannedCount,
             }));
-            const phase = availablePhases[canonicalIndex % availablePhases.length];
+            const phase = availablePhases[Math.min(
+              canonicalIndex,
+              availablePhases.length - 1,
+            )];
             const slot = {
               ordinal: canonicalIndex,
               baseOrdinal: canonicalIndex,
@@ -4913,7 +4916,7 @@
           await pause();
           speechAudit.manualReplayCalls = calls.length;
           speechAudit.replayPromptMatches = Boolean(activeQuestion && calls.length === 1
-            && normalized(calls[0]) === normalized(activeQuestion.prompt));
+            && normalized(calls[0]).includes(normalized(activeQuestion.prompt)));
           if (activeQuestion) await answerCorrect(speechScenario, activeQuestion);
           speechAudit.automaticSubmitCalls = calls.length;
           speechAudit.cancelCalls = cancelCalls;
@@ -6679,16 +6682,16 @@
           const expectedPaths = [shellManifestRelative, ...expectedShellEntryPaths];
           const readinessValid = Boolean(
             readiness?.type === "MATH_QUEST_READINESS_V1"
-            && readiness?.release === "1.0.0-beta.2"
-            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.2"
-            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.2"
+            && readiness?.release === "1.0.0-beta.3"
+            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.3"
+            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.3"
             && readiness?.ready === true
             && requiredPaths.length === expectedPaths.length
             && requiredPaths.every((entry) => entry?.ready === true)
             && JSON.stringify(requiredPaths.map((entry) => entry.path).sort()) === JSON.stringify([...expectedPaths].sort())
           );
           const shellManifestValid = Boolean(shellManifest?.schemaVersion === 1
-            && shellManifest?.release === "1.0.0-beta.2"
+            && shellManifest?.release === "1.0.0-beta.3"
             && shellManifest?.buildId === readiness?.buildId
             && shellManifest?.cacheName === readiness?.cacheIdentity
             && shellManifest?.entryPath === "./index.html"
