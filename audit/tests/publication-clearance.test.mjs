@@ -13,6 +13,7 @@ import { observeBrowserRunnerEvidence } from "../lib/browser-smoke.mjs";
 import {
   clearanceMatches,
   computeReleaseDecision,
+  EMERGENCY_BETA3_WAIVED_GATE_IDS,
   evaluateExternalReleaseEvidence,
   EXTERNAL_RELEASE_GATE_IDS,
   parsePublicationClearance,
@@ -92,6 +93,36 @@ function approvedClearance(overrides = {}) {
   return `# Math Quest publication clearance\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n`;
 }
 
+function emergencyClearance(overrides = {}) {
+  const waiverDigest = "e".repeat(64);
+  return approvedClearance({
+    "Status": "EMERGENCY_APPROVED",
+    "Review result": "EMERGENCY_PASS",
+    "Residual risks": "Emergency Beta 3: six external evidence gates were not completed; exact automated and hosted-Windows certification passed.",
+    "Host qualification state": "WAIVED_BETA3",
+    "Host qualification evidence SHA-256": waiverDigest,
+    "Canary reconciliation state": "WAIVED_BETA3",
+    "Canary reconciliation evidence SHA-256": waiverDigest,
+    "Physical-device evidence state": "WAIVED_BETA3",
+    "Physical-device evidence SHA-256": waiverDigest,
+    "Passed physical-device lanes": "0",
+    "Primary iPad journey result": "NOT_RUN",
+    "Independent-reviewer evidence state": "WAIVED_BETA3",
+    "Independent-reviewer evidence SHA-256": waiverDigest,
+    "Sealed independent-reviewer reports": "0",
+    "Adjudication state": "WAIVED_BETA3",
+    "Adjudication evidence SHA-256": waiverDigest,
+    "Adjudication recommendation": "NOT_RUN",
+    "Finding-disposition state": "AUTOMATED_ONLY",
+    "Finding-disposition evidence SHA-256": waiverDigest,
+    "Unaccepted medium findings": "UNKNOWN",
+    "Unrecorded low findings": "UNKNOWN",
+    "Owner authorization state": "EMERGENCY_BETA3_AUTHORIZED",
+    "Owner authorization evidence SHA-256": waiverDigest,
+    ...overrides,
+  });
+}
+
 function reviewedEvidence(overrides = {}) {
   return `${JSON.stringify({
     schemaVersion: 1,
@@ -118,7 +149,7 @@ test("checked-in publication and browser evidence records are exact and mutually
     assert.equal(evidence.status, "PENDING");
     assert.equal(clearanceMatches(clearance, expected), false);
   } else {
-    assert.equal(clearance.status, "APPROVED");
+    assert.ok(["APPROVED", "EMERGENCY_APPROVED"].includes(clearance.status));
     assert.equal(evidence.status, "REVIEWED");
     assert.equal(browserRunnerTuplesMatch({
       browserProductName: clearance.reviewedBrowserProductName,
@@ -128,6 +159,50 @@ test("checked-in publication and browser evidence records are exact and mutually
       runnerImageVersion: clearance.reviewedRunnerImageVersion,
     }, evidence), true);
   }
+});
+
+test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impersonate passed evidence", () => {
+  const parsed = parsePublicationClearance(emergencyClearance());
+  assert.equal(parsed.valid, true, parsed.issues.join("; "));
+  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  assert.equal(evidence.status, "EMERGENCY_WAIVER");
+  assert.equal(evidence.passCount, 2);
+  assert.equal(evidence.waivedCount, 6);
+  assert.deepEqual(
+    evidence.gates.filter((item) => item.status === "WAIVED").map((item) => item.id),
+    EMERGENCY_BETA3_WAIVED_GATE_IDS,
+  );
+  assert.equal(evidence.gates.every((item) => item.status !== "BLOCKED"), true);
+  assert.equal(clearanceMatches(parsed, expected), true);
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "EMERGENCY_APPROVED",
+    externalReleaseEvidence: evidence,
+  }), true);
+
+  for (const [field, value] of [
+    ["Authorized release tag", "v1.0.0-beta.4"],
+    ["Owner authorization state", "PR_PUSH_AUTHORIZED"],
+    ["Passed physical-device lanes", "6"],
+    ["Sealed independent-reviewer reports", "6"],
+    ["Host qualification evidence SHA-256", "8".repeat(64)],
+    ["Residual risks", "NONE"],
+  ]) {
+    const mutant = parsePublicationClearance(emergencyClearance({ [field]: value }));
+    assert.equal(mutant.valid, false, `${field} must remain exact under emergency approval`);
+    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+  }
+
+  assert.equal(computeReleaseDecision({
+    technicalShippable: false,
+    publicationStatus: "EMERGENCY_APPROVED",
+    externalReleaseEvidence: evidence,
+  }), false);
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "APPROVED",
+    externalReleaseEvidence: evidence,
+  }), false);
 });
 
 test("an approved clearance matches only the exact complete browser/runner tuple", () => {

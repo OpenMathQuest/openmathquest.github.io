@@ -402,7 +402,7 @@ missing, reordered, extra, or noncanonical records fail; the live executable
 hash and requested hosted-runner label are bound; and a local run remains
 explicitly local rather than claiming GitHub-hosted evidence.
 
-The same suite now protects the eight first-class Beta 2 external release
+The same suite now protects the eight first-class external release
 branches:
 
 | Test branch | Protected effect |
@@ -423,6 +423,13 @@ exact eight IDs in exact order, every result `PASS`, external aggregate
 duplicate, reorder, and block each result to prove count agreement alone
 cannot produce `Shippable: YES`. All unresolved external results are reported
 as `PENDING_EVIDENCE_APPROVAL_GATE`; no assertion was removed or weakened.
+
+For emergency Beta 3 only, an additional effect-sensitive exception regression
+requires the first six gates to remain visibly `WAIVED` (never `PASS`), with
+their zero/unknown counts and one exact owner-waiver digest.
+`EXT-HOSTED-WINDOWS` must still pass, and `EXT-OWNER` must use
+`EMERGENCY_BETA3_AUTHORIZED`. A wrong tag, ref, status, count, digest,
+residual-risk statement, technical result, or gate ordering blocks release.
 
 ## Representative mutation proof
 

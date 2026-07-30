@@ -9,6 +9,7 @@ export const EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
   "EXT-HOSTED-WINDOWS",
   "EXT-OWNER",
 ]);
+export const EMERGENCY_BETA3_WAIVED_GATE_IDS = Object.freeze(EXTERNAL_RELEASE_GATE_IDS.slice(0, 6));
 
 const FIELD_ORDER = Object.freeze([
   "Status",
@@ -144,15 +145,20 @@ export function parsePublicationClearance(text) {
       fields[key] = line.slice(prefix.length);
     }
   }
-  if (!["PENDING", "APPROVED"].includes(fields.Status)) issues.push("Status must be PENDING or APPROVED");
+  if (!["PENDING", "APPROVED", "EMERGENCY_APPROVED"].includes(fields.Status)) {
+    issues.push("Status must be PENDING, APPROVED, or EMERGENCY_APPROVED");
+  }
   if (fields.Status === "PENDING") {
     for (const key of FIELD_ORDER.slice(1)) {
       if (fields[key] !== "PENDING") issues.push(`${key} must be PENDING while Status is PENDING`);
     }
   }
-  if (fields.Status === "APPROVED") {
+  if (fields.Status === "APPROVED" || fields.Status === "EMERGENCY_APPROVED") {
+    const emergency = fields.Status === "EMERGENCY_APPROVED";
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(fields["Review date"] || "")) issues.push("Review date must use YYYY-MM-DD");
-    if (fields["Review result"] !== "PASS") issues.push("Review result must be PASS");
+    if (fields["Review result"] !== (emergency ? "EMERGENCY_PASS" : "PASS")) {
+      issues.push(`Review result must be ${emergency ? "EMERGENCY_PASS" : "PASS"}`);
+    }
     if (fields["Required failures"] !== "0") issues.push("Required failures must be 0");
     if (fields["Required skips"] !== "0") issues.push("Required skips must be 0");
     if (!fields["Residual risks"] || fields["Residual risks"] === "PENDING" || fields["Residual risks"].length > 500) {
@@ -212,16 +218,16 @@ export function parsePublicationClearance(text) {
       if (!sha256(fields[key])) issues.push(`${key} must be 64 lowercase hexadecimal characters`);
     }
     for (const [key, expected] of [
-      ["Host qualification state", "APPROVED"],
-      ["Canary reconciliation state", "RECONCILED"],
-      ["Physical-device evidence state", "COMPLETE"],
-      ["Primary iPad journey result", "PASS"],
-      ["Independent-reviewer evidence state", "COMPLETE"],
-      ["Adjudication state", "APPROVED"],
-      ["Adjudication recommendation", "RELEASE"],
-      ["Finding-disposition state", "COMPLETE"],
+      ["Host qualification state", emergency ? "WAIVED_BETA3" : "APPROVED"],
+      ["Canary reconciliation state", emergency ? "WAIVED_BETA3" : "RECONCILED"],
+      ["Physical-device evidence state", emergency ? "WAIVED_BETA3" : "COMPLETE"],
+      ["Primary iPad journey result", emergency ? "NOT_RUN" : "PASS"],
+      ["Independent-reviewer evidence state", emergency ? "WAIVED_BETA3" : "COMPLETE"],
+      ["Adjudication state", emergency ? "WAIVED_BETA3" : "APPROVED"],
+      ["Adjudication recommendation", emergency ? "NOT_RUN" : "RELEASE"],
+      ["Finding-disposition state", emergency ? "AUTOMATED_ONLY" : "COMPLETE"],
       ["Hosted-Windows evidence state", "REVIEWED"],
-      ["Owner authorization state", "PR_PUSH_AUTHORIZED"],
+      ["Owner authorization state", emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED"],
       ["Authorized release tag", "v1.0.0-beta.3"],
       ["Authorized protected ref", "refs/heads/main"],
     ]) {
@@ -229,15 +235,33 @@ export function parsePublicationClearance(text) {
     }
     for (const [key, expected] of [
       ["Required physical-device lanes", "6"],
-      ["Passed physical-device lanes", "6"],
+      ["Passed physical-device lanes", emergency ? "0" : "6"],
       ["Required independent-reviewer reports", "6"],
-      ["Sealed independent-reviewer reports", "6"],
+      ["Sealed independent-reviewer reports", emergency ? "0" : "6"],
       ["Open critical findings", "0"],
       ["Open high findings", "0"],
-      ["Unaccepted medium findings", "0"],
-      ["Unrecorded low findings", "0"],
+      ["Unaccepted medium findings", emergency ? "UNKNOWN" : "0"],
+      ["Unrecorded low findings", emergency ? "UNKNOWN" : "0"],
     ]) {
       if (fields[key] !== expected) issues.push(`${key} must be ${expected}`);
+    }
+    if (emergency) {
+      const waiverDigest = fields["Owner authorization evidence SHA-256"];
+      for (const key of [
+        "Host qualification evidence SHA-256",
+        "Canary reconciliation evidence SHA-256",
+        "Physical-device evidence SHA-256",
+        "Independent-reviewer evidence SHA-256",
+        "Adjudication evidence SHA-256",
+        "Finding-disposition evidence SHA-256",
+      ]) {
+        if (fields[key] !== waiverDigest) {
+          issues.push(`${key} must equal the emergency owner-authorization evidence digest`);
+        }
+      }
+      if (!/^Emergency Beta 3:/u.test(fields["Residual risks"] || "")) {
+        issues.push("Emergency approval must state the Beta 3 residual risk explicitly");
+      }
     }
   }
   return result(issues.length === 0, fields, issues);
@@ -259,13 +283,21 @@ function artifactIdentityMatches(parsed, expected = {}) {
   );
 }
 
-function gate(id, title, pass, reasons) {
+function gate(id, title, status, reasons) {
   return Object.freeze({
     id,
     title,
-    status: pass ? "PASS" : "BLOCKED",
-    classification: pass ? "VERIFIED" : "PENDING_EVIDENCE_APPROVAL_GATE",
-    details: pass ? "Exact current evidence is present and bound to the reviewed candidate." : reasons.join("; "),
+    status,
+    classification: status === "PASS"
+      ? "VERIFIED"
+      : status === "WAIVED"
+        ? "OWNER_AUTHORIZED_EMERGENCY_BETA3_WAIVER"
+        : "PENDING_EVIDENCE_APPROVAL_GATE",
+    details: status === "PASS"
+      ? "Exact current evidence is present and bound to the reviewed candidate."
+      : status === "WAIVED"
+        ? "The project owner explicitly waived this external evidence gate for emergency Beta 3 only; no pass is claimed."
+        : reasons.join("; "),
   });
 }
 
@@ -274,9 +306,12 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   const currentTime = instant.getTime();
   const reviewedTime = Date.parse(parsed?.externalEvidenceReviewedAt || "");
   const expiresTime = Date.parse(parsed?.externalEvidenceExpiresAt || "");
+  const emergency = parsed?.status === "EMERGENCY_APPROVED";
   const commonReasons = [];
   if (!parsed?.valid) commonReasons.push(`clearance schema is invalid${parsed?.issues?.length ? ` (${parsed.issues.join("; ")})` : ""}`);
-  if (parsed?.status !== "APPROVED") commonReasons.push(`clearance status is ${parsed?.status || "UNKNOWN"}`);
+  if (!["APPROVED", "EMERGENCY_APPROVED"].includes(parsed?.status)) {
+    commonReasons.push(`clearance status is ${parsed?.status || "UNKNOWN"}`);
+  }
   if (!artifactIdentityMatches(parsed, expected)) commonReasons.push("candidate or hosted-Windows tuple does not match the current audit");
   if (!Number.isFinite(currentTime)) commonReasons.push("audit time is invalid");
   if (!Number.isFinite(reviewedTime) || reviewedTime > currentTime) commonReasons.push("external evidence review timestamp is missing or in the future");
@@ -363,12 +398,14 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
     [
       "EXT-OWNER",
       "Project-owner push authorization",
-      parsed?.ownerAuthorizationState === "PR_PUSH_AUTHORIZED"
+      parsed?.ownerAuthorizationState === (emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED")
         && sha256(parsed?.ownerAuthorizationEvidenceSha256)
         && sha256(parsed?.reviewBundleSha256)
         && parsed?.authorizedReleaseTag === "v1.0.0-beta.3"
         && parsed?.authorizedProtectedRef === "refs/heads/main",
-      parsed?.ownerAuthorizationState === "PR_PUSH_AUTHORIZED" ? null : `owner authorization is ${parsed?.ownerAuthorizationState || "UNKNOWN"}`,
+      parsed?.ownerAuthorizationState === (emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED")
+        ? null
+        : `owner authorization is ${parsed?.ownerAuthorizationState || "UNKNOWN"}`,
       sha256(parsed?.ownerAuthorizationEvidenceSha256) ? null : "owner-authorization evidence digest is missing or malformed",
       sha256(parsed?.reviewBundleSha256) ? null : "review-bundle digest is missing or malformed",
       parsed?.authorizedReleaseTag === "v1.0.0-beta.3" ? null : "owner authorization names a different release tag",
@@ -377,13 +414,25 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   ];
   const gates = definitions.map(([id, title, specificPass, ...specificReasons]) => {
     const reasons = buildReasons(...specificReasons);
-    return gate(id, title, commonReasons.length === 0 && specificPass, reasons);
+    if (emergency && EMERGENCY_BETA3_WAIVED_GATE_IDS.includes(id) && commonReasons.length === 0) {
+      return gate(id, title, "WAIVED", reasons);
+    }
+    return gate(id, title, commonReasons.length === 0 && specificPass ? "PASS" : "BLOCKED", reasons);
   });
+  const emergencyPattern = gates.every((item, index) => (
+    item.id === EXTERNAL_RELEASE_GATE_IDS[index]
+    && item.status === (index < EMERGENCY_BETA3_WAIVED_GATE_IDS.length ? "WAIVED" : "PASS")
+  ));
   return Object.freeze({
-    status: gates.length === EXTERNAL_RELEASE_GATE_IDS.length && gates.every((item) => item.status === "PASS") ? "PASS" : "BLOCKED",
+    status: gates.length === EXTERNAL_RELEASE_GATE_IDS.length && gates.every((item) => item.status === "PASS")
+      ? "PASS"
+      : emergency && emergencyPattern
+        ? "EMERGENCY_WAIVER"
+        : "BLOCKED",
     reviewedAt: parsed?.externalEvidenceReviewedAt || null,
     expiresAt: parsed?.externalEvidenceExpiresAt || null,
     passCount: gates.filter((item) => item.status === "PASS").length,
+    waivedCount: gates.filter((item) => item.status === "WAIVED").length,
     requiredCount: EXTERNAL_RELEASE_GATE_IDS.length,
     gates: Object.freeze(gates),
   });
@@ -393,20 +442,29 @@ export function clearanceMatches(parsed, expected = {}) {
   const external = evaluateExternalReleaseEvidence(parsed, expected, expected.now ?? new Date());
   return Boolean(
     parsed?.valid
-    && parsed.status === "APPROVED"
+    && ["APPROVED", "EMERGENCY_APPROVED"].includes(parsed.status)
     && artifactIdentityMatches(parsed, expected)
-    && external.status === "PASS"
+    && (external.status === "PASS" || external.status === "EMERGENCY_WAIVER")
   );
 }
 
 export function computeReleaseDecision({ technicalShippable, publicationStatus, externalReleaseEvidence }) {
   const gates = externalReleaseEvidence?.gates;
-  return Boolean(
-    technicalShippable === true
-    && publicationStatus === "APPROVED"
+  const standard = publicationStatus === "APPROVED"
     && externalReleaseEvidence?.status === "PASS"
     && Array.isArray(gates)
     && gates.length === EXTERNAL_RELEASE_GATE_IDS.length
-    && gates.every((item, index) => item?.id === EXTERNAL_RELEASE_GATE_IDS[index] && item.status === "PASS")
+    && gates.every((item, index) => item?.id === EXTERNAL_RELEASE_GATE_IDS[index] && item.status === "PASS");
+  const emergency = publicationStatus === "EMERGENCY_APPROVED"
+    && externalReleaseEvidence?.status === "EMERGENCY_WAIVER"
+    && Array.isArray(gates)
+    && gates.length === EXTERNAL_RELEASE_GATE_IDS.length
+    && gates.every((item, index) => (
+      item?.id === EXTERNAL_RELEASE_GATE_IDS[index]
+      && item.status === (index < EMERGENCY_BETA3_WAIVED_GATE_IDS.length ? "WAIVED" : "PASS")
+    ));
+  return Boolean(
+    technicalShippable === true
+    && (standard || emergency)
   );
 }

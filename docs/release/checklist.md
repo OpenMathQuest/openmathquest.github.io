@@ -145,6 +145,12 @@ synchronized, and rerun through the complete gate.
   external gates PASS rather than merely matching the expected count.
 - [ ] Re-run the fail-closed audit with that exact clearance record.
 
+Emergency Beta 3 exception: the owner authorized `EMERGENCY_APPROVED` for this
+tag only. Six external gates must remain visibly `WAIVED` with zero/unknown
+counts; they must not be checked off or represented as completed. Reviewed
+hosted-Windows evidence, exact owner authorization, and every automated,
+privacy, licensing, immutable-tag, and deployment check remain required.
+
 ## Repository and Pages settings
 
 - [x] Confirm control of the dedicated `OpenMathQuest` GitHub organization.

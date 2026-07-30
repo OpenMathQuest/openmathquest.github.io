@@ -105,6 +105,12 @@ unverified claims, and it forces `External release evidence: BLOCKED` and
 `Shippable: NO`. An exit-zero technical-only evidence run is not release
 approval and does not alter those fields.
 
+For `v1.0.0-beta.3` only, the project owner authorized the emergency exception
+recorded in `AGENTS.md` and `publication-gates.md`. A conforming report must
+say `EMERGENCY_APPROVED`, preserve six external gates as visibly `WAIVED`,
+retain exact zero/unknown evidence counts, and still pass the hosted-Windows
+and exact owner-authorization gates. This is not reusable release clearance.
+
 The `windows-latest` audit selector remains a documented Medium residual
 because GitHub may move it to a newer hosted image. Publication is nevertheless
 fail-closed: the floating label is never treated as the reviewed identity, and

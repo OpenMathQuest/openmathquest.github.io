@@ -175,6 +175,24 @@ input forces `External release evidence: BLOCKED`, `Shippable: NO`, and a
 nonzero ordinary release-audit result. `--technical-only` may still produce
 candidate evidence, but it neither changes nor conceals the release decision.
 
+### Emergency Beta 3 owner waiver
+
+On 2026-07-30, the project owner authorized a one-release emergency exception
+for `v1.0.0-beta.3` so urgent Home-navigation and answer-feedback repairs could
+replace the broken public build without waiting for the external review cycle.
+The exception waives `EXT-HOST`, `EXT-CANARY`, `EXT-DEVICE`,
+`EXT-REVIEWERS`, `EXT-ADJUDICATION`, and `EXT-FINDINGS` for this tag only.
+Those gates must be reported as `WAIVED`, never `PASS`; real device/reviewer
+counts remain zero and unevaluated findings remain `UNKNOWN`.
+
+`EXT-HOSTED-WINDOWS` and `EXT-OWNER` are not waived. The exact candidate must
+still pass the complete deterministic, educational, privacy, licensing,
+mutation, coverage, browser, PWA, tag, immutable-snapshot, and deployment
+checks; match the reviewed GitHub-hosted browser/runner tuple; and carry exact
+`EMERGENCY_BETA3_AUTHORIZED` owner evidence. The clearance status is
+`EMERGENCY_APPROVED`, and every later release returns to the ordinary
+fail-closed requirements.
+
 The audit workflow intentionally retains `runs-on: windows-latest`.
 **Residual risk (Medium):** that label is a floating GitHub-hosted image
 selector. It is not accepted as evidence by itself. Each run records and
