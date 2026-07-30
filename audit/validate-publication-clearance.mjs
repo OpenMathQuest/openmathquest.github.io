@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -5,10 +6,15 @@ import { loadShippedEngine } from "./lib/engine-loader.mjs";
 import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
   clearanceMatches,
+  evaluateExternalReleaseEvidence,
   parsePublicationClearance,
   PUBLICATION_CLEARANCE_PATH,
 } from "./lib/publication-clearance.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
+import {
+  BROWSER_RUNNER_EVIDENCE_PATH,
+  parseReviewedBrowserRunnerEvidence,
+} from "./lib/browser-runner-evidence.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const payloadSha256 = String(process.env.MQ_PUBLIC_PAYLOAD_SHA256 || "");
@@ -18,14 +24,19 @@ try {
   if (!/^[a-f0-9]{64}$/u.test(payloadSha256) || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(payloadTreeOid)) {
     throw new Error("Validated public-payload environment values are missing or malformed.");
   }
-  const [text, engine, manifest, rightsSha256] = await Promise.all([
+  const [text, browserEvidenceText, engine, manifest, rightsSha256] = await Promise.all([
     readFile(path.join(root, PUBLICATION_CLEARANCE_PATH), "utf8"),
+    readFile(path.join(root, BROWSER_RUNNER_EVIDENCE_PATH), "utf8"),
     loadShippedEngine(path.join(root, "index.html")),
     loadManifest(path.join(root, CURRICULUM_PATH)),
     rightsStateSha256(root),
   ]);
   const parsed = parsePublicationClearance(text);
   if (!parsed.valid) throw new Error(`Publication clearance schema failed: ${parsed.issues.join("; ")}`);
+  const browserEvidence = parseReviewedBrowserRunnerEvidence(browserEvidenceText);
+  if (!browserEvidence.valid || browserEvidence.status !== "REVIEWED") {
+    throw new Error(`Reviewed browser/runner evidence is not approved: ${browserEvidence.issues.join("; ") || browserEvidence.status}`);
+  }
   const expected = {
     engineSha256: engine.sha256,
     manifestVersion: manifest.manifest.version,
@@ -33,9 +44,38 @@ try {
     rightsSha256,
     payloadSha256,
     payloadTreeOid,
+    browserProductName: browserEvidence.browserProductName,
+    browserFullVersion: browserEvidence.browserFullVersion,
+    browserExecutableSha256: browserEvidence.browserExecutableSha256,
+    runnerImageOS: browserEvidence.runnerImageOS,
+    runnerImageVersion: browserEvidence.runnerImageVersion,
+    browserRunnerEvidenceSha256: createHash("sha256").update(browserEvidenceText, "utf8").digest("hex"),
+    browserRunnerEvidenceReviewed: true,
+    now: new Date(),
   };
   if (!clearanceMatches(parsed, expected)) throw new Error("Publication clearance does not match the exact reviewed artifacts.");
-  process.stdout.write(`${JSON.stringify({ status: "APPROVED", reviewDate: parsed.reviewDate, payloadSha256, payloadTreeOid })}\n`);
+  const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  if (externalReleaseEvidence.status !== "PASS") {
+    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => item.status !== "PASS").map((item) => `${item.id}: ${item.details}`).join("; ")}`);
+  }
+  process.stdout.write(`${JSON.stringify({
+    status: "APPROVED",
+    reviewDate: parsed.reviewDate,
+    payloadSha256,
+    payloadTreeOid,
+    externalReleaseEvidence: {
+      status: externalReleaseEvidence.status,
+      passCount: externalReleaseEvidence.passCount,
+      requiredCount: externalReleaseEvidence.requiredCount,
+    },
+    browserRunnerEvidence: {
+      browserProductName: browserEvidence.browserProductName,
+      browserFullVersion: browserEvidence.browserFullVersion,
+      browserExecutableSha256: browserEvidence.browserExecutableSha256,
+      runnerImageOS: browserEvidence.runnerImageOS,
+      runnerImageVersion: browserEvidence.runnerImageVersion,
+    },
+  })}\n`);
 } catch (error) {
   process.stderr.write(`${error.stack || error}\n`);
   process.exitCode = 1;

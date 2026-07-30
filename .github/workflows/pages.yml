@@ -7,7 +7,7 @@ on:
         description: Exact annotated beta tag to deploy
         required: true
         type: string
-        default: v1.0.0-beta.1
+        default: v1.0.0-beta.2
 
 permissions:
   contents: read
@@ -21,6 +21,7 @@ jobs:
     outputs:
       release_commit: ${{ steps.release_identity.outputs.commit }}
       release_tag: ${{ steps.release_identity.outputs.tag }}
+      snapshot_sha256: ${{ steps.snapshot.outputs.sha256 }}
     permissions:
       contents: read
       pages: read
@@ -36,9 +37,9 @@ jobs:
              [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
              [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
              [[ "$GITHUB_REF_NAME" != "main" ]] ||
-             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.1" ]]
+             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.2" ]]
           then
-            echo "::error::Deploy only OpenMathQuest Public Beta 1 from the protected main branch."
+            echo "::error::Deploy only OpenMathQuest Public Beta 2 from the protected main branch."
             exit 1
           fi
 
@@ -175,6 +176,11 @@ jobs:
       - name: Exhaust every manifest generator contract
         run: node audit/exhaustive-generator-audit.mjs
 
+      - name: Verify the exact offline PWA shell
+        run: |
+          node tools/build-pwa-release-manifest.mjs --check
+          node --test audit/tests/pwa-release.test.mjs
+
       - name: Verify the public payload remained unchanged
         shell: bash
         env:
@@ -247,99 +253,294 @@ jobs:
             exit 1
           fi
 
-      - name: Build explicit runtime allowlist
+      - name: Construct, verify, and seal exact tagged Pages snapshot
+        id: snapshot
         shell: bash
+        env:
+          RELEASE_COMMIT: ${{ steps.release_identity.outputs.commit }}
         run: |
           set -euo pipefail
-          install -d _site/assets/fonts _site/assets/icons _site/assets/sounds _site/curriculum
-          install -m 0644 index.html _site/index.html
-          install -m 0644 manifest.webmanifest _site/manifest.webmanifest
-          install -m 0644 sw.js _site/sw.js
-          install -m 0644 assets/fonts/Inter-Variable.ttf _site/assets/fonts/Inter-Variable.ttf
-          install -m 0644 assets/icons/apple-touch-icon.png _site/assets/icons/apple-touch-icon.png
-          install -m 0644 assets/icons/icon-192.png _site/assets/icons/icon-192.png
-          install -m 0644 assets/icons/icon-512.png _site/assets/icons/icon-512.png
-          install -m 0644 assets/sounds/tap.wav _site/assets/sounds/tap.wav
-          install -m 0644 assets/sounds/confirm.wav _site/assets/sounds/confirm.wav
-          install -m 0644 assets/sounds/incorrect.wav _site/assets/sounds/incorrect.wav
-          install -m 0644 assets/sounds/close.wav _site/assets/sounds/close.wav
-          test -f LICENSE
-          install -m 0644 LICENSE _site/LICENSE
-          install -m 0644 OPEN_SOURCE_POLICY.md _site/OPEN_SOURCE_POLICY.md
-          install -m 0644 PRIVACY.md _site/PRIVACY.md
-          install -m 0644 THIRD_PARTY_NOTICES.md _site/THIRD_PARTY_NOTICES.md
-          install -d _site/licenses
-          install -m 0644 licenses/Inter-OFL.txt _site/licenses/Inter-OFL.txt
-          install -m 0644 licenses/app-icons.md _site/licenses/app-icons.md
-          install -m 0644 licenses/component-register-v1.json _site/licenses/component-register-v1.json
-          install -m 0644 licenses/sound-effects.md _site/licenses/sound-effects.md
-          install -m 0644 curriculum/math-quest-manifest-v1.json _site/curriculum/math-quest-manifest-v1.json
-          install -m 0644 curriculum/PROVENANCE.md _site/curriculum/PROVENANCE.md
-          touch _site/.nojekyll
+          node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import {
+            appendFile,
+            chmod,
+            mkdir,
+            readFile,
+            rm,
+            writeFile,
+          } from "node:fs/promises";
+          import path from "node:path";
 
-      - name: Verify Pages artifact allowlist
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '%s\n' \
-            'assets/fonts/Inter-Variable.ttf' \
-            'assets/icons/apple-touch-icon.png' \
-            'assets/icons/icon-192.png' \
-            'assets/icons/icon-512.png' \
-            'assets/sounds/close.wav' \
-            'assets/sounds/confirm.wav' \
-            'assets/sounds/incorrect.wav' \
-            'assets/sounds/tap.wav' \
-            | LC_ALL=C sort > expected-runtime-assets.txt
-          grep -Eo \
-            'assets/[A-Za-z0-9._/-]+\.(ttf|otf|woff|woff2|wav|mp3|ogg|png|svg|jpg|jpeg|gif|webp|json|webmanifest)' \
-            index.html manifest.webmanifest \
-            | LC_ALL=C sort -u > referenced-runtime-assets.txt
-          diff -u expected-runtime-assets.txt referenced-runtime-assets.txt
+          const releaseCommit = process.env.RELEASE_COMMIT || "";
+          if (!/^[a-f0-9]{40}$/u.test(releaseCommit)) {
+            throw new Error("The verified release commit is not a SHA-1 commit identity.");
+          }
+          const checkedOutCommit = execFileSync(
+            "git",
+            ["rev-parse", "HEAD^{commit}"],
+            { encoding: "utf8" },
+          ).trim();
+          if (checkedOutCommit !== releaseCommit) {
+            throw new Error("The checkout moved after the release identity gate.");
+          }
 
-          find _site -type f -printf '%P\n' | LC_ALL=C sort > actual-files.txt
-          {
-            printf '%s\n' \
-              '.nojekyll' \
-              'assets/fonts/Inter-Variable.ttf' \
-              'assets/icons/apple-touch-icon.png' \
-              'assets/icons/icon-192.png' \
-              'assets/icons/icon-512.png' \
-              'assets/sounds/close.wav' \
-              'assets/sounds/confirm.wav' \
-              'assets/sounds/incorrect.wav' \
-              'assets/sounds/tap.wav' \
-              'curriculum/math-quest-manifest-v1.json' \
-              'curriculum/PROVENANCE.md' \
-              'index.html' \
-              'manifest.webmanifest' \
-              'sw.js' \
-              'LICENSE' \
-              'OPEN_SOURCE_POLICY.md' \
-              'PRIVACY.md' \
-              'THIRD_PARTY_NOTICES.md' \
-              'licenses/Inter-OFL.txt' \
-              'licenses/app-icons.md' \
-              'licenses/component-register-v1.json' \
-              'licenses/sound-effects.md'
-          } | LC_ALL=C sort > expected-files.txt
-          diff -u expected-files.txt actual-files.txt
+          const artifactSpecs = Object.freeze([
+            [".nojekyll", "application/octet-stream", false],
+            ["assets/fonts/Inter-Variable.ttf", "font/ttf", true],
+            ["assets/icons/apple-touch-icon.png", "image/png", true],
+            ["assets/icons/icon-192.png", "image/png", true],
+            ["assets/icons/icon-512.png", "image/png", true],
+            ["assets/sounds/close.wav", "audio/wav", true],
+            ["assets/sounds/confirm.wav", "audio/wav", true],
+            ["assets/sounds/incorrect.wav", "audio/wav", true],
+            ["assets/sounds/tap.wav", "audio/wav", true],
+            ["curriculum/math-quest-manifest-v1.json", "application/json", true],
+            ["curriculum/PROVENANCE.md", "text/markdown", true],
+            ["index.html", "text/html", true],
+            ["manifest.webmanifest", "application/manifest+json", true],
+            ["release-shell-v1.json", "application/json", true],
+            ["sw.js", "text/javascript", true],
+            ["LICENSE", "application/octet-stream", true],
+            ["OPEN_SOURCE_POLICY.md", "text/markdown", true],
+            ["PRIVACY.md", "text/markdown", true],
+            ["THIRD_PARTY_NOTICES.md", "text/markdown", true],
+            ["licenses/Inter-OFL.txt", "text/plain", true],
+            ["licenses/app-icons.md", "text/markdown", true],
+            ["licenses/component-register-v1.json", "application/json", true],
+            ["licenses/sound-effects.md", "text/markdown", true],
+          ]);
+          const releaseBoundSpecs = new Map([
+            ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
+            ["assets/icons/apple-touch-icon.png", "image/png"],
+            ["assets/icons/icon-192.png", "image/png"],
+            ["assets/icons/icon-512.png", "image/png"],
+            ["assets/sounds/close.wav", "audio/wav"],
+            ["assets/sounds/confirm.wav", "audio/wav"],
+            ["assets/sounds/incorrect.wav", "audio/wav"],
+            ["assets/sounds/tap.wav", "audio/wav"],
+            ["index.html", "text/html"],
+            ["manifest.webmanifest", "application/manifest+json"],
+            ["LICENSE", "application/octet-stream"],
+            ["PRIVACY.md", "text/markdown"],
+            ["THIRD_PARTY_NOTICES.md", "text/markdown"],
+          ]);
+          const expectedRuntimeAssets = [...releaseBoundSpecs.keys()]
+            .filter((entry) => entry.startsWith("assets/"))
+            .sort();
+          const artifactMime = new Map(
+            artifactSpecs.map(([artifactPath, mime]) => [artifactPath, mime]),
+          );
+          if (artifactMime.size !== artifactSpecs.length) {
+            throw new Error("The Pages artifact allowlist contains a duplicate path.");
+          }
+
+          const sha256 = (bytes) =>
+            createHash("sha256").update(bytes).digest("hex");
+          const gitBlob = (artifactPath) => {
+            const record = execFileSync(
+              "git",
+              ["ls-tree", "-z", releaseCommit, "--", artifactPath],
+              { maxBuffer: 8 * 1024 * 1024 },
+            ).toString("utf8");
+            const match = record.match(
+              /^100644 blob ([a-f0-9]{40}|[a-f0-9]{64})\t([^\0]+)\0$/u,
+            );
+            if (!match || match[2] !== artifactPath) {
+              throw new Error(
+                `Tagged artifact '${artifactPath}' is absent, non-regular, executable, or ambiguous.`,
+              );
+            }
+            return execFileSync(
+              "git",
+              ["cat-file", "blob", match[1]],
+              { maxBuffer: 8 * 1024 * 1024 },
+            );
+          };
+
+          const siteRoot = path.resolve("_site");
+          await rm(siteRoot, { recursive: true, force: true });
+          await mkdir(siteRoot, { recursive: false, mode: 0o755 });
+          const taggedBlobs = new Map();
+          const snapshotFiles = new Map();
+          for (const [artifactPath, , tracked] of artifactSpecs) {
+            const bytes = tracked ? gitBlob(artifactPath) : Buffer.alloc(0);
+            if (tracked) taggedBlobs.set(artifactPath, bytes);
+            const destination = path.join(siteRoot, ...artifactPath.split("/"));
+            if (!destination.startsWith(`${siteRoot}${path.sep}`)) {
+              throw new Error(`Artifact path '${artifactPath}' escaped _site.`);
+            }
+            await mkdir(path.dirname(destination), { recursive: true, mode: 0o755 });
+            await writeFile(destination, bytes, { mode: 0o444, flag: "wx" });
+            snapshotFiles.set(artifactPath, bytes);
+          }
+
+          const releaseManifestBytes = snapshotFiles.get("release-shell-v1.json");
+          const releaseManifest = JSON.parse(releaseManifestBytes.toString("utf8"));
+          if (
+            releaseManifest.schemaVersion !== 1 ||
+            releaseManifest.entryPath !== "./index.html" ||
+            JSON.stringify(releaseManifest.excludedPaths) !==
+              JSON.stringify(["./release-shell-v1.json", "./sw.js"]) ||
+            !Array.isArray(releaseManifest.entries)
+          ) {
+            throw new Error("The tagged release-shell manifest has an invalid closed schema.");
+          }
+          const boundEntries = new Map();
+          for (const entry of releaseManifest.entries) {
+            const keys = Object.keys(entry);
+            if (
+              JSON.stringify(keys) !==
+                JSON.stringify(["path", "sha256", "bytes", "mime", "status"]) ||
+              typeof entry.path !== "string" ||
+              !entry.path.startsWith("./")
+            ) {
+              throw new Error("A release-shell entry is non-canonical.");
+            }
+            const artifactPath = entry.path.slice(2);
+            if (boundEntries.has(artifactPath)) {
+              throw new Error(`Duplicate release-shell entry '${entry.path}'.`);
+            }
+            boundEntries.set(artifactPath, entry);
+          }
+          if (
+            boundEntries.size !== releaseBoundSpecs.size ||
+            [...releaseBoundSpecs.keys()].some((entry) => !boundEntries.has(entry))
+          ) {
+            throw new Error("The release-shell entry set is not the approved closed set.");
+          }
+          for (const [artifactPath, expectedMime] of releaseBoundSpecs) {
+            const entry = boundEntries.get(artifactPath);
+            const bytes = snapshotFiles.get(artifactPath);
+            if (
+              !bytes ||
+              entry.sha256 !== sha256(bytes) ||
+              entry.bytes !== bytes.byteLength ||
+              entry.mime !== expectedMime ||
+              entry.status !== 200
+            ) {
+              throw new Error(
+                `Release-shell binding failed for '${artifactPath}' (bytes, hash, MIME, or status).`,
+              );
+            }
+          }
+
+          const manifestSha256 = sha256(releaseManifestBytes);
+          const workerText = snapshotFiles.get("sw.js").toString("utf8");
+          const workerBindings = [
+            ...workerText.matchAll(
+              /const RELEASE_MANIFEST_SHA256 = "([a-f0-9]{64})";/gu,
+            ),
+          ];
+          if (
+            workerBindings.length !== 1 ||
+            workerBindings[0][1] !== manifestSha256
+          ) {
+            throw new Error("The tagged service worker is not bound to the tagged release-shell bytes.");
+          }
+
+          const referencedAssets = [
+            ...new Set(
+              `${snapshotFiles.get("index.html").toString("utf8")}\n${
+                snapshotFiles.get("manifest.webmanifest").toString("utf8")
+              }`.match(
+                /assets\/[A-Za-z0-9._/-]+\.(?:ttf|otf|woff2?|wav|mp3|ogg|png|svg|jpe?g|gif|webp|json|webmanifest)/gu,
+              ) || [],
+            ),
+          ].sort();
+          if (
+            JSON.stringify(referencedAssets) !==
+            JSON.stringify(expectedRuntimeAssets)
+          ) {
+            throw new Error("The tagged runtime asset references differ from the closed Pages allowlist.");
+          }
+
+          const machinePath =
+            /([A-Za-z]:\\Us[e]rs\\|file:\/\/\/[A-Za-z]:\/Us[e]rs\/|\/Us[e]rs\/[^/]+\/|\/ho[m]e\/[^/]+\/)/iu;
+          for (const [artifactPath, mime] of artifactMime) {
+            if (
+              (mime.startsWith("text/") ||
+                mime === "application/json" ||
+                mime === "application/manifest+json") &&
+              machinePath.test(snapshotFiles.get(artifactPath).toString("utf8"))
+            ) {
+              throw new Error(`Machine-specific path found in '${artifactPath}'.`);
+            }
+          }
+
+          let nonBoundComparisons = 0;
+          for (const [artifactPath, , tracked] of artifactSpecs) {
+            const snapshotBytes = await readFile(
+              path.join(siteRoot, ...artifactPath.split("/")),
+            );
+            if (!snapshotBytes.equals(snapshotFiles.get(artifactPath))) {
+              throw new Error(`Snapshot file '${artifactPath}' changed during validation.`);
+            }
+            if (tracked && !releaseBoundSpecs.has(artifactPath)) {
+              if (!snapshotBytes.equals(taggedBlobs.get(artifactPath))) {
+                throw new Error(`Snapshot file '${artifactPath}' differs from its tagged Git blob.`);
+              }
+              nonBoundComparisons += 1;
+            }
+          }
+          const expectedNonBoundComparisons =
+            artifactSpecs.filter(
+              ([artifactPath, , tracked]) =>
+                tracked && !releaseBoundSpecs.has(artifactPath),
+            ).length;
+          if (nonBoundComparisons !== expectedNonBoundComparisons) {
+            throw new Error("Not every non-shell artifact was compared with its tagged Git blob.");
+          }
+
+          const canonicalRecords = [...artifactSpecs]
+            .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+            .map(([artifactPath, mime]) => {
+              const bytes = snapshotFiles.get(artifactPath);
+              return `${artifactPath}\t${bytes.byteLength}\t${sha256(bytes)}\t${mime}`;
+            });
+          const snapshotSha256 = sha256(
+            Buffer.from(`${canonicalRecords.join("\n")}\n`, "utf8"),
+          );
+
+          for (const [artifactPath] of artifactSpecs) {
+            await chmod(
+              path.join(siteRoot, ...artifactPath.split("/")),
+              0o444,
+            );
+          }
+          const directories = new Set([siteRoot]);
+          for (const [artifactPath] of artifactSpecs) {
+            let directory = path.dirname(
+              path.join(siteRoot, ...artifactPath.split("/")),
+            );
+            while (directory.startsWith(siteRoot)) {
+              directories.add(directory);
+              if (directory === siteRoot) break;
+              directory = path.dirname(directory);
+            }
+          }
+          for (const directory of [...directories].sort((left, right) => right.length - left.length)) {
+            await chmod(directory, 0o555);
+          }
+
+          await appendFile(
+            process.env.GITHUB_OUTPUT,
+            `sha256=${snapshotSha256}\nfile_count=${artifactSpecs.length}\n`,
+            "utf8",
+          );
+          await appendFile(
+            process.env.GITHUB_STEP_SUMMARY,
+            `Verified tagged Pages snapshot: \`${snapshotSha256}\` (${artifactSpecs.length} files).\n`,
+            "utf8",
+          );
+          process.stdout.write(
+            `PAGES_SNAPSHOT_SHA256=${snapshotSha256}\nPAGES_SNAPSHOT_FILES=${artifactSpecs.length}\n`,
+          );
+          NODE
+
           test -z "$(find _site -type l -print -quit)"
-          cmp manifest.webmanifest _site/manifest.webmanifest
-          cmp sw.js _site/sw.js
-          cmp curriculum/math-quest-manifest-v1.json _site/curriculum/math-quest-manifest-v1.json
-          cmp curriculum/PROVENANCE.md _site/curriculum/PROVENANCE.md
-          grep -F '"./manifest.webmanifest"' sw.js
-
-          if grep -RIlE \
-            '([A-Za-z]:\\Us[e]rs\\|file:///[A-Za-z]:/Us[e]rs/|/Us[e]rs/[^/]+/|/ho[m]e/[^/]+/)' \
-            _site \
-            --exclude='*.wav' \
-            --exclude='*.ttf'
-          then
-            echo "A machine-specific path was found in the public artifact."
-            exit 1
-          fi
+          test -z "$(find _site -perm /222 -print -quit)"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
@@ -366,6 +567,7 @@ jobs:
           DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
           RELEASE_COMMIT: ${{ needs.build.outputs.release_commit }}
           RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+          SNAPSHOT_SHA256: ${{ needs.build.outputs.snapshot_sha256 }}
         run: |
           set -euo pipefail
           if [[ "${DEPLOYED_URL%/}/" != "https://openmathquest.github.io/" ]]; then
@@ -374,8 +576,9 @@ jobs:
           fi
           if [[ -z "$RELEASE_COMMIT" ]] ||
              [[ ! "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]] ||
-             [[ "$RELEASE_TAG" != "v1.0.0-beta.1" ]]
+             [[ "$RELEASE_TAG" != "v1.0.0-beta.2" ]] ||
+             [[ ! "$SNAPSHOT_SHA256" =~ ^[a-f0-9]{64}$ ]]
           then
-            echo "::error::The deployment is not bound to the verified Public Beta 1 tag and commit."
+            echo "::error::The deployment is not bound to the verified Public Beta 2 tag, commit, and immutable snapshot."
             exit 1
           fi

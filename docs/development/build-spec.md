@@ -1,7 +1,7 @@
 # Math Quest — Public Beta Build Contract
 
-- **Contract version:** `3.0`
-- **Date:** `2026-07-27`
+- **Contract version:** `3.2`
+- **Date:** `2026-07-29`
 - **Digest record:** `research/build-axioms.md`
 - **Status:** active for the independently authored public beta
 
@@ -66,16 +66,156 @@ Expose stable APIs for state creation and loading, deterministic question
 generation, exact grading, answer submission, queue construction, attempt
 application, session completion, and transactional import/export.
 
-Use state schema version 2 and a version-2 storage namespace. Do not translate
-pre-beta mastery or evidence into the new curriculum: the meaning and order of
-skills changed. Leave earlier browser data untouched, begin the independent
-journey with clean evidence, and explain this boundary to grown-ups.
+Use state schema version 3 under the protected Public Beta 2 progress key
+`math-quest:progress:v2`. The `v2` suffix identifies the independent Public
+Beta 2 progress namespace; it is not the state-object schema number. Keep that
+key stable for this additive schema revision so one Beta 2 journey does not
+split across two local records.
+
+Loading or importing an exact schema-2 Public Beta state may add only the
+schema-3 placement record with its neutral empty defaults, add the persisted
+nonnegative placement-draft generation at zero, update the schema number, and
+then validate the complete candidate. Parsing, migration, and validation
+happen before live state is replaced; a failed or unsupported candidate leaves
+the original progress bytes unchanged. Schema-2 backups that still satisfy the
+exact curriculum and legacy-state contracts therefore remain importable, while
+new exports use schema 3.
+
+Schema 3 is not downgrade-compatible. A schema-2 build must reject a schema-3
+record and must not overwrite it. The origin-wide exclusive writer lease
+prevents simultaneous progress writers, but it does not make old and new code
+semantically compatible; mixed-version tabs must reload onto the current
+release rather than exchange mutable state.
+
+The adapter protects both the first protected write and a Beta 1-to-Beta 2
+copy with constant, non-identifying values under
+`math-quest:progress:v2:beta1-migration-guard:v1`. It writes
+`empty-to-protected-v1` around an initially empty protected write and
+`beta1-to-protected-v1` around a Beta 1 copy, only while holding the
+protected-key writer lease.
+When the protected key and Beta 1 input were both absent during initial
+selection, the adapter must re-read both the Beta 1 key and the migration
+guard under that acquired lease before it creates protected progress. If
+either appeared while the lease was pending, it must write no blank protected
+record, stop child play, and require a reload so the new migration input is
+selected normally. The empty-cutover marker must remain around the full first
+write: a source or guard change at write entry or after that write rolls back
+the byte-matching blank while retaining the marker. If rollback fails, reload
+must still prefer a newly appeared Beta 1 source over the guarded blank. After
+marker removal, a closing source-and-guard read must detect a change injected
+during removal, re-establish the empty marker when possible, roll back the
+byte-matching blank, and fail closed.
+
+The external marker is not the sole evidence boundary. On every boot, the
+adapter must classify a protected record as virgin only after full engine
+validation and only when its canonical export exactly equals a newly created
+initial state for the record's own `maxSeenPlayDay`. It must inspect the Beta 1
+source whenever protected progress is absent, an accepted guard is present,
+or the protected record is demonstrably virgin. A valid Beta 1 source outranks
+virgin protected bytes even if guard removal completed and subsequent
+local-storage reads and rollback failed. Any settings change, nonzero
+placement-draft generation, session, placement, evidence, log, or other state
+change makes the protected record non-virgin and authoritative.
+It clears the marker only after the exact Beta 1 source is unchanged both
+before and after the protected write. A changed source, failed protected
+rollback, failed guard cleanup, guard storage event, or interrupted launch
+leaves the marker in place and fails closed. A later launch with the marker
+must ignore any unproven protected bytes and retry from the newest valid Beta
+1 source behind the same lease.
+
+Do not translate pre-beta mastery or evidence into the new curriculum: the
+meaning and order of skills changed. Leave earlier browser data untouched,
+begin the independent journey with clean evidence, and explain this boundary
+to grown-ups.
+
+Keep an unfinished starting-point check outside ordinary progress under
+`math-quest:placement-draft:v1`. Its bounded draft may contain only the
+placement contract and generator identities, a local progress-baseline
+consistency fingerprint, the exact persisted nonnegative draft generation,
+the transactionally committed non-PII run nonce and derived seed, Halifax play
+day, theme, generated question identifiers, the exact `correct`, `incorrect`,
+or `not-sure` response kind, the bounded visible feedback kind needed to restore a neutral
+**Not sure** outcome, and partial answer control state needed to resume. It must exclude
+the optional nickname, age, response timing, mastery evidence, session or
+feedback logs, analytics, and other identifying data. Discard removes it.
+Reset, successful import, and successful placement application first advance
+the generation inside the replacement progress candidate and commit that
+candidate atomically, then attempt physical removal. A removal failure is
+visible to the grown-up but cannot revive the prior draft after reload because
+its generation no longer matches. The new generation must be greater than the
+greatest valid generation in current progress, imported progress, and the
+safely parsed bounded draft bytes. This floor applies even when unreadable
+main progress has put the adapter into recovery with a generation-zero
+fallback. Maximum-safe-integer exhaustion fails without mutating reset,
+import, or placement-application inputs. A stale-generation, stale-baseline, corrupt,
+oversized, conflicting, or progress-mismatched draft fails closed without
+changing learning progress.
+
+Starting a check must first increment and commit the private run nonce in the
+main progress record, then derive a fresh non-PII seed and expose the separate
+draft. A failed main-state commit exposes neither a run nor a draft. Resume
+replays the committed nonce, seed, and answers deterministically; retry
+consumes a new nonce and question set. Within one run, no two questions may
+have the same child-visible semantic task signature. Generation uses bounded,
+deterministic primary resampling and a bounded deterministic fallback, then
+fails closed if it still cannot produce a distinct visible task.
+
+Adult-confirmed placement is a distinct acquisition state, `PLACED`, not
+synthetic mastery. It may be applied only to genuinely `UNSEEN` skills below
+the chosen starting level that contain no retained evidence, misses, restore,
+or recovery state. A placed skill may satisfy a prerequisite, but it must not
+count as solid for promotion, mastery reporting, or capstone selection, and it
+must not receive a fabricated mastery day, contract, witness, or attempt.
+Schedule at most one deterministic, strand-balanced review per skipped level,
+at most 20 in total, on staggered play days. Ordinary qualifying evidence may
+replace `PLACED` with `SOLID`. A failed placed review removes placement status
+without lowering the earned level; a failed placed gateway also schedules the
+remaining placed skills in that level for recheck and activates the ordinary
+gateway pull-back path.
+
+Describe the result to grown-ups only as an **unvalidated broad heuristic
+starting range**. Say
+explicitly that earlier skills were not checked one by one and that scheduled
+reviews will revisit representative skills. Do not label a placed skill or
+level as covered, tested, completed, mastered, or otherwise directly
+demonstrated. The first result-screen choice opens a `Grown-ups only`
+confirmation dialog; only a delayed second explicit confirmation may commit
+the recommendation. The global **Not sure** control is a distinct neutral
+response kind, never an incorrect-answer state, sound, icon, or announcement.
+Persist and report separate correct, incorrect, and Not sure counts. Any
+abstention follows the conservative non-correct route, marks result confidence
+as limited by abstention, and offers a fresh-question retry.
+Placement selection questions must not also display an answer option labelled
+`not sure`. Start, Next, and Replay use the same evidence-rich speech text,
+including the visible selection labels in their displayed positions. Essential
+placement text is at least 18 px and every control remains at least 44 px.
+Automatic speech and sound remain off in a fresh game. The grown-up screen
+requires co-play, explains how Replay reads each prompt and choice on demand,
+and tells the grown-up to encourage **Not sure** instead of guessing; the
+question screen exposes the same instructions to assistive technology.
 
 Keep the game playable without runtime network access. Package every required
 font, icon, sound, and visual asset locally or inline. The hosted build uses a
 same-origin service worker to cache the reviewed app shell after the first
 successful load; the desktop build remains loopback-only. Do not add accounts,
 analytics, advertising, remote speech, or cloud synchronization.
+
+The Windows launcher may reuse port 8771 only after an exact closed health
+response matches `{schemaVersion, identity, release, port, rootId,
+servedPayloadSha256}`. `rootId` is the lowercase SHA-256 of the UTF-8 bytes of
+the resolved launcher root after full-path normalization, trailing-separator
+removal, slash normalization to `/`, and invariant lowercase conversion.
+`servedPayloadSha256` is the lowercase SHA-256 of an ordinally route-sorted,
+UTF-8, LF-terminated record stream. Each record is
+`request-route<TAB>relative-file<TAB>decimal-byte-length<TAB>lowercase-file-sha256`.
+Both the launcher and the audit must calculate these values independently from
+the current folder. The server must read this reviewed route set into one
+in-memory byte snapshot before it begins listening, calculate the health
+identity from those same bytes, and serve only that snapshot for its lifetime.
+It must never reread a mutable runtime file while answering a request. Missing
+or changed startup bytes, another resolved root, any extra or malformed health
+field, or an unrelated listener fails closed; a second launcher also rejects a
+running snapshot after its own folder bytes have changed.
 
 ## Teaching and mastery
 
@@ -175,12 +315,15 @@ At minimum, it must verify:
 2. coverage of every declared task-type witness by a semantically aligned
    generator, grader, representation, mastery path, and Parent Test path;
 3. unique engine markers, exact engine digest, purity, determinism, restricted
-   evaluation, branch calibration, branch coverage, and mutation checks;
+   evaluation, branch calibration, at least 88 percent calibrated native branch
+   coverage of the exact shipped engine bytes, and mutation checks;
 4. mastery, spacing, demotion, re-teaching, promotion, fatigue, session-stop,
    capstone, and preview-isolation boundaries;
 5. exact fraction and decimal grading plus unambiguous option generation;
-6. state-schema validation, version-2 storage isolation, transactional
-   import/export, and rejection of unsupported legacy evidence;
+6. schema-3 validation, strict transactional schema-2 migration,
+   `math-quest:progress:v2` namespace isolation, placement-draft isolation,
+   transactional import/export, downgrade rejection, and rejection of
+   unsupported legacy evidence;
 7. local-only speech and assets, runtime network blocking, privacy scans, and
    public-tree provenance;
 8. keyboard, touch, mouse, and switch-style operation at desktop, phone, and

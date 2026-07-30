@@ -55,8 +55,12 @@ function taskTypeMasteryOutcome(engine) {
   if (!skill) return { ok: false, reason: "The manifest has no multi-task-type skill." };
   const skillId = skill.skillId ?? skill.id;
   const repeatedTaskType = skill.constraints.taskTypes[0];
+  const witnessCount = engine.CONSTANTS.NORMAL_CONSTRUCTION_SUCCESSES;
+  if (!Number.isInteger(witnessCount) || witnessCount < 1) {
+    return { ok: false, reason: "The construction mastery witness count is unavailable." };
+  }
   let state = engine.createInitialState(21_000);
-  for (let index = 0; index < 2; index += 1) {
+  for (let index = 0; index < witnessCount; index += 1) {
     const attempt = {
       recordId: `task-type-mutation-${index}`,
       questionId: `task-type-question-${index}`,
@@ -70,7 +74,7 @@ function taskTypeMasteryOutcome(engine) {
       feedbackClass: "FIRST_TRY_CLEAN",
       coldTest: false,
       scheduledReview: false,
-      sampleKey: `task-type-sample-${index}`,
+      sampleKey: `${skillId}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|task-type-sample-${index}`,
       firstAnswerCorrect: true,
       hintUsed: false,
       changed: false,
@@ -79,7 +83,7 @@ function taskTypeMasteryOutcome(engine) {
       validTelemetry: true,
       guessingLike: false,
       modelUsed: true,
-      applied: false,
+      applied: true,
       preview: false,
       capstone: false,
       sessionId: `task-type-session-${index}`,
@@ -92,6 +96,7 @@ function taskTypeMasteryOutcome(engine) {
     ok: true,
     skillId,
     repeatedTaskType,
+    witnessCount,
     requiredTaskTypes: [...skill.constraints.taskTypes],
     acquisition: state.skills[skillId].acquisition,
   };

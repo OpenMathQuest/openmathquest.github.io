@@ -11,10 +11,18 @@ const REQUIRED_APIS = Object.freeze([
   ["loadState"],
   ["exportState"],
   ["importState"],
+  ["createResetState"],
   ["makeQuestion"],
   ["makeQuestionChoices"],
   ["gradeAnswer"],
   ["submitAnswer"],
+  ["createPlacementRun"],
+  ["validatePlacementRun"],
+  ["placementCurrentQuestion"],
+  ["submitPlacementAnswer"],
+  ["submitPlacementNotSure"],
+  ["placementRecommendation"],
+  ["applyPlacementRecommendation"],
   ["buildSessionQueue", "buildQueue"],
   ["applyAttempt"],
   ["completeSession"],
@@ -102,20 +110,23 @@ function appliedState(engine, state, attempt) {
 function attemptFor(engine, skill, overrides = {}) {
   const id = skill.id ?? skill.skillId;
   const level = Number(skill.level);
+  const { ordinal = 0, ...attemptOverrides } = overrides;
   return {
-    recordId: `r-${overrides.playDay ?? 21_000}-${overrides.ordinal ?? 0}`,
+    recordId: `r-${attemptOverrides.playDay ?? 21_000}-${ordinal}`,
     questionId: `q-${id}`,
     skillId: id,
     level,
     stage: skill.stage ?? engine.stageForLevel(level),
+    taskType: skill.constraints?.taskTypes?.[0] ?? skill.generatorProfile,
     tier: "HARD/TARGET",
     representation: "PICTORIAL",
     inputClass: "CONSTRUCTION",
+    selectionOptionCount: 0,
     evidenceClass: "CONSTRUCTION",
     feedbackClass: "FIRST_TRY_CLEAN",
     coldTest: false,
     scheduledReview: false,
-    sampleKey: `${id}|target|${overrides.ordinal ?? 0}`,
+    sampleKey: `${id}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|target|${ordinal}`,
     firstAnswerCorrect: true,
     hintUsed: false,
     changed: false,
@@ -129,7 +140,7 @@ function attemptFor(engine, skill, overrides = {}) {
     capstone: false,
     sessionId: "session-a",
     playDay: 21_000,
-    ...overrides,
+    ...attemptOverrides,
   };
 }
 
@@ -161,9 +172,261 @@ function correctOption(engine, question) {
   return option;
 }
 
+const STRUCTURED_RESPONSE_METHODS = new Set([
+  "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+  "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
+  "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
+  "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
+  "METRIC_SCALE", "ANGLE_MEASURE", "MEASURE_OBJECT", "AREA_DECOMPOSE", "VOLUME_INSPECT",
+]);
+
+const ATTRIBUTE_PROPERTY_TARGET = Object.freeze({
+  "3 sides": "triangle",
+  "4 equal sides": "square",
+  "6 flat faces": "cube",
+  "one curved surface and no flat faces": "sphere",
+  "a right angle": "rectangle",
+  "2 pairs of parallel sides and a right angle": "rectangle",
+  "perpendicular sides and 2 long sides": "rectangle",
+});
+
+function normalizedAttributeToken(value) {
+  return String(value ?? "").normalize("NFC").trim().toLowerCase();
+}
+
+function attributeItemMatchesRule(item, rule) {
+  const attribute = normalizedAttributeToken(rule?.attribute);
+  const value = normalizedAttributeToken(rule?.value);
+  if (attribute === "shape") return normalizedAttributeToken(item?.shape) === value;
+  if (attribute === "solid") return normalizedAttributeToken(item?.solid) === value;
+  if (attribute === "property") {
+    const target = ATTRIBUTE_PROPERTY_TARGET[value];
+    return Boolean(target)
+      && [item?.shape, item?.solid].some((candidate) => normalizedAttributeToken(candidate) === target);
+  }
+  return false;
+}
+
+function sortCategoryId(item, rule, categories) {
+  const attribute = String(rule?.attribute ?? "").trim();
+  const itemValue = normalizedAttributeToken(item?.[attribute]);
+  const category = categories.find((candidate) => {
+    const values = [candidate?.value, candidate?.id].map(normalizedAttributeToken);
+    return itemValue.length > 0 && values.includes(itemValue);
+  });
+  return category?.id === undefined ? null : String(category.id);
+}
+
+function sortPlacementsFromDescriptor(question) {
+  const values = question.modelDescriptor?.values ?? {};
+  const items = Array.isArray(values.items) ? values.items : [];
+  const categories = Array.isArray(values.categories) ? values.categories : [];
+  if (categories.length) {
+    return Object.fromEntries(items.map((item, index) => [
+      `i${index}`,
+      sortCategoryId(item, values.rule, categories) ?? "",
+    ]));
+  }
+  return Object.fromEntries(items.map((item, index) => [
+    `i${index}`,
+    attributeItemMatchesRule(item, values.rule) ? "matches" : "other",
+  ]));
+}
+
+function incorrectSortSubmission(question, payload) {
+  const categories = Array.isArray(question.modelDescriptor?.values?.categories)
+    ? question.modelDescriptor.values.categories
+    : [];
+  const categoryIds = categories.map((category) => String(category.id));
+  const placements = Object.fromEntries(Object.entries(payload.placements).map(([itemId, bin]) => {
+    if (categoryIds.length >= 2) {
+      const current = categoryIds.indexOf(String(bin));
+      return [itemId, categoryIds[(current + 1 + categoryIds.length) % categoryIds.length]];
+    }
+    return [itemId, bin === "matches" ? "other" : "matches"];
+  }));
+  return { ...payload, placements };
+}
+
+function indexedItems(prefix, count) {
+  return Array.from({ length: Math.max(0, Number(count) || 0) }, (_, index) => `${prefix}${index}`);
+}
+
+function coinValueCents(label) {
+  const text = String(label ?? "").trim();
+  const value = Number(text.replace(/[^\d]/gu, ""));
+  return text.startsWith("$") ? value * 100 : value;
+}
+
+function structuredAnswerFor(engine, question) {
+  const state = engine.createResponseState(question);
+  const p = question.params || {};
+  switch (question.inputMethod) {
+    case "COUNT_TOUCH":
+      state.touched = indexedItems("i", Number(question.answer.value));
+      state.count = String(question.answer.value);
+      break;
+    case "ORDER_BUILD":
+      state.order = [Number(p.before), Number(question.answer.value), Number(p.after)];
+      break;
+    case "PLACE_VALUE_BUILD":
+      state.action = question.semanticPromptStringId === "question.renamePlace" ? "trade"
+        : question.semanticPromptStringId === "question.scalePlace" ? "shift"
+          : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId) ? "partition"
+            : "build";
+      state.value = Number(question.answer.value);
+      break;
+    case "COIN_BUILD":
+      state.coins = Array.from({ length: Number(question.answer.value) }, () => coinValueCents(p.secondCoin));
+      break;
+    case "SYMMETRY_BUILD":
+      state.lines = Array.isArray(p.requiredLineIds)
+        ? [...p.requiredLineIds]
+        : Array.from({ length: Number(question.answer.value) }, (_, index) => `line${index + 1}`);
+      break;
+    case "EXPRESSION_BUILD":
+      state.rule = String(p.rule);
+      state.value = Number(question.answer.value);
+      break;
+    case "PAIR_LINK":
+      state.links = Array.from(
+        { length: Math.min(Number(p.leftCount ?? p.count), Number(p.rightCount ?? p.count)) },
+        (_, index) => [`a${index}`, `b${index}`],
+      );
+      break;
+    case "SORT_BINS": {
+      state.placements = sortPlacementsFromDescriptor(question);
+      break;
+    }
+    case "SHARE_DEAL": {
+      const recipientCount = Number(p.recipients);
+      const total = Number(p.total);
+      const remainder = total % recipientCount;
+      let next = 1;
+      while (state.pool.length > remainder) {
+        const recipient = `r${next}`;
+        const item = state.pool.shift();
+        state.recipients[recipient].push(item);
+        state.history = (state.history || []).concat([[recipient, item]]);
+        next = next % recipientCount + 1;
+      }
+      break;
+    }
+    case "GROUP_BUILD": {
+      const groups = Number(p.groups ?? p.a);
+      let next = 1;
+      while (state.pool.length) {
+        const recipient = `g${next}`;
+        const item = state.pool.shift();
+        state.recipients[recipient].push(item);
+        state.history = (state.history || []).concat([[recipient, item]]);
+        next = next % groups + 1;
+      }
+      break;
+    }
+    case "BOND_SPLIT": {
+      const counts = question.semanticPromptStringId === "question.secondPartition"
+        ? [Number(p.secondA), Number(question.answer.value)]
+        : [Number(p.part), Number(question.answer.value)];
+      while (state.groups.g1.length < counts[0]) {
+        const item = state.pool.shift();
+        state.groups.g1.push(item);
+        state.history.push(["g1", item]);
+      }
+      while (state.groups.g2.length < counts[1]) {
+        const item = state.pool.shift();
+        state.groups.g2.push(item);
+        state.history.push(["g2", item]);
+      }
+      break;
+    }
+    case "PATTERN_BUILD":
+      state.tokens = String(question.answer.value).trim().split(/\s+/u).filter(Boolean);
+      break;
+    case "LANDMARK_PLACE":
+      state.relation = String(question.answer.value);
+      break;
+    case "SLOT_COMPOSER": {
+      const operation = /subtraction|leaving/iu.test(question.semanticPromptStringId) ? "\u2212" : "+";
+      state.slots = [String(p.a), operation, String(p.b), "=", String(question.answer.value)];
+      break;
+    }
+    case "FACT_FAMILY": {
+      const a = Number(p.a), b = Number(p.b), whole = Number(p.whole);
+      state.selected = [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
+      break;
+    }
+    case "GRAPH_BUILD": {
+      const keys = ["circles", "triangles", "cats", "dogs", "birds", "first", "second", "symbols"];
+      state.categories = Object.fromEntries(keys.filter((key) => Number.isFinite(Number(p[key]))).map((key) => [key, Number(p[key])]));
+      if (question.semanticPromptStringId === "question.surveyResponseList") state.interpretation = String(question.answer.value);
+      if (question.semanticPromptStringId === "question.scaledSurveyPlan") state.scale = Number(question.answer.value);
+      break;
+    }
+    case "FRACTION_PARTITION": {
+      const fraction = engine.parseRational(question.answer.value);
+      if (!fraction) throw new Error(`${question.skillId}: invalid fraction fixture`);
+      state.templateId = "vertical";
+      const denominator = Number(state.denominator);
+      const shadedCount = Number(fraction.n) * denominator / Number(fraction.d);
+      if (!Number.isInteger(shadedCount)) throw new Error(`${question.skillId}: unreachable fraction partition fixture`);
+      state.shaded = indexedItems("part", shadedCount);
+      break;
+    }
+    case "GRID_ROUTE": {
+      state.moves = Array.isArray(p.moves) ? [...p.moves] : [];
+      const trace = engine.traceGridRoute(question, state.moves);
+      if (!trace) throw new Error(`${question.skillId}: invalid grid-route fixture`);
+      state.end = { ...trace.end };
+      break;
+    }
+    case "CLOCK_READ": {
+      const time = String(question.answer.value).match(/^(\d+):(\d{2})$/u);
+      if (!time) throw new Error(`${question.skillId}: invalid clock fixture`);
+      state.hour = Number(time[1]);
+      state.minute = Number(time[2]);
+      break;
+    }
+    case "METRIC_SCALE":
+      state.value = Number(question.answer.value);
+      break;
+    case "ANGLE_MEASURE":
+      state.degrees = Number(question.answer.value);
+      break;
+    case "ACTION_SCENE":
+      state.actions = Array.from(
+        { length: Math.abs(Number(p.b)) },
+        () => /subtraction|leaving/iu.test(question.semanticPromptStringId) ? "remove" : "join",
+      );
+      state.value = String(question.answer.value);
+      break;
+    case "MEASURE_OBJECT":
+      state.actions = Array.from({ length: Number(p.count) }, () => "place-unit");
+      state.value = String(p.count);
+      break;
+    case "AREA_DECOMPOSE":
+      state.cutIds = ["cut1"];
+      state.part0 = String(Number(p.l1) * Number(p.w1));
+      state.part1 = String(Number(p.l2) * Number(p.w2));
+      state.total = String(question.answer.value);
+      break;
+    case "VOLUME_INSPECT":
+      state.viewedLayers = Array.from({ length: Number(p.height) }, (_, index) => index + 1);
+      state.method = String(p.method);
+      state.value = String(question.answer.value);
+      break;
+    default:
+      throw new Error(`${question.skillId}: no structured response fixture for ${question.inputMethod}`);
+  }
+  return engine.serializeResponse(question, state);
+}
+
 function answerFor(engine, question) {
   const option = correctOption(engine, question);
-  return option ? { optionId: option.optionId } : question.answer.value;
+  if (option) return { optionId: option.optionId };
+  return STRUCTURED_RESPONSE_METHODS.has(question.inputMethod)
+    ? structuredAnswerFor(engine, question)
+    : question.answer.value;
 }
 
 function findQuestionFixture(engine, skills, description, predicate, skillPredicate = () => true) {
@@ -229,6 +492,42 @@ function constructionFixture(engine, skills, predicate = () => true) {
     (question, skill) => question.inputClass === "CONSTRUCTION" && predicate(question, skill),
     (skill) => Boolean(skill.generatorProfile),
   );
+}
+
+function recordPlacementResult(engine, run, response) {
+  const question = engine.placementCurrentQuestion(run);
+  if (!question) throw new Error("Placement fixture tried to answer a completed run.");
+  const responseKind = response === "not-sure"
+    ? "not-sure"
+    : response ? "correct" : "incorrect";
+  return {
+    ...cloneJson(run),
+    answers: [
+      ...cloneJson(run.answers),
+      { questionId: question.questionId, responseKind },
+    ],
+  };
+}
+
+function completePlacement(engine, state, policy, options = {}) {
+  let run = engine.createPlacementRun({
+    state,
+    playDay: options.playDay ?? state.maxSeenPlayDay,
+    seed: options.seed ?? 0x706c6163,
+    theme: options.theme ?? "ocean",
+  });
+  for (let index = 0; index < engine.CONSTANTS.PLACEMENT_MAX_QUESTIONS; index += 1) {
+    const question = engine.placementCurrentQuestion(run);
+    if (!question) return run;
+    if (question.inputClass === "SELECTION" && question.options.some((option) => (
+      [option.label, option.value].some((value) => String(value).trim().toLowerCase() === "not sure")
+    ))) {
+      throw new Error(`Placement question ${question.questionId} duplicates the global Not sure action.`);
+    }
+    run = recordPlacementResult(engine, run, policy(question, index, run));
+  }
+  if (engine.placementCurrentQuestion(run)) throw new Error("Placement fixture exceeded the approved maximum.");
+  return run;
 }
 
 export async function runEngineSuite({
@@ -318,7 +617,7 @@ export async function runEngineSuite({
         assert.equal(first.level, skill.level);
         assert.equal(first.tier, tier);
         assert.equal(canonicalStringify(first), canonicalStringify(repeated), `${skill.id}/${tier}: deterministic`);
-        assert.equal(engine.gradeAnswer(first, first.answer.value).correct, true, `${skill.id}/${tier}: self-grade`);
+        assert.equal(engine.gradeAnswer(first, answerFor(engine, first)).correct, true, `${skill.id}/${tier}: self-grade`);
       }
     }
     assert.deepEqual([...profiles].sort(), [...new Set(manifest.skills.map((skill) => skill.generatorProfile))].sort().map((profile) => [profile, manifest.skills.filter((skill) => skill.generatorProfile === profile).length]));
@@ -390,7 +689,7 @@ export async function runEngineSuite({
       assert.ok(Object.isFrozen(choices), `${skill.id}: frozen choices`);
       assert.deepEqual(choices, engine.makeQuestionChoices(args), `${skill.id}: deterministic choices`);
       assert.ok([1, 2].includes(choices.length), `${skill.id}: bounded choice count`);
-      for (const choice of choices) assert.equal(engine.gradeAnswer(choice, choice.answer.value).correct, true, `${skill.id}: answerable`);
+      for (const choice of choices) assert.equal(engine.gradeAnswer(choice, answerFor(engine, choice)).correct, true, `${skill.id}: answerable`);
       if (choices.length === 2) {
         assert.notEqual(choices[0].prompt, choices[1].prompt, `${skill.id}: visible prompt`);
         assert.notEqual(choices[0].sampleKey, choices[1].sampleKey, `${skill.id}: sample`);
@@ -407,7 +706,13 @@ export async function runEngineSuite({
     assert.ok(selectionQuestion.optionCount >= 2);
     assert.equal(new Set(selectionQuestion.options.map((option) => canonicalStringify(optionValue(option)))).size, selectionQuestion.options.length);
     assert.equal(selectionQuestion.options.filter((option) => engine.gradeAnswer(selectionQuestion, optionValue(option)).correct).length, 1);
-    assert.equal(engine.gradeAnswer(construction.question, construction.question.answer.value).correct, true);
+    assert.equal(engine.gradeAnswer(construction.question, answerFor(engine, construction.question)).correct, true);
+    if (STRUCTURED_RESPONSE_METHODS.has(construction.question.inputMethod)) {
+      const scalarBypass = engine.gradeAnswer(construction.question, construction.question.answer.value);
+      assert.equal(scalarBypass.correct, false);
+      assert.equal(scalarBypass.valid, false);
+      assert.equal(scalarBypass.reason, "structured-response-required");
+    }
     assert.doesNotThrow(() => engine.gradeAnswer(construction.question, "not-a-valid-answer"));
     assert.equal(engine.gradeAnswer(null, "1").valid, false);
     const rational = { inputClass: "CONSTRUCTION", answer: { kind: "rational", value: "1/2" } };
@@ -418,12 +723,27 @@ export async function runEngineSuite({
     assert.equal(engine.parseFraction("3/2", { targetForm: "IMPROPER" }).valid, true);
     assert.equal(engine.fractionsEquivalent({ left: "1/2", right: "2/4" }).equivalent, true);
     assert.equal(engine.fractionsEquivalent({ left: "1/2", right: "2/5" }).equivalent, false);
+    const mq007 = engine.makeQuestion({
+      ...questionArgs(requireSkill(skills, "MQ-007 sorting", (skill) => skill.id === "MQ-007"), "EASY", 0),
+      representation: "PICTORIAL",
+    });
+    assert.equal(mq007.inputMethod, "SORT_BINS");
+    const sortCategories = mq007.modelDescriptor.values.categories;
+    assert.ok(Array.isArray(sortCategories) && [2, 3].includes(sortCategories.length));
+    const sorted = structuredAnswerFor(engine, mq007);
+    assert.equal(engine.gradeAnswer(mq007, sorted).correct, true);
+    const displacedSort = incorrectSortSubmission(mq007, sorted);
+    const categoryIds = new Set(sortCategories.map((category) => String(category.id)));
+    assert.ok(Object.values(displacedSort.placements).every((bin) => categoryIds.has(bin)));
+    const displacedSortGrade = engine.gradeAnswer(mq007, displacedSort);
+    assert.equal(displacedSortGrade.valid, true);
+    assert.equal(displacedSortGrade.correct, false);
     const seen = new Set();
     for (const skill of skills) {
       for (let ordinal = 0; ordinal < 4; ordinal += 1) {
         const question = engine.makeQuestion(questionArgs(skill, "HARD/TARGET", ordinal, { representation: "PICTORIAL" }));
         seen.add(question.inputMethod);
-        assert.equal(engine.gradeAnswer(question, question.answer.value).correct, true, `${skill.id}/${ordinal}`);
+        assert.equal(engine.gradeAnswer(question, answerFor(engine, question)).correct, true, `${skill.id}/${ordinal}`);
         assert.equal(question.inputClass, constants.INPUT_CLASS_BY_METHOD[question.inputMethod], `${skill.id}: input contract`);
         if (question.inputClass === "SELECTION") {
           const correct = question.options.filter((option) => engine.gradeAnswer(question, optionValue(option)).correct);
@@ -493,11 +813,20 @@ export async function runEngineSuite({
     const state = createState(engine);
     const exported = engine.exportState(state);
     const imported = stateValue(engine.importState(cloneJson(state), exported, 21_000));
-    assert.equal(canonicalStringify(imported), canonicalStringify(state));
+    assert.equal(imported.placementDraftGeneration, state.placementDraftGeneration + 1);
+    const importedProjection = cloneJson(imported);
+    importedProjection.placementDraftGeneration = state.placementDraftGeneration;
+    assert.equal(canonicalStringify(importedProjection), canonicalStringify(state));
     assert.equal(state.schemaVersion, constants.STATE_SCHEMA_VERSION);
     assert.equal(state.curriculumManifestId, manifest.manifestId);
     assert.equal(state.curriculumVersion, manifest.version);
     assert.equal(state.curriculumSha256, manifestArtifact.sha256);
+    assert.equal(constants.BACKUP_MAX_BYTES, 5 * 1024 * 1024);
+    assert.equal(constants.BACKUP_MAX_CHARACTERS, 5 * 1024 * 1024);
+    assert.equal(
+      canonicalStringify(engine.loadState(" ".repeat(constants.BACKUP_MAX_CHARACTERS + 1), 21_000)),
+      canonicalStringify({ ok: false, error: "The backup is larger than the 5 MiB limit." }),
+    );
     for (const empty of [null, undefined, ""]) assert.equal(engine.loadState(empty, 21_000).ok, true);
     assert.equal(engine.loadState("{", 21_000).ok, false);
     for (const mutation of [
@@ -515,13 +844,18 @@ export async function runEngineSuite({
   });
 
   await check("BEH-13", "Port and storage namespace remain isolated", "A legacy or colliding namespace and a non-loopback launcher fail", async (assert) => {
-    assert.equal(constants.STORAGE_NAMESPACE, "math-quest:v2");
+    assert.equal(constants.STORAGE_NAMESPACE, "math-quest:progress:v2");
+    assert.equal(constants.PREVIOUS_STORAGE_NAMESPACE, "math-quest:v2");
     const launcher = await readFile(path.join(root, "Math Quest.bat"), "utf8");
     const server = await readFile(path.join(root, "Serve-MathQuest.ps1"), "utf8");
     assert.match(`${launcher}\n${server}`, /8771/u);
     assert.doesNotMatch(`${launcher}\n${server}`, /8770/u);
     assert.match(server, /IPAddress\]::Loopback|127\.0\.0\.1/u);
-    assert.match(extracted.pageBytes.toString("utf8"), /math-quest:v2/u);
+    const pageText = extracted.pageBytes.toString("utf8");
+    assert.match(pageText, /math-quest:progress:v2/u);
+    assert.match(pageText, /beta1-migration-guard:v1/u);
+    assert.match(pageText, /beta1-to-protected-v1/u);
+    assert.match(pageText, /empty-to-protected-v1/u);
   });
 
   await check("BEH-14", "Child prompt bytes and Canadian metric context align", "Unknown prompts, template drift, customary units, or non-Canadian money fail", (assert) => {
@@ -572,12 +906,13 @@ export async function runEngineSuite({
       assert.ok(question.modelDescriptor && typeof question.modelDescriptor === "object", `${skill.id}: modelDescriptor`);
       assert.ok(question.modelDescriptor.type, `${skill.id}: model type`);
       assert.ok(question.modelDescriptor.instructionStringId, `${skill.id}: instructionStringId`);
-      assert.equal(engine.gradeAnswer(question, question.answer.value).correct, true, `${skill.id}: model answer`);
+      assert.equal(engine.gradeAnswer(question, answerFor(engine, question)).correct, true, `${skill.id}: model answer`);
     }
   });
 
-  await check("BEH-17", "Required neutral research and release artifacts exist", "Removing a governed public artifact fails", async (assert) => {
+  await check("BEH-17", "Required governance, research, and release artifacts exist", "Removing or weakening a governed public artifact fails", async (assert) => {
     for (const file of [
+      "AGENTS.md",
       "curriculum/math-quest-manifest-v1.json",
       "curriculum/PROVENANCE.md",
       "research/build-axioms.md",
@@ -586,6 +921,22 @@ export async function runEngineSuite({
       "THIRD_PARTY_NOTICES.md",
     ]) {
       assert.ok((await readFile(path.join(root, file), "utf8")).trim().length > 0, file);
+    }
+    const agentPolicy = await readFile(path.join(root, "AGENTS.md"), "utf8");
+    for (const [requirement, pattern] of [
+      ["permanent lifetime authority", /permanent project policy[\s\S]*lifetime of Math Quest/iu],
+      ["all project change types", /whenever the game or repository changes[\s\S]*code, assets, educational content[\s\S]*project structure/iu],
+      ["quality dimensions", /software correctness[\s\S]*educational and mathematical correctness[\s\S]*child comprehension[\s\S]*accessibility[\s\S]*release readiness/iu],
+      ["uncertainty adds coverage", /When uncertain whether new coverage is\s+required, assume that it is required/iu],
+      ["permanent defect regressions", /Every confirmed defect must become a permanent, effect-sensitive regression\s+test/iu],
+      ["test and product failure classification", /Classify it explicitly as a product defect, test defect, environment or\s+harness defect, pending approval\/evidence gate/iu],
+      ["obsolete tests retain their protected effect", /Revise or replace an obsolete test only when[\s\S]*equal or stronger effect-sensitive coverage protects[\s\S]*original safety or usability purpose/iu],
+      ["green results cannot justify weakening", /Never weaken, delete, skip, or reclassify a test merely to obtain a passing\s+result/iu],
+      ["no size or context omission", /Do not omit a certification requirement merely to reduce file size, token use,[\s\S]*instruction length/iu],
+      ["mandatory fail-closed gate", /mandatory, fail-closed release gate/iu],
+      ["completion requires execution and review", /No feature, refactor, optimization, content update, or release candidate is[\s\S]*complete until[\s\S]*executed, and its findings reviewed/iu],
+    ]) {
+      assert.match(agentPolicy, pattern, `AGENTS.md: ${requirement}`);
     }
   });
 
@@ -601,7 +952,7 @@ export async function runEngineSuite({
     for (const skill of decimalSkills) {
       for (let ordinal = 0; ordinal < 24; ordinal += 1) {
         const question = engine.makeQuestion(questionArgs(skill, "HARD/TARGET", ordinal));
-        assert.equal(engine.gradeAnswer(question, question.answer.value).correct, true, `${skill.id}/${ordinal}`);
+        assert.equal(engine.gradeAnswer(question, answerFor(engine, question)).correct, true, `${skill.id}/${ordinal}`);
         if (question.answer.kind === "rational") assert.ok(engine.parseRational(question.answer.value), `${skill.id}: exact rational answer`);
       }
     }
@@ -627,9 +978,10 @@ export async function runEngineSuite({
     assert.equal(engine.beginSkill(state, skill.id).skills[skill.id].acquisition, "LEARNING");
     assert.throws(() => engine.beginSkill(state, "missing-skill"), /Unknown skillId/u);
     assert.ok(engine.applyAttempt(state, null).effects.some((effect) => effect.type === "REJECTED_ATTEMPT"));
-    const first = attemptFor(engine, skill, { playDay: 21_000, ordinal: 1, sampleKey: "same" });
+    const repeatedSampleKey = `${skill.id}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|same`;
+    const first = attemptFor(engine, skill, { playDay: 21_000, ordinal: 1, sampleKey: repeatedSampleKey });
     state = appliedState(engine, state, first);
-    state = appliedState(engine, state, attemptFor(engine, skill, { playDay: 21_001, ordinal: 2, sampleKey: "same" }));
+    state = appliedState(engine, state, attemptFor(engine, skill, { playDay: 21_001, ordinal: 2, sampleKey: repeatedSampleKey }));
     assert.notEqual(state.skills[skill.id].acquisition, "SOLID");
     const priorFastTrack = state.skills[skill.id].fastTrack;
     state = appliedState(engine, state, attemptFor(engine, skill, { playDay: 21_002, feedbackClass: "INCORRECT", firstAnswerCorrect: false, evidenceClass: "NON_EVIDENCE" }));
@@ -644,7 +996,7 @@ export async function runEngineSuite({
         ordinal: index,
         evidenceClass,
         inputClass: evidenceClass === "CONSTRUCTION" ? "CONSTRUCTION" : "SELECTION",
-        sampleKey: `distinct-${index}`,
+        sampleKey: `${skill.id}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|distinct-${index}`,
       }));
     }
     assert.equal(progressed.skills[skill.id].acquisition, "SOLID");
@@ -761,24 +1113,476 @@ export async function runEngineSuite({
       assert.ok(rejected, canonicalStringify(value));
       assert.equal(canonicalStringify(live), before);
     }
+    const baselineRun = engine.createPlacementRun({ state: live, playDay: 21_000, seed: 0x65706f63 });
+    const baselineImport = engine.importState(live, before, 21_000);
+    assert.equal(baselineImport.ok, true, baselineImport.error);
+    assert.equal(baselineImport.state.placementDraftGeneration, live.placementDraftGeneration + 1);
+    const importProjection = cloneJson(baselineImport.state);
+    importProjection.placementDraftGeneration = live.placementDraftGeneration;
+    assert.equal(canonicalStringify(importProjection), before, "baseline-identical import changes only its draft generation");
+    assert.match(engine.validatePlacementRun(baselineRun, baselineImport.state).error, /stale/iu);
+    const reset = engine.createResetState(live, 21_000);
+    assert.equal(reset.placementDraftGeneration, live.placementDraftGeneration + 1);
+    const resetProjection = cloneJson(reset);
+    resetProjection.placementDraftGeneration = live.placementDraftGeneration;
+    assert.equal(canonicalStringify(resetProjection), before, "baseline-identical reset changes only its draft generation");
+    assert.match(engine.validatePlacementRun(baselineRun, reset).error, /stale/iu);
+    const laterEpochBackup = cloneJson(live);
+    laterEpochBackup.placementDraftGeneration = 7;
+    const laterEpochImport = engine.importState(live, engine.exportState(laterEpochBackup), 21_000);
+    assert.equal(laterEpochImport.ok, true, laterEpochImport.error);
+    assert.equal(laterEpochImport.state.placementDraftGeneration, 8, "import advances beyond both local and imported generations");
+    const draftFloorReset = engine.createResetState(live, 21_000, 11);
+    assert.equal(draftFloorReset.placementDraftGeneration, 12, "reset advances beyond a surviving placement-draft generation");
+    const draftFloorImport = engine.importState(live, before, 21_000, 13);
+    assert.equal(draftFloorImport.ok, true, draftFloorImport.error);
+    assert.equal(draftFloorImport.state.placementDraftGeneration, 14, "import advances beyond a surviving placement-draft generation");
+
+    const exhaustedCurrent = cloneJson(live);
+    exhaustedCurrent.placementDraftGeneration = Number.MAX_SAFE_INTEGER;
+    const exhaustedBefore = canonicalStringify(exhaustedCurrent);
+    assert.throws(
+      () => engine.createResetState(exhaustedCurrent, 21_000),
+      /generation is exhausted/iu,
+    );
+    assert.equal(canonicalStringify(exhaustedCurrent), exhaustedBefore, "failed reset cannot mutate its input");
+    const exhaustedImport = engine.importState(exhaustedCurrent, before, 21_000);
+    assert.equal(exhaustedImport.ok, false);
+    assert.equal(exhaustedImport.state, exhaustedCurrent);
+    assert.match(exhaustedImport.error, /generation is exhausted/iu);
+    assert.equal(canonicalStringify(exhaustedCurrent), exhaustedBefore, "failed import cannot mutate current progress");
+    const floorExhaustedImport = engine.importState(live, before, 21_000, Number.MAX_SAFE_INTEGER);
+    assert.equal(floorExhaustedImport.ok, false);
+    assert.equal(floorExhaustedImport.state, live);
+    assert.match(floorExhaustedImport.error, /generation is exhausted/iu);
+    assert.equal(canonicalStringify(live), before, "overflow through a draft floor cannot mutate current progress");
+    const exhaustedBackupObject = cloneJson(live);
+    exhaustedBackupObject.placementDraftGeneration = Number.MAX_SAFE_INTEGER;
+    const exhaustedBackupBefore = canonicalStringify(exhaustedBackupObject);
+    const exhaustedBackupImport = engine.importState(live, exhaustedBackupObject, 21_000);
+    assert.equal(exhaustedBackupImport.ok, false);
+    assert.equal(exhaustedBackupImport.state, live);
+    assert.match(exhaustedBackupImport.error, /generation is exhausted/iu);
+    assert.equal(canonicalStringify(exhaustedBackupObject), exhaustedBackupBefore, "failed import cannot mutate its backup input");
+    assert.equal(canonicalStringify(live), before, "failed backup-generation overflow cannot mutate current progress");
   });
 
   await check("BEH-28", "Play-day rules handle midnight, reopen, and rollback", "Candidate days can advance but never lower maxSeenPlayDay", (assert) => {
     const state = createState(engine, 20_000);
-    state.activeSession = { sessionId: "same-day", playDay: 20_000, queue: [] };
+    state.activeSession = {
+      sessionId: "same-day",
+      playDay: 20_000,
+      level: state.earnedLevel,
+      stage: engine.stageForLevel(state.earnedLevel),
+      seed: state.seed,
+      queue: [],
+      baseSlotCount: 0,
+      effectivePracticeLimit: 0,
+      effectivePlannedCount: 0,
+      effectiveTimeCapMs: 60_000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 0,
+      world: "ocean",
+      servedCount: 0,
+      servedOrdinals: [],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        version: 1,
+        screen: "fatigue",
+        phase: "question",
+        question: null,
+        choiceCandidates: [],
+        choiceResolved: {},
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        responseState: {},
+        modelTouched: false,
+        hintUsed: false,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach: false,
+        capstoneSubmitted: false,
+      },
+    };
     const json = engine.exportState(state);
     assert.equal(engine.loadState(json, 20_001).state.maxSeenPlayDay, 20_001);
     assert.equal(engine.loadState(json, 19_999).state.maxSeenPlayDay, 20_000);
     assert.equal(engine.loadState(json, 20_000).state.activeSession.sessionId, "same-day");
     const manyLogs = createState(engine);
-    manyLogs.sessionLog = Array.from({ length: 200 }, (_, index) => ({ sessionId: `old-${index}` }));
+    manyLogs.sessionLog = Array.from({ length: 200 }, (_, index) => ({ sessionId: `old-${index}`, playDay: 21_000 }));
     manyLogs.previewLevel = Math.min(3, constants.LEVEL_MAX);
     manyLogs.activeSession = { sessionId: "active" };
-    const completed = engine.completeSession(manyLogs, { sessionId: "new" });
-    assert.equal(completed.sessionLog.length, 200);
-    assert.equal(completed.sessionLog[0].sessionId, "old-1");
+    const completed = engine.completeSession(manyLogs, { sessionId: "new", playDay: 21_000 });
+    assert.equal(completed.sessionLog.length, constants.SESSION_LOG_MAX);
+    assert.equal(completed.sessionLog[0].sessionId, "old-151");
     assert.equal(completed.activeSession, null);
     assert.equal(completed.previewLevel, null);
+  });
+
+  await check("BEH-29", "Starting-point placement is isolated, transactional, and reversible by evidence", "Placement cannot leak practice evidence, overwrite recovery, complete the selected level, or survive contrary review evidence", (assert) => {
+    const base = createState(engine);
+    base.settings.grownUpPracticeCap = 7;
+    const evidenced = engine.applyAttempt(base, attemptFor(engine, firstSkill(), { ordinal: 91 })).state;
+    const learningSkill = skills.find((skill) => skill.id !== firstSkill().id && skill.level === 1);
+    const recoverySkill = skills.find((skill) => ![firstSkill().id, learningSkill.id].includes(skill.id) && skill.level === 1);
+    evidenced.skills[learningSkill.id].acquisition = "LEARNING";
+    evidenced.skills[recoverySkill.id].acquisition = "PRACTISING";
+    evidenced.skills[recoverySkill.id].restoreNeeded = true;
+    evidenced.skills[recoverySkill.id].restoreAfterDay = 21_000;
+    evidenced.reteachQueue = [{ skillId: recoverySkill.id, reason: "CHRONIC" }];
+    assert.equal(engine.validateState(evidenced), null);
+    const preservedRecords = new Map(
+      [firstSkill().id, learningSkill.id, recoverySkill.id]
+        .map((id) => [id, engine.canonical(evidenced.skills[id])]),
+    );
+    const beforeState = engine.exportState(evidenced);
+    const deterministicA = engine.createPlacementRun({ state: evidenced, playDay: 21_000, seed: 0x706c6163, theme: "forest" });
+    const deterministicB = engine.createPlacementRun({ state: evidenced, playDay: 21_000, seed: 0x706c6163, theme: "forest" });
+    assert.equal(engine.canonical(deterministicA), engine.canonical(deterministicB));
+    assert.equal(engine.canonical(engine.placementCurrentQuestion(deterministicA)), engine.canonical(engine.placementCurrentQuestion(deterministicB)));
+    assert.equal(engine.placementCurrentQuestion(deterministicA).preview, true);
+    const firstPrepared = engine.beginPlacementRun({ state: evidenced, playDay: 21_000, theme: "forest" });
+    const secondPrepared = engine.beginPlacementRun({ state: firstPrepared.state, playDay: 21_000, theme: "forest" });
+    assert.equal(firstPrepared.state.placement.runNonce, evidenced.placement.runNonce + 1);
+    assert.equal(secondPrepared.state.placement.runNonce, firstPrepared.state.placement.runNonce + 1);
+    assert.equal(firstPrepared.run.nonce, firstPrepared.state.placement.runNonce);
+    assert.equal(secondPrepared.run.nonce, secondPrepared.state.placement.runNonce);
+    assert.notEqual(firstPrepared.run.seed, secondPrepared.run.seed);
+    assert.notEqual(
+      engine.placementCurrentQuestion(firstPrepared.run).questionId,
+      engine.placementCurrentQuestion(secondPrepared.run).questionId,
+      "each committed nonce derives a fresh deterministic question set",
+    );
+    assert.equal(
+      engine.canonical(engine.placementCurrentQuestion(firstPrepared.run)),
+      engine.canonical(engine.placementCurrentQuestion(firstPrepared.run)),
+      "a run remains exactly resumable",
+    );
+    assert.equal(evidenced.placement.runNonce, 0, "preparation does not mutate the caller's state");
+    assert.equal(engine.validatePlacementRun(firstPrepared.run, firstPrepared.state).valid, true);
+    assert.match(engine.validatePlacementRun(firstPrepared.run, secondPrepared.state).error, /stale/iu);
+
+    let submissionRun = deterministicA;
+    while (engine.placementCurrentQuestion(submissionRun)?.inputClass !== "SELECTION") {
+      submissionRun = recordPlacementResult(engine, submissionRun, true);
+    }
+    const selectionQuestion = engine.placementCurrentQuestion(submissionRun);
+    assert.equal(
+      selectionQuestion.options.some((option) => (
+        [option.label, option.value].some((value) => String(value).trim().toLowerCase() === "not sure")
+      )),
+      false,
+      "the global Not sure action is never duplicated by a placement answer option",
+    );
+    const correct = correctOption(engine, selectionQuestion);
+    const wrong = selectionQuestion.options.find((option) => option.optionId !== correct.optionId);
+    const correctSubmission = engine.submitPlacementAnswer(submissionRun, { optionId: correct.optionId });
+    const wrongSubmission = engine.submitPlacementAnswer(submissionRun, { optionId: wrong.optionId });
+    const notSureSubmission = engine.submitPlacementNotSure(deterministicA);
+    assert.equal(correctSubmission.grade.correct, true);
+    assert.equal(wrongSubmission.grade.correct, false);
+    assert.deepEqual(cloneJson(notSureSubmission.grade), {
+      correct: false,
+      valid: true,
+      reason: "not-sure",
+      canonical: "",
+      notSure: true,
+      responseKind: "not-sure",
+    });
+    assert.equal(notSureSubmission.run.answers.length, 1);
+    assert.deepEqual(Object.keys(notSureSubmission.run.answers[0]).sort(), ["questionId", "responseKind"]);
+    assert.equal(notSureSubmission.run.answers[0].responseKind, "not-sure");
+    assert.equal(deterministicA.answers.length, 0);
+    assert.equal(submissionRun.answers.length + 1, correctSubmission.run.answers.length);
+    assert.deepEqual(Object.keys(correctSubmission.run.answers.at(-1)).sort(), ["questionId", "responseKind"]);
+    assert.equal(correctSubmission.run.answers.at(-1).responseKind, "correct");
+    assert.equal(engine.submitAnswer(selectionQuestion, { optionId: correct.optionId }, {
+      promptFinishedAt: 1_000,
+      submittedAt: 3_000,
+      manipulationMs: 0,
+      replayMs: 0,
+      idleMs: 0,
+      selectionEvents: [],
+    }).evidenceClass, "NON_EVIDENCE");
+    assert.equal(engine.exportState(evidenced), beforeState);
+
+    const alteredRun = { ...cloneJson(deterministicA), unexpected: true };
+    assert.equal(engine.validatePlacementRun(alteredRun, evidenced).valid, false);
+    const staleState = cloneJson(evidenced);
+    staleState.settings.grownUpPracticeCap = 8;
+    assert.match(engine.validatePlacementRun(deterministicA, staleState).error, /stale/iu);
+
+    const limitedRun = completePlacement(engine, evidenced, (_question, index) => (
+      index === 0 ? "not-sure" : true
+    ), { seed: 0x6e6f7473 });
+    const limitedRecommendation = engine.placementRecommendation(limitedRun);
+    assert.equal(limitedRecommendation.responseCounts.notSure, 1);
+    assert.equal(limitedRecommendation.responseCounts.incorrect, 0);
+    assert.equal(limitedRecommendation.confidence, "LIMITED_ABSTENTION");
+    const comparableWrongRun = completePlacement(engine, evidenced, (_question, index) => (
+      index === 0 ? false : true
+    ), { seed: 0x6e6f7473 });
+    const comparableWrongRecommendation = engine.placementRecommendation(comparableWrongRun);
+    assert.equal(comparableWrongRecommendation.responseCounts.notSure, 0);
+    assert.equal(comparableWrongRecommendation.responseCounts.incorrect, 1);
+    assert.equal(comparableWrongRecommendation.confidence, "STANDARD");
+    assert.equal(
+      limitedRecommendation.recommendedLevel,
+      comparableWrongRecommendation.recommendedLevel,
+      "an abstention takes the same conservative branch but remains explicitly distinguishable",
+    );
+
+    const highRun = completePlacement(engine, evidenced, () => true);
+    const highRecommendation = engine.placementRecommendation(highRun);
+    assert.equal(highRecommendation.recommendedLevel, constants.LEVEL_MAX);
+    assert.deepEqual(cloneJson(highRecommendation.responseCounts), {
+      correct: highRecommendation.questionCount,
+      incorrect: 0,
+      notSure: 0,
+    });
+    assert.equal(highRecommendation.confidence, "STANDARD");
+    const applied = engine.applyPlacementRecommendation(evidenced, highRun);
+    assert.equal(applied.ok, true, applied.error);
+    assert.equal(applied.state.placementDraftGeneration, evidenced.placementDraftGeneration + 1);
+    assert.equal(applied.state.earnedLevel, constants.LEVEL_MAX);
+    assert.equal(applied.state.placement.highestAppliedLevel, constants.LEVEL_MAX);
+    assert.deepEqual(cloneJson(applied.state.placement.lastConfirmed.responseCounts), cloneJson(highRecommendation.responseCounts));
+    assert.equal(applied.state.placement.lastConfirmed.confidence, "STANDARD");
+    const recoveryIds = new Set([
+      ...evidenced.reteachQueue.map((row) => row.skillId),
+      ...evidenced.levelReteachTargets,
+    ]);
+    const expectedPlaced = skills.filter((skill) => {
+      const record = evidenced.skills[skill.id];
+      return skill.level < constants.LEVEL_MAX
+        && record.acquisition === "UNSEEN"
+        && record.evidence.length === 0
+        && record.misses.length === 0
+        && !record.restoreNeeded
+        && !recoveryIds.has(skill.id);
+    });
+    assert.equal(applied.state.placement.placedSkillIds.length, expectedPlaced.length);
+    assert.equal(
+      skills.filter((skill) => skill.level === constants.LEVEL_MAX)
+        .every((skill) => applied.state.skills[skill.id].acquisition === "UNSEEN"
+          && !applied.state.placement.placedSkillIds.includes(skill.id)),
+      true,
+    );
+    assert.equal(
+      applied.state.placement.placedSkillIds
+        .every((id) => {
+          const record = applied.state.skills[id];
+          return record.acquisition === "PLACED"
+            && record.witnessIds.length === 0
+            && record.masteryVerifiedPlayDay === null
+            && record.masteryContractVersion === "";
+        }),
+      true,
+    );
+    for (const [id, before] of preservedRecords) {
+      assert.equal(engine.canonical(applied.state.skills[id]), before, `${id} was not truly unseen`);
+      assert.ok(!applied.state.placement.placedSkillIds.includes(id));
+    }
+    const scheduleEffect = applied.effects.find((effect) => effect.type === "PLACEMENT_REVIEWS_SCHEDULED");
+    assert.ok(scheduleEffect);
+    assert.equal(scheduleEffect.skillIds.length, constants.PLACEMENT_REVIEW_MAX);
+    assert.equal(new Set(scheduleEffect.skillIds.map((id) => engine.SKILL_BY_ID[id].level)).size, constants.PLACEMENT_REVIEW_MAX);
+    assert.deepEqual(
+      cloneJson(scheduleEffect.skillIds.map((id) => engine.SKILL_BY_ID[id].level)),
+      Array.from({ length: constants.PLACEMENT_REVIEW_MAX }, (_, index) => index + 1),
+    );
+    assert.deepEqual(
+      cloneJson(scheduleEffect.skillIds.map((id) => applied.state.skills[id].dueDay)),
+      Array.from({ length: constants.PLACEMENT_REVIEW_MAX }, (_, index) => 21_001 + index),
+    );
+    const strandCounts = Object.values(Object.groupBy(
+      scheduleEffect.skillIds,
+      (id) => engine.SKILL_BY_ID[id].strand,
+    )).map((rows) => rows.length);
+    assert.ok(Math.max(...strandCounts) - Math.min(...strandCounts) <= 1);
+    assert.equal(engine.evaluatePromotion({ state: applied.state, currentLevel: 1 }).ratio, 0);
+    const firstCurrentQueue = engine.buildSessionQueue(applied.state, { playDay: 21_000, seed: 91 });
+    assert.ok(firstCurrentQueue.queue.some((slot) => (
+      slot.obligation === "NEW" && engine.SKILL_BY_ID[slot.skillId].level === constants.LEVEL_MAX
+    )), "PLACED prerequisites allow current-level practice");
+    assert.equal(engine.canonical(applied.state.settings), engine.canonical(evidenced.settings));
+    assert.equal(engine.canonical(applied.state.practiceCountByDay), engine.canonical(evidenced.practiceCountByDay));
+    assert.equal(engine.canonical(applied.state.sessionLog), engine.canonical(evidenced.sessionLog));
+    assert.equal(engine.canonical(applied.state.reteachQueue), engine.canonical(evidenced.reteachQueue));
+    assert.equal(engine.validateState(applied.state), null);
+    assert.equal(engine.importState(applied.state, engine.exportState(applied.state), 21_000).ok, true);
+    assert.equal(engine.validatePlacementRun(highRun, applied.state).valid, false);
+
+    const exhausted = cloneJson(evidenced);
+    exhausted.placementDraftGeneration = Number.MAX_SAFE_INTEGER;
+    assert.equal(engine.validateState(exhausted), null);
+    const exhaustedBefore = engine.canonical(exhausted);
+    const exhaustedRun = completePlacement(engine, exhausted, () => true, { seed: 0x7ffffffe });
+    const exhaustedRunBefore = engine.canonical(exhaustedRun);
+    const exhaustedApply = engine.applyPlacementRecommendation(exhausted, exhaustedRun);
+    assert.equal(exhaustedApply.ok, false);
+    assert.equal(exhaustedApply.state, exhausted);
+    assert.match(exhaustedApply.error, /generation is exhausted/iu);
+    assert.equal(engine.canonical(exhausted), exhaustedBefore);
+    assert.equal(engine.canonical(exhaustedRun), exhaustedRunBefore);
+    const floorExhaustedOptions = { placementDraftGenerationFloor: Number.MAX_SAFE_INTEGER };
+    const floorExhaustedOptionsBefore = engine.canonical(floorExhaustedOptions);
+    const floorExhaustedApply = engine.applyPlacementRecommendation(evidenced, highRun, floorExhaustedOptions);
+    assert.equal(floorExhaustedApply.ok, false);
+    assert.equal(floorExhaustedApply.state, evidenced);
+    assert.match(floorExhaustedApply.error, /generation is exhausted/iu);
+    assert.equal(engine.canonical(floorExhaustedOptions), floorExhaustedOptionsBefore);
+
+    const replacementSkill = skills.find((skill) => (
+      skill.level < 13
+      && skill.constraints.taskTypes.length === 1
+      && applied.state.placement.placedSkillIds.includes(skill.id)
+      && applied.state.skills[skill.id].evidence.length === 0
+    ));
+    assert.ok(replacementSkill, "a single-task placed skill is available for evidence replacement");
+    let evidenceState = applied.state;
+    for (let index = 0; index < constants.NORMAL_CONSTRUCTION_SUCCESSES; index += 1) {
+      const result = engine.applyAttempt(evidenceState, attemptFor(engine, replacementSkill, {
+        ordinal: 120 + index,
+        playDay: 21_020 + index,
+        sessionId: `placement-evidence-${index}`,
+        applied: true,
+      }));
+      evidenceState = result.state;
+      if (index + 1 < constants.NORMAL_CONSTRUCTION_SUCCESSES) {
+        assert.ok(evidenceState.placement.placedSkillIds.includes(replacementSkill.id));
+      } else {
+        assert.ok(result.effects.some((effect) => (
+          effect.type === "PLACEMENT_REPLACED_BY_EVIDENCE" && effect.skillId === replacementSkill.id
+        )));
+        assert.ok(!evidenceState.placement.placedSkillIds.includes(replacementSkill.id));
+        assert.equal(evidenceState.skills[replacementSkill.id].witnessIds.length, constants.NORMAL_CONSTRUCTION_SUCCESSES);
+      }
+    }
+
+    const sentinelId = scheduleEffect.skillIds.find((id) => engine.SKILL_BY_ID[id].classification === "GATEWAY");
+    assert.ok(sentinelId, "placement schedules at least one gateway review");
+    const sentinel = skills.find((skill) => skill.id === sentinelId);
+    const sameLevelPlacedBefore = applied.state.placement.placedSkillIds.filter((id) => (
+      engine.SKILL_BY_ID[id].level === sentinel.level
+    ));
+    const earnedBeforeFailure = applied.state.earnedLevel;
+    const failedReview = engine.applyAttempt(applied.state, attemptFor(engine, sentinel, {
+      ordinal: 201,
+      playDay: applied.state.skills[sentinelId].dueDay,
+      sessionId: "placement-review",
+      scheduledReview: true,
+      feedbackClass: "INCORRECT",
+      firstAnswerCorrect: false,
+    }));
+    assert.equal(failedReview.state.earnedLevel, earnedBeforeFailure);
+    assert.equal(failedReview.state.skills[sentinelId].acquisition, "PRACTISING");
+    assert.equal(failedReview.state.skills[sentinelId].restoreNeeded, true);
+    assert.ok(!failedReview.state.placement.placedSkillIds.includes(sentinelId));
+    assert.ok(failedReview.effects.some((effect) => effect.type === "PLACEMENT_STATUS_REMOVED"));
+    assert.ok(failedReview.effects.some((effect) => effect.type === "SKILL_DEMOTED"));
+    const recheck = failedReview.effects.find((effect) => effect.type === "PLACEMENT_LEVEL_RECHECK_REQUIRED");
+    assert.ok(recheck);
+    assert.ok(recheck.skillIds.length > 1);
+    assert.deepEqual(
+      new Set(recheck.skillIds),
+      new Set(sameLevelPlacedBefore),
+    );
+    assert.ok(
+      recheck.skillIds.filter((id) => id !== sentinelId)
+        .every((id) => failedReview.state.skills[id].dueDay <= failedReview.state.maxSeenPlayDay),
+    );
+
+    const laterLowRun = completePlacement(
+      engine,
+      failedReview.state,
+      () => false,
+      { playDay: failedReview.state.maxSeenPlayDay + 1, seed: 0x6c6f7765 },
+    );
+    const noLower = engine.applyPlacementRecommendation(failedReview.state, laterLowRun);
+    assert.equal(noLower.ok, true, noLower.error);
+    assert.equal(noLower.state.earnedLevel, constants.LEVEL_MAX);
+    assert.equal(noLower.state.skills[sentinelId].restoreNeeded, true);
+    assert.ok(!noLower.state.placement.placedSkillIds.includes(sentinelId));
+
+    const earlierState = createState(engine);
+    const earlierRun = completePlacement(engine, earlierState, () => true, { seed: 0x6561726c });
+    const earlier = engine.applyPlacementRecommendation(earlierState, earlierRun, { startingLevel: constants.LEVEL_MAX - 1 });
+    assert.equal(earlier.ok, true, earlier.error);
+    assert.equal(earlier.state.earnedLevel, constants.LEVEL_MAX - 1);
+    assert.equal(
+      skills.filter((skill) => skill.level === constants.LEVEL_MAX - 1)
+        .every((skill) => earlier.state.skills[skill.id].acquisition === "UNSEEN"),
+      true,
+    );
+
+    const legacy = cloneJson(createState(engine));
+    legacy.schemaVersion = 2;
+    delete legacy.placement;
+    delete legacy.placementDraftGeneration;
+    const migrated = engine.loadState(JSON.stringify(legacy), legacy.maxSeenPlayDay);
+    assert.equal(migrated.ok, true, migrated.error);
+    assert.equal(migrated.migrated, true);
+    assert.equal(migrated.state.schemaVersion, 3);
+    assert.equal(migrated.state.placementDraftGeneration, 0);
+    assert.deepEqual(cloneJson(migrated.state.placement.placedSkillIds), []);
+    const unknownLegacy = { ...legacy, unexpected: true };
+    assert.equal(engine.loadState(JSON.stringify(unknownLegacy), legacy.maxSeenPlayDay).ok, false);
+
+    const priorSchema3 = cloneJson(createState(engine));
+    delete priorSchema3.placementDraftGeneration;
+    const migratedSchema3 = engine.loadState(JSON.stringify(priorSchema3), priorSchema3.maxSeenPlayDay);
+    assert.equal(migratedSchema3.ok, true, migratedSchema3.error);
+    assert.equal(migratedSchema3.migrated, true);
+    assert.equal(migratedSchema3.state.placementDraftGeneration, 0);
+
+    const oldPlacement = cloneJson(createState(engine));
+    const oldPlacedSkill = skills.find((skill) => skill.level === 1);
+    oldPlacement.earnedLevel = 2;
+    Object.assign(oldPlacement.skills[oldPlacedSkill.id], {
+      acquisition: "SOLID",
+      fastTrack: "STANDARD_ONLY",
+      witnessIds: [],
+      masteryVerifiedPlayDay: 21_000,
+      masteryContractVersion: constants.SAMPLE_KEY_VERSION,
+    });
+    oldPlacement.placement = {
+      contractVersion: "starting-point-v1",
+      highestAppliedLevel: 2,
+      placedSkillIds: [oldPlacedSkill.id],
+      lastConfirmed: {
+        contractVersion: "starting-point-v1",
+        curriculumSha256: engine.CURRICULUM_MANIFEST_SHA256,
+        playDay: 21_000,
+        recommendedLevel: 2,
+        chosenLevel: 2,
+        appliedLevel: 2,
+        questionCount: constants.PLACEMENT_MIN_QUESTIONS,
+      },
+    };
+    const migratedPlacement = engine.loadState(JSON.stringify(oldPlacement), 21_000);
+    assert.equal(migratedPlacement.ok, true, migratedPlacement.error);
+    assert.equal(migratedPlacement.migrated, true);
+    assert.equal(migratedPlacement.state.skills[oldPlacedSkill.id].acquisition, "PLACED");
+    assert.equal(migratedPlacement.state.skills[oldPlacedSkill.id].masteryVerifiedPlayDay, null);
+    assert.equal(migratedPlacement.state.skills[oldPlacedSkill.id].masteryContractVersion, "");
+    assert.equal(migratedPlacement.state.placement.contractVersion, constants.PLACEMENT_CONTRACT_VERSION);
+    assert.equal(migratedPlacement.state.placement.runNonce, 0);
+    assert.equal(migratedPlacement.state.placement.lastConfirmed.confidence, "LEGACY_UNAVAILABLE");
+    assert.equal(migratedPlacement.state.placement.lastConfirmed.responseCounts, null);
   });
 
   await check("BND-01", "7/12 activates level re-teaching; 8/12 does not", "Changing the inclusive seven-clean boundary fails", (assert) => {
@@ -894,7 +1698,7 @@ export async function runEngineSuite({
     for (const skill of fractionSkills) {
       for (let ordinal = 0; ordinal < 12; ordinal += 1) {
         const question = engine.makeQuestion(questionArgs(skill, "HARD/TARGET", ordinal));
-        assert.equal(engine.gradeAnswer(question, question.answer.value).correct, true, `${skill.id}/${ordinal}`);
+        assert.equal(engine.gradeAnswer(question, answerFor(engine, question)).correct, true, `${skill.id}/${ordinal}`);
         if (question.answer.targetForm === "SIMPLEST") assert.equal(engine.parseFraction(question.answer.value, { targetForm: "SIMPLEST" }).valid, true, `${skill.id}/${ordinal}`);
       }
     }
@@ -942,6 +1746,135 @@ export async function runEngineSuite({
       attempts: [0, 0, 0, 30_000, 10_000].map((elapsed) => ({ inputClass: "CONSTRUCTION", feedbackClass: "FIRST_TRY_CLEAN", elapsed })),
     });
     assert.equal(rising.signals.rising, true);
+  });
+
+  await check("BND-10", "Starting-point staircase stays within 10 to 20 questions", "Lowest, highest, refinement, and maximum-length routes produce the approved starting boundary", (assert) => {
+    const state = createState(engine);
+    const cases = [
+      {
+        name: "lowest",
+        run: completePlacement(engine, state, () => false, { seed: 0x1001 }),
+        count: constants.PLACEMENT_MIN_QUESTIONS,
+        recommendedLevel: 1,
+      },
+      {
+        name: "highest",
+        run: completePlacement(engine, state, () => true, { seed: 0x1002 }),
+        count: 18,
+        recommendedLevel: constants.LEVEL_MAX,
+      },
+      {
+        name: "refinement",
+        run: completePlacement(engine, state, (question) => (
+          question.level === 12 || question.level === 11 ? false : true
+        ), { seed: 0x1003 }),
+        count: 16,
+        recommendedLevel: 11,
+      },
+      {
+        name: "maximum",
+        run: completePlacement(engine, state, (_question, index) => (
+          index < 12 || index >= 16
+        ), { seed: 0x1004 }),
+        count: constants.PLACEMENT_MAX_QUESTIONS,
+        recommendedLevel: 19,
+        completedThrough: 18,
+      },
+      {
+        name: "level-20 verification fallback",
+        run: completePlacement(engine, state, (_question, index) => index < 14, { seed: 0x1006 }),
+        count: 18,
+        recommendedLevel: 19,
+        completedThrough: 18,
+      },
+      {
+        name: "level-18 verification fallback",
+        run: completePlacement(engine, state, (_question, index) => index < 12, { seed: 0x1007 }),
+        count: constants.PLACEMENT_MAX_QUESTIONS,
+        recommendedLevel: 16,
+        completedThrough: 15,
+      },
+      {
+        name: "first coarse verification fallback",
+        run: completePlacement(engine, state, (_question, index) => index < 2, { seed: 0x1008 }),
+        count: constants.PLACEMENT_MIN_QUESTIONS,
+        recommendedLevel: 1,
+        completedThrough: 0,
+      },
+    ];
+    for (const fixture of cases) {
+      const validation = engine.validatePlacementRun(fixture.run, state);
+      const recommendation = engine.placementRecommendation(fixture.run);
+      assert.equal(validation.valid, true, `${fixture.name}: ${validation.error}`);
+      assert.equal(validation.complete, true, fixture.name);
+      assert.equal(validation.questionCount, fixture.count, fixture.name);
+      assert.equal(recommendation.questionCount, fixture.count, fixture.name);
+      assert.equal(recommendation.recommendedLevel, fixture.recommendedLevel, fixture.name);
+      if (fixture.completedThrough !== undefined) {
+        assert.equal(recommendation.completedThrough, fixture.completedThrough, fixture.name);
+      }
+      assert.ok(fixture.count >= constants.PLACEMENT_MIN_QUESTIONS, fixture.name);
+      assert.ok(fixture.count <= constants.PLACEMENT_MAX_QUESTIONS, fixture.name);
+      assert.equal(new Set(fixture.run.answers.map((answer) => answer.questionId)).size, fixture.run.answers.length, fixture.name);
+      const replay = { ...cloneJson(fixture.run), answers: [] };
+      const signatures = [];
+      for (const answer of fixture.run.answers) {
+        const question = engine.placementCurrentQuestion(replay);
+        signatures.push(engine.placementVisibleTaskSignature(question));
+        replay.answers.push(cloneJson(answer));
+      }
+      assert.equal(
+        new Set(signatures).size,
+        signatures.length,
+        `${fixture.name} cannot repeat a semantically identical visible task`,
+      );
+    }
+    for (let desiredLevel = constants.LEVEL_MIN; desiredLevel <= constants.LEVEL_MAX; desiredLevel += 1) {
+      const seed = 0x2000 + desiredLevel;
+      const policy = (question) => question.level < desiredLevel;
+      const firstRun = completePlacement(engine, state, policy, { seed });
+      const repeatedRun = completePlacement(engine, state, policy, { seed });
+      const recommendation = engine.placementRecommendation(firstRun);
+      assert.equal(recommendation.recommendedLevel, desiredLevel, `level ${desiredLevel}`);
+      assert.ok(
+        recommendation.questionCount >= constants.PLACEMENT_MIN_QUESTIONS
+          && recommendation.questionCount <= constants.PLACEMENT_MAX_QUESTIONS,
+        `level ${desiredLevel} used ${recommendation.questionCount} questions`,
+      );
+      assert.equal(engine.canonical(firstRun), engine.canonical(repeatedRun), `level ${desiredLevel} deterministic replay`);
+    }
+    let diverseRun = engine.createPlacementRun({ state, playDay: state.maxSeenPlayDay, seed: 0x1009, theme: "ocean" });
+    for (const level of constants.PLACEMENT_CHECKPOINT_LEVELS) {
+      const firstCheckpoint = engine.placementCurrentQuestion(diverseRun);
+      diverseRun = recordPlacementResult(engine, diverseRun, true);
+      const secondCheckpoint = engine.placementCurrentQuestion(diverseRun);
+      assert.equal(firstCheckpoint.level, level);
+      assert.equal(secondCheckpoint.level, level);
+      const levelStrands = new Set(skills.filter((skill) => skill.level === level).map((skill) => skill.strand));
+      if (levelStrands.size > 1) {
+        assert.notEqual(
+          engine.SKILL_BY_ID[firstCheckpoint.skillId].strand,
+          engine.SKILL_BY_ID[secondCheckpoint.skillId].strand,
+          `level ${level} checkpoint strands`,
+        );
+      }
+      diverseRun = recordPlacementResult(engine, diverseRun, true);
+    }
+    const initial = engine.createPlacementRun({ state, playDay: state.maxSeenPlayDay, seed: 0x1005, theme: "space" });
+    assert.equal(engine.placementRecommendation(initial), null);
+    const first = engine.placementCurrentQuestion(initial);
+    assert.equal(first.preview, true);
+    assert.equal(first.tier, "HARD/TARGET");
+    const wrongSequence = {
+      ...cloneJson(initial),
+      answers: [{ questionId: `${first.questionId}-wrong`, responseKind: "correct" }],
+    };
+    assert.equal(engine.validatePlacementRun(wrongSequence, state).valid, false);
+    const overflow = {
+      ...cloneJson(cases[0].run),
+      answers: [...cloneJson(cases[0].run.answers), { questionId: "after-complete", responseKind: "correct" }],
+    };
+    assert.equal(engine.validatePlacementRun(overflow, state).valid, false);
   });
 
   return {

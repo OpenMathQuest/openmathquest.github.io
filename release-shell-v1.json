@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "release": "1.0.0-beta.2",
+  "buildId": "math-quest-pwa-v1.0.0-beta.2",
+  "cacheName": "math-quest-static-v1.0.0-beta.2",
+  "entryPath": "./index.html",
+  "excludedPaths": [
+    "./release-shell-v1.json",
+    "./sw.js"
+  ],
+  "entries": [
+    {
+      "path": "./assets/fonts/Inter-Variable.ttf",
+      "sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
+      "bytes": 879708,
+      "mime": "font/ttf",
+      "status": 200
+    },
+    {
+      "path": "./assets/icons/apple-touch-icon.png",
+      "sha256": "7c6ea384848de14165e49cc8ed5a1d1562102250380f9ea6a9b1ba1ae4f8558f",
+      "bytes": 5346,
+      "mime": "image/png",
+      "status": 200
+    },
+    {
+      "path": "./assets/icons/icon-192.png",
+      "sha256": "1dc9eaac895733856860c6208fc300baddea2cb0f11aefea013643df7f39a0dd",
+      "bytes": 5456,
+      "mime": "image/png",
+      "status": 200
+    },
+    {
+      "path": "./assets/icons/icon-512.png",
+      "sha256": "90c09c503ccbbc95aa2472780e0bd1eb0558dfcd0c759fb1c15d7d3f5127480d",
+      "bytes": 14857,
+      "mime": "image/png",
+      "status": 200
+    },
+    {
+      "path": "./assets/sounds/close.wav",
+      "sha256": "cb059c9481fc88c3c97598e205f2c91d68e8ac459bb91e68d65d33a639d07a16",
+      "bytes": 11068,
+      "mime": "audio/wav",
+      "status": 200
+    },
+    {
+      "path": "./assets/sounds/confirm.wav",
+      "sha256": "465a3589bb280d4b217ed64e6b8906df248de6d205565579edd75a0cc00cf2e8",
+      "bytes": 5336,
+      "mime": "audio/wav",
+      "status": 200
+    },
+    {
+      "path": "./assets/sounds/incorrect.wav",
+      "sha256": "655d1882fe4750e2b80163c2c3e825c7cd7028119630d947ff01876411569506",
+      "bytes": 7982,
+      "mime": "audio/wav",
+      "status": 200
+    },
+    {
+      "path": "./assets/sounds/tap.wav",
+      "sha256": "376d43a4dab1e9e4d1ae192bcf6927568c3e2e00696e20282362fd94ba2b0eab",
+      "bytes": 2690,
+      "mime": "audio/wav",
+      "status": 200
+    },
+    {
+      "path": "./index.html",
+      "sha256": "9151f715846cb009774a3b4a316274f5b7a8b11eeb585c05b749741d3cd72619",
+      "bytes": 938243,
+      "mime": "text/html",
+      "status": 200
+    },
+    {
+      "path": "./manifest.webmanifest",
+      "sha256": "5ab3554a7bc0356b2b400a70c7a7d4fbca828227b425ab9e7855d824594d03ee",
+      "bytes": 647,
+      "mime": "application/manifest+json",
+      "status": 200
+    },
+    {
+      "path": "./LICENSE",
+      "sha256": "98403b9bd1ddf1a23c83e607ee80abb52fd5d3968853998aff71cf533ba1d4c1",
+      "bytes": 1080,
+      "mime": "application/octet-stream",
+      "status": 200
+    },
+    {
+      "path": "./PRIVACY.md",
+      "sha256": "8f94d43d586eab5e8aa914c47008022d1befd45f32239fb3113dbf8d17cd773f",
+      "bytes": 9212,
+      "mime": "text/markdown",
+      "status": 200
+    },
+    {
+      "path": "./THIRD_PARTY_NOTICES.md",
+      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb",
+      "bytes": 5546,
+      "mime": "text/markdown",
+      "status": 200
+    }
+  ]
+}

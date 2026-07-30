@@ -75,6 +75,74 @@ function Find-Browser {
     } | Select-Object -First 1
 }
 
+function Set-BrowserAuditIdentity {
+    param([string]$SelectedBrowser)
+
+    if (-not $SelectedBrowser) {
+        foreach ($name in @(
+            'MQ_BROWSER_PRODUCT_NAME',
+            'MQ_BROWSER_PRODUCT_VERSION',
+            'MQ_BROWSER_EXECUTABLE_SHA256',
+            'MQ_AUDIT_RUNNER_KIND',
+            'MQ_AUDIT_RUNNER_IMAGE_OS',
+            'MQ_AUDIT_RUNNER_IMAGE_VERSION'
+        )) {
+            Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+        }
+        return
+    }
+
+    $item = Get-Item -LiteralPath $SelectedBrowser -ErrorAction Stop
+    $expectedProduct = switch ($item.Name.ToLowerInvariant()) {
+        'msedge.exe' { 'Microsoft Edge' }
+        'chrome.exe' { 'Google Chrome' }
+        default { throw "Unsupported browser executable '$($item.Name)'." }
+    }
+    $productName = [string]$item.VersionInfo.ProductName
+    $productVersion = [string]$item.VersionInfo.ProductVersion
+    if ($productName) { $productName = $productName.Trim() }
+    if ($productVersion) { $productVersion = $productVersion.Trim() }
+    if ($productName -cne $expectedProduct) {
+        throw "Browser product '$productName' does not match $expectedProduct."
+    }
+    if ($productVersion -cnotmatch '^\d+\.\d+\.\d+\.\d+$') {
+        throw "Browser product version '$productVersion' is not a full four-part version."
+    }
+    $executableSha256 = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($executableSha256 -cnotmatch '^[a-f0-9]{64}$') {
+        throw 'The browser executable SHA-256 could not be recorded.'
+    }
+
+    $env:MQ_BROWSER_PRODUCT_NAME = $productName
+    $env:MQ_BROWSER_PRODUCT_VERSION = $productVersion
+    $env:MQ_BROWSER_EXECUTABLE_SHA256 = $executableSha256
+
+    if ($env:GITHUB_ACTIONS -ceq 'true') {
+        if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted') {
+            throw 'The GitHub audit must use a GitHub-hosted runner.'
+        }
+        if ([string]::IsNullOrWhiteSpace($env:ImageOS) -or
+            [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'The GitHub-hosted runner did not expose ImageOS and ImageVersion.'
+        }
+        $env:MQ_AUDIT_RUNNER_KIND = 'GITHUB_HOSTED'
+        $env:MQ_AUDIT_RUNNER_IMAGE_OS = $env:ImageOS.Trim()
+        $env:MQ_AUDIT_RUNNER_IMAGE_VERSION = $env:ImageVersion.Trim()
+    } else {
+        $env:MQ_AUDIT_RUNNER_KIND = 'LOCAL'
+        $env:MQ_AUDIT_RUNNER_IMAGE_OS = ''
+        $env:MQ_AUDIT_RUNNER_IMAGE_VERSION = ''
+    }
+
+    Write-Host ("Browser evidence: product={0}; fullVersion={1}; executableSha256={2}; runnerKind={3}; ImageOS={4}; ImageVersion={5}" -f
+        $env:MQ_BROWSER_PRODUCT_NAME,
+        $env:MQ_BROWSER_PRODUCT_VERSION,
+        $env:MQ_BROWSER_EXECUTABLE_SHA256,
+        $env:MQ_AUDIT_RUNNER_KIND,
+        $(if ($env:MQ_AUDIT_RUNNER_IMAGE_OS) { $env:MQ_AUDIT_RUNNER_IMAGE_OS } else { 'LOCAL' }),
+        $(if ($env:MQ_AUDIT_RUNNER_IMAGE_VERSION) { $env:MQ_AUDIT_RUNNER_IMAGE_VERSION } else { 'LOCAL' }))
+}
+
 function Test-PublicFilesystemMetadata {
     $git = Get-Command git.exe -ErrorAction Stop
     $trackedPaths = @(& $git.Source -C $workspace ls-files --cached)
@@ -118,9 +186,97 @@ function Test-LauncherPort {
     finally { $client.Close() }
 }
 
+function Get-LauncherAuditSha256Hex {
+    param([byte[]]$Bytes)
+
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-', '').ToLowerInvariant()
+    } finally {
+        $algorithm.Dispose()
+    }
+}
+
+function Get-LauncherAuditFileSha256Hex {
+    param([string]$FilePath)
+
+    $stream = [IO.File]::OpenRead($FilePath)
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+    } finally {
+        $algorithm.Dispose()
+        $stream.Dispose()
+    }
+}
+
+function Get-LauncherAuditExpectation {
+    $resolvedRoot = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $workspace -ErrorAction Stop).ProviderPath)
+    $normalizedRoot = $resolvedRoot.TrimEnd([char[]]@('\', '/')).Replace('\', '/').ToLowerInvariant()
+    $rootId = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($normalizedRoot))
+    $rootPrefix = $resolvedRoot.TrimEnd([char[]]@('\', '/')) + [IO.Path]::DirectorySeparatorChar
+
+    $runtimePathMap = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::Ordinal)
+    foreach ($entry in @(
+        @('/', 'index.html'),
+        @('/index.html', 'index.html'),
+        @('/manifest.webmanifest', 'manifest.webmanifest'),
+        @('/release-shell-v1.json', 'release-shell-v1.json'),
+        @('/sw.js', 'sw.js'),
+        @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
+        @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
+        @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
+        @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'),
+        @('/assets/sounds/close.wav', 'assets/sounds/close.wav'),
+        @('/assets/sounds/confirm.wav', 'assets/sounds/confirm.wav'),
+        @('/assets/sounds/incorrect.wav', 'assets/sounds/incorrect.wav'),
+        @('/assets/sounds/tap.wav', 'assets/sounds/tap.wav'),
+        @('/LICENSE', 'LICENSE'),
+        @('/PRIVACY.md', 'PRIVACY.md'),
+        @('/THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md')
+    )) {
+        $runtimePathMap.Add($entry[0], $entry[1])
+    }
+
+    $routes = [string[]]@($runtimePathMap.Keys)
+    [Array]::Sort($routes, [StringComparer]::Ordinal)
+    $records = [Collections.Generic.List[string]]::new()
+    foreach ($route in $routes) {
+        $relativePath = $runtimePathMap[$route]
+        if ($route.IndexOfAny([char[]]@("`t", "`r", "`n")) -ge 0 -or
+            $relativePath.IndexOfAny([char[]]@("`t", "`r", "`n")) -ge 0) {
+            throw 'The launcher audit runtime path map contains a non-canonical path.'
+        }
+        $absolutePath = [IO.Path]::GetFullPath([IO.Path]::Combine($resolvedRoot, $relativePath))
+        if (-not $absolutePath.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase) -or
+            -not (Test-Path -LiteralPath $absolutePath -PathType Leaf)) {
+            throw "The launcher audit could not bind runtime file '$relativePath'."
+        }
+        $length = ([IO.FileInfo]::new($absolutePath)).Length.ToString(
+            [Globalization.CultureInfo]::InvariantCulture
+        )
+        $fileSha256 = Get-LauncherAuditFileSha256Hex -FilePath $absolutePath
+        $records.Add("$route`t$relativePath`t$length`t$fileSha256")
+    }
+    $canonicalPayload = ($records -join "`n") + "`n"
+    $servedPayloadSha256 = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($canonicalPayload))
+    $identity = 'math-quest-local-server:v2'
+    $release = '1.0.0-beta.2'
+    $port = 8771
+    $body = "{`"schemaVersion`":1,`"identity`":`"$identity`",`"release`":`"$release`",`"port`":$port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$servedPayloadSha256`"}"
+
+    return [PSCustomObject]@{
+        Identity = $identity
+        Body = $body
+    }
+}
+
 function Test-LauncherIdentity {
-    $expectedIdentity = 'math-quest-local-server:v1'
-    $expectedRelease = '1.0.0-beta.1'
+    try {
+        $expected = Get-LauncherAuditExpectation
+    } catch {
+        return $false
+    }
     $client = New-Object System.Net.Sockets.TcpClient
     try {
         $client.Connect([System.Net.IPAddress]::Loopback, 8771)
@@ -135,16 +291,33 @@ function Test-LauncherIdentity {
                 try { $read = $stream.Read($buffer, 0, $buffer.Length) } catch { break }
                 if ($read -le 0) { break }
                 $received.Write($buffer, 0, $read)
-                $response = [Text.Encoding]::UTF8.GetString($received.ToArray())
-                $identityHeader = "(?im)^X-Math-Quest-Server:\s*$([Text.RegularExpressions.Regex]::Escape($expectedIdentity))\s*$"
-                $identityBody = "`"identity`"\s*:\s*`"$([Text.RegularExpressions.Regex]::Escape($expectedIdentity))`""
-                $releaseBody = "`"release`"\s*:\s*`"$([Text.RegularExpressions.Regex]::Escape($expectedRelease))`""
-                if ($response -match $identityHeader -and
-                    $response -match $identityBody -and
-                    $response -match $releaseBody -and
-                    $response -match '"port"\s*:\s*8771') { return $true }
             }
-            return $false
+            $response = [Text.Encoding]::UTF8.GetString($received.ToArray())
+            $separatorIndex = $response.IndexOf("`r`n`r`n", [StringComparison]::Ordinal)
+            if ($separatorIndex -lt 0) { return $false }
+            $headerText = $response.Substring(0, $separatorIndex)
+            $bodyText = $response.Substring($separatorIndex + 4)
+            $headerLines = $headerText -split "`r`n"
+            if ($headerLines.Count -lt 2 -or $headerLines[0] -cne 'HTTP/1.1 200 OK') { return $false }
+            $headers = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+            for ($lineIndex = 1; $lineIndex -lt $headerLines.Count; $lineIndex += 1) {
+                $colon = $headerLines[$lineIndex].IndexOf(':')
+                if ($colon -le 0) { return $false }
+                $name = $headerLines[$lineIndex].Substring(0, $colon)
+                if ($headers.ContainsKey($name)) { return $false }
+                $headers.Add($name, $headerLines[$lineIndex].Substring($colon + 1).Trim())
+            }
+            if (-not $headers.ContainsKey('X-Math-Quest-Server') -or
+                $headers['X-Math-Quest-Server'] -cne $expected.Identity -or
+                -not $headers.ContainsKey('Content-Type') -or
+                $headers['Content-Type'] -cne 'application/json; charset=utf-8' -or
+                -not $headers.ContainsKey('Content-Length') -or
+                $headers['Content-Length'] -cne ([Text.Encoding]::UTF8.GetByteCount($expected.Body)).ToString(
+                    [Globalization.CultureInfo]::InvariantCulture
+                )) {
+                return $false
+            }
+            return $bodyText -ceq $expected.Body
         } finally { $received.Dispose() }
     } catch { return $false }
     finally { $client.Close() }
@@ -176,10 +349,42 @@ function Invoke-PublicCandidateGuard {
 
 try {
     Test-PublicFilesystemMetadata
+    & (Join-Path $auditDirectory 'test-launcher-identity.ps1')
     $node = Stage-Node24 -Candidates @(Get-NodeCandidates -ExplicitPath $NodePath) -DestinationDirectory $runtimeTemp
     Write-Host "Using Node $($node.Version) from a validated temporary copy of $($node.Source)"
+    & $node.Path --test (Join-Path $auditDirectory 'tests\publication-clearance.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The publication, external release-evidence, and browser/runner fail-closed schema tests failed.'
+    }
+    $holisticRegressionTests = @(
+        (Join-Path $auditDirectory 'tests\adapter-syntax.test.mjs'),
+        (Join-Path $auditDirectory 'tests\page-adapter-effects.test.mjs'),
+        (Join-Path $auditDirectory 'tests\placement-adapter-effects.test.mjs'),
+        (Join-Path $auditDirectory 'tests\holistic-child-ux-regressions.test.mjs'),
+        (Join-Path $auditDirectory 'tests\holistic-functional-regressions.test.mjs')
+    )
+    & $node.Path --test $holisticRegressionTests
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The mandatory holistic child-UX and functional defect regressions failed.'
+    }
+    Write-Host 'Mandatory holistic defect regression suite passed.'
+    Push-Location $workspace
+    try {
+        & $node.Path (Join-Path $workspace 'tools\build-pwa-release-manifest.mjs') --check
+        if ($LASTEXITCODE -ne 0) {
+            throw 'The PWA release-shell manifest or worker hash binding is stale.'
+        }
+        & $node.Path --test (Join-Path $auditDirectory 'tests\pwa-release.test.mjs')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'The PWA release-shell, lifecycle, and caregiver-copy effect tests failed.'
+        }
+        Write-Host 'PWA release-shell binding and effect suite passed.'
+    } finally {
+        Pop-Location
+    }
     $candidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path
     $browser = if ($NoBrowser) { $null } else { Find-Browser -ExplicitPath $BrowserPath }
+    Set-BrowserAuditIdentity -SelectedBrowser $browser
     if ($browser) { Write-Host "Using browser $browser" } else { Write-Warning 'No Edge/Chrome browser selected; browser checks will be reported as skipped and the audit cannot pass.' }
     $launcherProcess = $null
     if (Test-LauncherPort) {

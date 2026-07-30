@@ -50,6 +50,12 @@ audit/visual-review/
 audit/visual-qa/
 audit/**/*.png
 
+# Generated visual-interaction QA evidence is local-only. Screenshots, raw
+# browser logs, harness output, and disposable review scripts can contain
+# machine-specific or child-entered data. Only a separately authored, compact,
+# sanitized conclusion may be added to a public location outside this tree.
+/qa/reviews/visual-interaction/
+
 # Local gameplay data
 math-quest-backup*.json
 
