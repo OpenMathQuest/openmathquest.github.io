@@ -57,7 +57,7 @@ Nova Scotia pages are reference-only, grade-matched localization checks. They ar
 | MQ-045 | 8 | G1 | Make Equal Groups and Shares | ENG-Y1-NMD | AC9M1N06 | SRC-NS-MATH-1 |
 | MQ-046 | 8 | G1 | Measure with Equal Informal Units | ENG-Y1-MEAS | AC9M1M02 | SRC-NS-MATH-1 |
 | MQ-047 | 8 | G1 | Find Halves and Quarters | ENG-Y1-NFRAC | AC9M2N03 | SRC-NS-MATH-1 |
-| MQ-048 | 8 | G1 | Recognize Canadian Coin Values | ENG-Y1-MEAS | AC9M1N05 | SRC-NS-MATH-1 |
+| MQ-048 | 8 | G1 | Match Canadian Practice Tokens to Values | ENG-Y1-MEAS | AC9M1N05 | SRC-NS-MATH-1 |
 | MQ-049 | 9 | G1 | Bridge Ten for Add and Subtract | ENG-Y1-NAS | AC9M1N04 | SRC-NS-MATH-1 |
 | MQ-050 | 9 | G1 | Repartition a Two-Digit Number | ENG-Y1-NPV | AC9M1N02 | SRC-NS-MATH-1 |
 | MQ-051 | 9 | G1 | Match Equivalent Coin Amounts | ENG-Y1-MEAS | AC9M1N05 | SRC-NS-MATH-1 |

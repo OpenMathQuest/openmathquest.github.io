@@ -1,6 +1,6 @@
 # Privacy
 
-Effective date: 2026-07-29
+Effective date: 2026-08-02
 
 Math Quest keeps gameplay information in the browser. It has no user accounts,
 analytics, advertising, fingerprinting, application-level uploads, or cloud
@@ -100,13 +100,15 @@ A web host, including GitHub Pages, can receive ordinary request metadata such
 as IP address, browser type, requested path, and time while serving files.
 That hosting data is governed by the host's policies, not by Math Quest.
 
-Public Beta 1 is served from `https://openmathquest.github.io` and the
-organization root repository `OpenMathQuest/openmathquest.github.io`. Public
-Beta 2 may use that origin only if its child-facing host/privacy/legal review
-is affirmatively cleared. If it cannot be cleared, the runnable child-facing
-build must move to a suitable host while the public source can remain on
-GitHub. The current organization is reserved exclusively for Math Quest Pages
-and uses no CNAME or custom domain.
+Public betas are served from `https://openmathquest.github.io` and the
+organization root repository `OpenMathQuest/openmathquest.github.io`. The
+host's child-facing privacy/legal qualification is explicitly deferred for
+semantic-version prereleases beginning with Beta 4. That deferral is not host
+approval and does not alter GitHub's collection or terms. Before the first
+stable Math Quest release, the selected origin must be affirmatively qualified
+or the runnable child-facing build must move to a suitable host; the public
+source can remain on GitHub. The current organization is reserved exclusively
+for Math Quest Pages and uses no CNAME or custom domain.
 
 Browser storage is origin-wide, not path-specific. Any future Pages site under
 the `OpenMathQuest` organization would share this origin and could access the

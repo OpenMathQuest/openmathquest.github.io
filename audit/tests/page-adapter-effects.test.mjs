@@ -755,7 +755,43 @@ test("Home discards a zero-queue preview capstone but preserves a zero-queue reg
   assert.equal(regular.ui.screen, "home");
 });
 
-test("safe-boundary checks include name gate, home, and grown-ups; explicit Retry bypasses debounce", async () => {
+test("the first-use guide Ready action opens the unchanged question without submitting evidence", () => {
+  const physicalDoneBody = extractActionBranch("physical-done");
+  const question = Object.freeze({
+    questionId: "MQ-048-guide-test",
+    skillId: "MQ-048",
+    prompt: "Which Canadian money value does this practice token stand for?",
+    scaffolded: false,
+  });
+  const effects = { saves: 0, renders: 0, focusSelectors: [], spoken: [], now: 1700, question };
+  const harness = evaluateHarness({
+    prelude: `
+      let ui={phase:"physical",question:effects.question,modelTouched:false,promptFinishedAt:0,idleStart:0};
+      const now=()=>effects.now;
+      function save(){effects.saves+=1;return true;}
+      function renderPlayAndFocus(selector){effects.renders+=1;effects.focusSelectors.push(selector);}
+      function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
+    `,
+    functions: [],
+    body: `function chooseReady(){${physicalDoneBody}}`,
+    exposed: "chooseReady,ui:()=>ui",
+    context: { effects },
+  });
+  harness.chooseReady();
+  const ui = harness.ui();
+  assert.equal(ui.phase, "question");
+  assert.equal(ui.question, question);
+  assert.equal(ui.question.scaffolded, false);
+  assert.equal(ui.modelTouched, true);
+  assert.equal(effects.saves, 1);
+  assert.equal(effects.renders, 1);
+  assert.equal(effects.spoken.at(-1), question.prompt);
+  assert.equal(ui.promptFinishedAt, effects.now);
+  assert.equal(ui.idleStart, effects.now);
+  assert.equal(effects.focusSelectors.length, 1);
+});
+
+test("safe-boundary checks include name gate, home, and grown-ups; explicit Home and Retry checks bypass debounce", async () => {
   const effects = {
     now: 120_000,
     updateCalls: 0,
@@ -764,6 +800,7 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Retr
     statusRefreshes: 0,
   };
   const retryBody = extractActionBranch("pwa-retry");
+  const homeCheckBody = extractActionBranch("pwa-check");
   const harness = evaluateHarness({
     prelude: `
       let ui={screen:"nameGate"};
@@ -788,10 +825,11 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Retr
       async function queryPwaReadiness(){effects.readinessCalls+=1;return true;}
       async function initializePwa(){effects.initializeCalls+=1;}
       function invokeExplicitRetry(){${retryBody}}
+      async function invokeHomeCheck(){${homeCheckBody}}
       function setScreen(screen){ui.screen=screen;}
     `,
-    functions: ["updateReadyState", "checkPwaUpdateAtBoundary"],
-    exposed: "pwa,setScreen,checkPwaUpdateAtBoundary,invokeExplicitRetry",
+    functions: ["updateReadyState", "checkPwaUpdateAtBoundary", "checkPwaUpdateNow"],
+    exposed: "pwa,setScreen,checkPwaUpdateAtBoundary,invokeExplicitRetry,invokeHomeCheck",
     context: {
       effects,
       Date: { now: () => effects.now },
@@ -818,6 +856,59 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Retr
   assert.equal(effects.updateCalls, 4, "the explicit Retry action must bypass 60-second debounce");
   assert.equal(effects.initializeCalls, 0);
   assert.equal(harness.pwa.lastUpdateCheck, effects.now);
+
+  harness.pwa.lastUpdateCheck = effects.now;
+  await harness.invokeHomeCheck();
+  assert.equal(effects.readinessCalls, 2);
+  assert.equal(effects.updateCalls, 5, "the Home control must perform a real forced registration update");
+
+  harness.pwa.registration = null;
+  await harness.invokeHomeCheck();
+  assert.equal(effects.initializeCalls, 1, "the Home control must initialize offline support when needed");
+});
+
+test("Home renders a grown-up update control with truthful, live states", () => {
+  const harness = evaluateHarness({
+    prelude: `
+      const serviceWorkerEligible=true;
+      const navigator={onLine:true,serviceWorker:{controller:{}}};
+      const pwa={
+        applying:false,updatePhase:"IDLE",updateReady:false,reloadSuggested:false,
+        lastUpdateCheck:0,phase:"READY",details:{ready:true},registration:{waiting:null}
+      };
+      const escape=value=>String(value);
+      function pwaUpdateStatusText(){
+        if(pwa.updatePhase==="CHECKING")return "Checking for an update.";
+        if(pwa.updatePhase==="READY")return "A verified update is ready.";
+        return "";
+      }
+      function hasVerifiedActivePwaShell(){return pwa.phase==="READY"&&pwa.details?.ready===true;}
+      function pwaReloadBoundary(){return true;}
+      function setState(values){Object.assign(pwa,values);}
+    `,
+    functions: ["homePwaUpdateStatusText", "homePwaUpdateHtml"],
+    exposed: "setState,homePwaUpdateStatusText,homePwaUpdateHtml",
+  });
+
+  const initial = harness.homePwaUpdateHtml();
+  assert.match(initial, /Grown-ups/u);
+  assert.match(initial, /App updates/u);
+  assert.match(initial, /data-action="pwa-check"/u);
+  assert.match(initial, />Check for updates</u);
+  assert.match(initial, /Progress stays on this device/u);
+
+  harness.setState({ updatePhase: "CHECKING" });
+  const checking = harness.homePwaUpdateHtml();
+  assert.match(checking, /Checking for an update\./u);
+  assert.match(checking, /data-action="pwa-check"[^>]*disabled/u);
+
+  harness.setState({ updatePhase: "READY", updateReady: true });
+  const ready = harness.homePwaUpdateHtml();
+  assert.match(ready, /A verified update is ready\./u);
+  assert.match(ready, /data-action="pwa-apply"(?![^>]*hidden)/u);
+
+  harness.setState({ updatePhase: "IDLE", updateReady: false, lastUpdateCheck: 123 });
+  assert.equal(harness.homePwaUpdateStatusText(), "Math Quest is up to date.");
 });
 
 function createExportHarness(shareResult) {
@@ -967,9 +1058,9 @@ test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mi
   const effects = { requests: [], replyMode: "valid" };
   const harness = evaluateHarness({
     prelude: `
-      const PWA_RELEASE="1.0.0-beta.3";
-      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.3";
-      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.3";
+      const PWA_RELEASE="1.0.0-beta.4";
+      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.4";
+      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.4";
       const PWA_REQUIRED_PATHS=Object.freeze(["./index.html","./PRIVACY.md"]);
       const PWA_ACTIVATION_CHALLENGE_PATTERN=/^[a-f0-9]{64}$/;
       const waiting={

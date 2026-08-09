@@ -2,7 +2,59 @@
 
 All notable public changes to Math Quest are recorded here.
 
-## 1.0.0-beta.3 — Unreleased
+## 1.0.0-beta.4 — 2026-08-08
+
+- Moved the grown-up **Check for updates** control to Home, with live
+  checking, current-version, failure, verified-update, Apply, and safe Reload
+  states that do not change or transmit progress.
+
+- Replaced the starting-point check's low-heavy staircase with a deterministic
+  15-to-18-question adaptive bracket. Three-question checkpoints can recover
+  from one mistake or **Not sure**, verify the recommended boundary, and retain
+  representative selection and construction interactions without writing
+  mastery evidence.
+- Added a hidden, grown-up-confirmed 50-question QA Tour with a fixed
+  maximum-coverage fixture, progress isolation, per-question notes and flags,
+  exact reproduction data, and local-only snapshot reports with no automatic
+  upload or child data.
+- Added a versioned, hash-bound finished-work policy that distinguishes
+  implemented, release-certified, shipped, blocked, and declined work and
+  rejects governance mutations that would weaken those meanings.
+- Added optional, non-evidentiary Math Quest Free Play after exact skill
+  introduction, with original Play Solo and Family Play Together construction
+  loops for Many Ways, Same Amount and Balance Bay.
+- Hardened the browser audit with a closed 72-result oracle, including
+  Free Play unlock, privacy, accessibility, truthful-feedback, layout, and
+  progress-isolation effects.
+- Recorded external host privacy/legal qualification as a visible, non-passing
+  prerelease deferral. The owner also skipped the trusted-HTTPS canary for
+  Beta 4 only; it is reported as `OWNER_SKIPPED`, never as a pass or
+  reconciliation. Affirmative host qualification and real canary evidence—or
+  a new explicit owner decision—are required at their later release boundary.
+- Added a machine-enforced direct evidence successor: the final Beta 4 commit
+  must be the qualification commit's sole immediate child and may change only
+  publication clearance plus reviewed browser-runner evidence before the one
+  complete certification run.
+- Reworked unclear and mismatched curriculum families so the 126-skill runtime
+  now enforces all 166 declared task-type obligations, including distinct
+  addition and subtraction strategies and operation-family witnesses.
+- Replaced the unsupported authentic-coin-face claim with five original
+  first-party practice tokens mapped to Canadian denominations, five visible
+  answer choices, mastery evidence for every mapping, and a resumable
+  five-token value guide before a child's first assessed practice-token
+  question.
+- Made assessed Replay and accessibility labels answer-free while keeping Help,
+  re-teach, and feedback models fully worked and accessible through one
+  deliberate announcement path.
+- Expanded the deterministic visual contract across desktop, tablet portrait,
+  two iPad landscape sizes, and phone, including all 75 practice-token
+  question, Help, and incorrect-feedback states.
+- Prevented workers from probing or forcing navigation of silent, malformed,
+  suspended, unknown, or unverifiable tabs. A grown-up now deliberately reloads
+  or closes and reopens an older tab; the current page keeps its reviewed
+  safe-boundary update behavior for its own responsive lifecycle.
+
+## 1.0.0-beta.3 — 2026-07-30
 
 - Removed the inert Home control from the Home screen while retaining working
   Home navigation from child-session, grown-up, and information screens.

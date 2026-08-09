@@ -1,7 +1,7 @@
 # Math Quest — Public Beta Build Contract
 
-- **Contract version:** `3.2`
-- **Date:** `2026-07-29`
+- **Contract version:** `3.5`
+- **Date:** `2026-08-02`
 - **Digest record:** `research/build-axioms.md`
 - **Status:** active for the independently authored public beta
 
@@ -160,6 +160,17 @@ have the same child-visible semantic task signature. Generation uses bounded,
 deterministic primary resampling and a bounded deterministic fallback, then
 fails closed if it still cannot produce a distinct visible task.
 
+The starting estimate uses a deterministic adaptive binary bracket across
+Levels 1 through 20 and may recommend Level 1 through 21. Each sampled level
+uses three distinct skills and moves the lower boundary upward after at least
+two correct responses, so one isolated mistake cannot permanently force the
+run down to the curriculum floor. After the bracket narrows, three different
+skills verify the highest passed boundary; a strong Level-1 verification may
+independently establish Level 1 even when its earlier checkpoint was
+inconclusive. A failed verification falls back only to a lower boundary that
+was actually passed. Every route remains within the approved 10-to-20-question
+range.
+
 Adult-confirmed placement is a distinct acquisition state, `PLACED`, not
 synthetic mastery. It may be applied only to genuinely `UNSEEN` skills below
 the chosen starting level that contain no retained evidence, misses, restore,
@@ -263,6 +274,39 @@ Design for a young pre-reader co-playing with a grown-up:
 World or theme choices may change decoration and examples, but never the
 mathematics, mastery obligations, or evidence.
 
+## Math Quest Free Play
+
+Home may expose optional Math Quest Free Play only after at least one activity's
+exact prerequisite skill has been introduced through completed ordinary
+evidentiary work. `UNSEEN`, `LEARNING`, `PLACED`, preview, Parent Test, and
+Playground states do not satisfy that boundary. Activity tools, ranges,
+representations, and operations must each be mapped to exact manifest skill
+IDs rather than inferred from a level.
+
+Playground state is transient, non-evidentiary, and independent of the
+curriculum seed. Entering, playing, checking, undoing, replaying, stopping, or
+leaving it must not change mastery, spacing, placement, practice counts,
+sample history, response timing, session evidence, feedback history,
+promotion, fatigue, or any other exported progress byte. Playground makes no
+network request and stores no identifier, analytics, engagement record, or
+hidden mastery proxy.
+
+The initial pilot provides original construction activities under **Play
+Solo** and **Family Play Together**. Family play must give both roles a
+meaningful mathematical choice and use an explicit handoff so one activation
+cannot act for two people. Play remains untimed and unscored, with Undo,
+deliberate Check, replay, and a working Home path. Regular learning stays the
+primary Home action.
+
+The mandatory non-evidentiary session capstone remains unchanged. Any later
+Playground capstone or postlude integration requires explicit contract
+approval and equal-or-stronger coverage of stopping agency, fatigue, active
+re-teaching, session completion, resume, and evidence isolation.
+
+The detailed pilot mappings, interaction states, clean-room boundary, and
+deferred tiers are normative in
+`docs/development/math-quest-free-play-pilot.md`.
+
 ## Canadian context
 
 Use metric measurement contexts and Canadian money. Ordinary coin work uses
@@ -296,6 +340,10 @@ published file set. Keep the optional display name outside exported progress
 backups, and still treat those backups as sensitive because they contain
 learning history.
 
+Do not transmit child data or learning history automatically. Backup export is
+a local operation available only through a deliberate grown-up action; it is
+not an application upload or cloud-sync path.
+
 Use the dedicated organization-root origin
 `https://openmathquest.github.io`, served from
 `OpenMathQuest/openmathquest.github.io`, with no CNAME or custom domain.
@@ -305,7 +353,39 @@ because browser storage is origin-wide and the root service worker controls
 identity, empty Pages base path, GitHub Actions publishing source, HTTPS, and
 deployed artifact have all been verified.
 
+External host privacy/legal qualification is distinct from the application's
+privacy boundary. Beginning with `v1.0.0-beta.4`, an eligible prerelease may
+use the selected hosted origin only with exact `DEFERRED_PRERELEASE` evidence
+reported as `EXT-HOST: DEFERRED`, never passed, approved, waived, or
+privacy-cleared. Its public notice must disclose ordinary provider request
+metadata. This deferral expires before the first stable release, which must
+fail closed until the selected host is affirmatively qualified or replaced.
+The deferral does not relax any prohibition on automatic transmission of child
+identity, progress, answers, or gameplay telemetry, or any application privacy,
+runtime-network, metadata, secret, offline, provenance, or PWA check.
+
 ## Release audit
+
+The [`AGENTS.md` finished-work policy](../../AGENTS.md#what-counts-as-finished-work)
+is normative. Keep acceptance criteria and any blocker, corrected conclusion,
+or owner-approved scope reduction in the existing owning issue, plan,
+governing record, or active working plan rather than creating an ad hoc status
+document. A reduced deliverable does not satisfy the original scope. Maintain
+an obsolete test only for a documented contract reason and preserve
+equal-or-stronger effect-sensitive protection.
+
+Ordinary development uses the fast focused suite plus effect-sensitive checks
+selected from the affected behavior and permanent defect regressions. These
+checks may establish that real production behavior is **implemented**, but do
+not make it **release-certified**. Once all planned work and evidence records
+are final, freeze the exact candidate commit and public payload. Run the
+complete certification system once against that immutable candidate,
+immediately before public tagging and deployment. A clear owner publication
+instruction authorizes the run. Any later change invalidates the result and
+requires focused correction, a new freeze, and a complete restart. An earlier
+complete run requires explicit owner approval and remains diagnostic. The
+candidate is **shipped** only when those certified bytes are actually
+published.
 
 The complete release review must test the exact shipped bytes and fail closed.
 At minimum, it must verify:
@@ -333,6 +413,9 @@ At minimum, it must verify:
 10. reproducibility of the approved child-string table and its digest.
 
 Predict countable audit results before the final run, reconcile predictions
-with actual results, and record failures, skips, and residual risks. Do not
-declare the public beta ready while any technical, privacy, rights, visual, or
-deployment gate is unresolved.
+with actual results, and record failures, skips, deferrals, and residual
+risks. Do not declare a public beta ready while any required technical,
+application-privacy, rights, visual, canary, or deployment gate is unresolved,
+or while its host record is absent or disguised as passed rather than exact
+`DEFERRED_PRERELEASE`. Do not declare a stable release ready while external
+host privacy/legal qualification is unresolved.

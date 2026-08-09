@@ -15,7 +15,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Fail-closed component, provenance, and licence eligibility policy.",
-      "sha256": "03aa0e848c3caef5bf58de0258a21b69d6fe18ef4ff34c460690af72218d42e5"
+      "sha256": "af80469037e788b5739fbcea72e2c9fc7d2385707469fcdc231ebfcc66d12258"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -48,6 +48,14 @@
       "licenceExpression": "MIT",
       "purpose": "Original artwork, deterministic rasterization, and exact hashes for the bundled app icons.",
       "sha256": "f037f8e5704a707cb447ba5778738332ce15110bb2e96ed21fe3f1a285b5f8a1"
+    },
+    {
+      "path": "licenses/ci-toolchain.md",
+      "kind": "attribution",
+      "origin": "mixed-open",
+      "licenceExpression": "MIT",
+      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only canary tools.",
+      "sha256": "e720526f6169014d8f237539d22df78a1a32754698b3e4f794d6aa0f318762e5"
     },
     {
       "path": "licenses/sound-effects.md",

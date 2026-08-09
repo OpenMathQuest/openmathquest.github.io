@@ -1,0 +1,12 @@
+{
+  "name": "open-math-quest-ci-tools",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": "24.14.0"
+  },
+  "devDependencies": {
+    "playwright-core": "1.62.1"
+  }
+}

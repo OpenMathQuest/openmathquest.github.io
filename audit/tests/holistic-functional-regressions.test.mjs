@@ -576,6 +576,8 @@ test("QA-006/016 cold boot renders and focuses only after progress protection se
     const ui=effects;
     const profileChosen=true;
     const saveRecoveryRequired=false;
+    const qaTourRequested=false;
+    let qaReturnScreen=null;
     const state={activeSession:null};
     const CSS={escape:value=>String(value)};
     const focusTarget={focus(){effects.order.push("focus:"+effects.lastSelector);}};
@@ -754,78 +756,137 @@ test("QA-026 mastery requires every declared representation phase in order", () 
   assert.deepEqual(plain(migrated.state.skills[skill.skillId].witnessIds), []);
 });
 
-test("QA-027 visual operands and concrete tasks remain available to sight, speech, and assistive technology", () => {
+test("QA-027 assessed stimuli stay answer-free while worked Help remains complete and accessible", () => {
   const source = `(()=>{
     "use strict";
     const MODEL_FAMILIES=new Set(["attributeSet","comparison","numberBond","tenFrame","array","fractionPair","placeValue","numberLine","proportionalBar","areaGrid","clockSpan","visualPrompt"]);
     const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const roleLabel=value=>String(value??"").replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]+/g," ").trim();
     const s=(id,slots={})=>({
       "aria.mathModel":"Math model",
       "instruction.physical":"Grown-up: make this with real objects, then choose We made it.",
       "instruction.physicalModel":"Try "+slots.representation+" with large objects.",
       "ui.physicalDone":"We made it"
     })[id]||id;
-    const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8}};
+    const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8},makeTeachingSupport(question){return question.support;}};
     const displayPrompt=q=>escape(q.prompt);
     let ui={screen:"session",phase:"physical",question:{prompt:"Pair every shell with one shell."}};
     ${extractFunction("modelOperandDescription")}
+    ${extractFunction("repeatedStimulusItems")}
+    ${extractFunction("clockHandStimulusDescription")}
+    ${extractFunction("unlabelledTickRunDescription")}
+    ${extractFunction("stimulusOperandDescription")}
     ${extractFunction("semanticModel")}
+    ${extractFunction("workedTeachingDescriptor")}
+    ${extractFunction("workedResultText")}
+    ${extractFunction("teachingSupportSpeech")}
     ${extractFunction("durationEvidenceSpeech")}
     ${extractFunction("replayText")}
     ${extractFunction("physicalTaskHtml")}
-    return {modelOperandDescription,semanticModel,durationEvidenceSpeech,replayText,physicalTaskHtml};
+    return {modelOperandDescription,stimulusOperandDescription,semanticModel,workedTeachingDescriptor,teachingSupportSpeech,durationEvidenceSpeech,replayText,physicalTaskHtml};
   })()`;
   const harness = new vm.Script(source, {
     filename: "math-quest-complete-visual-operands.js",
-  }).runInNewContext({});
+  }).runInNewContext({ structuredClone });
 
-  const models = [
-    {
-      label: "The clock shows 6:30",
-      model: { type: "visualPrompt", values: { kind: "clock", items: [{ hour: 6, minute: 30 }] } },
+  const clock = { type: "visualPrompt", values: { kind: "clock", items: [{ hour: 6, minute: 30 }] } };
+  const clockSpeech = harness.durationEvidenceSpeech({ modelDescriptor: clock });
+  assert.match(clockSpeech, /short hour hand is between 6 and 7/u);
+  assert.match(clockSpeech, /long minute hand points to 6/u);
+  assert.doesNotMatch(clockSpeech, /6:30|clock shows/u);
+  const clockModel = harness.semanticModel(clock, { prompt: "What time is it?" }, "<span>visual</span>");
+  assert.match(clockModel, /role="img"/u);
+  assert.doesNotMatch(clockModel, /6:30|clock shows/u);
+
+  const angle = { type: "visualPrompt", values: { kind: "geometry", items: [{ kind: "angle", degrees: 80 }] } };
+  assert.match(harness.stimulusOperandDescription(angle), /8 groups of ten unlabelled tick spaces/u);
+  assert.doesNotMatch(harness.stimulusOperandDescription(angle), /80 degrees|measures 80/u);
+
+  const objects = { type: "visualPrompt", values: { kind: "objectSet", items: [{ label: "acorns", magnitude: 3 }] } };
+  const objectSpeech = harness.stimulusOperandDescription(objects);
+  assert.equal((objectSpeech.match(/acorn/gu) || []).length, 3);
+  assert.doesNotMatch(objectSpeech, /contains 3|3 acorns/u);
+
+  const supportQuestion = {
+    answer: { value: "2" },
+    support: {
+      type: "numberBond",
+      instruction: "Use a complete number bond.",
+      values: { whole: 5, parts: [3, null], unknown: "part1", operator: "+" },
     },
-    {
-      label: "The start clock shows 3:26. The end clock shows 3:55",
-      model: {
-        type: "clockSpan",
-        values: { startHour: 3, startMinute: 26, endHour: 3, endMinute: 55 },
-      },
+  };
+  const worked = harness.workedTeachingDescriptor(supportQuestion);
+  assert.deepEqual(plain(worked.values.parts), [3, "2"]);
+  assert.match(harness.teachingSupportSpeech(supportQuestion), /Whole 5\. Parts 3 and 2/u);
+  assert.match(harness.teachingSupportSpeech(supportQuestion), /Worked result: 2/u);
+  const workedModel = harness.semanticModel(worked, supportQuestion, "<span>worked visual</span>", { worked: true });
+  assert.match(workedModel, /Whole 5\. Parts 3 and 2/u);
+
+  const practiceToken = {
+    type: "visualPrompt",
+    values: { kind: "practiceMoney", items: [{ kind: "practiceCoin", tokenId: "single-dot", label: "one-dot practice token" }] },
+  };
+  assert.equal(harness.stimulusOperandDescription(practiceToken), "Canadian-money practice token. one-dot practice token");
+  assert.doesNotMatch(harness.stimulusOperandDescription(practiceToken), /5|cent|value/iu);
+  const practiceWorked = harness.workedTeachingDescriptor({
+    answer: { value: "5¢" },
+    support: { ...practiceToken, instruction: "Identify the practice token." },
+  });
+  assert.equal(practiceWorked.values.items[0].workedValue, "5¢");
+  assert.match(harness.modelOperandDescription(practiceWorked), /Value 5¢/u);
+
+  const equivalentMoney = {
+    type: "proportionalBar",
+    values: {
+      bars: [
+        { label: "first coin way", total: 100, segments: [{ label: "coin 1", value: 25 }, { label: "coin 2", value: 25 }] },
+        { label: "equivalent coin way", total: 100, segments: [{ label: "coin count", units: "$1 coins", unknown: true }] },
+      ],
     },
-    {
-      label: "The angle measures 80 degrees",
-      model: {
-        type: "visualPrompt",
-        values: { kind: "geometry", items: [{ kind: "angle", degrees: 80 }] },
-      },
+  };
+  const moneySpeech = harness.modelOperandDescription(equivalentMoney);
+  assert.match(moneySpeech, /first coin way total 100 with parts coin 1 25, coin 2 25/u);
+  assert.match(moneySpeech, /equivalent coin way total 100 with parts coin count unknown \$1 coins/u);
+  assert.doesNotMatch(moneySpeech, /\[object Object\]|undefined|\bNaN\b/u);
+
+  const sortModel = {
+    type: "attributeSet",
+    values: { items: Array.from({ length: 6 }, () => ({ shape: "circle" })), rule: { attribute: "colour" } },
+  };
+  assert.equal(harness.modelOperandDescription(sortModel), "6 objects are sorted by colour");
+  assert.doesNotMatch(harness.modelOperandDescription(sortModel), /undefined|\bNaN\b/u);
+  const categoricalSort = {
+    type: "attributeSet",
+    values: {
+      items: [{ colour: "red" }, { colour: "blue" }],
+      rule: { attribute: "colour" },
+      categories: [{ value: "red", label: "red objects" }, { value: "blue", label: "blue objects" }],
     },
-    {
-      label: "The solid is 4 units long, 4 units wide, and 4 units high",
-      model: {
-        type: "visualPrompt",
-        values: { kind: "volume", items: [{ kind: "cubeLayers", length: 4, width: 4, height: 4 }] },
-      },
-    },
-    {
-      label: "The composite shape has first rectangle 3 by 11 cm and second rectangle 7 by 5 cm",
-      model: {
-        type: "areaGrid",
-        values: {
-          lengthUnitSymbol: "cm",
-          parts: [
-            { label: "first rectangle", width: 3, height: 11 },
-            { label: "second rectangle", width: 7, height: 5 },
-          ],
-        },
-      },
-    },
-  ];
-  for (const { label, model } of models) {
-    assert.equal(harness.modelOperandDescription(model), label);
-    assert.equal(harness.durationEvidenceSpeech({ modelDescriptor: model }), `${label}.`);
-    const rendered = harness.semanticModel(model, { prompt: "Use the model." }, "<span>visual</span>");
-    assert.match(rendered, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
-    assert.match(rendered, /role="img"/u);
+  };
+  assert.equal(
+    harness.modelOperandDescription(categoricalSort),
+    "2 objects. Sort by colour. Bins: red objects, blue objects.",
+  );
+
+  let generatedStimuli = 0;
+  const disclosurePattern = /(?:The clock shows \d|The angle measures \d|The set contains \d|pattern shows \d)/iu;
+  for (const skillId of ["MQ-001", "MQ-002", "MQ-008", "MQ-009", "MQ-020", "MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"]) {
+    for (const tier of ["EASY", "HARD/TARGET"]) {
+      for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
+        for (const theme of ["ocean", "forest", "space"]) {
+          for (let ordinal = 0; ordinal < 32; ordinal += 1) {
+            const question = engine.makeQuestion({ skillId, tier, representation, theme, ordinal, eligibleQuestionOrdinal: ordinal, seed: 0x4d515558 });
+            const description = harness.stimulusOperandDescription(question.modelDescriptor);
+            assert.doesNotMatch(description, disclosurePattern, `${question.questionId} speech stimulus`);
+            const semantic = harness.semanticModel(question.modelDescriptor, question, "<span>visual</span>");
+            assert.doesNotMatch(semantic, disclosurePattern, `${question.questionId} semantic stimulus`);
+            generatedStimuli += 1;
+          }
+        }
+      }
+    }
   }
+  assert.equal(generatedStimuli, 5_760);
 
   assert.match(harness.replayText(), /Pair every shell with one shell\./u);
   const physical = harness.physicalTaskHtml(
@@ -836,6 +897,102 @@ test("QA-027 visual operands and concrete tasks remain available to sight, speec
   assert.match(physical, /Pair every shell with one shell\./u);
   assert.match(physical, /two rows of shells/u);
   assert.match(physical, /data-action="physical-done"/u);
+});
+
+test("QA-034 multiplication and division fact-family controls show and grade the governed equations", () => {
+  const source = `(()=>{
+    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const responseAction=(_mode,action,attributes="")=>'data-response-action="'+action+'" '+attributes;
+    ${extractFunction("factFamilyConstructionHtml")}
+    return factFamilyConstructionHtml;
+  })()`;
+  const render = new vm.Script(source, { filename: "math-quest-fact-family-renderer.js" })
+    .runInNewContext({});
+  const question = engine.makeQuestion({
+    skillId: "MQ-063",
+    tier: "HARD/TARGET",
+    representation: "PICTORIAL",
+    theme: "ocean",
+    ordinal: 1,
+    eligibleQuestionOrdinal: 1,
+    seed: 0x4d515558,
+  });
+  assert.equal(question.inputMethod, "FACT_FAMILY");
+  assert.equal(question.params.equationFamily, "multiply-divide");
+  const html = render(question, "play", { responseState: engine.createResponseState(question) });
+  const equations = [...html.matchAll(/data-equation="([^"]+)"/gu)].map((match) => match[1]);
+  const { a, b, whole } = question.params;
+  const expected = [`${a}×${b}=${whole}`, `${b}×${a}=${whole}`, `${whole}÷${a}=${b}`, `${whole}÷${b}=${a}`];
+  assert.equal(equations.length, 6);
+  assert.equal(expected.every((equation) => equations.includes(equation)), true);
+  assert.equal(equations.some((equation) => /[+−]/u.test(equation)), false,
+    "a multiplication/division task must not render addition/subtraction choices");
+  assert.match(html, new RegExp(`aria-label="Product ${whole}, factors ${a} and ${b}"`, "u"));
+  const response = engine.serializeResponse(question, { selected: expected });
+  const grade = engine.gradeAnswer(question, response);
+  assert.equal(grade.valid, true);
+  assert.equal(grade.correct, true);
+});
+
+test("QA-027B structured visual controls expose answer-free equivalents instead of assessed answers", () => {
+  const source = `(()=>{
+    "use strict";
+    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const responseAction=()=>"";
+    const geometryVisualHtml=()=>"<i>angle</i>";
+    const clockFaceHtml=()=>"<i>clock</i>";
+    ${extractFunction("clockHandStimulusDescription")}
+    ${extractFunction("unlabelledTickRunDescription")}
+    ${extractFunction("angleMeasureConstructionHtml")}
+    ${extractFunction("clockReadConstructionHtml")}
+    ${extractFunction("metricScaleConstructionHtml")}
+    return {angleMeasureConstructionHtml,clockReadConstructionHtml,metricScaleConstructionHtml};
+  })()`;
+  const render = new vm.Script(source, { filename: "math-quest-answer-free-control-labels.js" })
+    .runInNewContext({});
+  const angle = render.angleMeasureConstructionHtml(
+    { modelDescriptor: { values: { items: [{ degrees: 38 }] } } },
+    "play",
+    { responseState: { degrees: "" } },
+  );
+  assert.match(angle, /3 groups of ten unlabelled tick spaces and 8 more/u);
+  assert.doesNotMatch(angle, /aria-label="[^"]*(?:38 degrees|measuring 38)/u);
+  const clock = render.clockReadConstructionHtml(
+    { level: 13, params: {}, modelDescriptor: { values: { items: [{ hour: 4, minute: 6 }] } } },
+    "play",
+    { responseState: { hour: "", minute: "" } },
+  );
+  assert.match(clock, /long minute hand is 1 small tick past 1/u);
+  assert.doesNotMatch(clock, /aria-label="[^"]*(?:4:06|showing)/u);
+  const metric = render.metricScaleConstructionHtml(
+    { answer: { value: "7" }, params: { unit: "centimetres", scaleMaximum: 10 }, tier: "EASY" },
+    "play",
+    { responseState: { value: "" } },
+  );
+  assert.match(metric, /7 more unlabelled tick spaces/u);
+  assert.doesNotMatch(metric, /aria-label="[^"]*(?:mark 7|reaches 7|points to 7)/u);
+
+  const methodCounts = { ANGLE_MEASURE: 0, CLOCK_READ: 0, METRIC_SCALE: 0 };
+  for (const skillId of ["MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"]) {
+    for (const tier of ["EASY", "HARD/TARGET"]) {
+      for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
+        for (const theme of ["ocean", "forest", "space"]) {
+          for (let ordinal = 0; ordinal < 32; ordinal += 1) {
+            const question = engine.makeQuestion({ skillId, tier, representation, theme, ordinal, eligibleQuestionOrdinal: ordinal, seed: 0x4d515558 });
+            const controls = { responseState: engine.createResponseState(question) };
+            let html = "";
+            if (question.inputMethod === "ANGLE_MEASURE") html = render.angleMeasureConstructionHtml(question, "play", controls);
+            else if (question.inputMethod === "CLOCK_READ") html = render.clockReadConstructionHtml(question, "play", controls);
+            else if (question.inputMethod === "METRIC_SCALE") html = render.metricScaleConstructionHtml(question, "play", controls);
+            else continue;
+            methodCounts[question.inputMethod] += 1;
+            assert.doesNotMatch(html, /aria-label="[^"]*(?:Angle measuring \d+ degrees|clock showing \d|reaches mark \d|points to mark \d)/iu, `${question.questionId} control label`);
+          }
+        }
+      }
+    }
+  }
+  assert.ok(Object.values(methodCounts).every((count) => count > 0), JSON.stringify(methodCounts));
 });
 
 test("QA-028 MQ-111 estimates use the rounded operands exactly and comparison wording is grammatical", () => {
@@ -907,7 +1064,9 @@ test("QA-029 child play renders an explicit large answer outcome for both result
   const correct = feedback({ firstAnswerCorrect: true }, "You matched the pattern.");
   assert.match(correct, /data-feedback-state="correct"/u);
   assert.match(correct, /<strong id="feedback-title">Correct\.<\/strong>/u);
-  assert.match(correct, /role="status"/u);
+  assert.match(correct, /role="group"/u);
+  assert.match(correct, /data-feedback-announcement="focus"/u);
+  assert.doesNotMatch(correct, /aria-live=|role="status"/u);
   assert.match(correct, /tabindex="-1"/u);
   const incorrect = feedback({ firstAnswerCorrect: false }, "Try the other piece.");
   assert.match(incorrect, /data-feedback-state="incorrect"/u);
@@ -944,6 +1103,68 @@ test("QA-030 early pattern choices always contain a visible and spoken token", (
   assert.equal((rendered.match(/aria-label="(?:circle|triangle|square|diamond)"/gu) || []).length, 4);
   assert.equal((rendered.match(/class="pattern-token-label"/gu) || []).length, 4);
   assert.doesNotMatch(rendered, /<button[^>]*>\s*<\/button>/u);
+});
+
+test("QA-031 Help is operable only for active questions and reteaching", () => {
+  const effects = { buttons: [] };
+  const source = `(()=>{
+    "use strict";
+    let ui={screen:"session",phase:"question",question:{questionId:"q1"}};
+    const app={querySelectorAll(){return effects.buttons;}};
+    const pwa={pendingControllerReload:false};
+    function saveRecoveryView(){} function progressProtectionView(){} function qaConfirmView(){} function nameGateView(){}
+    function home(){} function playgroundView(){} function placementView(){} function sessionView(){} function fatigueView(){}
+    function capstoneView(){} function doneView(){} function grown(){} function parentLabViewV2(){} function parents(){}
+    function renderRuntimeWarning(){} function renderPwaOverlay(){} function renderDestructiveOverlay(){}
+    function resumePendingPwaReloadAtBoundary(){} function checkPwaUpdateAtBoundary(){}
+    ${extractFunction("helpAvailable")}
+    ${extractFunction("applyHelpAvailability")}
+    ${extractFunction("render")}
+    function setPhase(phase,{screen="session",question=true}={}){ui={screen,phase,question:question?{questionId:"q1"}:null};render();return {available:helpAvailable()};}
+    return {setPhase};
+  })()`;
+  const harness = new vm.Script(source, { filename: "math-quest-help-phase-gate.js" })
+    .runInNewContext({ effects });
+  const makeButton = () => ({
+    hidden: false,
+    disabled: false,
+    attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; },
+  });
+  effects.buttons = [makeButton(), makeButton()];
+  for (const phase of ["question", "reteach"]) {
+    const result = harness.setPhase(phase);
+    assert.equal(result.available, true);
+    assert.ok(effects.buttons.every((button) => !button.hidden && !button.disabled));
+    assert.ok(effects.buttons.every((button) => button.attributes["aria-hidden"] === "false"));
+  }
+  for (const phase of ["pick", "physical", "feedback"]) {
+    const result = harness.setPhase(phase);
+    assert.equal(result.available, false);
+    assert.ok(effects.buttons.every((button) => button.hidden && button.disabled));
+    assert.ok(effects.buttons.every((button) => button.attributes["aria-hidden"] === "true"));
+  }
+  assert.equal(harness.setPhase("question", { screen: "capstone" }).available, false);
+  assert.equal(harness.setPhase("question", { question: false }).available, false);
+});
+
+test("QA-032 feedback uses one focus announcement path and clears stale live text", () => {
+  const effects = { clears: 0, focuses: 0 };
+  const source = `(()=>{
+    "use strict";
+    const target={focus(options){effects.focuses+=1;effects.options=options;}};
+    const app={querySelector(selector){effects.selector=selector;return target;}};
+    function clearAnnouncement(){effects.clears+=1;}
+    ${extractFunction("focusFeedbackOutcome")}
+    return {focusFeedbackOutcome};
+  })()`;
+  const harness = new vm.Script(source, { filename: "math-quest-feedback-focus.js" })
+    .runInNewContext({ effects });
+  assert.equal(harness.focusFeedbackOutcome(), true);
+  assert.equal(effects.clears, 1);
+  assert.equal(effects.focuses, 1);
+  assert.equal(effects.selector, "[data-feedback-state]");
+  assert.deepEqual(plain(effects.options), { preventScroll: true });
 });
 
 test("speech and gentle sound effects remain off in every fresh game", () => {

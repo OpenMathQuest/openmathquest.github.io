@@ -6,6 +6,7 @@ import { loadShippedEngine } from "./lib/engine-loader.mjs";
 import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
   clearanceMatches,
+  CURRENT_RELEASE_TAG,
   evaluateExternalReleaseEvidence,
   parsePublicationClearance,
   PUBLICATION_CLEARANCE_PATH,
@@ -15,6 +16,7 @@ import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   parseReviewedBrowserRunnerEvidence,
 } from "./lib/browser-runner-evidence.mjs";
+import { observeDirectEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const payloadSha256 = String(process.env.MQ_PUBLIC_PAYLOAD_SHA256 || "");
@@ -37,6 +39,12 @@ try {
   if (!browserEvidence.valid || browserEvidence.status !== "REVIEWED") {
     throw new Error(`Reviewed browser/runner evidence is not approved: ${browserEvidence.issues.join("; ") || browserEvidence.status}`);
   }
+  const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
+    ? { valid: true, issues: [] }
+    : await observeDirectEvidenceSuccessor(root, parsed.qualificationCommitSha);
+  if (!evidenceSuccessor.valid) {
+    throw new Error(`Direct release-evidence successor is invalid: ${evidenceSuccessor.issues.join("; ")}`);
+  }
   const expected = {
     engineSha256: engine.sha256,
     manifestVersion: manifest.manifest.version,
@@ -51,12 +59,15 @@ try {
     runnerImageVersion: browserEvidence.runnerImageVersion,
     browserRunnerEvidenceSha256: createHash("sha256").update(browserEvidenceText, "utf8").digest("hex"),
     browserRunnerEvidenceReviewed: true,
+    qualificationCommitSha: parsed.qualificationCommitSha,
+    evidenceSuccessorValid: evidenceSuccessor.valid,
+    releaseTag: CURRENT_RELEASE_TAG,
     now: new Date(),
   };
   if (!clearanceMatches(parsed, expected)) throw new Error("Publication clearance does not match the exact reviewed artifacts.");
   const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
   if (!["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)) {
-    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => !["PASS", "WAIVED"].includes(item.status)).map((item) => `${item.id}: ${item.details}`).join("; ")}`);
+    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => !["PASS", "WAIVED", "DEFERRED", "OPTIONAL", "OWNER_SKIPPED"].includes(item.status)).map((item) => `${item.id}: ${item.details}`).join("; ")}`);
   }
   process.stdout.write(`${JSON.stringify({
     status: parsed.status,
@@ -67,6 +78,8 @@ try {
       status: externalReleaseEvidence.status,
       passCount: externalReleaseEvidence.passCount,
       waivedCount: externalReleaseEvidence.waivedCount,
+      ownerSkippedCount: externalReleaseEvidence.ownerSkippedCount,
+      deferredCount: externalReleaseEvidence.deferredCount,
       requiredCount: externalReleaseEvidence.requiredCount,
     },
     browserRunnerEvidence: {

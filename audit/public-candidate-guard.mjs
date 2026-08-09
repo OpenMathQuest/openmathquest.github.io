@@ -10,6 +10,10 @@ import {
 } from "./lib/browser-runner-evidence.mjs";
 import { CURRICULUM_PATH, validateManifest } from "./lib/curriculum-manifest.mjs";
 import { parsePublicationClearance, PUBLICATION_CLEARANCE_PATH } from "./lib/publication-clearance.mjs";
+import {
+  trustedHttpsCanarySupplyChainFindings,
+  trustedHttpsCanarySupplyChainMutationFailures,
+} from "./lib/trusted-https-canary-supply-chain.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -47,9 +51,10 @@ const REQUIRED_RIGHTS_PATHS = Object.freeze([
   FIRST_PARTY_DECLARATION_PATH,
   "licenses/Inter-OFL.txt",
   "licenses/app-icons.md",
+  "licenses/ci-toolchain.md",
   "licenses/sound-effects.md",
 ]);
-const APPROVED_LICENCES = new Set(["MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
+const APPROVED_LICENCES = new Set(["Apache-2.0", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
 const KIND_LICENCES = Object.freeze({
   font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
   image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
@@ -480,6 +485,21 @@ function localEvidencePath(value) {
   return nonempty(value) && !/^https?:\/\//iu.test(value);
 }
 
+function canarySupplyChainInput(blobs) {
+  const text = (relativePath) => blobs.get(relativePath)?.toString("utf8") || "";
+  return {
+    packageJsonText: text("package.json"),
+    packageLockText: text("package-lock.json"),
+    wrapperText: text("audit/run-trusted-https-canary.ps1"),
+    workflowText: text(".github/workflows/trusted-https-canary.yml"),
+    runnerText: text("audit/run-trusted-https-canary.mjs"),
+    validatorText: text("audit/validate-trusted-https-canary.mjs"),
+    builderText: text("tools/build-pwa-release-manifest.mjs"),
+    releaseShellText: text("release-shell-v1.json"),
+    serviceWorkerText: text("sw.js"),
+  };
+}
+
 function registerFindings(register, entries, blobs, manifest) {
   const findings = [];
   const tracked = new Set(entries.map((entry) => entry.path));
@@ -800,15 +820,58 @@ function registerFindings(register, entries, blobs, manifest) {
     if (observedActions.get(action) !== commit) findings.push(`${COMPONENT_REGISTER_PATH}: registered workflow action is not used at its reviewed commit: ${action}`);
   }
 
-  const toolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
-  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 1) findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain the reviewed Node.js record`);
-  else {
-    const tool = register.toolchain[0];
-    if (exactKeys(tool, toolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
-      if (tool.id !== "nodejs-24" || tool.version !== "24.14.0" || tool.licence !== "MIT" || tool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
-      if (tool.kind !== "build-and-audit-tool" || tool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || tool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
+  const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
+  const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
+  const playwrightToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
+  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 3) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the reviewed Node.js, Caddy, and Playwright Core records`);
+  } else {
+    const [nodeTool, caddyTool, playwrightTool] = register.toolchain;
+    if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
+      if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
+      if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
+    }
+    const exactCaddy = {
+      id: "caddy-2.11.4",
+      kind: "ci-only-trusted-https-server",
+      version: "2.11.4",
+      licence: "Apache-2.0",
+      sourceUrl: "https://github.com/caddyserver/caddy/tree/e2eee6a7fce366321294c9c2a79f3146891dcbdf",
+      sourceCommit: "e2eee6a7fce366321294c9c2a79f3146891dcbdf",
+      signedTagObject: "8ec11a4b7e39a5fd00da2fc5cb9b543e31fd7926",
+      licenceEvidence: "https://github.com/caddyserver/caddy/blob/e2eee6a7fce366321294c9c2a79f3146891dcbdf/LICENSE",
+      archiveUrl: "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_windows_amd64.zip",
+      archiveSha256: "1708333f79e274c7697285afe6d592ab39314e0b131e9ec6bea08ad27df62ebf",
+      archiveSha512: "cd5ccfd86a4b40732cf715890d0dca5bf3f63adefec5a7914de85adf240c60ce7e5d2791631b88ef9758e46b23bb1730e020b9c5d696889740b284ffd4788e35",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "disposable GitHub-hosted Windows canary only",
+    };
+    const exactPlaywright = {
+      id: "playwright-core-1.62.1",
+      kind: "ci-only-browser-driver",
+      version: "1.62.1",
+      licence: "Apache-2.0",
+      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
+      packageName: "playwright-core",
+      packageUrl: "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
+      packageSri: "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "disposable GitHub-hosted Windows canary only",
+    };
+    for (const [tool, keys, expected, index] of [[caddyTool, caddyToolKeys, exactCaddy, 1], [playwrightTool, playwrightToolKeys, exactPlaywright, 2]]) {
+      const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
+      if (exactKeys(tool, keys, label, findings)
+          && Object.entries(expected).some(([key, value]) => tool[key] !== value)) {
+        findings.push(`${label}: CI-only tool identity, licence, source, integrity, attribution, and scope must remain exact`);
+      }
+      if (tool?.attributionRecord === "licenses/ci-toolchain.md" && evidencePaths.has(tool.attributionRecord)) usedEvidencePaths.add(tool.attributionRecord);
     }
   }
+  findings.push(...trustedHttpsCanarySupplyChainFindings(canarySupplyChainInput(blobs)));
 
   const prohibitedKeys = ["id", "reason", "url"];
   if (!Array.isArray(register.prohibitedSources) || !register.prohibitedSources.length) findings.push(`${COMPONENT_REGISTER_PATH}: prohibitedSources must record the BBC RemArc exclusion`);
@@ -954,6 +1017,7 @@ function licenceGuardMutationFindings(register, entries, blobs, manifest) {
     const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}[^\r\n]*/u, '"u\\u0073es": "actions/checkout@v6"');
     candidateBlobs.set(workflowPath, Buffer.from(text));
   }, /quoted or escaped workflow mapping keys are not allowed/u);
+  failures.push(...trustedHttpsCanarySupplyChainMutationFailures(canarySupplyChainInput(blobs)));
   return failures;
 }
 

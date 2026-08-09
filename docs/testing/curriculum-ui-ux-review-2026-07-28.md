@@ -1,8 +1,11 @@
 # Math Quest curriculum and UI/UX review
 
 Date: 2026-07-28
-Status: Review complete; all parent decisions approved; remediation pending
-Runtime status: No game or curriculum behaviour was changed by this review
+Status: Historical review complete; all parent decisions approved; see the
+2026-08-03 current-worktree supplement for implementation and evidence status
+Runtime status: This review itself changed no game or curriculum behaviour;
+the approved remediation was implemented afterward and remains subject to the
+focused and frozen-candidate evidence named below
 
 ## Purpose
 
@@ -543,3 +546,123 @@ implementation.
 6. Add the new automated release gates.
 7. Repeat the all-level browser review, the deterministic corpus audit, and
    independent adversarial reviews before the next public beta.
+
+## 2026-08-03 current-worktree supplement
+
+Status: deterministic full-curriculum review complete; approved remediation
+implemented with focused checks passing; current rendered-browser,
+physical-device, and frozen-candidate certification evidence pending
+
+This supplement is the authoritative decision record for the full-coverage
+review requested on 2026-08-03. The review exercised 72,576 deterministic
+questions: 126 skills, two tiers, three representations, three themes, and 32
+ordinals. The reviewed engine SHA-256 was
+`859960d278e014138b36bdef3b4ff25ad1ee9445560903281322b10899bd8c23`.
+
+The deterministic corpus produced no generator exception, but structural
+validity did not establish learner validity. Confirmed defects included:
+
+- answer-bearing Replay, pre-response speech, semantic-model labels, or control
+  labels in 5,040 questions across ten skills;
+- inaccessible or unresolved worked Help, including all sampled number-bond
+  teaching states;
+- invalid distractor semantics in MQ-027, disclosed coin values in MQ-048,
+  incorrect task identity in MQ-058, and incorrect or ignored symmetry geometry
+  in MQ-106;
+- objective-to-response mismatches in MQ-003, MQ-021, MQ-031, MQ-035, MQ-063,
+  MQ-071, MQ-079, MQ-095, MQ-097, and MQ-101;
+- systematic learner-facing grammar defects; and
+- test assertions that encoded answer disclosure or could not detect lost
+  method reachability, partial clipping, duplicate announcements, or omitted
+  skill/viewport coverage.
+
+The supplied iPhone evidence was traced exactly to the Beta 1 glyph-stripping
+renderer. A retained Beta 1 document has no path into the newer update UI, and
+the current worker does not navigate an already-loaded legacy client. The exact
+reason that document remained active on the photographed iPhone is unproven.
+
+No compatible rendered browser was connected during this supplement. Therefore
+current screenshots, speech quality, VoiceOver/NVDA behavior, iPad landscape,
+Safari zoom, split-view, keyboard-overlap, Switch Control, and physical-device
+verdicts remain pending. This supplement is not release certification and did
+not run the complete release gauntlet.
+
+### Approved finish line
+
+The approved remediation is implemented only when the real child-facing paths
+reflect the decisions below, every confirmed defect has an effect-sensitive
+regression, and the affected focused suites pass. Visual automation must cover
+the honest reachable-state matrix and remain ready for the missing real-browser
+and physical-device evidence. Formal completion still requires the single
+complete gauntlet against a later exact frozen candidate immediately before
+publication.
+
+### Decisions 15–24
+
+The owner approved all recommended options on 2026-08-03 as the compact set
+`15A 16A 17A 18A 19C 20A 21A 22A 23A 24A`.
+
+- **Decision 15 / ADJ-01 — A:** MQ-040 must distinguish count-on, make-ten, and
+  known-bond strategy task types and mastery witnesses.
+- **Decision 16 / ADJ-02 — A:** MQ-041 must collect or directly construct the
+  named subtraction strategy and distinguish its witness.
+- **Decision 17 / ADJ-03 — A:** MQ-078 mastery variants must remain within the
+  approved known-multiplication-fact range; extended derived-fact reasoning is
+  separate.
+- **Decision 18 / ADJ-04 — A:** MQ-097 subtraction remains nonnegative until the
+  integer prerequisite has been introduced.
+- **Decision 19 / ADJ-05 — C:** renderer-capable and generated/release-reachable
+  input-method sets must be separately declared and protected by non-circular
+  tests; dormant methods are neither silently supported nor silently removed.
+- **Decision 20 / ADJ-06 — A:** full coverage means every reachable skill/task
+  obligation at every allowed tier and representation, in every applicable
+  production mode and required viewport; impossible combinations are excluded
+  only by explicit rules.
+- **Decision 21 / ADJ-07 — A:** automated learner geometry includes 1180×820 and
+  1024×768 iPad-landscape rows. Selected physical iPad evidence remains pending
+  until it is actually observed and is never converted into an automated pass.
+- **Decision 22 / ADJ-08 — A:** Help is hidden or disabled outside question and
+  reteach phases.
+- **Decision 23 / ADJ-09 — A:** feedback uses one deliberate focused
+  announcement path and an announcement-count protocol replaces assertions that
+  merely require multiple announcement mechanisms.
+- **Decision 24 / ADJ-10 — A:** after a newer exact worker is verified and
+  activated, only non-responsive legacy Math Quest clients are automatically
+  navigated to the current entry page with progress preserved and recovery copy
+  shown. Beta 2 and newer clients retain safe-boundary update behavior.
+
+### Resolved legal-design constraint for MQ-048
+
+Authentic Royal Canadian Mint coin images and designs are not open-source or
+public-domain and require reproduction permission, so they are not imported.
+On 2026-08-03 the owner approved replacing the authentic-face recognition claim
+with five clearly original practice-token designs mapped to Canadian money
+values. MQ-048 must therefore name that narrower practice-token objective,
+show no denomination in its pre-response stimulus, use only first-party CSS
+geometry, and reveal the value only in the answer choices or worked support.
+
+The final deterministic contract is manifest-driven. MQ-048 declares only the
+truthfully rendered pictorial phase (`P`) and `pictures-and-symbols`
+representation. Its five token-to-value mappings are five separate required
+task types. Every question presents all five money-value choices, so the
+presence of a choice cannot reveal the answer, and SOLID mastery requires a
+clean witness for all five declared mappings. An invented Concrete or Abstract
+witness is outside the manifest phase and cannot count toward mastery.
+
+The 2026-08-03 Beta 4 candidate now places a separate, resumable five-token
+visual guide before a child's first real MQ-048 question, including the first
+scheduled review of a placement-inferred skill with no stored evidence. The
+guide shows each original token beside its governed value, exposes no answer
+control, and advances through the existing Ready action to the unchanged
+answer-free question. The guide itself records no attempt. The subsequent
+question retains the ordinary mastery contract, and later sessions do not
+repeat the guide after real evidence exists.
+
+Focused effect-sensitive checks prove the single frozen token/value authority,
+all five visible and spoken mappings, preview/re-teach/capstone isolation, the
+guide-to-question transition, unchanged evidence classification, and exact
+save/export/reload of the physical-phase checkpoint. Those deterministic
+checks cannot establish that a pre-reader understands the new presentation.
+Rendered first-screen geometry, keyboard/focus operation, Replay order, and a
+targeted child/grown-up comprehension verdict therefore remain pending before
+this current-worktree correction can be treated as release-certified.

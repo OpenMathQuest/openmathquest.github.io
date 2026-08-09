@@ -1,11 +1,28 @@
-# Math Quest Public Beta 3 release checklist
+# Math Quest Public Beta 4 release checklist
 
-Target tag: `v1.0.0-beta.3`
+Target tag: `v1.0.0-beta.4`
+
+Status terms follow the
+[`AGENTS.md` finished-work policy](../../AGENTS.md#what-counts-as-finished-work).
+The prepublication certification items govern **release-certified** status for
+an exact frozen candidate; **implemented** work has only its real production
+path and focused checks, and the Release section records when the certified
+bytes are **shipped**.
 
 Checked items describe current, reviewed evidence only. Beta 1 evidence and
-focused development runs do not satisfy an unchecked Beta 3 release item. The
+focused development runs do not satisfy an unchecked Beta 4 release item. The
 exact-candidate items below remain unchecked until the working tree is frozen,
 synchronized, and rerun through the complete gate.
+
+During development, run `audit/run-audit.ps1 -DevelopmentOnly` plus the focused
+effect-sensitive checks required by each change. These runs may establish
+**implemented** status, but do not establish **release-certified** status or
+satisfy a release item. Once every planned game/runtime change is committed,
+create the Beta 4 qualification commit, gather hosted-Windows identity, and
+create the exact two-file direct evidence successor defined in `AGENTS.md`.
+Freeze that successor as the candidate. Run the complete certification system
+once against it immediately before tagging and deployment. Any later
+change requires a new freeze and a complete rerun.
 
 ## Public tree
 
@@ -35,6 +52,15 @@ synchronized, and rerun through the complete gate.
   curriculum reference PDF, unrelated handoff, or ZIP archive is staged.
 - [ ] Run text, filename, metadata, archive, and secret scans over the exact
   staged tree.
+- [x] Execute and verify the owner-authorized disposition for the obsolete
+  personal-name fixture still reachable through Beta 1 ancestry and published
+  tags. If history is rewritten, scan every surviving public head/tag and
+  record that existing clones or caches cannot be recalled; if it is retained,
+  bind the owner's explicit residual-risk acceptance and do not claim all
+  reachable history is de-identified.
+  Owner decision recorded 2026-08-03: retain the existing public history and
+  accept the narrow obsolete-fixture residual risk. Current-tree and
+  exact-candidate scans remain mandatory.
 - [ ] Run the open-component register, licence allowlist, attribution, and
   restrictive-licence guard over the exact staged tree.
 - [ ] Require the generated public-file manifest to match the staged Git index
@@ -95,16 +121,23 @@ synchronized, and rerun through the complete gate.
 - [x] Verify required fonts, sounds, icons, and models are local or inline.
 - [x] Verify no post-load gameplay request, analytics, tracker, remote speech,
   cloud sync, or third-party runtime dependency.
-- [ ] Verify the exact detached Beta 3 shell manifest, byte hashes, MIME
+- [ ] Verify the exact detached Beta 4 shell manifest, byte hashes, MIME
   bindings, waiting-worker update, repair, and readiness protocol.
-- [ ] Verify Safari and installed-app storage-container wording, installation
-  recovery, and offline cold launch on the required physical Apple matrix.
+- [x] For Beta 4, record the owner's decision not to run the optional
+  physical-device cycle as exact `OPTIONAL_NOT_RUN`/`NONE`/zero/`NOT_RUN`;
+  do not claim tested Apple-generation support.
 
-## Complete release review
+## Release preparation and single complete review
+
+The automated, browser, visual, and evidence checks listed below are stages of
+one final complete certification cycle after the approved records and exact
+candidate commit are frozen. Focused development checks may exercise the same
+effects earlier, but do not constitute another complete cycle.
 
 - [ ] Record the exact canonical manifest SHA-256 and exact engine SHA-256.
-- [x] Reproduce the approved 276-record `child-strings-v1` table and exact
-  SHA-256 `c760fa2c04939547fd24ab61aa13dacc46ab1d91506720fbc22ef63eee03ebfd`.
+- [x] Project owner approved the complete 397-record `child-strings-v1` table on
+  2026-08-08. Bind and verify the exact approved candidate and its SHA-256
+  `a79ec7cd26e2023073e352adad32c5c8ff854e36fe6ca2c0362fdedfbc8a7e9e`.
 - [ ] Run the complete deterministic engine and grading suite.
 - [ ] Exercise all 126 skills through generator, grader, model, and Parent Test
   paths.
@@ -114,19 +147,22 @@ synchronized, and rerun through the complete gate.
 - [ ] Kill every required disposable mutation family.
 - [ ] Run browser smoke tests against the newly frozen shipped page with zero
   unexplained failures.
-- [ ] Download the machine-readable Windows audit artifact and review the
+- [ ] If a current hosted tuple is unavailable during preparation, obtain
+  explicit owner approval for the required early diagnostic evidence run.
+  Download its machine-readable Windows artifact and review the
   exact browser product, full version, executable SHA-256, hosted `ImageOS`,
-  and hosted `ImageVersion`.
+  and hosted `ImageVersion`; this does not certify release readiness.
 - [ ] Promote `audit/browser-runner-evidence-v1.json` from `PENDING` to
   `REVIEWED`, copy the same five-field tuple into publication clearance, and
-  prove that a fresh audit of the same commit matches it exactly.
+  require the single final audit of the frozen commit to match it exactly.
 - [x] Record `windows-latest` as a Medium floating-runner residual; do not
   accept the label itself as reproducible evidence.
-- [ ] Re-run desktop, phone, and tablet visual/accessibility reviews after the
-  current remediation and bind their evidence to the frozen candidate.
+- [ ] Within the final cycle, run desktop, phone, and tablet
+  visual/accessibility reviews after the current remediation and bind their
+  evidence to the frozen candidate.
 - [ ] Reconcile predicted and actual counts and document all failures, skips,
   and residual risks.
-- [x] Before the final independent review, add
+- [x] Before the final bounded independent review under `AGENTS.md`, add
   `PUBLICATION_CLEARANCE.md` with `Status: PENDING`, then synchronize and
   inspect the component register and public-file manifest.
 - [ ] Promote that pending record to `Status: APPROVED` only after successful
@@ -134,22 +170,36 @@ synchronized, and rerun through the complete gate.
   rights state, public-payload digest, payload-tree OID, browser executable,
   and GitHub-hosted runner image tuple.
 - [ ] Populate all eight closed-schema external evidence records in that same
-  clearance: host/privacy approval, reconciled canary, all six device lanes
-  plus primary-iPad journey, six sealed reviewer reports, approved
-  adjudication, complete finding dispositions, exact hosted-Windows evidence
-  digest, and owner `PR_PUSH_AUTHORIZED` authorization for
-  `v1.0.0-beta.3` on `refs/heads/main`.
+  clearance. For Beta 4, four mandatory PASS records are approved
+  adjudication, complete finding dispositions, exact hosted-Windows
+  evidence, and owner `PR_PUSH_AUTHORIZED` authorization for
+  `v1.0.0-beta.4` on `refs/heads/main`. Bind the current host review as exact
+  `DEFERRED_PRERELEASE`, which must appear as DEFERRED rather than PASS. Record
+  the owner-skipped canary as exact `OWNER_SKIPPED_BETA4`/`NONE` and report
+  `EXT-CANARY` as OWNER_SKIPPED, never PASS or RECONCILED. The
+  owner declined both offered optional cycles for Beta 4, so record the
+  six-device and six-reviewer records as exact `OPTIONAL_NOT_RUN`.
+- [ ] Use one designated bounded adjudicator role. Do not infer a critic cohort
+  from the mandatory adjudication or finding-disposition records.
 - [ ] Confirm the external evidence review window is current, every evidence
   digest and review-bundle digest is exact, Critical/High/open-unaccepted
-  Medium/unrecorded Low counts are zero, and the audit reports all eight
-  external gates PASS rather than merely matching the expected count.
-- [ ] Re-run the fail-closed audit with that exact clearance record.
+  Medium/unrecorded Low counts are zero, and the audit reports all four Beta
+  mandatory external gates PASS, `EXT-HOST` visibly DEFERRED,
+  `EXT-CANARY` visibly OWNER_SKIPPED, and each optional
+  record either PASS or visibly OPTIONAL rather than merely matching the
+  expected count.
+- [ ] After that exact clearance record and every planned byte are committed,
+  freeze the candidate and run the single complete fail-closed certification
+  system from the beginning.
 
-Emergency Beta 3 exception: the owner authorized `EMERGENCY_APPROVED` for this
-tag only. Six external gates must remain visibly `WAIVED` with zero/unknown
-counts; they must not be checked off or represented as completed. Reviewed
-hosted-Windows evidence, exact owner authorization, and every automated,
-privacy, licensing, immutable-tag, and deployment check remain required.
+Historical note: the Emergency Beta 3 exception applied to
+`v1.0.0-beta.3` only. It cannot authorize Beta 4. The distinct 2026-08-02 owner
+directive ordinarily applies to Beta 4 and later semantic-version prereleases.
+For Beta 4, the later 2026-08-09 release-scoped decision yields four mandatory
+PASS records, one visible non-passing host deferral, one visible non-passing
+owner-skipped canary, and two offered optional records. The canary skip expires
+with Beta 4; later prereleases return to five mandatory PASS records and stable
+releases return to six unless a later owner directive explicitly changes them.
 
 ## Repository and Pages settings
 
@@ -162,32 +212,44 @@ privacy, licensing, immutable-tag, and deployment check remain required.
 - [ ] Enable secret scanning and push protection where available.
 - [ ] Protect the default branch and require release checks.
 - [x] Preserve and protect the immutable `v1.0.0-beta.1` release tag.
-- [ ] Protect `v1.0.0-beta.3` from deletion or movement after it is created.
+- [x] Preserve and protect the immutable `v1.0.0-beta.3` release tag.
+- [ ] Protect `v1.0.0-beta.4` from deletion or movement after it is created.
 - [ ] Configure GitHub Pages to deploy through GitHub Actions.
 - [x] Confirm no CNAME or custom domain is configured.
 - [x] Enforce HTTPS for `https://openmathquest.github.io/`.
 - [ ] Require the deployment workflow to run only in
   `OpenMathQuest/openmathquest.github.io`, dispatched from protected `main`
   while it points to the exact annotated tag supplied as `release_tag`,
-  `v1.0.0-beta.3`, with `VERSION` equal to `1.0.0-beta.3`.
+  `v1.0.0-beta.4`, with `VERSION` equal to `1.0.0-beta.4`.
 - [ ] Confirm the Pages action and API report the root origin
   `https://openmathquest.github.io`, an empty base path, an empty CNAME, and
   the GitHub Actions publishing source.
-- [ ] Obtain any privacy or legal review appropriate to intended child-facing
-  jurisdictions.
+- [x] Record the owner-directed `DEFERRED_PRERELEASE` host state and disclose
+  ordinary provider request metadata without claiming host approval.
+- [ ] Before the first stable release, obtain the privacy/legal review
+  appropriate to intended child-facing jurisdictions or move the runnable game
+  to a host that receives affirmative qualification.
 
 ## Release
 
-- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.3` tag without
+- [ ] Freeze the exact cleared commit on protected `main`, then dispatch
+  **Math Quest checks** with `candidate_sha` equal to that commit and
+  `release_tag` equal to `v1.0.0-beta.4`. Require the complete, non-technical-
+  only certification job to pass before creating the tag.
+- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.4` tag without
   altering the reviewed tree.
 - [ ] Run the manual **Deploy Math Quest to Pages** workflow from protected
-  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.3`; the
-  workflow must check out and deploy that tag and reject any commit mismatch.
+  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.4`; the
+  workflow must check out and deploy that tag, reject any commit mismatch, and
+  require a successful release-certification run for the same commit without
+  rerunning the complete gauntlet.
 - [ ] Verify the deployed artifact contains only the explicit runtime
   allowlist.
 - [ ] Verify `https://openmathquest.github.io/` serves the tagged artifact over
   HTTPS with no unexpected redirect, base path, CNAME, or third-party request.
-- [ ] Test Windows desktop, iPhone, and iPad.
+- [ ] Run the live hosted smoke in desktop Edge plus automated phone and tablet
+  viewports. Retain physical iPhone/iPad observation as `OPTIONAL_NOT_RUN` for
+  Beta 4 and make no physical-device qualification claim.
 - [ ] Verify nickname entry/removal, touch controls, local sound and speech,
   reload persistence, backup, restore, reset, and Parent Test isolation.
 - [ ] Verify storage is absent from unrelated origins and confirm the
@@ -196,4 +258,4 @@ privacy, licensing, immutable-tag, and deployment check remain required.
 - [ ] Change the hosted URL in `README.md` from an approved target to a
   verified live deployment only after the hosted checks pass.
 - [ ] Publish beta-labelled GitHub release notes from the verified
-  `v1.0.0-beta.3` tag.
+  `v1.0.0-beta.4` tag.

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -11,14 +12,28 @@ import {
 } from "../lib/browser-runner-evidence.mjs";
 import { observeBrowserRunnerEvidence } from "../lib/browser-smoke.mjs";
 import {
+  BETA4_CANARY_OWNER_SKIP_STATE,
+  BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS,
   clearanceMatches,
   computeReleaseDecision,
+  CURRENT_RELEASE_TAG,
+  EMERGENCY_BETA3_RELEASE_TAG,
   EMERGENCY_BETA3_WAIVED_GATE_IDS,
   evaluateExternalReleaseEvidence,
   EXTERNAL_RELEASE_GATE_IDS,
+  OPTIONAL_EXTERNAL_RELEASE_GATE_IDS,
   parsePublicationClearance,
+  PRERELEASE_DEFERRED_EXTERNAL_RELEASE_GATE_IDS,
+  PRERELEASE_HOST_QUALIFICATION_STATE,
   PUBLICATION_CLEARANCE_PATH,
+  REQUIRED_EXTERNAL_RELEASE_GATE_IDS,
 } from "../lib/publication-clearance.mjs";
+import {
+  DIRECT_EVIDENCE_SUCCESSOR_PATHS,
+  DIRECT_EVIDENCE_SUCCESSOR_POLICY,
+  evaluateDirectEvidenceSuccessor,
+  observeDirectEvidenceSuccessor,
+} from "../lib/release-evidence-successor.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const expected = Object.freeze({
@@ -28,6 +43,8 @@ const expected = Object.freeze({
   rightsSha256: "3".repeat(64),
   payloadSha256: "4".repeat(64),
   payloadTreeOid: "5".repeat(40),
+  qualificationCommitSha: "0".repeat(40),
+  evidenceSuccessorValid: true,
   browserProductName: "Microsoft Edge",
   browserFullVersion: "150.0.4078.99",
   browserExecutableSha256: "6".repeat(64),
@@ -35,6 +52,7 @@ const expected = Object.freeze({
   runnerImageVersion: "20260720.1.0",
   browserRunnerEvidenceSha256: "7".repeat(64),
   browserRunnerEvidenceReviewed: true,
+  releaseTag: CURRENT_RELEASE_TAG,
   now: new Date("2026-07-29T12:00:00Z"),
 });
 
@@ -45,13 +63,15 @@ function approvedClearance(overrides = {}) {
     "Review result": "PASS",
     "Required failures": "0",
     "Required skips": "0",
-    "Residual risks": "MEDIUM: windows-latest floats; the exact observed browser and image tuple is approved.",
+    "Residual risks": "Beta 4 canary owner-skipped: trusted-HTTPS update, cache, repair, cold-offline, migration, teardown, and canary privacy behavior were not externally observed.",
     "Reviewed engine SHA-256": expected.engineSha256,
     "Reviewed curriculum manifest version": expected.manifestVersion,
     "Reviewed curriculum manifest SHA-256": expected.manifestSha256,
     "Reviewed rights-state SHA-256": expected.rightsSha256,
     "Reviewed public payload SHA-256": expected.payloadSha256,
     "Reviewed public payload tree OID": expected.payloadTreeOid,
+    "Qualification commit SHA": expected.qualificationCommitSha,
+    "Evidence successor policy": DIRECT_EVIDENCE_SUCCESSOR_POLICY,
     "Reviewed browser product name": expected.browserProductName,
     "Reviewed browser full version": expected.browserFullVersion,
     "Reviewed browser executable SHA-256": expected.browserExecutableSha256,
@@ -61,8 +81,8 @@ function approvedClearance(overrides = {}) {
     "External evidence expires at": "2026-08-28T12:00:00Z",
     "Host qualification state": "APPROVED",
     "Host qualification evidence SHA-256": "8".repeat(64),
-    "Canary reconciliation state": "RECONCILED",
-    "Canary reconciliation evidence SHA-256": "9".repeat(64),
+    "Canary reconciliation state": BETA4_CANARY_OWNER_SKIP_STATE,
+    "Canary reconciliation evidence SHA-256": "NONE",
     "Physical-device evidence state": "COMPLETE",
     "Physical-device evidence SHA-256": "a".repeat(64),
     "Required physical-device lanes": "6",
@@ -85,7 +105,7 @@ function approvedClearance(overrides = {}) {
     "Hosted-Windows evidence SHA-256": expected.browserRunnerEvidenceSha256,
     "Owner authorization state": "PR_PUSH_AUTHORIZED",
     "Owner authorization evidence SHA-256": "e".repeat(64),
-    "Authorized release tag": "v1.0.0-beta.3",
+    "Authorized release tag": CURRENT_RELEASE_TAG,
     "Authorized protected ref": "refs/heads/main",
     "Review-bundle SHA-256": "f".repeat(64),
     ...overrides,
@@ -103,6 +123,8 @@ function emergencyClearance(overrides = {}) {
     "Host qualification evidence SHA-256": waiverDigest,
     "Canary reconciliation state": "WAIVED_BETA3",
     "Canary reconciliation evidence SHA-256": waiverDigest,
+    "Qualification commit SHA": "NOT_APPLICABLE_BETA3",
+    "Evidence successor policy": "NOT_APPLICABLE_BETA3",
     "Physical-device evidence state": "WAIVED_BETA3",
     "Physical-device evidence SHA-256": waiverDigest,
     "Passed physical-device lanes": "0",
@@ -119,6 +141,37 @@ function emergencyClearance(overrides = {}) {
     "Unrecorded low findings": "UNKNOWN",
     "Owner authorization state": "EMERGENCY_BETA3_AUTHORIZED",
     "Owner authorization evidence SHA-256": waiverDigest,
+    "Authorized release tag": EMERGENCY_BETA3_RELEASE_TAG,
+    ...overrides,
+  });
+}
+
+function optionalReviewerClearance(overrides = {}) {
+  return approvedClearance({
+    "Independent-reviewer evidence state": "OPTIONAL_NOT_RUN",
+    "Independent-reviewer evidence SHA-256": "NONE",
+    "Required independent-reviewer reports": "0",
+    "Sealed independent-reviewer reports": "0",
+    ...overrides,
+  });
+}
+
+function optionalDeviceClearance(overrides = {}) {
+  return approvedClearance({
+    "Physical-device evidence state": "OPTIONAL_NOT_RUN",
+    "Physical-device evidence SHA-256": "NONE",
+    "Required physical-device lanes": "0",
+    "Passed physical-device lanes": "0",
+    "Primary iPad journey result": "NOT_RUN",
+    ...overrides,
+  });
+}
+
+function deferredHostClearance(overrides = {}) {
+  return approvedClearance({
+    "Residual risks": "Host privacy deferred until stable: GitHub Pages may receive ordinary request metadata, its under-13 terms remain unqualified; Beta 4 canary owner-skipped: trusted-HTTPS runtime behavior was not externally observed.",
+    "Host qualification state": PRERELEASE_HOST_QUALIFICATION_STATE,
+    "Host qualification evidence SHA-256": "8".repeat(64),
     ...overrides,
   });
 }
@@ -147,6 +200,8 @@ test("checked-in publication and browser evidence records are exact and mutually
   assert.equal(evidence.valid, true, evidence.issues.join("; "));
   if (clearance.status === "PENDING") {
     assert.equal(evidence.status, "PENDING");
+    assert.equal(clearance.hostQualificationState, PRERELEASE_HOST_QUALIFICATION_STATE);
+    assert.match(clearance.hostQualificationEvidenceSha256, /^[a-f0-9]{64}$/u);
     assert.equal(clearanceMatches(clearance, expected), false);
   } else {
     assert.ok(["APPROVED", "EMERGENCY_APPROVED"].includes(clearance.status));
@@ -164,7 +219,8 @@ test("checked-in publication and browser evidence records are exact and mutually
 test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impersonate passed evidence", () => {
   const parsed = parsePublicationClearance(emergencyClearance());
   assert.equal(parsed.valid, true, parsed.issues.join("; "));
-  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  const emergencyExpected = { ...expected, releaseTag: EMERGENCY_BETA3_RELEASE_TAG };
+  const evidence = evaluateExternalReleaseEvidence(parsed, emergencyExpected, expected.now);
   assert.equal(evidence.status, "EMERGENCY_WAIVER");
   assert.equal(evidence.passCount, 2);
   assert.equal(evidence.waivedCount, 6);
@@ -173,7 +229,7 @@ test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impers
     EMERGENCY_BETA3_WAIVED_GATE_IDS,
   );
   assert.equal(evidence.gates.every((item) => item.status !== "BLOCKED"), true);
-  assert.equal(clearanceMatches(parsed, expected), true);
+  assert.equal(clearanceMatches(parsed, emergencyExpected), true);
   assert.equal(computeReleaseDecision({
     technicalShippable: true,
     publicationStatus: "EMERGENCY_APPROVED",
@@ -181,7 +237,7 @@ test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impers
   }), true);
 
   for (const [field, value] of [
-    ["Authorized release tag", "v1.0.0-beta.4"],
+    ["Authorized release tag", CURRENT_RELEASE_TAG],
     ["Owner authorization state", "PR_PUSH_AUTHORIZED"],
     ["Passed physical-device lanes", "6"],
     ["Sealed independent-reviewer reports", "6"],
@@ -190,8 +246,14 @@ test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impers
   ]) {
     const mutant = parsePublicationClearance(emergencyClearance({ [field]: value }));
     assert.equal(mutant.valid, false, `${field} must remain exact under emergency approval`);
-    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+    assert.equal(evaluateExternalReleaseEvidence(mutant, emergencyExpected, expected.now).status, "BLOCKED");
   }
+
+  assert.equal(
+    evaluateExternalReleaseEvidence(parsed, expected, expected.now).status,
+    "BLOCKED",
+    "the Beta 3 emergency record must never authorize the Beta 4 candidate",
+  );
 
   assert.equal(computeReleaseDecision({
     technicalShippable: false,
@@ -224,13 +286,87 @@ test("an approved clearance matches only the exact complete browser/runner tuple
   }
 });
 
-test("all eight external release records are first-class fail-closed inputs", () => {
+test("the Beta 4 direct evidence successor is one exact non-merge commit changing only the two governed records", () => {
+  const candidateCommitSha = "1".repeat(40);
+  const qualificationCommitSha = expected.qualificationCommitSha;
+  const baseline = {
+    candidateCommitSha,
+    parentCommitShas: [qualificationCommitSha],
+    qualificationCommitSha,
+    changedPaths: [...DIRECT_EVIDENCE_SUCCESSOR_PATHS],
+    qualificationClearanceStatus: "PENDING",
+    qualificationBrowserEvidenceStatus: "PENDING",
+  };
+  const exact = evaluateDirectEvidenceSuccessor(baseline);
+  assert.equal(exact.valid, true, exact.issues.join("; "));
+  assert.equal(exact.policy, DIRECT_EVIDENCE_SUCCESSOR_POLICY);
+  assert.deepEqual(exact.changedPaths, DIRECT_EVIDENCE_SUCCESSOR_PATHS);
+
+  for (const [label, mutation] of [
+    ["merge commit", { parentCommitShas: [qualificationCommitSha, "2".repeat(40)] }],
+    ["wrong parent", { parentCommitShas: ["2".repeat(40)] }],
+    ["skipped ancestor", { qualificationCommitSha: "3".repeat(40) }],
+    ["missing evidence path", { changedPaths: ["PUBLICATION_CLEARANCE.md"] }],
+    ["extra documentation", { changedPaths: [...DIRECT_EVIDENCE_SUCCESSOR_PATHS, "README.md"] }],
+    ["game byte change", { changedPaths: [...DIRECT_EVIDENCE_SUCCESSOR_PATHS, "index.html"] }],
+    ["clearance already approved", { qualificationClearanceStatus: "APPROVED" }],
+    ["browser evidence already reviewed", { qualificationBrowserEvidenceStatus: "REVIEWED" }],
+  ]) {
+    const result = evaluateDirectEvidenceSuccessor({ ...baseline, ...mutation });
+    assert.equal(result.valid, false, label);
+  }
+});
+
+test("the Git observer proves an actual immediate two-record successor when parent history is present", async () => {
+  const repository = await mkdtemp(path.join(root, "audit", ".tmp-successor-observer-"));
+  const git = (...args) => execFileSync("git", args, {
+    cwd: repository,
+    encoding: "utf8",
+    windowsHide: true,
+  }).trim();
+  try {
+    await mkdir(path.join(repository, "audit"));
+    git("init");
+    git("config", "user.name", "Math Quest Regression");
+    git("config", "user.email", "math-quest-regression");
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), "# Test\nStatus: PENDING\n", "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), '{"status":"PENDING"}\n', "utf8");
+    git("add", "PUBLICATION_CLEARANCE.md", "audit/browser-runner-evidence-v1.json");
+    git("commit", "-m", "qualification");
+    const qualificationCommitSha = git("rev-parse", "HEAD");
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), "# Test\nStatus: APPROVED\n", "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), '{"status":"REVIEWED"}\n', "utf8");
+    git("add", "PUBLICATION_CLEARANCE.md", "audit/browser-runner-evidence-v1.json");
+    git("commit", "-m", "evidence successor");
+    const observed = await observeDirectEvidenceSuccessor(repository, qualificationCommitSha);
+    assert.equal(observed.valid, true, observed.issues.join("; "));
+    assert.equal(observed.qualificationCommitSha, qualificationCommitSha);
+    assert.deepEqual(observed.changedPaths, DIRECT_EVIDENCE_SUCCESSOR_PATHS);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("four completed external gates, the explicit Beta 4 canary skip, and both optional cycles remain visible", () => {
   const parsed = parsePublicationClearance(approvedClearance());
   const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
   assert.equal(parsed.valid, true, parsed.issues.join("; "));
   assert.equal(evidence.status, "PASS");
-  assert.equal(evidence.requiredCount, 8);
+  assert.equal(evidence.requiredCount, 4);
+  assert.equal(evidence.passCount, 4);
+  assert.equal(evidence.ownerSkippedCount, 1);
+  assert.equal(evidence.deferredCount, 0);
+  assert.equal(evidence.optionalCount, 2);
+  assert.equal(evidence.optionalCompletedCount, 2);
+  assert.deepEqual(
+    REQUIRED_EXTERNAL_RELEASE_GATE_IDS,
+    EXTERNAL_RELEASE_GATE_IDS.filter((id) => !["EXT-DEVICE", "EXT-REVIEWERS"].includes(id)),
+  );
+  assert.deepEqual(OPTIONAL_EXTERNAL_RELEASE_GATE_IDS, ["EXT-DEVICE", "EXT-REVIEWERS"]);
+  assert.deepEqual(PRERELEASE_DEFERRED_EXTERNAL_RELEASE_GATE_IDS, ["EXT-HOST"]);
+  assert.deepEqual(BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS, ["EXT-CANARY"]);
   assert.deepEqual(evidence.gates.map((item) => item.id), EXTERNAL_RELEASE_GATE_IDS);
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-CANARY")?.status, "OWNER_SKIPPED");
   assert.equal(computeReleaseDecision({
     technicalShippable: true,
     publicationStatus: "APPROVED",
@@ -260,6 +396,154 @@ test("all eight external release records are first-class fail-closed inputs", ()
       externalReleaseEvidence: mutantEvidence,
     }), false, `${field} mutant must prevent Shippable YES`);
   }
+});
+
+test("the owner-directed host deferral is non-passing and release-eligible only for an exact prerelease record", () => {
+  const parsed = parsePublicationClearance(deferredHostClearance());
+  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  assert.equal(parsed.valid, true, parsed.issues.join("; "));
+  assert.equal(evidence.status, "PASS");
+  assert.equal(evidence.requiredCount, 4);
+  assert.equal(evidence.passCount, 4);
+  assert.equal(evidence.ownerSkippedCount, 1);
+  assert.equal(evidence.deferredCount, 1);
+  assert.equal(evidence.prereleaseHostDeferralEligible, true);
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-HOST")?.status, "DEFERRED");
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-CANARY")?.status, "OWNER_SKIPPED");
+  assert.equal(clearanceMatches(parsed, expected), true);
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "APPROVED",
+    externalReleaseEvidence: evidence,
+  }), true);
+
+  const stableEvidence = evaluateExternalReleaseEvidence(parsed, {
+    ...expected,
+    releaseTag: "v1.0.0",
+  }, expected.now);
+  assert.equal(stableEvidence.status, "BLOCKED");
+  assert.equal(stableEvidence.prereleaseHostDeferralEligible, false);
+  assert.equal(stableEvidence.gates.find((item) => item.id === "EXT-HOST")?.status, "BLOCKED");
+
+  for (const [field, value] of [
+    ["Host qualification evidence SHA-256", "NONE"],
+    ["Host qualification evidence SHA-256", "A".repeat(64)],
+    ["Residual risks", "NONE"],
+  ]) {
+    const mutant = parsePublicationClearance(deferredHostClearance({ [field]: value }));
+    assert.equal(mutant.valid, false, `${field} must preserve the exact digest-bound disclosed deferral`);
+    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+  }
+
+  const canaryPending = parsePublicationClearance(deferredHostClearance({
+    "Canary reconciliation state": "PENDING",
+  }));
+  const canaryEvidence = evaluateExternalReleaseEvidence(canaryPending, expected, expected.now);
+  assert.equal(canaryEvidence.status, "BLOCKED");
+  assert.equal(canaryEvidence.gates.find((item) => item.id === "EXT-CANARY")?.status, "BLOCKED");
+
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "APPROVED",
+    externalReleaseEvidence: { ...evidence, prereleaseHostDeferralEligible: false },
+  }), false, "a synthetic DEFERRED status without evaluator-bound prerelease eligibility must not ship");
+});
+
+test("the owner-skipped Beta 4 canary is visible, non-passing, tag-bound, and never fabricates evidence", () => {
+  const parsed = parsePublicationClearance(deferredHostClearance());
+  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  const canary = evidence.gates.find((item) => item.id === "EXT-CANARY");
+  assert.equal(parsed.valid, true, parsed.issues.join("; "));
+  assert.equal(canary?.status, "OWNER_SKIPPED");
+  assert.equal(canary?.classification, "OWNER_AUTHORIZED_BETA4_CANARY_SKIP");
+  assert.match(canary?.details || "", /no canary[\s\S]*pass is claimed/iu);
+  assert.equal(evidence.ownerSkippedCount, 1);
+  assert.equal(evidence.passCount, 4);
+  assert.equal(evidence.status, "PASS", "the exact owner exception is nonblocking for Beta 4 only");
+
+  for (const overrides of [
+    { "Canary reconciliation state": "RECONCILED", "Canary reconciliation evidence SHA-256": "9".repeat(64) },
+    { "Canary reconciliation state": BETA4_CANARY_OWNER_SKIP_STATE, "Canary reconciliation evidence SHA-256": "9".repeat(64) },
+    { "Canary reconciliation state": "PENDING", "Canary reconciliation evidence SHA-256": "NONE" },
+  ]) {
+    const mutant = parsePublicationClearance(deferredHostClearance(overrides));
+    assert.equal(mutant.valid, false, JSON.stringify(overrides));
+    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+  }
+
+  const stableEvidence = evaluateExternalReleaseEvidence(parsed, { ...expected, releaseTag: "v1.0.0" }, expected.now);
+  assert.equal(stableEvidence.gates.find((item) => item.id === "EXT-CANARY")?.status, "BLOCKED");
+  assert.equal(stableEvidence.status, "BLOCKED");
+  assert.equal(clearanceMatches(parsed, { ...expected, evidenceSuccessorValid: false }), false);
+});
+
+test("declining the offered six-reviewer cycle is nonblocking but cannot conceal malformed or incomplete review evidence", () => {
+  const parsed = parsePublicationClearance(optionalReviewerClearance());
+  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  assert.equal(parsed.valid, true, parsed.issues.join("; "));
+  assert.equal(evidence.status, "PASS");
+  assert.equal(evidence.requiredCount, 4);
+  assert.equal(evidence.passCount, 4);
+  assert.equal(evidence.ownerSkippedCount, 1);
+  assert.equal(evidence.optionalCompletedCount, 1);
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-REVIEWERS")?.status, "OPTIONAL");
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "APPROVED",
+    externalReleaseEvidence: evidence,
+  }), true);
+
+  for (const [field, value] of [
+    ["Independent-reviewer evidence SHA-256", "b".repeat(64)],
+    ["Required independent-reviewer reports", "6"],
+    ["Sealed independent-reviewer reports", "1"],
+    ["Independent-reviewer evidence state", "PENDING"],
+  ]) {
+    const mutant = parsePublicationClearance(optionalReviewerClearance({ [field]: value }));
+    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
+    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+  }
+
+  const incompleteSelected = parsePublicationClearance(approvedClearance({
+    "Sealed independent-reviewer reports": "5",
+  }));
+  assert.equal(incompleteSelected.valid, false);
+  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
+});
+
+test("declining the offered six-lane device cycle is nonblocking but cannot conceal malformed or partial device evidence", () => {
+  const parsed = parsePublicationClearance(optionalDeviceClearance());
+  const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
+  assert.equal(parsed.valid, true, parsed.issues.join("; "));
+  assert.equal(evidence.status, "PASS");
+  assert.equal(evidence.requiredCount, 4);
+  assert.equal(evidence.passCount, 4);
+  assert.equal(evidence.ownerSkippedCount, 1);
+  assert.equal(evidence.optionalCompletedCount, 1);
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-DEVICE")?.status, "OPTIONAL");
+  assert.equal(computeReleaseDecision({
+    technicalShippable: true,
+    publicationStatus: "APPROVED",
+    externalReleaseEvidence: evidence,
+  }), true);
+
+  for (const [field, value] of [
+    ["Physical-device evidence SHA-256", "a".repeat(64)],
+    ["Required physical-device lanes", "6"],
+    ["Passed physical-device lanes", "1"],
+    ["Primary iPad journey result", "PASS"],
+    ["Physical-device evidence state", "PENDING"],
+  ]) {
+    const mutant = parsePublicationClearance(optionalDeviceClearance({ [field]: value }));
+    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
+    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+  }
+
+  const incompleteSelected = parsePublicationClearance(approvedClearance({
+    "Passed physical-device lanes": "5",
+  }));
+  assert.equal(incompleteSelected.valid, false);
+  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
 });
 
 test("external evidence rejects missing, stale, future, and mismatched records", () => {
@@ -307,6 +591,8 @@ test("external evidence rejects missing, stale, future, and mismatched records",
   }
 
   for (const field of [
+    "Qualification commit SHA",
+    "Evidence successor policy",
     "Host qualification state",
     "Canary reconciliation evidence SHA-256",
     "Physical-device evidence state",

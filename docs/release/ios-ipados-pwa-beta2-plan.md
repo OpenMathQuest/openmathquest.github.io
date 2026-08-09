@@ -30,6 +30,59 @@ It is an implementation and verification plan, not release clearance.
 | 8A | Beta 2 adds a grown-up-facing **Install on iPad** flow with Safari instructions, advisory installation-state detection, cache-readiness confirmation, and standalone/offline launch instructions. |
 | 9A | Critical and high findings block release. A medium finding requires a fix or the project owner's explicit documented acceptance. Low findings remain visible and may enter the backlog. Nothing may be silently dismissed. |
 
+### 1.1 Beta 4 owner-directed gate revision
+
+On 2026-07-30, the project owner superseded decisions 2A, 3B, 5A, and the
+release-blocking portions of 7A for Beta 4 and later candidates:
+
+- the six-lane physical-device matrix and primary-iPad journey remain
+  available as an offered optional qualification cycle;
+- the six context-independent critic packets remain available as an offered
+  optional review cycle;
+- declining either cycle requires the exact closed-schema
+  `OPTIONAL_NOT_RUN` state and makes no device-support or independent-review
+  pass claim;
+- selecting either cycle activates every requirement in this document for
+  that cycle, including complete lanes/reports, exact digests, and
+  fail-closed partial-evidence handling; and
+- host qualification follows the later prerelease/stable boundary in section
+  1.2; independent adjudication, finding disposition, hosted-Windows evidence,
+  and owner authorization remain mandatory. The 2026-08-09 owner decision
+  skips the Beta 4 canary only, visibly and without a pass claim.
+
+On 2026-08-02, the owner selected the declined state for both optional cycles
+for `v1.0.0-beta.4`. The six physical-device lanes and six independent-reviewer
+packets will not be undertaken for this release. `PUBLICATION_CLEARANCE.md`
+therefore records exact `OPTIONAL_NOT_RUN`/`NONE`/zero fields for both cycles,
+and Beta 4 makes no corresponding physical-device or independent-review claim.
+This selection is release-scoped; the two cycles must be offered again for a
+later candidate unless a later owner directive changes their standing policy.
+
+All later unconditional “must” language about the six device lanes or six
+critic packets is therefore conditional on selecting that optional cycle.
+Historical Beta 2 decisions remain recorded above rather than silently
+rewritten.
+
+### 1.2 Prerelease host-qualification revision
+
+On 2026-08-02, the project owner directed that external child-facing host
+privacy/legal qualification wait until Math Quest leaves prerelease. Beginning
+with `v1.0.0-beta.4`, an eligible semantic-version prerelease records
+`EXT-HOST` as exact `DEFERRED_PRERELEASE`, reported as `DEFERRED`, never PASS,
+approved, waived, or privacy-cleared. Before the first stable tag, the selected
+host must be affirmatively approved or the runnable game must move to one that
+is; stable publication fails closed otherwise.
+
+This changes no application privacy requirement. Automatic child-name,
+progress, answer, and gameplay-telemetry transmission remains prohibited, as
+do analytics, advertising, accounts, cloud synchronization, remote speech,
+and unapproved runtime dependencies. A hosted-beta notice must disclose that
+the provider may receive ordinary HTTPS request metadata. Except for the exact
+Beta 4 owner skip recorded on 2026-08-09, the exact-candidate trusted-HTTPS
+canary remains mandatory, uses synthetic data, and proves only
+candidate/PWA/offline behavior—not host privacy qualification. Beta 4 records
+`OWNER_SKIPPED_BETA4`/`NONE`; no canary effect is claimed.
+
 ## 2. Release objective
 
 Beta 2 qualifies only if a grown-up can:
@@ -466,21 +519,26 @@ under 13 and describes collection of device/request usage data. Because Math
 Quest is deliberately child-facing, “the application sends no progress” is
 not enough to clear the host.
 
-Before any internet-accessible child-directed canary or Beta 2 production
-deployment, obtain a documented privacy/legal review of the exact host use,
+Before any stable child-directed deployment, obtain a documented
+privacy/legal review of the exact host use,
 including applicable Canadian and other
 intended-market child-privacy obligations, host terms, IP/request metadata,
 retention, service-provider assurances, privacy notice, data minimization, and
 parental role. If GitHub Pages cannot be affirmatively cleared for this use,
 move the runnable child-facing build to a host with suitable child-privacy
-terms while retaining the public source repository on GitHub. Unknown is a
-release blocker, not an owner-waivable medium finding.
+terms while retaining the public source repository on GitHub. Unknown blocks
+stable release. For eligible prereleases beginning Beta 4, section 1.2
+supersedes only that timing: the unapproved state remains visible and the
+provider-metadata risk remains explicit.
 
 ## 9. Test architecture
 
 ### 9.1 Layer A: exact static and release checks
 
-Rerun the complete existing release audit against the staged Beta 2 bytes:
+During development, run focused effect-sensitive checks against changing
+bytes. After all planned work and evidence records are finalized, freeze one
+exact candidate commit and payload and run the complete existing release audit
+once, immediately before public tagging and deployment:
 
 - public-file allowlist and Git tree;
 - de-identification, secrets, metadata, path, and licence scans;
@@ -491,18 +549,21 @@ Rerun the complete existing release audit against the staged Beta 2 bytes:
 - browser smoke, accessibility, responsive layout, and visual review; and
 - predicted-versus-actual audit reconciliation.
 
-The existing audit is a regression floor, not sufficient Beta 2 evidence by
-itself. Count-only assertions, one-seed generation, programmatic `.click()`,
+The complete audit is a regression floor within the final certification
+system, not sufficient Beta 2 evidence by itself. Count-only assertions,
+one-seed generation, programmatic `.click()`,
 headless Edge viewport emulation, and tests in which generator and grader share
 the same answer oracle do not satisfy the new gates. Any changed shipped byte
-invalidates the candidate and all matching clearance values.
+invalidates the candidate and all matching clearance values. Correct with
+focused tests, finalize and freeze a new candidate, and restart the complete
+gauntlet from the beginning.
 
 ### 9.2 Layer B: deterministic procedural coverage
 
 Build an independent test registry and mathematical oracle rather than asking
 the runtime to declare its own expected universe or correctness. Derive and
 reconcile exact ID/tuple sets. For the current manifest these include 126
-skills, 156 skill-task obligations, 26 generator profiles, and 23 families;
+skills, 166 skill-task obligations, 26 generator profiles, and 23 families;
 the audit must fail if the canonical manifest changes without an independently
 reviewed expected-set update.
 
@@ -557,8 +618,10 @@ Coverage and mutation gates:
 - at least 95% killed non-equivalent mutants overall, with every survivor
   explicitly risk-classified.
 
-Run critical automated gates three clean times from fresh state and independent
-order. A retry or first-run-only failure is a finding, not a replaceable pass.
+Within one deterministic gate invocation, exercise the reviewed fresh-state
+and independent-order permutations that protect order sensitivity. Each gate
+runs once in the single frozen-candidate certification. A retry or
+first-run-only failure is a finding, not a replaceable pass.
 
 ### 9.3 Layer C: complete primary-iPad journey
 
@@ -854,19 +917,32 @@ media are never release attachments.
 
 ## 16. Context-independent antagonistic review
 
+All collaboration in this section follows the bounded authority in
+`AGENTS.md`. The default release team is one lead plus at most two bounded
+reviewers, with no recursive agent creation, no overlapping edits, one review
+round, and verification by the same reviewer after correction. The optional
+six-reviewer cycle is available only after explicit project-owner opt-in for
+one named release scope and initial exact candidate lineage. It is a
+single-cycle exception to the ordinary
+three-agent cap, not a preliminary cohort followed by a new final cohort.
+
 Freeze two non-self-referential identities **before** qualifying tests:
 
 1. the exact executable/Pages payload digest; and
 2. a normalized reviewed-tree digest in which the tracked clearance path is
    replaced by its exact canonical pending template.
 
-Every automated result, canary/device result, review, and acceptance must name
-both digests plus the pre-clearance commit for traceability. The final commit
-may differ only by the exact pending-to-approved clearance delta; CI must prove
-that constraint and record the final commit separately. Any other shipped-byte
-change creates a new candidate and invalidates the prior qualification.
+Every preparatory automated result, canary/device result, review, and acceptance
+must name both digests plus the pre-clearance commit for traceability. These are
+qualification inputs, not final release certification. Finalize the approved
+clearance record and every other candidate-contained evidence record before
+freezing the release commit. The single final gauntlet must test that exact
+commit and payload. Any later change creates a new candidate and invalidates
+the certification.
 
-Use these six critic roles:
+When the project owner explicitly selects the optional six-reviewer cycle for
+one named release scope and initial exact candidate lineage, use these six
+critic roles:
 
 1. **Independent mathematics/curriculum oracle critic**
 2. **Determinism, state, progression, and procedural-QA critic**
@@ -875,11 +951,13 @@ Use these six critic roles:
 5. **Privacy, security, storage, rights, and supply-chain critic**
 6. **Offline/service-worker, harness, mutation, coverage, and artifact-integrity critic**
 
-Each cycle uses six newly created agents with fresh no-history contexts,
+The one selected cycle uses six newly created agents with concise sealed,
+no-conclusion-priming contexts,
 read-only isolated candidate copies, separate output channels, no communication
 or visibility into other reports, pinned tool/model identities, and packet
 hashes/nonces. Packet-hash-derived seeds make procedural challenges
-reproducible.
+reproducible. Reviewers may not spawn agents or edit the candidate, and the
+same reviewers verify focused corrections to their findings.
 
 Review uses two sealed phases:
 
@@ -890,7 +968,7 @@ Review uses two sealed phases:
    the technical report is sealed. A reviewer may add findings but may not
    remove or downgrade a sealed technical finding.
 
-Every report must contain candidate and packet hash, requirement/risk ID,
+When the optional cycle is selected, every report must contain candidate and packet hash, requirement/risk ID,
 exact input, independent oracle, expected/actual result, reproduction,
 affected universe, raw-artifact hashes where nonprivate, severity, confidence,
 smallest safe correction, proposed regression test, and a scope-completion
@@ -910,10 +988,13 @@ test merely to obtain a passing result. Product defects require product fixes
 and permanent regressions; test and harness defects require corrected
 assertions that would still fail if the approved behaviour regressed.
 
-Reviewers return reports through separate task mailboxes. No report is written
-into a shared path until all six finish. Then collect any proposed, hash-bound
-project-owner medium acceptances and create a seventh fresh,
-context-independent adjudicator. The adjudicator receives those proposals and:
+When selected, reviewers return reports through separate task mailboxes. No
+report is written into a shared path until all six finish. Whether or not the
+optional reviewer cycle is selected, collect any proposed, hash-bound
+project-owner medium acceptances and assign one context-independent reviewer
+as adjudicator. This is one bounded review role, not an added critic cohort.
+The adjudicator receives the complete candidate evidence, the
+exact optional-cycle state, any sealed reports, and those proposals, and:
 
 - verifies packet/report hashes;
 - reproduces all critical/high findings and a deterministic sample of pass
@@ -929,8 +1010,9 @@ context-independent adjudicator. The adjudicator receives those proposals and:
 - maps every finding to fix, explicit acceptance, or low-severity backlog; and
 - issues a release recommendation without editing the build.
 
-A missing packet, timeout, required skip, unknown severity, contradictory
-evidence, or unverifiable mandatory claim blocks adjudication.
+A missing packet or packet timeout blocks only a selected optional reviewer
+cycle. A required skip, unknown severity, contradictory evidence, or
+unverifiable mandatory claim always blocks adjudication.
 
 ### Finding policy
 
@@ -955,22 +1037,28 @@ Changing a proposed medium acceptance after adjudication invalidates the
 adjudication and requires a new adjudicator pass. The six critics need not
 rerun when the candidate, evidence, and their sealed reports are unchanged.
 
-If a finding changes shipped bytes, the candidate is no longer final. Rerun
-the **complete** automated, real-device, six-critic, and adjudication cycle
-against newly frozen bytes. The last reviewed candidate must be the candidate
-authorized for the next remote/ref.
+If a finding changes shipped bytes, the candidate is no longer final. Apply
+only affected focused checks and have the same selected optional reviewers
+verify only their affected findings against the corrected bytes. Do not rerun
+the complete automated or adjudication cycles inside the correction loop, do
+not create a new critic cohort, and do not restart unrelated reviews. After all
+planned corrections are finished, freeze the corrected candidate and run the
+one final complete automated certification and adjudication against those exact
+bytes. The last reviewed candidate must be the candidate authorized for the
+next remote/ref.
 
-The three specialists who helped draft this plan do not count among the final
-six; final reviewers must be new and context-independent.
+If the optional six-reviewer cycle is selected, its six reviewers must be
+independent of implementation. Earlier planning specialists may not be counted
+as reviewers, but their existence does not authorize additional review agents.
 
 ## 17. Release gates
 
 Create a one-way hash chain:
 
 1. a canonical **pre-adjudication evidence digest** over candidate identity,
-   exact test inventory/results, public evidence manifest, six sealed reports,
-   low backlog, and the private vendor-qualification digest when a remote lab
-   was used;
+   exact test inventory/results, public evidence manifest, the exact optional
+   device/reviewer states plus any completed optional evidence, low backlog,
+   and the private vendor-qualification digest when a remote lab was used;
 2. each proposed medium acceptance binds that evidence digest;
 3. the adjudication binds the same evidence digest plus every exact proposal
    hash; and
@@ -981,29 +1069,32 @@ Bind the final bundle digest into a new Beta 2 authorization/clearance record.
 No earlier record contains a later digest, so the chain has no self-reference;
 a one-line residual-risk field is not a substitute.
 
-Before freezing, place the clearance record in its exact pending schema. After
-qualification, the only permitted payload-tree edit is the existing narrowly
-defined clearance-record transition from pending to approved. The public
-payload identity excludes only those clearance bytes, and an independent guard
-must prove that every other path and byte is unchanged before authorizing the
-final commit/tag.
+Before qualification, place the clearance record in its exact pending schema.
+After qualification, make the narrowly defined pending-to-approved transition,
+commit it, and only then freeze the immutable release candidate. The public
+payload identity may continue to exclude those clearance bytes to avoid
+self-reference, but final certification must still run against the exact final
+commit containing the approved bytes and prove every other path and byte is
+unchanged.
 
 The process has distinct machine-readable states:
 
-1. **LOCAL_CANDIDATE_FROZEN** - clean exact candidate and deterministic local
-   gates complete.
+1. **LOCAL_CANDIDATE_FROZEN** - clean exact qualification payload fixed and
+   focused deterministic local checks passed; this is not yet the immutable
+   release commit or final certification.
 2. **CANARY_PUSH_AUTHORIZED** - a first blind review authorizes only the exact
    candidate to a named, no-announcement trusted-HTTPS staging target whose
-   child-facing host/privacy review has passed; any remote-device vendor used
-   for it must also hold current product/tier/region qualification.
-3. **DEVICE_EVIDENCE_COMPLETE** - every physical lane tested the same canary
-   bytes; staged response bodies, MIME, redirects, security headers, exact path
-   set, and payload reconcile to the frozen tree; any remote session has a
-   current qualification, session record, and teardown/deletion receipt bound
-   into the private evidence chain.
-4. **PR_PUSH_AUTHORIZED** - the final six critics and adjudicator have reviewed
-   the exact candidate plus device evidence; this authorizes only the named
-   protected Beta 2 branch/ref.
+   host record is either affirmatively approved or, for an eligible
+   prerelease, exact `DEFERRED_PRERELEASE`; any remote-device vendor used for
+   it must still hold current product/tier/region qualification.
+3. **OPTIONAL_EVIDENCE_RECORDED** - each offered device/reviewer cycle is
+   either exact `OPTIONAL_NOT_RUN` or fully complete; any completed physical
+   lane tested the same canary bytes and any remote session has a current
+   qualification, session record, and teardown/deletion receipt.
+4. **PR_PUSH_AUTHORIZED** - the independent adjudicator has reviewed the exact
+   candidate, mandatory evidence, and exact optional-cycle states plus any
+   completed optional evidence; this authorizes only the named protected
+   branch/ref.
 5. **MERGE_TAG_AUTHORIZED** - remote CI on the exact commit passes and the
    review-bundle/clearance binding still matches.
 6. **DEPLOY_AUTHORIZED** - protected merge and annotated tag match the
@@ -1013,9 +1104,10 @@ The process has distinct machine-readable states:
    only now may the build be announced as Beta 2.
 
 The canary contains only already-public/open-source application material and
-synthetic data; it is not announced as a release. Its exact host, exposure, and
-privacy terms require approval before use. If no suitable canary can be
-qualified, use a separately reviewed ephemeral local-network HTTPS harness
+synthetic data; it is not announced as a release. Its exact host and exposure
+must be recorded. For an eligible prerelease, its host may use the exact
+visible section 1.2 deferral without implying privacy approval. If no suitable
+canary can be used, use a separately reviewed ephemeral local-network HTTPS harness
 with a temporary trusted certificate and strict firewall/teardown controls.
 Do not weaken secure-context requirements.
 
@@ -1031,32 +1123,45 @@ frozen review bundle.
 
 `PR_PUSH_AUTHORIZED` requires:
 
-1. implementation requirements are complete;
-2. exact expected coverage sets reconcile and every required automated gate
-   passes three clean times with zero required skips/timeouts/flakes;
-3. every stable OS generation and real-device lane has evidence;
-4. the primary-iPad full journey passes;
-5. install, standalone, offline, update, deterministic removal/recovery, and
-   long-reopen tests pass;
+1. implementation work is finished and focused checks pass; formal completion
+   remains pending the final frozen-candidate certification;
+2. exact expected coverage sets reconcile in focused preparation; the single
+   complete frozen-candidate certification remains pending until the direct
+   evidence successor is pushed, and then must pass once with its reviewed
+   fresh-state and order permutations exercised internally and zero required
+   failures/timeouts/flakes;
+3. each offered device/reviewer cycle is either exact `OPTIONAL_NOT_RUN` or
+   fully complete;
+4. if the device cycle is selected, the primary-iPad journey and every lane
+   pass;
+5. mandatory automated install, standalone, offline, update, and deterministic
+   removal/recovery tests pass; Beta 4 records the hosted trusted-HTTPS canary
+   as exact owner-skipped evidence, not as a pass;
 6. privacy review confirms no application-level child learning/content
    transmission or new third-party runtime request, and the child-facing host
-   gate is affirmatively cleared;
+   is either affirmatively cleared or, for an eligible prerelease only, bound
+   to exact `DEFERRED_PRERELEASE` with its residual risk disclosed;
 7. public files and evidence are de-identified;
 8. component/licence registration is complete;
-9. the six-critic and adjudication cycle is complete on the exact final bytes;
+9. adjudication is complete on the exact final bytes, and the optional
+   six-critic cycle is complete if selected;
 10. no critical or high finding remains;
 11. every medium finding is fixed or explicitly accepted by the project owner;
 12. low findings are recorded;
 13. the review-bundle digest and pre-push authorization match the candidate;
-14. the complete release audit and Beta 2 clearance binding are current; and
+14. the clearance binding, direct evidence-successor proof, and all
+    preparatory evidence are current; the complete audit is the next and only
+    certification action after the successor reaches protected main; and
 15. any remote-vendor qualification remains current, unrevoked, and bound to
     the evidence bundle.
 
 The audit runner must treat host qualification, physical-device rows,
 canary/live artifact reconciliation, reviewer packets, and finding
-dispositions as first-class blocking records. It may not print
-`Shippable: YES`, `APPROVED`, or “no pending/skipped work” while any required
-external record is unverified.
+dispositions as first-class visible records. Selected optional cycles and
+every required record remain fail-closed. An eligible prerelease may be
+shippable only with exact `EXT-HOST: DEFERRED`; a stable tag requires
+`EXT-HOST: PASS`. No run may call the deferred host passed, approved, waived,
+or privacy-cleared.
 
 Public Beta 1 remains immutable. Changed bytes require the new annotated tag
 `v1.0.0-beta.2`, a new protected tag rule, new release notes, and a new exact
@@ -1082,7 +1187,9 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
 
 ## 19. Implementation sequence
 
-1. Begin the child-facing host privacy/legal qualification.
+1. For an eligible prerelease, bind exact `DEFERRED_PRERELEASE`; before stable,
+   complete child-facing host privacy/legal qualification or select another
+   host.
 2. Freeze exact physical-device lanes, models, and OS patches in the private
    ledger.
 3. Create a local unpushed Beta 2 working branch; do not edit the Beta 1 tag.
@@ -1091,34 +1198,50 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
 6. Extend deterministic, independent-oracle, browser, accessibility, mutation,
    privacy, and artifact audits.
 7. Update privacy, support, installation, security, and release documentation.
-8. Run desktop and automated procedural audits three clean times.
-9. Freeze an exact local candidate, run the first six blind critics, collect
-   any proposed owner medium acceptances one at a time, then run the
-   adjudicator under section 16.
-10. Correct defects and repeat from step 8 until
-    **CANARY_PUSH_AUTHORIZED**.
-11. Publish only that candidate to the separately approved no-announcement
-    trusted-HTTPS canary.
-12. Reconcile canary responses/headers/bytes and run the primary iPad journey,
-    remaining real-device matrix, and long-reopen checks.
-13. If shipped bytes change, invalidate the candidate and repeat from step 8.
-14. Freeze the complete device evidence and run six new final critics on the
-    same candidate.
+8. Run the focused desktop and automated procedural checks applicable to the
+   changed behavior.
+9. Fix an exact qualification payload. Offer the optional six-critic cycle; if
+   the owner explicitly selects it for this exact candidate and scope, run its
+   one sealed cycle. Collect any proposed owner medium acceptances one at a
+   time, then run the bounded adjudicator under section 16.
+10. Correct defects with focused checks and repeat from step 8 until the exact
+    qualification commit is ready.
+11. For Beta 4, do not run the trusted-HTTPS canary. Record the exact owner
+    decision as `OWNER_SKIPPED_BETA4`/`NONE` and `EXT-CANARY: OWNER_SKIPPED`;
+    never convert it to pass or reconciliation evidence. Later releases return
+    to the ordinary canary requirement unless the owner gives a new decision.
+12. Push the qualification commit to protected main and run only the hosted-
+    Windows identity observation. Offer the optional primary-iPad and
+    remaining real-device matrix/long-reopen cycle; run it completely only if
+    selected.
+13. If shipped bytes change, invalidate the qualification payload, repeat the
+    focused and automated work from step 8, and have the same selected
+    reviewers verify only affected corrections.
+14. Freeze the exact optional-cycle state and any completed optional evidence.
+    Do not run a second fresh or final critic cohort.
 15. Present proposed medium dispositions to the project owner one at a time;
     a fix returns to step 8, while a proposed acceptance is hash-bound for
     adjudication.
-16. Compute the pre-adjudication evidence digest, run a new adjudicator on the
+16. Compute the pre-adjudication evidence digest, run the bounded adjudicator on the
     sealed reports/evidence/proposed acceptances, then build the canonical
     review bundle.
-17. Regenerate exact hashes and Beta 2 clearance, then issue
-    **PR_PUSH_AUTHORIZED**.
-18. Push only the authorized commit to the named protected branch, open the
-    pull request, and wait for exact remote checks.
-19. Issue **MERGE_TAG_AUTHORIZED**, merge, create and protect
-    `v1.0.0-beta.2`, and verify commit/tag identity.
-20. Issue **DEPLOY_AUTHORIZED** and publish only the exact tagged artifact.
+17. Create the direct evidence successor under
+    `DIRECT_EVIDENCE_SUCCESSOR_V1`: its sole parent is the qualification
+    commit, and its exact diff changes only `PUBLICATION_CLEARANCE.md` and
+    `audit/browser-runner-evidence-v1.json`. Record the final payload hashes
+    and issue **PR_PUSH_AUTHORIZED** for that successor.
+18. Push only that authorized direct successor to the named protected branch
+    and wait for exact focused remote checks. Any other changed path, parent,
+    merge, rebase, or skipped ancestor invalidates the exception.
+19. Freeze that exact protected-main successor and run the complete
+    certification system once. A failure or any change returns to focused
+    correction and a new qualification/successor sequence. After a pass, issue
+    **MERGE_TAG_AUTHORIZED**, create and protect `v1.0.0-beta.4`, and verify
+    commit/tag identity.
+20. Issue **DEPLOY_AUTHORIZED** and publish only the exact certified tagged
+    artifact without rerunning the gauntlet.
 21. Reconcile the live site, headers, offline relaunch, tag, release page, and
-    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 2.
+    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 4.
 
 ## 20. Source register
 

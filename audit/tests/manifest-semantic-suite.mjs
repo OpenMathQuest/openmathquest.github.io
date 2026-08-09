@@ -2,6 +2,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractEngine, evaluateEngine } from "../lib/engine-loader.mjs";
 import { canonicalizeJson, loadManifest } from "../lib/curriculum-manifest.mjs";
+import {
+  EXPECTED_STRATEGY_SEMANTIC_VARIANTS,
+  STRATEGY_BUILD_SKILL_IDS,
+  correctStrategyBuildResponse,
+  strategyMethodOracle,
+  strategyResultOracle,
+  strategySemanticVariantKey,
+  strategyWorkOracle,
+} from "./strategy-build-oracle.mjs";
 
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SAMPLE_ORDINALS = 24;
@@ -44,20 +53,20 @@ MQ-031 read-and-form-numerals-to-twenty=question.numeralForm/visualPrompt
 MQ-032 make-equal-groups-to-ten=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
 MQ-033 extend=question.patternNext/visualPrompt
 MQ-034 follow-a-short-route=question.routeFinish/visualPrompt
-MQ-035 explain-a-direct-comparison=question.directCompare/visualPrompt+question.attributeName/visualPrompt
+MQ-035 compare-two-objects-directly=question.directCompare/visualPrompt,name-compared-attribute=question.attributeName/visualPrompt
 MQ-036 display-two-shown-categories=question.twoCategoryDisplay/visualPrompt
 MQ-037 read-and-order-to-one-hundred-twenty=question.numberOrder/visualPrompt
 MQ-038 partition-two-digit-numbers=question.placePartition/placeValue
 MQ-039 count-in-twos-fives-and-tens=question.patternNext/visualPrompt
-MQ-040 add-within-twenty=question.makeTen/numberBond
-MQ-041 subtract-within-twenty=question.subtraction/visualPrompt+question.appliedSubtraction/visualPrompt
+MQ-040 add-by-counting-on=question.addition/visualPrompt,add-by-making-ten=question.makeTen/numberBond,add-by-known-bond=question.appliedAddition/visualPrompt
+MQ-041 subtract-by-counting-back=question.subtraction/visualPrompt,subtract-by-counting-up=question.subtraction/visualPrompt,subtract-by-known-bond=question.appliedSubtraction/visualPrompt
 MQ-042 read-hour-and-half-hour=question.timeReadMinute/visualPrompt
 MQ-043 build-an-add-subtract-family=question.factFamilyBuild/numberBond
 MQ-044 balance-a-missing-part=question.missingPart/numberBond+question.missingSubtrahend/numberBond
 MQ-045 make-equal-groups-and-shares=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
 MQ-046 measure-with-equal-informal-units=question.informalMeasure/visualPrompt
 MQ-047 find-halves-and-quarters=question.fraction/fractionPair
-MQ-048 recognize-canadian-coin-values=question.coinValue/visualPrompt
+MQ-048 match-practice-token-5-cents=question.coinValue/visualPrompt,match-practice-token-10-cents=question.coinValue/visualPrompt,match-practice-token-25-cents=question.coinValue/visualPrompt,match-practice-token-1-dollar=question.coinValue/visualPrompt,match-practice-token-2-dollars=question.coinValue/visualPrompt
 MQ-049 addition=question.makeTen/numberBond,subtraction=question.subtractMakeTen/numberBond
 MQ-050 repartition-a-two-digit-number=question.renamePlace/placeValue
 MQ-051 match-equivalent-coin-amounts=question.coinEquivalent/proportionalBar
@@ -67,12 +76,12 @@ MQ-054 make-a-one-to-one-data-display=question.responseListDifference/visualProm
 MQ-055 read-and-order-to-one-thousand=question.numberOrder/visualPrompt
 MQ-056 partition-and-rename-three-digits=question.renamePlace/placeValue
 MQ-057 position-compare=question.decimalCompare/numberLine
-MQ-058 addition=question.factFamily/numberBond,subtraction=question.factFamily/numberBond
+MQ-058 addition=question.addition/visualPrompt+question.appliedAddition/visualPrompt,subtraction=question.factFamily/numberBond
 MQ-059 add-two-digit-numbers=question.addition/visualPrompt+question.appliedAddition/visualPrompt
 MQ-060 subtract-two-digit-numbers=question.subtraction/visualPrompt+question.appliedSubtraction/visualPrompt
 MQ-061 recall-two-times-facts=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
 MQ-062 recall-five-and-ten-times-facts=question.multiplication/visualPrompt+question.appliedMultiplication/visualPrompt
-MQ-063 link-multiplication-and-division=question.relatedMultiplyDivide/array
+MQ-063 model-related-multiplication-and-division=question.relatedMultiplyDivide/array,write-related-multiplication-and-division-equations=question.factFamilyBuild/array
 MQ-064 partition-halves-quarters-and-eighths=question.fraction/fractionPair
 MQ-065 find-canadian-coin-change=question.moneyOperation/proportionalBar
 MQ-066 read=question.timeReadMinute/visualPrompt
@@ -185,7 +194,7 @@ function answerNumber(question) {
 }
 
 const STRUCTURED_RESPONSE_METHODS = new Set([
-  "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+  "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
   "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
   "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
   "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
@@ -279,12 +288,16 @@ export function correctStructuredResponse(engine, question) {
     state.count = String(question.answer.value);
   } else if (method === "ORDER_BUILD") {
     state.order = [Number(params.before), Number(question.answer.value), Number(params.after)];
+  } else if (method === "STRATEGY_BUILD") {
+    return correctStrategyBuildResponse(question, question.skillId === "MQ-095" ? "mental" : null);
   } else if (method === "PLACE_VALUE_BUILD") {
-    state.action = question.semanticPromptStringId === "question.renamePlace" ? "trade"
-      : question.semanticPromptStringId === "question.scalePlace" ? "shift"
-        : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId) ? "partition"
-          : "build";
-    state.value = Number(question.answer.value);
+    state.action = Array.isArray(params.strategyChoices)
+      ? String(params.strategyAny ? params.strategyChoices[0] : params.strategy)
+      : question.semanticPromptStringId === "question.renamePlace" ? "trade"
+        : question.semanticPromptStringId === "question.scalePlace" ? "shift"
+          : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId) ? "partition"
+            : "build";
+    state.value = question.answer.kind === "text" ? String(question.answer.value) : Number(question.answer.value);
   } else if (method === "COIN_BUILD") {
     state.coins = Array.from({ length: Number(question.answer.value) }, () => coinCents(params.secondCoin));
   } else if (method === "SYMMETRY_BUILD") {
@@ -299,6 +312,7 @@ export function correctStructuredResponse(engine, question) {
       { length: Math.min(Number(params.leftCount ?? params.count), Number(params.rightCount ?? params.count)) },
       (_, index) => [`a${index}`, `b${index}`],
     );
+    if (Object.hasOwn(state, "relation")) state.relation = String(question.answer.value);
   } else if (method === "SORT_BINS") {
     state.placements = sortPlacementsFromDescriptor(question);
   } else if (method === "SHARE_DEAL") {
@@ -346,7 +360,9 @@ export function correctStructuredResponse(engine, question) {
     state.slots = [String(params.a), operator, String(params.b), "=", String(question.answer.value)];
   } else if (method === "FACT_FAMILY") {
     const a = Number(params.a), b = Number(params.b), whole = Number(params.whole);
-    state.selected = [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
+    state.selected = params.equationFamily === "multiply-divide"
+      ? [`${a}×${b}=${whole}`, `${b}×${a}=${whole}`, `${whole}÷${a}=${b}`, `${whole}÷${b}=${a}`]
+      : [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
   } else if (method === "GRAPH_BUILD") {
     const keys = ["circles", "triangles", "cats", "dogs", "birds", "first", "second", "symbols"];
     state.categories = Object.fromEntries(keys.filter((key) => Number.isFinite(Number(params[key]))).map((key) => [key, Number(params[key])]));
@@ -728,13 +744,125 @@ function validateSemanticMath(question) {
   }
 }
 
-function validateFacetCoverage(skill, questions) {
+function validateFacetCoverage(engine, skill, questions) {
   const ids = new Set(questions.map((question) => question.semanticPromptStringId));
   const taskTypes = new Set(questions.map((question) => question.taskType));
   const values = (selector) => new Set(questions.map(selector).filter((value) => value !== undefined && value !== null && value !== ""));
   const requireSet = (actual, expected, label) => {
     for (const value of expected) requireCondition(actual.has(value), `${skill.id}: missing ${label} facet ${value}`);
   };
+  requireCondition(questions.every((question) => !/\b1 (?:shells|acorns|moon rocks|groups|tens|tenths|times)\b|\ba elevation\b|[.!?]{2,}$/iu.test(question.prompt)), `${skill.id}: generated singular grammar or punctuation regressed`);
+  if (["MQ-003", "MQ-021"].includes(skill.id)) {
+    requireCondition(questions.every((question) => question.inputMethod === "PAIR_LINK"
+      && question.semanticPromptStringId === "question.compare"
+      && Number.isInteger(Number(question.params.leftCount))
+      && Number.isInteger(Number(question.params.rightCount))
+      && Number(question.params.leftCount) >= 0
+      && Number(question.params.rightCount) >= 0), `${skill.id}: comparison does not require one-to-one pairing`);
+  }
+  if (skill.id === "MQ-027") {
+    requireCondition(questions.every((question) => question.options.length >= 2
+      && question.options.every((option) => /^\d+$/u.test(String(option.value)))
+      && question.options.filter((option) => String(option.value) === String(question.answer.value)).length === 1), `${skill.id}: one-more/less distractors are not unique numeric candidates`);
+  }
+  if (skill.id === "MQ-031") requireCondition(questions.every((question) => question.inputMethod === "NUMBER_PAD" && question.inputClass === "CONSTRUCTION"), `${skill.id}: numeral formation is not constructive`);
+  if (skill.id === "MQ-035") {
+    const expectedByTask = new Map([
+      ["compare-two-objects-directly", ["question.directCompare", "compare"]],
+      ["name-compared-attribute", ["question.attributeName", "name-attribute"]],
+    ]);
+    requireCondition(questions.every((question) => {
+      const expected = expectedByTask.get(question.taskType);
+      return expected && question.semanticPromptStringId === expected[0] && question.params.evidenceFacet === expected[1];
+    }), `${skill.id}: declared comparison task type is not bound to its evidence`);
+  }
+  if (skill.id === "MQ-048") {
+    const expectedValues = ["5¢", "10¢", "25¢", "$1", "$2"];
+    const expectedByTask = new Map([
+      ["match-practice-token-5-cents", ["single-dot", "5¢"]],
+      ["match-practice-token-10-cents", ["double-stripe", "10¢"]],
+      ["match-practice-token-25-cents", ["triangle-dots", "25¢"]],
+      ["match-practice-token-1-dollar", ["cross-bars", "$1"]],
+      ["match-practice-token-2-dollars", ["ring-diamond", "$2"]],
+    ]);
+    requireCondition(questions.every((question) => question.options.length === 5
+      && canonical(question.options.map((option) => option.value).sort()) === canonical([...expectedValues].sort())
+      && question.options.filter((option) => option.value === question.answer.value).length === 1
+      && expectedByTask.get(question.taskType)?.[0] === question.params.tokenId
+      && expectedByTask.get(question.taskType)?.[1] === question.answer.value), `${skill.id}: token task mapping or answer presence leaks through the choice set`);
+    requireSet(values((question) => question.params.tokenId), ["single-dot", "double-stripe", "triangle-dots", "cross-bars", "ring-diamond"], "practice-token identity");
+  }
+  if (["MQ-040", "MQ-041"].includes(skill.id)) {
+    requireSet(values((question) => strategyMethodOracle(question)), skill.constraints.strategies, "strategy witness");
+    requireCondition(questions.every((question) => {
+      const response = correctStrategyBuildResponse(question);
+      return question.inputMethod === "STRATEGY_BUILD"
+        && canonical(Object.keys(response).sort()) === canonical(["strategy", "value", "work"])
+        && response.strategy === strategyMethodOracle(question)
+        && canonical(response.work) === canonical(strategyWorkOracle(question))
+        && response.value === strategyResultOracle(question)
+        && engine.gradeAnswer(question, response).correct;
+    }), `${skill.id}: independent method, work, and result evidence is not collected`);
+  }
+  if (skill.id === "MQ-058") {
+    requireCondition(questions.filter((question) => question.taskType === "addition").every((question) => ["question.addition", "question.appliedAddition"].includes(question.semanticPromptStringId)), `${skill.id}: addition witness does not display addition`);
+    requireCondition(questions.filter((question) => question.taskType === "subtraction").every((question) => question.semanticPromptStringId === "question.factFamily"), `${skill.id}: subtraction witness does not display subtraction`);
+  }
+  if (skill.id === "MQ-063") {
+    requireSet(ids, ["question.relatedMultiplyDivide", "question.factFamilyBuild"], "model/equation link");
+    requireSet(values((question) => question.params.evidenceFacet), ["group-model", "related-equations"], "multiplication/division evidence");
+    requireCondition(questions.every((question) => question.taskType === "write-related-multiplication-and-division-equations"
+      ? question.semanticPromptStringId === "question.factFamilyBuild" && question.params.evidenceFacet === "related-equations" && question.inputMethod === "FACT_FAMILY"
+      : question.taskType === "model-related-multiplication-and-division" && question.semanticPromptStringId === "question.relatedMultiplyDivide" && question.params.evidenceFacet === "group-model" && question.inputMethod === "GROUP_BUILD"), `${skill.id}: declared link task omits its constructive response`);
+  }
+  if (skill.id === "MQ-071") {
+    requireCondition(questions.every((question) => question.inputMethod === "GRID_ROUTE"
+      && question.params.keyRequired === true
+      && question.params.landmarks?.length >= 2
+      && question.params.mapKey?.length >= 2
+      && question.params.mapKey.every((entry) => entry.symbol && entry.label)), `${skill.id}: required map key or landmarks are missing`);
+  }
+  if (skill.id === "MQ-078") requireCondition(questions.every((question) => answerNumber(question) <= 12), `${skill.id}: known-fact quotient exceeds twelve`);
+  if (skill.id === "MQ-079") {
+    requireSet(values((question) => strategyMethodOracle(question)), ["partition", "array", "written layout"], "multiplication strategy");
+    requireCondition(questions.every((question) => {
+      const operands = [Number(question.params.a), Number(question.params.b)];
+      const response = correctStrategyBuildResponse(question);
+      return question.inputMethod === "STRATEGY_BUILD"
+        && operands.filter((value) => value >= 10 && value <= 99).length === 1
+        && operands.filter((value) => value >= 1 && value <= 9).length === 1
+        && response.value === operands[0] * operands[1]
+        && engine.gradeAnswer(question, response).correct;
+    }), `${skill.id}: exact 10-99 by 1-9 strategy work is not collected`);
+  }
+  if (skill.id === "MQ-095") requireCondition(questions.every((question) => question.inputMethod === "STRATEGY_BUILD"
+    && ["mental", "written"].every((method) => {
+      const response = correctStrategyBuildResponse(question, method);
+      return response.strategy === method && response.work.length > 0 && engine.gradeAnswer(question, response).correct;
+    })), `${skill.id}: independently derived mental and written work is not collected`);
+  if (skill.id === "MQ-097") {
+    requireCondition(questions.every((question) => {
+      const response = correctStrategyBuildResponse(question);
+      return question.inputMethod === "STRATEGY_BUILD"
+        && canonical(question.params.responseValueChoices) === canonical(["odd", "even"])
+        && response.work.length === 2
+        && engine.gradeAnswer(question, response).correct;
+    }), `${skill.id}: parity result or proof rule is invalid`);
+  }
+  if (skill.id === "MQ-101") requireCondition(questions.every((question) => {
+    const response = correctStrategyBuildResponse(question);
+    return question.inputMethod === "STRATEGY_BUILD"
+      && response.strategy === "use subtraction"
+      && response.work.length === 2
+      && engine.gradeAnswer(question, response).correct;
+  }), `${skill.id}: inverse-operation work is not independently verified`);
+  if (skill.id === "MQ-106") {
+    requireCondition(questions.some((question) => Number(question.params.rotation) !== 0), `${skill.id}: shape orientation never varies`);
+    requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.symmetryComplete").every((question) => {
+      const expected = question.params.shape === "triangle" ? ["line1", "line3", "line4"] : question.params.shape === "rectangle" ? ["line1", "line2"] : ["line1", "line2", "line3", "line4"];
+      return canonical([...question.params.shownLineIds, ...question.params.requiredLineIds]) === canonical(expected);
+    }), `${skill.id}: symmetry axes do not match the shown shape`);
+  }
   if (skill.id === "MQ-005") {
     requireSet(values((question) => question.params.shape), skill.constraints.shapes, "shape");
     requireCondition(values((question) => question.params.color).size >= 4, `${skill.id}: colour variation is not exercised`);
@@ -821,8 +949,7 @@ function validateFacetCoverage(skill, questions) {
     requireCondition(ids.size === 1 && ids.has("question.responseListDifference"), `${skill.id}: response-list collection, display, and comparison are not composite`);
     requireCondition(questions.every((question) => question.modelDescriptor.values.data?.scale === 1 && question.modelDescriptor.values.data?.responses?.length > 0), `${skill.id}: one-to-one response evidence is missing`);
   } else if (skill.id === "MQ-063") {
-    requireCondition(ids.size === 1 && ids.has("question.relatedMultiplyDivide"), `${skill.id}: multiplication/division link is not composite`);
-    requireCondition(questions.every((question) => Number(question.params.groups) * Number(question.params.perGroup) === Number(question.params.product)), `${skill.id}: related equation facts drift`);
+    requireCondition(questions.every((question) => Number(question.params.groups ?? question.params.a) * Number(question.params.perGroup ?? question.params.b) === Number(question.params.product ?? question.params.whole)), `${skill.id}: related equation facts drift`);
   } else if (skill.id === "MQ-065") {
     requireCondition(questions.every((question) => Number(question.params.paid) <= Number(skill.constraints.amountMaxCents)
       && Number(question.params.cost) < Number(question.params.paid)
@@ -1326,7 +1453,12 @@ export async function runManifestSemanticSuite({
       for (const [taskType, expected] of expectedTaskMap) {
         requireCondition(canonical([...observed.get(taskType)].sort()) === canonical([...expected].sort()), `${manifestSkill.id}/${taskType}: observed ${[...observed.get(taskType)].sort().join(", ")}; expected ${[...expected].sort().join(", ")}`);
       }
-      validateFacetCoverage(manifestSkill, samples);
+      if (STRATEGY_BUILD_SKILL_IDS.includes(manifestSkill.id)) {
+        const expectedVariants = EXPECTED_STRATEGY_SEMANTIC_VARIANTS.filter((key) => key.startsWith(`${manifestSkill.id}|`));
+        const observedVariants = [...new Set(samples.map(strategySemanticVariantKey))].sort();
+        requireCondition(canonical(observedVariants) === canonical([...expectedVariants].sort()), `${manifestSkill.id}: STRATEGY_BUILD semantic variants drifted`);
+      }
+      validateFacetCoverage(engine, manifestSkill, samples);
     });
   }
 
@@ -1374,6 +1506,101 @@ export async function runManifestSemanticSuite({
       ));
     }
     requireCondition(abstractOnly.skills[skill.skillId].acquisition !== "SOLID", "abstract-only witnesses satisfied a skill that declares concrete/pictorial phases");
+
+    const qualifyingStart = extracted.source.indexOf("function qualifyingWitness");
+    const qualifyingEnd = extracted.source.indexOf("function beginSkill", qualifyingStart);
+    const qualifyingSource = extracted.source.slice(qualifyingStart, qualifyingEnd);
+    requireCondition(qualifyingStart >= 0 && qualifyingEnd > qualifyingStart, "mastery witness implementation was not found");
+    requireCondition(!/supplementalMasteryNeedles|MQ-0(?:35|40|41|48|63)|evidenceFacet|tokenId|strategy/u.test(qualifyingSource), "mastery witness contains a skill-specific or sample-key facet bypass instead of manifest task coverage");
+
+    for (const strategySkillId of ["MQ-040", "MQ-041"]) {
+      const strategySkill = engine.SKILLS.find((candidate) => candidate.skillId === strategySkillId);
+      let strategyState = engine.createInitialState(30_100);
+      for (const [ordinal, representation] of ["CONCRETE", "PICTORIAL", "ABSTRACT"].entries()) {
+        strategyState = stateFrom(engine.applyAttempt(strategyState, masteryAttempt(
+          engine,
+          strategySkill,
+          strategySkill.constraints.taskTypes[0],
+          30_100 + ordinal,
+          ordinal,
+          { representation },
+        )));
+      }
+      requireCondition(strategyState.skills[strategySkillId].acquisition !== "SOLID", `${strategySkillId}: one declared strategy task incorrectly satisfied mastery`);
+      for (let taskIndex = 1; taskIndex < strategySkill.constraints.taskTypes.length; taskIndex += 1) {
+        strategyState = stateFrom(engine.applyAttempt(strategyState, masteryAttempt(
+          engine,
+          strategySkill,
+          strategySkill.constraints.taskTypes[taskIndex],
+          30_102 + taskIndex,
+          2 + taskIndex,
+          { representation: "ABSTRACT" },
+        )));
+      }
+      requireCondition(strategyState.skills[strategySkillId].acquisition === "SOLID", `${strategySkillId}: all declared strategy task types did not satisfy mastery`);
+    }
+
+    const tokenSkill = engine.SKILLS.find((candidate) => candidate.skillId === "MQ-048");
+    const expectedTokenTasks = ["match-practice-token-5-cents", "match-practice-token-10-cents", "match-practice-token-25-cents", "match-practice-token-1-dollar", "match-practice-token-2-dollars"];
+    requireCondition(canonical(tokenSkill.phases) === canonical(["P"]) && tokenSkill.representation === "pictures-and-symbols", "MQ-048: manifest claims a representation phase the practice-token renderer does not provide");
+    requireCondition(canonical(tokenSkill.constraints.taskTypes) === canonical(expectedTokenTasks), "MQ-048: manifest does not declare all five token-value mappings as mastery tasks");
+    const tokenQuestions = expectedTokenTasks.map((taskType, ordinal) => engine.makeQuestion({
+      skillId: tokenSkill.skillId,
+      tier: ordinal === 2 ? "HARD/TARGET" : "EASY",
+      representation: "PICTORIAL",
+      seed: 1,
+      ordinal,
+      eligibleQuestionOrdinal: ordinal,
+      coldTest: true,
+    }));
+    requireCondition(tokenQuestions.every((question, ordinal) => question.representation === "PICTORIAL" && question.taskType === expectedTokenTasks[ordinal]), "MQ-048: generated modes or task order drift from the P-only manifest");
+    requireCondition(new Set(tokenQuestions.map((question) => question.params.tokenId)).size === 5, "MQ-048: deterministic five-question cycle does not expose all five practice tokens");
+    const applyTokenQuestion = (stateBefore, question, playDay) => stateFrom(engine.applyAttempt(stateBefore, engine.submitAnswer(question, { optionId: question.options[question.correctIndex].optionId }, {
+      promptFinishedAt: 0,
+      submittedAt: 4_000,
+      manipulationMs: 0,
+      replayMs: 0,
+      idleMs: 0,
+      selectionEvents: [],
+      sessionId: "semantic-token-breadth",
+      playDay,
+    })));
+    let tokenState = engine.createInitialState(30_150);
+    const falseAbstractQuestion = engine.makeQuestion({ skillId: tokenSkill.skillId, tier: "HARD/TARGET", representation: "ABSTRACT", seed: 1, ordinal: 4, eligibleQuestionOrdinal: 4, coldTest: true });
+    tokenState = applyTokenQuestion(tokenState, falseAbstractQuestion, 30_150);
+    for (let ordinal = 0; ordinal < tokenQuestions.length - 1; ordinal += 1) tokenState = applyTokenQuestion(tokenState, tokenQuestions[ordinal], 30_151 + ordinal);
+    requireCondition(tokenState.skills[tokenSkill.skillId].acquisition !== "SOLID", "MQ-048: nonexistent Abstract witness counted toward P-only mastery");
+    tokenState = applyTokenQuestion(tokenState, tokenQuestions.at(-1), 30_155);
+    requireCondition(tokenState.skills[tokenSkill.skillId].acquisition === "SOLID", "MQ-048: all five distinct token witnesses did not satisfy mastery");
+
+    for (const facetFixture of [
+      { skillId: "MQ-035", phases: ["CONCRETE", "PICTORIAL"] },
+      { skillId: "MQ-063", phases: ["CONCRETE", "PICTORIAL", "ABSTRACT"] },
+    ]) {
+      const facetSkill = engine.SKILLS.find((candidate) => candidate.skillId === facetFixture.skillId);
+      let facetState = engine.createInitialState(30_200);
+      for (const [ordinal, representation] of facetFixture.phases.entries()) {
+        facetState = stateFrom(engine.applyAttempt(facetState, masteryAttempt(
+          engine,
+          facetSkill,
+          facetSkill.constraints.taskTypes[0],
+          30_200 + ordinal,
+          ordinal,
+          { representation },
+        )));
+      }
+      requireCondition(facetState.skills[facetFixture.skillId].acquisition !== "SOLID", `${facetFixture.skillId}: one declared task type incorrectly satisfied mastery`);
+      const finalOrdinal = facetFixture.phases.length;
+      facetState = stateFrom(engine.applyAttempt(facetState, masteryAttempt(
+        engine,
+        facetSkill,
+        facetSkill.constraints.taskTypes[1],
+        30_200 + finalOrdinal,
+        finalOrdinal,
+        { representation: facetFixture.phases.at(-1) },
+      )));
+      requireCondition(facetState.skills[facetFixture.skillId].acquisition === "SOLID", `${facetFixture.skillId}: all declared task types did not satisfy mastery`);
+    }
 
     const helped = engine.createInitialState(30_000);
     const helpedResult = stateFrom(engine.applyAttempt(
