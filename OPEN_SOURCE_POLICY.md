@@ -18,6 +18,7 @@ for an open licence under this policy.
 
 The initial approved licence identifiers are:
 
+- `Apache-2.0`
 - `MIT`
 - `OFL-1.1`
 - `OGL-UK-3.0`
@@ -110,8 +111,17 @@ licence is insufficient.
 
 ## Change control
 
+Completion status follows the
+[normative finished-work policy](AGENTS.md#what-counts-as-finished-work): a
+rights change may be **implemented** with its applicable focused checks
+passing, becomes **release-certified** only through the exact frozen-candidate
+gauntlet, and is **shipped** only when those certified bytes are published.
+
 Any new or changed dependency, font, sound, image, icon, animation, dataset,
 quotation, curriculum excerpt, or executable workflow component must update the
 component register and notices before it enters the staged public tree. The
-complete release audit must then run again. Absence from the register means the
-material may not ship.
+applicable focused rights and regression checks must run during development.
+The complete release audit runs once after the resulting release candidate is
+frozen and immediately before publication; any change after that run requires
+a new freeze and complete rerun. Absence from the register means the material
+may not ship.

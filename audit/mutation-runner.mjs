@@ -41,6 +41,18 @@ const FAMILIES = Object.freeze([
     family: "pick-your-question frequency and distinctness", testId: "BEH-06",
     replacements: [[/return\s+deepFreeze\(\[first,candidate\]\);/u, "return deepFreeze([first,first]);"], [/(\bPICK_CHOICE_STEP_(?:PRE_K|PREK)\s*:\s*)4\b/u, (_, prefix) => `${prefix}3`], [/(stage\s*===\s*["']PRE_K["']\s*\?\s*i\s*%\s*)4(\s*===\s*0)/u, (_, prefix, suffix) => `${prefix}3${suffix}`], [/(stage\s*===\s*["']PRE_K["']\s*\?\s*)4(\s*:\s*2)/u, (_, prefix, suffix) => `${prefix}3${suffix}`]],
   },
+  {
+    family: "strategy intermediate-work completeness", testId: "BEH-07",
+    replacements: [[/work\.length===specification\.steps\.length&&/u, ""]],
+  },
+  {
+    family: "strategy method independence", testId: "BEH-07",
+    replacements: [[/governed=governedStrategy\(question\)/u, "governed=String(p.strategy||governedStrategy(question))"]],
+  },
+  {
+    family: "strategy result independence", testId: "BEH-07",
+    replacements: [[/expectedResult=strategyExpectedResult\(question\)/u, "expectedResult=question.answer.kind===\"text\"?String(question.answer.value):Number(question.answer.value)"]],
+  },
 ]);
 
 function seed(source, replacements) {
@@ -172,7 +184,7 @@ export async function runMutations({ indexPath = path.join(root, "index.html") }
         target: target ?? null,
       });
     }
-    report.status = report.families.length === 8 && report.families.every((item) => item.status === "PASS") ? "PASS" : "FAIL";
+    report.status = report.families.length === 11 && report.families.every((item) => item.status === "PASS") ? "PASS" : "FAIL";
     return report;
   } finally {
     await rm(tempRoot, { recursive: true, force: true });

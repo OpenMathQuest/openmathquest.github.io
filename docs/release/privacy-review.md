@@ -1,11 +1,11 @@
 # Release review: privacy and de-identification
 
-- **Updated:** 2026-07-28
+- **Updated:** 2026-08-03
 - **Public product:** Math Quest
-- **Release target:** `1.0.0-beta.2`
+- **Release target:** `1.0.0-beta.4`
 - **Review scope:** prospective public release artifact and reachable Git history
-- **Status:** **CONTRACT UPDATED; EXACT-CANDIDATE SCAN, PUBLIC-HISTORY
-  REMEDIATION, AND EXTERNAL REVIEW PENDING**
+- **Status:** **APPLICATION PRIVACY CONTRACT PRESERVED; REACHABLE-HISTORY
+  RESIDUAL RISK ACCEPTED; EXACT-CANDIDATE SCAN PENDING**
 
 The public beta is designed as a neutral product. The exact staged candidate
 is enumerated by the release guard and
@@ -89,8 +89,10 @@ archive, site artifact, or release attachment.
 - The same-origin service worker caches only the explicit static app shell. It
   does not cache or transmit a name, progress record, backup, or personalized
   response.
-- The approved hosted origin is `https://openmathquest.github.io`, served from
-  `OpenMathQuest/openmathquest.github.io` with no CNAME or custom domain.
+- The selected prerelease origin is `https://openmathquest.github.io`, served
+  from `OpenMathQuest/openmathquest.github.io` with no CNAME or custom domain.
+  Its external host privacy/legal qualification is deferred until stable; it
+  is not an approved or privacy-cleared host.
 - The `OpenMathQuest` organization must remain exclusively reserved for Math
   Quest Pages. Browser storage is origin-wide, and the root service worker
   controls `/`; an unrelated Pages deployment in that organization would
@@ -139,7 +141,7 @@ bytes are frozen and the same checks are rerun. Any later byte or path change
 invalidates those identities and requires the same checks and
 publication-clearance binding to be regenerated.
 
-## Reachable-history finding
+## Reachable-history finding — owner disposition
 
 An adversarial scan found that the already-public Beta 1 history contains a
 former deny-list fixture that reconstructs two real personal names. The
@@ -148,9 +150,20 @@ user-path checks, but a new tip commit cannot erase an older reachable blob.
 No credential, address, phone number, personal email, or personal Git author
 identity was found.
 
-Beta 2 publication remains blocked until the project owner chooses and
-authorizes a history disposition. Rewriting or replacing public history is
-destructive, can move protected refs, and cannot be performed implicitly.
+Beta 2 and Beta 3 were published after this blocker was recorded, but no
+release record or governing register explicitly selected, remediated, or
+waived a history disposition. Publication did not resolve the finding. The
+obsolete fixture is absent from current `main` and from every Pages runtime
+artifact, but it remains obtainable through published Beta 1 ancestry, tags,
+and source archives.
+
+On 2026-08-03, the project owner explicitly chose to retain the existing public
+Git history and accepted this narrow residual risk for Beta 4. The decision
+does not waive the exact-candidate privacy, metadata, archive, or secret scans,
+and it does not support a claim that all reachable repository history is
+de-identified. The obsolete audit-only fixture remains outside the current
+tree and every Pages runtime artifact, while its published Beta 1 ancestry,
+tags, source archives, existing clones, and caches remain unchanged.
 
 ## Residual privacy considerations
 
@@ -168,13 +181,20 @@ destructive, can move protected refs, and cannot be performed implicitly.
   moderation practice.
 - The schema-3 and placement-draft changes add no account, upload, analytics
   identifier, or new category of personal information.
+- Two personal names remain discoverable only by examining the retained,
+  obsolete Beta 1 audit-fixture history or associated source archives. They are
+  not present in the current game or Pages runtime. This is the owner-accepted
+  reachable-history residual risk recorded above.
 
 ## Current verdict
 
 The documented schema-3 migration, storage separation, local-only nickname
 handling, and placement-draft minimization preserve the intended local privacy
 boundary and add no new PII category. This is a contract conclusion, not
-exact-candidate or external privacy approval. Public-history disposition, the
-final exact staged scan, full implementation audit, deployment, legal/privacy,
-and real-device reviews listed in `docs/release/publication-gates.md` remain
-required.
+exact-candidate or external host privacy approval. The public-history finding
+has the explicit owner disposition recorded above; the final exact staged
+scan, full implementation audit, deployment, and the
+applicable release evidence listed in `docs/release/publication-gates.md`
+remain required. For prereleases beginning Beta 4, external host qualification
+is visibly deferred with provider request metadata disclosed; affirmative
+qualification or a host change remains mandatory before stable release.

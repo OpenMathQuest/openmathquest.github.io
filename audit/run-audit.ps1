@@ -3,7 +3,9 @@ param(
     [string]$NodePath,
     [string]$BrowserPath,
     [switch]$NoBrowser,
-    [switch]$TechnicalOnly
+    [switch]$TechnicalOnly,
+    [switch]$DevelopmentOnly,
+    [string[]]$ChangedPath = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -261,7 +263,7 @@ function Get-LauncherAuditExpectation {
     $canonicalPayload = ($records -join "`n") + "`n"
     $servedPayloadSha256 = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($canonicalPayload))
     $identity = 'math-quest-local-server:v2'
-    $release = '1.0.0-beta.3'
+    $release = '1.0.0-beta.4'
     $port = 8771
     $body = "{`"schemaVersion`":1,`"identity`":`"$identity`",`"release`":`"$release`",`"port`":$port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$servedPayloadSha256`"}"
 
@@ -348,10 +350,46 @@ function Invoke-PublicCandidateGuard {
 }
 
 try {
-    Test-PublicFilesystemMetadata
-    & (Join-Path $auditDirectory 'test-launcher-identity.ps1')
+    if ($DevelopmentOnly -and $TechnicalOnly) {
+        throw 'DevelopmentOnly and TechnicalOnly are mutually exclusive.'
+    }
     $node = Stage-Node24 -Candidates @(Get-NodeCandidates -ExplicitPath $NodePath) -DestinationDirectory $runtimeTemp
     Write-Host "Using Node $($node.Version) from a validated temporary copy of $($node.Source)"
+    $developmentPlan = $null
+    if ($DevelopmentOnly) {
+        $plannerArguments = @((Join-Path $auditDirectory 'lib\development-suite-plan.mjs'))
+        $plannerArguments += @($ChangedPath | ForEach-Object { "--path=$($_)" })
+        $plannerText = (& $node.Path @plannerArguments | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) { throw 'The focused development-suite planner failed.' }
+        $developmentPlan = $plannerText | ConvertFrom-Json
+        Write-Host ("Development suite mode: {0}; suites: {1}" -f $developmentPlan.mode, ($developmentPlan.suites -join ', '))
+    }
+    Test-PublicFilesystemMetadata
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'launcher') {
+        & (Join-Path $auditDirectory 'test-launcher-identity.ps1')
+    } else {
+        Write-Host 'Launcher checks not selected by the changed-path development plan.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\certification-cadence.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The certification-cadence policy and workflow tests failed.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\development-suite-plan.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The changed-path development-suite planner and watcher batching tests failed.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The deduplicated, instrumented, and sharded audit orchestration tests failed.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\agent-collaboration-policy.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The bounded agent-collaboration authority and anti-weakening tests failed.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\finished-work-policy.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The finished-work authority, machine-readable mirror, and anti-weakening tests failed.'
+    }
     & $node.Path --test (Join-Path $auditDirectory 'tests\publication-clearance.test.mjs')
     if ($LASTEXITCODE -ne 0) {
         throw 'The publication, external release-evidence, and browser/runner fail-closed schema tests failed.'
@@ -360,29 +398,59 @@ try {
         (Join-Path $auditDirectory 'tests\adapter-syntax.test.mjs'),
         (Join-Path $auditDirectory 'tests\page-adapter-effects.test.mjs'),
         (Join-Path $auditDirectory 'tests\placement-adapter-effects.test.mjs'),
+        (Join-Path $auditDirectory 'tests\qa-tour.test.mjs'),
         (Join-Path $auditDirectory 'tests\holistic-child-ux-regressions.test.mjs'),
         (Join-Path $auditDirectory 'tests\holistic-functional-regressions.test.mjs')
     )
-    & $node.Path --test $holisticRegressionTests
-    if ($LASTEXITCODE -ne 0) {
-        throw 'The mandatory holistic child-UX and functional defect regressions failed.'
-    }
-    Write-Host 'Mandatory holistic defect regression suite passed.'
-    Push-Location $workspace
-    try {
-        & $node.Path (Join-Path $workspace 'tools\build-pwa-release-manifest.mjs') --check
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'product') {
+        & $node.Path --test $holisticRegressionTests
         if ($LASTEXITCODE -ne 0) {
-            throw 'The PWA release-shell manifest or worker hash binding is stale.'
+            throw 'The mandatory holistic child-UX and functional defect regressions failed.'
         }
-        & $node.Path --test (Join-Path $auditDirectory 'tests\pwa-release.test.mjs')
-        if ($LASTEXITCODE -ne 0) {
-            throw 'The PWA release-shell, lifecycle, and caregiver-copy effect tests failed.'
-        }
-        Write-Host 'PWA release-shell binding and effect suite passed.'
-    } finally {
-        Pop-Location
+        Write-Host 'Mandatory holistic defect regression suite passed.'
+    } else {
+        Write-Host 'Product adapter and UX checks not selected by the changed-path development plan.'
     }
-    $candidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'canary') {
+        & $node.Path --test (Join-Path $auditDirectory 'tests\trusted-https-canary.test.mjs')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'The trusted-HTTPS canary contract and teardown regressions failed.'
+        }
+    } else {
+        Write-Host 'Canary checks not selected by the changed-path development plan.'
+    }
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'pwa') {
+        Push-Location $workspace
+        try {
+            & $node.Path (Join-Path $workspace 'tools\build-pwa-release-manifest.mjs') --check
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The PWA release-shell manifest or worker hash binding is stale.'
+            }
+            & $node.Path --test (Join-Path $auditDirectory 'tests\pwa-release.test.mjs')
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The PWA release-shell, lifecycle, and caregiver-copy effect tests failed.'
+            }
+            Write-Host 'PWA release-shell binding and effect suite passed.'
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Write-Host 'PWA checks not selected by the changed-path development plan.'
+    }
+    if ($DevelopmentOnly -and $developmentPlan.suites -contains 'engine') {
+        & $node.Path --test (Join-Path $auditDirectory 'tests\node-engine.test.mjs')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'The focused deterministic engine and semantic development checks failed.'
+        }
+        Write-Host 'Focused deterministic engine and semantic development checks passed.'
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Engine and semantic checks not selected by the changed-path development plan.'
+    }
+    if ($DevelopmentOnly) {
+        $candidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path
+        Write-Host 'Focused development checks passed. Complete release certification was not run.'
+        return
+    }
     $browser = if ($NoBrowser) { $null } else { Find-Browser -ExplicitPath $BrowserPath }
     Set-BrowserAuditIdentity -SelectedBrowser $browser
     if ($browser) { Write-Host "Using browser $browser" } else { Write-Warning 'No Edge/Chrome browser selected; browser checks will be reported as skipped and the audit cannot pass.' }
@@ -412,11 +480,6 @@ try {
             Stop-Process -Id $launcherProcess.Id -Force
             $launcherProcess.WaitForExit(3000) | Out-Null
         }
-    }
-    $finalCandidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path
-    if ($finalCandidate.PayloadSha256 -ne $candidate.PayloadSha256 -or
-        $finalCandidate.PayloadTreeOid -ne $candidate.PayloadTreeOid) {
-        throw 'The staged public payload or payload tree changed during the audit.'
     }
     exit $exitCode
 } finally {

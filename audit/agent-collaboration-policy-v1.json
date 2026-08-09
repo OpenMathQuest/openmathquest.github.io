@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "policyId": "math-quest-agent-collaboration-v1",
+  "humanAuthority": {
+    "path": "AGENTS.md",
+    "heading": "Agent collaboration and bounded review"
+  },
+  "defaultLimits": {
+    "maximumActiveAgentsIncludingLead": 3,
+    "recursiveSubagentsPermitted": false,
+    "independentReviewRounds": 1,
+    "correctionVerificationRounds": 1,
+    "freshFinalCohortForUnchangedWork": false,
+    "singleWriterPerOverlappingPath": true,
+    "reviewerAccess": "READ_ONLY_BY_DEFAULT",
+    "reviewerContext": "CONCISE_SEALED_TASK_PACKET"
+  },
+  "taskPacketRequiredFields": [
+    "REQUIREMENTS",
+    "RELEVANT_TASK_RECORDS_AND_REPORTS",
+    "EXACT_REVISION_OR_COMMIT",
+    "OWNED_FILES_AND_PATHS",
+    "RELEVANT_DIFFS_AND_TEST_RESULTS",
+    "UNRESOLVED_QUESTIONS"
+  ],
+  "peerCommunication": {
+    "directMessageTypes": [
+      "QUESTIONS",
+      "FINDINGS",
+      "REQUESTS"
+    ],
+    "leadRetainsScopeAndIntegration": true
+  },
+  "independentEditing": {
+    "peerInspection": "READ_ONLY_BY_DEFAULT",
+    "overlappingEditsInSharedWorkspace": false,
+    "separateBranchOrWorktreeRequiredForIndependentEdits": true
+  },
+  "reviewerIndependence": {
+    "participatedInImplementation": false,
+    "conclusionPrimingPermitted": false,
+    "codeRequirementsAndObjectiveEvidenceProvided": true
+  },
+  "riskTriggeredReview": [
+    "MATHEMATICS_OR_GRADING",
+    "CHILD_PRIVACY_OR_SECURITY",
+    "PERSISTENCE_OR_MIGRATION",
+    "RELEASE_OR_UPDATE_INFRASTRUCTURE",
+    "BROAD_CHILD_UX_OR_ACCESSIBILITY",
+    "OWNER_REQUESTED"
+  ],
+  "durableCommunication": {
+    "ordinaryCoordinationCreatesRepositoryRecord": false,
+    "materialFacts": [
+      "SCOPE_OR_ACCEPTANCE_CHANGE",
+      "BLOCKING_FINDING_DISPOSITION",
+      "TASK_TAKEOVER",
+      "UNRESOLVED_RELEASE_RISK"
+    ],
+    "destination": "EXISTING_AUTHORITATIVE_RECORD"
+  },
+  "reviewFindingRequiredFields": [
+    "EXACT_REVISION_REVIEWED",
+    "SPECIFIC_PROBLEM",
+    "SUPPORTING_EVIDENCE_OR_REPRODUCTION",
+    "AFFECTED_FILES_OR_OBSERVABLE_EFFECTS"
+  ],
+  "takeoverRequiredFields": [
+    "EXACT_REVISION",
+    "COMPLETED_WORK",
+    "FOCUSED_RESULTS",
+    "OWNER_DECISIONS",
+    "FILE_OWNERSHIP",
+    "UNRESOLVED_PROBLEMS"
+  ],
+  "optionalSixReviewerException": {
+    "ownerOptInRequired": true,
+    "reviewerCount": 6,
+    "releaseScopeAndInitialCandidateLineageRequired": true,
+    "cycles": 1,
+    "reviewerSubagentsPermitted": false,
+    "overlappingEditsPermitted": false,
+    "sameReviewersVerifyCorrections": true,
+    "correctionVerificationBindsExactSuccessorRevision": true,
+    "newFinalCohortPermitted": false
+  },
+  "workflow": [
+    "IMPLEMENT",
+    "FOCUSED_VERIFY",
+    "INDEPENDENT_REVIEW_WHEN_WARRANTED",
+    "CORRECT",
+    "SAME_REVIEWER_VERIFY",
+    "INTEGRATE"
+  ]
+}

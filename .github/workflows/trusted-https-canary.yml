@@ -1,0 +1,133 @@
+name: Reconcile trusted-HTTPS update canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact protected-main Beta 4 commit to reconcile through the private loopback canary
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  trusted-https-canary:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      MQ_CANARY_RUNNER_LABEL: windows-latest
+      MQ_CANARY_CERTIFICATION_STATUS: TECHNICAL_CANARY_NOT_RELEASE_CERTIFICATION
+    steps:
+      - name: Check out exact candidate with immutable Beta 1 history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Verify private canary boundary
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_REF_TYPE -cne 'branch' -or
+              $env:GITHUB_REF_NAME -cne 'main') {
+            throw 'Trusted-HTTPS canary must be dispatched from protected main in the public Math Quest repository.'
+          }
+          if ($env:CANDIDATE_SHA -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_SHA -cne $env:GITHUB_SHA -or
+              $env:CANDIDATE_SHA -cne (git rev-parse HEAD)) {
+            throw 'candidate_sha must exactly equal the protected-main commit selected for this canary.'
+          }
+          if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+              [string]::IsNullOrWhiteSpace($env:ImageOS) -or
+              [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'Trusted-HTTPS canary requires exact GitHub-hosted Windows runner metadata.'
+          }
+          if ((Get-Content -LiteralPath 'VERSION' -Raw).Trim() -cne '1.0.0-beta.4') {
+            throw 'Trusted-HTTPS canary is release-scoped to Beta 4.'
+          }
+          if ((git rev-parse 'refs/tags/v1.0.0-beta.1^{tag}') -cne '140693bff04733ce890a0a8be2d7c9499dfa24cc' -or
+              (git rev-parse 'refs/tags/v1.0.0-beta.1^{}') -cne 'f989bf3bfe0c40824c4d2ab6f0ec2fb3450e314e') {
+            throw 'The immutable Beta 1 tag identity is unavailable or changed.'
+          }
+
+      - name: Set up pinned Node.js for the private canary
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Run disposable trusted-HTTPS Beta 1 to Beta 4 canary
+        id: canary
+        continue-on-error: true
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          & .\audit\run-trusted-https-canary.ps1 `
+            -CandidateSha $env:CANDIDATE_SHA `
+            -OutputPath 'audit-artifacts/trusted-https-canary-v1.json'
+
+      - name: Validate any generated record without converting failure to pass
+        if: always() && hashFiles('audit-artifacts/trusted-https-canary-v1.json') != ''
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          node .\audit\validate-trusted-https-canary.mjs `
+            audit-artifacts/trusted-https-canary-v1.json `
+            $env:CANDIDATE_SHA `
+            allow-failed
+
+      - name: Summarize narrow canary evidence
+        if: always() && hashFiles('audit-artifacts/trusted-https-canary-v1.json') != ''
+        shell: powershell
+        run: |
+          $record = Get-Content -LiteralPath 'audit-artifacts/trusted-https-canary-v1.json' -Raw | ConvertFrom-Json
+          $lines = @(
+            '### Trusted-HTTPS update canary'
+            ''
+            '> Private loopback technical evidence only. This is not full release certification or host privacy approval.'
+            ''
+            '| Field | Value |'
+            '|---|---|'
+            "| Candidate | ``$($record.candidateSha)`` |"
+            "| Reconciliation | ``$($record.reconciliationState)`` |"
+            "| Origin exposure | ``$($record.origin.exposure)`` |"
+            "| Browser | ``$($record.browser.productName) $($record.browser.fullVersion)`` |"
+            "| Runner | ``$($record.runner.imageOS) $($record.runner.imageVersion)`` |"
+            "| Unexpected/external requests | ``$($record.privacy.unexpectedRequestCount) / $($record.privacy.externalRequestCount)`` |"
+            "| Teardown | ``$($record.teardown.status)`` |"
+          )
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, (($lines -join "`n") + "`n"), $utf8NoBom)
+
+      - name: Upload sanitized canonical evidence only
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-trusted-https-canary-${{ github.sha }}-${{ github.run_id }}
+          path: audit-artifacts/trusted-https-canary-v1.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Require a reconciled disposable run
+        if: always()
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CANARY_STEP_OUTCOME: ${{ steps.canary.outcome }}
+        run: |
+          if ($env:CANARY_STEP_OUTCOME -cne 'success' -or
+              -not (Test-Path -LiteralPath 'audit-artifacts/trusted-https-canary-v1.json')) {
+            throw 'The disposable canary did not produce successful canonical evidence.'
+          }
+          node .\audit\validate-trusted-https-canary.mjs `
+            audit-artifacts/trusted-https-canary-v1.json `
+            $env:CANDIDATE_SHA `
+            require-reconciled

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "policyId": "finished-work-policy-v1",
+  "approvedOn": "2026-08-02",
+  "scope": {
+    "changes": "EVERY_CHANGE",
+    "actors": [
+      "PERSON",
+      "SINGLE_AGENT",
+      "PARALLEL_AGENTS"
+    ],
+    "relationshipToExistingRequirements": "SUPPLEMENT_WITHOUT_SILENT_REPLACEMENT_OR_RELAXATION",
+    "conflictDisposition": "STOP_RECORD_IN_EXISTING_OWNER_AND_OBTAIN_OWNER_DECISION",
+    "inferPermissionToWeakenGate": false
+  },
+  "completionStates": {
+    "implemented": {
+      "realProductionPathExists": true,
+      "realUserCanOperateAsIntended": true,
+      "genuineExpectedValuesChecked": true,
+      "applicableFocusedEvidencePasses": true,
+      "alonePermitsFormalCompletion": false
+    },
+    "release-certified": {
+      "implementedBehaviorRequired": true,
+      "exactFrozenCandidateRequired": true,
+      "completeCertificationGatePassRequired": true,
+      "requiredFindingsReviewed": true,
+      "missingEvidencePermitsState": false
+    },
+    "shipped": {
+      "releaseCertifiedExactBytesRequired": true,
+      "actualPublicationRequired": true
+    },
+    "blocked": {
+      "delivered": false,
+      "specificReasonRequired": true,
+      "unfinishedWorkRequired": true,
+      "unblockConditionRequired": true,
+      "mayClaimImplementedCertifiedShippedOrComplete": false
+    },
+    "declined": {
+      "delivered": false,
+      "specificReasonRequired": true,
+      "unfinishedWorkRequired": true,
+      "unsafeOrProhibitedBasis": true,
+      "mayClaimImplementedCertifiedShippedOrComplete": false
+    }
+  },
+  "clauses": [
+    {
+      "id": "FWP-1",
+      "requiredAssertions": [
+        "APPLIES_TO_EVERY_CHANGE_AND_ALL_ACTOR_MODES",
+        "SUPPLEMENTS_EXISTING_REQUIREMENTS_WITHOUT_RELAXATION",
+        "CONFLICTS_STOP_FOR_OWNER_DECISION_IN_EXISTING_RECORD",
+        "GATE_WEAKENING_PERMISSION_IS_NEVER_INFERRED",
+        "PRODUCT_IS_WORKING_ACCESSIBLE_LEGALLY_DISTRIBUTABLE_CHILD_USABLE_GAME_WITH_MATH_PRIVACY_AND_OFFLINE_CONTRACTS"
+      ]
+    },
+    {
+      "id": "FWP-2",
+      "requiredAssertions": [
+        "IMPLEMENTATION_DELIVERS_A_GENUINE_PRODUCT_OR_SAFEGUARD_EFFECT",
+        "FACTS_BELONG_IN_EXISTING_AUTHORITATIVE_RECORDS_WITHOUT_DUPLICATE_PAPERWORK",
+        "NEW_ARTIFACTS_REQUIRE_AN_ESTABLISHED_GATE_OR_NO_SUITABLE_AUTHORITY",
+        "DOCUMENTATION_DOES_NOT_SUBSTITUTE_FOR_REQUESTED_IMPLEMENTATION",
+        "DEVELOPMENT_USES_FOCUSED_EFFECT_SENSITIVE_CHECKS",
+        "COMPLETE_GAUNTLET_IS_RESERVED_FOR_FROZEN_CANDIDATE_AND_REQUIRED_GATES_ARE_NOT_WEAKENED_SKIPPED_SHRUNK_OR_IMPROPERLY_DEFERRED"
+      ]
+    },
+    {
+      "id": "FWP-3",
+      "requiredAssertions": [
+        "PRODUCT_TEST_FIXTURE_THRESHOLD_AND_REPORT_MAY_NOT_BE_CHANGED_TO_FAKE_A_PASS",
+        "BYPASSES_WEAKENED_ASSERTIONS_REMOVED_COVERAGE_SKIPS_AND_FAVOURABLE_SELECTION_ARE_FORBIDDEN",
+        "MOCKS_STUBS_SAMPLES_AND_HAND_PICKED_CASES_PROVE_ONLY_THEIR_NARROW_SCOPE",
+        "EXPECTED_ANSWERS_INDEPENDENT_ORACLES_GOLDENS_AND_DEFECT_CASES_ARE_LEGITIMATE_WHEN_CONTRACT_DERIVED_AND_EFFECT_SENSITIVE",
+        "OBSOLETE_TEST_CHANGES_REQUIRE_CLASSIFICATION_DOCUMENTATION_NEEDED_APPROVAL_AND_EQUAL_OR_STRONGER_COVERAGE",
+        "COMPLETION_TERMS_AND_CORRECTIONS_MUST_BE_TRUTHFUL_AND_USE_EXISTING_OWNING_RECORDS"
+      ]
+    },
+    {
+      "id": "FWP-4",
+      "requiredAssertions": [
+        "DIFFICULTY_DOES_NOT_REDEFINE_OR_CLOSE_IMPLEMENTATION_AND_SAFE_IN_SCOPE_ALTERNATIVES_ARE_EXHAUSTED",
+        "BLOCKED_OR_DECLINED_WORK_STATES_REASON_UNFINISHED_WORK_AND_PROGRESS_CONDITION",
+        "BLOCKED_DECLINED_OR_SUBSTITUTED_WORK_IS_NOT_RECORDED_AS_DELIVERED",
+        "NON_IMPLEMENTATION_ARTIFACT_COMPLETES_ONLY_ITS_EXPLICIT_SCOPE",
+        "REDUCED_OR_PROTOTYPE_SCOPE_REQUIRES_OWNER_APPROVAL_AND_RECORDED_ACCEPTANCE_CRITERIA",
+        "FORMAL_COMPLETION_REQUIRES_EXACT_FROZEN_CANDIDATE_COMPLETE_GATE_PASS"
+      ]
+    },
+    {
+      "id": "FWP-5",
+      "requiredAssertions": [
+        "DETERMINISTIC_CLAIMS_ARE_AUTOMATED_WITHOUT_OVERSTATING_PROOF",
+        "PERCEPTION_COMPREHENSION_PLATFORM_AND_REAL_ENVIRONMENT_CLAIMS_KEEP_HUMAN_BROWSER_OR_DEVICE_EVIDENCE",
+        "DEVELOPMENT_USES_AFFECTED_FOCUSED_AUTOMATION_AND_TARGETED_HUMAN_REVIEW",
+        "RELEASE_VERDICTS_BIND_TO_EXACT_FROZEN_CANDIDATE_AND_MISSING_EVIDENCE_REMAINS_PENDING",
+        "EVIDENCE_USES_EXISTING_ARTIFACTS_EXCLUDES_UNNECESSARY_PERSONAL_DATA_AND_IDENTIFIES_OBSERVATION_CANDIDATE_PLATFORM_AND_CONFIGURATION"
+      ]
+    },
+    {
+      "id": "FWP-6",
+      "requiredAssertions": [
+        "FINISH_LINE_IS_DEFINED_BEFORE_IMPLEMENTATION_IN_AN_EXISTING_OWNING_OR_WORKING_RECORD",
+        "BROAD_RISKY_EDUCATIONAL_PRIVACY_OR_RELEASE_WORK_REQUIRES_DURABLE_ACCEPTANCE_CRITERIA",
+        "CRITERIA_IDENTIFY_PRODUCT_EFFECT_USER_EXPERIENCE_CONTRACTS_FOCUSED_PROOF_LIMITS_AND_FINAL_RELEASE_EVIDENCE",
+        "CONFIRMED_DEFECTS_GET_EFFECT_SENSITIVE_REGRESSIONS_AND_PARALLEL_SUBTASKS_DO_NOT_COMPLETE_PARENT_WORK",
+        "MATERIAL_SCOPE_CHANGE_REQUIRES_PRIOR_OWNER_APPROVAL_AND_DIFFICULTY_NEVER_NARROWS_THE_FINISH_LINE"
+      ]
+    }
+  ],
+  "humanAuthority": {
+    "path": "AGENTS.md",
+    "startMarker": "<!-- FINISHED-WORK-POLICY-START -->",
+    "endMarker": "<!-- FINISHED-WORK-POLICY-END -->",
+    "normative": true,
+    "machineMirrorPath": "audit/finished-work-policy-v1.json",
+    "machineMirrorRole": "CLOSED_MACHINE_READABLE_MIRROR",
+    "hashAlgorithm": "SHA-256",
+    "hashByteRange": "AFTER_START_MARKER_BEFORE_END_MARKER",
+    "sectionSha256": "35a4d983257632ba4bdd73d342a5791f0887073792d82482beff8c697e16e50f"
+  }
+}

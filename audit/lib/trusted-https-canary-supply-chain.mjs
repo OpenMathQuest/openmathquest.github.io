@@ -1,0 +1,211 @@
+import {
+  CADDY_ARCHIVE_SHA256,
+  CADDY_ARCHIVE_SHA512,
+  CADDY_VERSION,
+  PLAYWRIGHT_CORE_SRI,
+  PLAYWRIGHT_CORE_VERSION,
+} from "./trusted-https-canary.mjs";
+
+export const CADDY_ARCHIVE_URL = `https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_windows_amd64.zip`;
+export const PLAYWRIGHT_CORE_URL = `https://registry.npmjs.org/playwright-core/-/playwright-core-${PLAYWRIGHT_CORE_VERSION}.tgz`;
+
+const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
+  "package.json",
+  "package-lock.json",
+  "licenses/ci-toolchain.md",
+  "trusted-https-canary",
+  "caddy.exe",
+  "playwright-core",
+]);
+
+function exactKeys(value, expected) {
+  return Boolean(
+    value
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && Object.keys(value).length === expected.length
+    && Object.keys(value).every((key, index) => key === expected[index]),
+  );
+}
+
+function parseJson(text, label, findings) {
+  try {
+    return JSON.parse(String(text));
+  } catch {
+    findings.push(`${label}: invalid JSON`);
+    return null;
+  }
+}
+
+function count(text, expression) {
+  return [...String(text).matchAll(expression)].length;
+}
+
+export function trustedHttpsCanarySupplyChainFindings(input) {
+  const findings = [];
+  const packageJson = parseJson(input.packageJsonText, "package.json", findings);
+  const packageLock = parseJson(input.packageLockText, "package-lock.json", findings);
+  if (packageJson) {
+    if (!exactKeys(packageJson, ["name", "version", "private", "license", "engines", "devDependencies"])) {
+      findings.push("package.json: CI dependency manifest must use the exact closed schema");
+    }
+    if (packageJson.name !== "open-math-quest-ci-tools" || packageJson.version !== "0.0.0" || packageJson.private !== true || packageJson.license !== "MIT") {
+      findings.push("package.json: CI dependency manifest identity must remain exact and private");
+    }
+    if (!exactKeys(packageJson.engines, ["node"]) || packageJson.engines?.node !== "24.14.0") {
+      findings.push("package.json: Node must remain pinned to 24.14.0");
+    }
+    if (!exactKeys(packageJson.devDependencies, ["playwright-core"]) || packageJson.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION) {
+      findings.push(`package.json: Playwright Core must be the sole exact dev dependency at ${PLAYWRIGHT_CORE_VERSION}`);
+    }
+  }
+  if (packageLock) {
+    if (!exactKeys(packageLock, ["name", "version", "lockfileVersion", "requires", "packages"])) {
+      findings.push("package-lock.json: lockfile must use the exact closed schema");
+    }
+    if (packageLock.name !== "open-math-quest-ci-tools" || packageLock.version !== "0.0.0" || packageLock.lockfileVersion !== 3 || packageLock.requires !== true) {
+      findings.push("package-lock.json: lockfile identity must remain exact");
+    }
+    if (!exactKeys(packageLock.packages, ["", "node_modules/playwright-core"])) {
+      findings.push("package-lock.json: lockfile may contain only the root and Playwright Core package");
+    }
+    const root = packageLock.packages?.[""];
+    if (!exactKeys(root, ["name", "version", "license", "devDependencies", "engines"])
+        || root?.name !== packageJson?.name
+        || root?.version !== packageJson?.version
+        || root?.license !== "MIT"
+        || !exactKeys(root?.devDependencies, ["playwright-core"])
+        || root?.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
+        || !exactKeys(root?.engines, ["node"])
+        || root?.engines?.node !== "24.14.0") {
+      findings.push("package-lock.json: root package must exactly mirror the reviewed manifest");
+    }
+    const playwright = packageLock.packages?.["node_modules/playwright-core"];
+    if (!exactKeys(playwright, ["version", "resolved", "integrity", "dev", "license", "bin", "engines"])
+        || playwright?.version !== PLAYWRIGHT_CORE_VERSION
+        || playwright?.resolved !== PLAYWRIGHT_CORE_URL
+        || playwright?.integrity !== PLAYWRIGHT_CORE_SRI
+        || playwright?.dev !== true
+        || playwright?.license !== "Apache-2.0"
+        || !exactKeys(playwright?.bin, ["playwright-core"])
+        || playwright?.bin?.["playwright-core"] !== "cli.js"
+        || !exactKeys(playwright?.engines, ["node"])
+        || playwright?.engines?.node !== ">=18") {
+      findings.push("package-lock.json: Playwright Core artifact, integrity, licence, and package metadata must remain exact");
+    }
+  }
+
+  const wrapper = String(input.wrapperText);
+  if (!wrapper.includes(`$caddyVersion = '${CADDY_VERSION}'`)
+      || !wrapper.includes(`$caddyUrl = '${CADDY_ARCHIVE_URL}'`)
+      || !wrapper.includes(`$caddySha256 = '${CADDY_ARCHIVE_SHA256}'`)
+      || !wrapper.includes(`$caddySha512 = '${CADDY_ARCHIVE_SHA512}'`)) {
+    findings.push("audit/run-trusted-https-canary.ps1: Caddy version, archive URL, and both checksums must remain exact");
+  }
+  if (count(wrapper, /Invoke-WebRequest\b/gu) !== 1
+      || !wrapper.includes("Invoke-WebRequest -UseBasicParsing -Uri $caddyUrl -OutFile $zipPath")) {
+    findings.push("audit/run-trusted-https-canary.ps1: exactly one reviewed Caddy download is allowed");
+  }
+  if (count(wrapper, /\bnpm\s+(?:ci|install)\b/gu) !== 2
+      || count(wrapper, /npm ci --ignore-scripts --omit=optional --no-audit --no-fund/gu) !== 1
+      || !wrapper.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")) {
+    findings.push("audit/run-trusted-https-canary.ps1: npm ci must retain every reviewed hardening flag and suppress browser downloads");
+  }
+  if (/(?:\bnpx\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b)/iu.test(wrapper)) {
+    findings.push("audit/run-trusted-https-canary.ps1: an unreviewed installer or downloader was introduced");
+  }
+  for (const required of [
+    "Canary evidence output must be a new file inside the exact repository checkout.",
+    "cleanup-identifiers-v1.json",
+    "Refusing to stop a process outside the disposable canary workspace.",
+    "Fallback certificate removal did not remove the exact canary root.",
+    "Fallback teardown left the canary HTTPS port listening.",
+  ]) {
+    if (!wrapper.includes(required)) findings.push(`audit/run-trusted-https-canary.ps1: missing crash-safe cleanup control: ${required}`);
+  }
+
+  const validator = String(input.validatorText);
+  for (const required of [
+    "workflowRunId: process.env.GITHUB_RUN_ID",
+    "workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT",
+  ]) {
+    if (!validator.includes(required)) findings.push(`audit/validate-trusted-https-canary.mjs: missing live workflow freshness binding: ${required}`);
+  }
+
+  const workflow = String(input.workflowText);
+  if (!/^on:\n  workflow_dispatch:\n/mu.test(workflow)
+      || /\n\s{2}(?:push|pull_request|schedule):/u.test(workflow)
+      || !workflow.includes("runs-on: windows-latest")) {
+    findings.push(".github/workflows/trusted-https-canary.yml: canary must remain manual and GitHub-hosted Windows only");
+  }
+  if (!workflow.includes(".\\audit\\run-trusted-https-canary.ps1")
+      || /(?:audit\.bat|run-audit\.(?:mjs|ps1))/iu.test(workflow)) {
+    findings.push(".github/workflows/trusted-https-canary.yml: workflow must invoke only the narrow canary, never the full gauntlet");
+  }
+  if (!workflow.includes("path: audit-artifacts/trusted-https-canary-v1.json")
+      || /(?:screenshot|trace|\.har\b|video)/iu.test(workflow)) {
+    findings.push(".github/workflows/trusted-https-canary.yml: artifact upload must remain sanitized canonical JSON only");
+  }
+
+  const runner = String(input.runnerText);
+  for (const required of [
+    "skip_install_trust",
+    "strict_sni_host on",
+    "bind 127.0.0.1",
+    "server.listen(requestedPort, \"127.0.0.1\"",
+    "[data-action=\"install-help\"]",
+    "[data-action=\"pwa-apply\"]",
+    "[data-action=\"pwa-retry\"]",
+    "[data-action=\"pwa-repair\"]",
+    "v1.0.0-beta.1",
+    "math-quest:v2",
+    "math-quest:progress:v2",
+    "responseHeaderSetSha256",
+    "offlineCacheProof",
+    "candidateMainFrameNavigations",
+    "protectedMigrationProjection",
+    "remainingMatchingCertificateCount",
+    "profileBoundEdgeProcesses(profilePath)",
+    "Get-CimInstance Win32_Process -Filter \\\"Name = 'msedge.exe'\\\" -ErrorAction Stop",
+    "canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)",
+    "remainingProfileProcessSetSha256 = EMPTY_PROFILE_PROCESS_SET_SHA256",
+    "await beta1Page.reload",
+  ]) {
+    if (!runner.includes(required)) findings.push(`audit/run-trusted-https-canary.mjs: missing required production-path canary control: ${required}`);
+  }
+  if (/(?:--ignore-certificate-errors|--allow-insecure-localhost|--unsafely-treat-insecure-origin-as-secure|--no-sandbox)/u.test(runner)) {
+    findings.push("audit/run-trusted-https-canary.mjs: insecure browser flags are forbidden");
+  }
+  if (/legacy-recovery=beta1|\.navigate\s*\(/u.test(runner)) {
+    findings.push("audit/run-trusted-https-canary.mjs: retained clients must update only through explicit reload, never a recovery query or forced navigation");
+  }
+
+  const publicSources = [input.builderText, input.releaseShellText, input.serviceWorkerText].map(String).join("\n");
+  for (const name of FORBIDDEN_PUBLIC_NAMES) {
+    if (publicSources.toLowerCase().includes(name.toLowerCase())) {
+      findings.push(`child-facing release shell must exclude CI-only material: ${name}`);
+    }
+  }
+  return findings;
+}
+
+export function trustedHttpsCanarySupplyChainMutationFailures(input) {
+  const failures = [];
+  const run = (label, field, change, expected) => {
+    const mutant = { ...input, [field]: change(String(input[field])) };
+    if (!trustedHttpsCanarySupplyChainFindings(mutant).some((finding) => expected.test(finding))) {
+      failures.push(`trusted-HTTPS supply-chain mutation self-test did not reject ${label}`);
+    }
+  };
+  run("a changed Playwright version", "packageJsonText", (text) => text.replace(`\"${PLAYWRIGHT_CORE_VERSION}\"`, '"1.62.0"'), /sole exact dev dependency/u);
+  run("a changed Playwright integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_CORE_SRI, "sha512-forged"), /artifact, integrity/u);
+  run("an added dependency", "packageJsonText", (text) => text.replace(`\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\"`, `\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\",\n    \"another-package\": \"1.0.0\"`), /sole exact dev dependency/u);
+  run("relaxed npm install flags", "wrapperText", (text) => text.replace("npm ci --ignore-scripts --omit=optional --no-audit --no-fund", "npm ci"), /retain every reviewed hardening flag/u);
+  run("a changed Caddy URL", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_URL, "https://example.invalid/caddy.zip"), /Caddy version, archive URL/u);
+  run("a changed Caddy checksum", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_SHA256, "0".repeat(64)), /Caddy version, archive URL/u);
+  run("removed certificate absence proof", "wrapperText", (text) => text.replace("Fallback certificate removal did not remove the exact canary root.", "Certificate cleanup assumed."), /missing crash-safe cleanup control/u);
+  run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
+  run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
+  run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);
+  return failures;
+}

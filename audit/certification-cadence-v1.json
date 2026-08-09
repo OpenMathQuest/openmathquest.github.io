@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "policyId": "math-quest-certification-cadence-v1",
+  "development": {
+    "ordinaryEvents": [
+      "pull_request",
+      "push:main",
+      "local_change"
+    ],
+    "suite": "FOCUSED_EFFECT_SENSITIVE",
+    "fullCertificationPermitted": false,
+    "formalCompletionPermitted": false
+  },
+  "earlyFullCertification": {
+    "ownerApprovalRequired": true,
+    "diagnosticOnly": true
+  },
+  "release": {
+    "explicitPublicationInstructionAuthorizesFinalRun": true,
+    "freezeRequired": true,
+    "candidateIdentity": "EXACT_COMMIT_AND_PUBLIC_PAYLOAD",
+    "scheduledFullRunsPerUnchangedCandidate": 1,
+    "timing": "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
+    "scope": "COMPLETE_CERTIFICATION_SYSTEM",
+    "qualificationEvidenceSuccessor": {
+      "policy": "DIRECT_EVIDENCE_SUCCESSOR_V1",
+      "releaseTag": "v1.0.0-beta.4",
+      "parentCount": 1,
+      "parentMustEqualQualificationCommit": true,
+      "exactChangedPaths": [
+        "PUBLICATION_CLEARANCE.md",
+        "audit/browser-runner-evidence-v1.json"
+      ],
+      "qualificationClearanceStatus": "PENDING",
+      "qualificationBrowserEvidenceStatus": "PENDING",
+      "finalCertificationTarget": "DIRECT_EVIDENCE_SUCCESSOR"
+    },
+    "postCertificationChange": "INVALIDATE_REFREEZE_RERUN_FULL",
+    "publicationRequiresPass": true
+  },
+  "entryPoints": {
+    "development": "audit/run-audit.ps1 -DevelopmentOnly",
+    "release": "audit.bat"
+  }
+}

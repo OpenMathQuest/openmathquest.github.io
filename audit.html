@@ -39,6 +39,8 @@
     const TEST_CHILD_NAME_KEY = "math-quest:child-name:v1";
     const TEST_PLACEMENT_DRAFT_KEY = "math-quest:placement-draft:v1";
     const AUDIT_WATCHDOG_MS = 2_280_000;
+    const requestedAuditShard = new URL(location.href).searchParams.get("audit-shard");
+    const AUDIT_SHARD = ["core", "visual"].includes(requestedAuditShard) ? requestedAuditShard : "all";
     const TEST_CHILD_NAME_RECORD = JSON.stringify({
       schemaVersion: 1,
       savedAt: "2000-01-01T00:00:00.000Z",
@@ -146,7 +148,7 @@
       const fail = results.filter((item) => item.status === "FAIL").length;
       summary.textContent = `${results.length - fail} passed; ${fail} failed.`;
       summary.className = fail ? "FAIL" : "PASS";
-      const payload = { completed: true, generatedAt: new Date().toISOString(), results, fail, skipped: 0 };
+      const payload = { completed: true, generatedAt: new Date().toISOString(), shard: AUDIT_SHARD, results, fail, skipped: 0 };
       let node = document.getElementById("audit-json");
       if (!node) {
         node = document.createElement("script");
@@ -498,7 +500,7 @@
 
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
-        logicalIdentity !== "math-quest-static-v1.0.0-beta.3"
+        logicalIdentity !== "math-quest-static-v1.0.0-beta.4"
         || !Array.isArray(cacheNames)
       ) return [];
       const prefix = `${logicalIdentity}-`;
@@ -509,34 +511,85 @@
       ));
     }
 
-    async function queryBrowserPwaReadiness(hostWindow) {
+    async function queryBrowserPwaReadiness(hostWindow, timeoutMs = 8000) {
       const serviceWorkers = hostWindow && "serviceWorker" in hostWindow.navigator
         ? hostWindow.navigator.serviceWorker
         : null;
       if (!serviceWorkers) return { registration: null, controller: null, readiness: null };
-      const registration = await serviceWorkers.ready;
-      const controller = serviceWorkers.controller || await new Promise((resolve) => {
+      const stageFailure = (stage, timedOut, cause = null) => {
+        const label = {
+          "service-worker-ready": "registration readiness",
+          controllerchange: "controller readiness",
+          "readiness-message": "readiness response",
+        }[stage] || stage;
+        const causeMessage = String(cause?.message || cause || "").trim();
+        const failure = new Error(timedOut
+          ? `service worker ${label} timed out after ${timeoutMs} ms${causeMessage ? `; cleanup failed: ${causeMessage}` : ""}`
+          : `service worker ${label} failed${causeMessage ? `: ${causeMessage}` : ""}`);
+        failure.code = timedOut
+          ? "PWA_READINESS_STAGE_TIMEOUT"
+          : "PWA_READINESS_STAGE_FAILED";
+        failure.stage = stage;
+        failure.timedOut = timedOut;
+        failure.timeoutMs = timeoutMs;
+        if (cause) failure.cause = cause;
+        return failure;
+      };
+      const bounded = (promise, stage, cleanup = () => {}) => new Promise((resolve, reject) => {
+        let settled = false;
+        let timer = null;
+        const finish = (kind, value, timedOut = false) => {
+          if (settled) return;
+          settled = true;
+          let cleanupError = null;
+          try {
+            if (timer !== null) hostWindow.clearTimeout(timer);
+          } catch (error) {
+            cleanupError = error;
+          }
+          try {
+            cleanup();
+          } catch (error) {
+            if (!cleanupError) cleanupError = error;
+          }
+          if (kind === "resolve" && !cleanupError) resolve(value);
+          else reject(stageFailure(stage, timedOut, cleanupError || value));
+        };
+        timer = hostWindow.setTimeout(() => finish("reject", null, true), timeoutMs);
+        Promise.resolve(promise).then(
+          (value) => finish("resolve", value),
+          (error) => finish("reject", error),
+        );
+      });
+      const registration = await bounded(serviceWorkers.ready, "service-worker-ready");
+      let removeControllerListener = () => {};
+      const controller = serviceWorkers.controller || await bounded(new Promise((resolve) => {
         const onControllerChange = () => {
           const current = serviceWorkers.controller;
           if (!current) return;
           serviceWorkers.removeEventListener("controllerchange", onControllerChange);
           resolve(current);
         };
+        removeControllerListener = () => serviceWorkers.removeEventListener("controllerchange", onControllerChange);
         serviceWorkers.addEventListener("controllerchange", onControllerChange);
         onControllerChange();
-      });
-      const readiness = controller ? await new Promise((resolve, reject) => {
+      }), "controllerchange", () => removeControllerListener());
+      let closeReadinessPort = () => {};
+      const readiness = controller ? await bounded(new Promise((resolve, reject) => {
         const channel = new hostWindow.MessageChannel();
+        closeReadinessPort = () => channel.port1.close();
         channel.port1.onmessage = (event) => {
-          channel.port1.close();
           resolve(event.data);
         };
         channel.port1.onmessageerror = () => {
-          channel.port1.close();
           reject(new Error("service worker readiness message could not be read"));
         };
-        controller.postMessage({ type: "MATH_QUEST_GET_READINESS_V1" }, [channel.port2]);
-      }) : null;
+        try {
+          controller.postMessage({ type: "MATH_QUEST_GET_READINESS_V1" }, [channel.port2]);
+        } catch (error) {
+          reject(error);
+        }
+      }), "readiness-message", () => closeReadinessPort()) : null;
       return { registration, controller, readiness };
     }
 
@@ -645,7 +698,7 @@
     }
 
     const STRUCTURED_RESPONSE_METHODS = new Set([
-      "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+      "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
       "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
       "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
       "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
@@ -1122,11 +1175,13 @@
         const win = iframe.contentWindow;
         const doc = iframe.contentDocument;
         const engine = win?.MathQuestEngine;
+        const storageKey = engine?.CONSTANTS?.STORAGE_NAMESPACE || engine?.CONSTANTS?.STORAGE_KEY;
+
+        if (AUDIT_SHARD !== "visual") {
         const pwaReadinessPromise = queryBrowserPwaReadiness(win).then(
           (value) => ({ ok: true, value }),
           (error) => ({ ok: false, error }),
         );
-
         add("BR-01", "The shipped game document loads", Boolean(doc?.documentElement), doc?.title || "");
         add("BR-02", "The browser executes the shipped deterministic engine", Boolean(engine && typeof engine === "object"));
         const apiNames = [
@@ -1135,11 +1190,12 @@
           "applyAttempt", "completeSession", "createPlacementRun", "validatePlacementRun",
           "placementCurrentQuestion", "submitPlacementAnswer", "submitPlacementNotSure",
           "placementRecommendation", "applyPlacementRecommendation",
+          "playgroundSkillIntroduced", "playgroundCatalog", "makePlaygroundRound",
+          "gradePlaygroundConstruction",
         ];
         add("BR-03", "Stable engine APIs are exposed", Boolean(engine) && apiNames.every((name) => typeof engine[name] === "function"), {
           missing: apiNames.filter((name) => typeof engine?.[name] !== "function"),
         });
-        const storageKey = engine?.CONSTANTS?.STORAGE_NAMESPACE || engine?.CONSTANTS?.STORAGE_KEY;
         const protectedBeforeMigration = localStorage.getItem(TEST_SAVE_KEY);
         const beta1BeforeMigration = localStorage.getItem(BETA1_SAVE_KEY);
         let beta1Migration = {
@@ -1552,11 +1608,17 @@
             );
             const choiceFocused = scenario.doc.activeElement === choice;
             let confirmKey = { notCanceled: false, defaultPrevented: true };
+            let transitionedFeedback = null;
+            let focusedAtTransition = false;
             if (confirm) {
               confirm.focus({ preventScroll: true });
               confirmKey = dispatchKey(scenario, "Enter");
               await pause();
               if (confirm.isConnected) confirm.click();
+              transitionedFeedback = scenario.doc.querySelector("[data-feedback-state]");
+              focusedAtTransition = Boolean(
+                transitionedFeedback && scenario.doc.activeElement === transitionedFeedback
+              );
               await awaitNextPaint(scenario);
               await waitUntil(() => scenario.doc.querySelector(".feedback-state"), 80, 10);
             }
@@ -1566,13 +1628,15 @@
               : '[data-action="next"]';
             const nextAction = scenario.doc.querySelector(nextActionSelector);
             const feedbackOutcome = scenario.doc.querySelector("[data-feedback-state]");
+            const phaseTransitioned = submittedSave?.activeSession?.uiState?.phase === "feedback";
+            const nextVisible = Boolean(nextAction && actionVisibleInViewport(scenario, nextAction));
             const separateConfirmSubmitted = Boolean(
-              submittedSave?.activeSession?.uiState?.phase === "feedback"
+              phaseTransitioned
               && scenario.doc.querySelector(".feedback-state")
-              && nextAction
-              && actionVisibleInViewport(scenario, nextAction)
+              && nextVisible
               && feedbackOutcome
-              && scenario.doc.activeElement === feedbackOutcome
+              && focusedAtTransition
+              && feedbackOutcome === transitionedFeedback
             );
             return {
               name,
@@ -1590,6 +1654,9 @@
               confirmKeyNotCanceled: confirmKey.notCanceled,
               confirmKeyDefaultPrevented: confirmKey.defaultPrevented,
               separateConfirmSubmitted,
+              phaseTransitioned,
+              focusAtTransition: Boolean(focusedAtTransition),
+              nextVisible,
               phaseAfterSelection: selectedSave?.activeSession?.uiState?.phase || null,
               phaseAfterConfirm: submittedSave?.activeSession?.uiState?.phase || null,
               context: stateOptions.screen === "capstone" ? "capstone" : expectedPhase,
@@ -2549,7 +2616,7 @@
           "FRACTION_PARTITION", "GRAPH_BUILD", "GRID_ROUTE", "GROUP_BUILD",
           "LANDMARK_PLACE", "MEASURE_OBJECT", "MIXED_NUMBER_ENTRY", "NUMBER_LINE",
           "NUMBER_PAD", "ORDER_BUILD", "PAIR_LINK", "PATTERN_BUILD", "PICTURE_CHOICE",
-          "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "SYMMETRY_BUILD",
+          "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "STRATEGY_BUILD", "SYMMETRY_BUILD",
           "TEN_FRAME",
         ]);
         const observedPlacementMethods = traversal.methods.map((row) => row.inputMethod);
@@ -2611,11 +2678,8 @@
           && engine.validatePlacementRun(startedDraft.run, startedState).valid
           && progressProjection(engine, startedState) === progressProjection(engine, placementState)
         );
-        const denseQuestion = startedDraft?.run ? engine.placementCurrentQuestion(startedDraft.run) : null;
-        const denseConstruction = denseQuestion?.inputMethod === "SHARE_DEAL"
-          && denseQuestion.inputClass === "CONSTRUCTION";
-
-        const beforeControllerQuestionId = denseQuestion?.questionId || null;
+        const freshQuestion = startedDraft?.run ? engine.placementCurrentQuestion(startedDraft.run) : null;
+        const beforeControllerQuestionId = freshQuestion?.questionId || null;
         placementScenario.win.navigator.serviceWorker?.dispatchEvent(
           new placementScenario.win.Event("controllerchange"),
         );
@@ -2624,6 +2688,61 @@
           placementScenario.doc.querySelector('[data-placement-screen][data-placement-phase="question"]')
           && JSON.parse(localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) || "null")?.ui?.questionId === beforeControllerQuestionId
           && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes
+        );
+
+        const denseWitness = traversal.methodCases.find(
+          (witness) => witness.inputMethod === "SHARE_DEAL",
+        );
+        let denseRun = null;
+        let denseQuestion = null;
+        let denseRunValid = false;
+        let densePriorResponsesReplayed = false;
+        let denseVisibleTaskMatches = false;
+        if (denseWitness && startedState) {
+          denseRun = engine.createPlacementRun({
+            state: startedState,
+            playDay: denseWitness.run.playDay,
+            seed: denseWitness.run.seed,
+            theme: denseWitness.run.theme,
+          });
+          const denseAnswerHelper = window.MathQuestApprovedVisualRegression?.correctAnswer;
+          for (const prior of denseWitness.run.answers) {
+            const priorQuestion = engine.placementCurrentQuestion(denseRun);
+            const submitted = prior.responseKind === "correct"
+              ? engine.submitPlacementAnswer(denseRun, denseAnswerHelper(engine, priorQuestion))
+              : prior.responseKind === "not-sure"
+                ? engine.submitPlacementNotSure(denseRun)
+                : null;
+            if (!submitted) break;
+            denseRun = submitted.run;
+          }
+          densePriorResponsesReplayed = denseRun.answers.length === denseWitness.run.answers.length;
+          const denseValidation = engine.validatePlacementRun(denseRun, startedState);
+          denseRunValid = densePriorResponsesReplayed && denseValidation.valid && !denseValidation.complete;
+          denseQuestion = denseRunValid ? engine.placementCurrentQuestion(denseRun) : null;
+          denseVisibleTaskMatches = Boolean(
+            denseQuestion
+            && engine.placementVisibleTaskSignature(denseQuestion)
+              === engine.placementVisibleTaskSignature(denseWitness.question)
+          );
+          localStorage.setItem(
+            TEST_PLACEMENT_DRAFT_KEY,
+            placementDraftBytes(engine, denseRun, {
+              question: denseQuestion,
+              state: startedState,
+            }),
+          );
+          await reloadScenario(placementScenario, "placement-share-deal-witness");
+          placementScenario.win.Audio = PlacementAudio;
+        }
+        const denseConstruction = Boolean(
+          denseRunValid
+          && denseVisibleTaskMatches
+          && denseQuestion?.inputMethod === "SHARE_DEAL"
+          && denseQuestion.inputClass === "CONSTRUCTION"
+          && placementScenario.doc.querySelector(
+            '[data-placement-screen][data-placement-phase="question"] [data-input-method="SHARE_DEAL"]',
+          ),
         );
 
         const total = Number(denseQuestion?.params?.total);
@@ -2659,58 +2778,109 @@
           && localStorage.getItem(TEST_SAVE_KEY) === mainBytesBeforeDenseSubmit
         );
         const placementFeedbackRows = [];
+        const incorrectDraftBytes = localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY);
         for (const [width, height, viewport, allowNaturalOuterFlow] of [
           [1366, 768, "desktop", false],
           [820, 1180, "tablet", false],
           [390, 844, "phone", false],
           [844, 390, "landscape-phone", true],
         ]) {
-          await resizeScenario(placementScenario, width, height);
-          const outcome = placementScenario.doc.querySelector(
-            '.feedback-state[data-feedback-state="incorrect"]',
-          );
-          const next = placementScenario.doc.querySelector('[data-action="placement-next"]');
-          const outcomeRect = outcome?.getBoundingClientRect();
-          const nextRect = next?.getBoundingClientRect();
-          const noHorizontalOverflow = placementScenario.doc.documentElement.scrollWidth
-            <= placementScenario.doc.documentElement.clientWidth + 1;
-          const firstScreen = Boolean(
-            outcomeRect
-            && nextRect
-            && outcomeRect.top >= -1
-            && outcomeRect.bottom <= placementScenario.win.innerHeight + 1
-            && nextRect.top >= -1
-            && nextRect.bottom <= placementScenario.win.innerHeight + 1
-          );
-          const naturalOuterFlow = Boolean(
-            allowNaturalOuterFlow
-            && nextRect
-            && nextRect.left >= -1
-            && nextRect.right <= placementScenario.win.innerWidth + 1
-            && placementScenario.doc.documentElement.scrollHeight
-              > placementScenario.doc.documentElement.clientHeight + 1
-          );
-          const metrics = visibleMetrics(placementScenario, "[data-placement-screen]");
-          placementFeedbackRows.push({
-            viewport,
-            firstScreen,
-            naturalOuterFlow,
-            noHorizontalOverflow,
-            minFont: metrics.minFont,
-            minControl: metrics.minControl,
-            pass: Boolean(
-              outcome
-              && next
-              && noHorizontalOverflow
-              && metrics.minFont >= 16
-              && metrics.minControl >= 44
-              && (firstScreen || naturalOuterFlow)
-            ),
-          });
+          try {
+            if (!incorrectDraftBytes) throw new Error("The persisted incorrect-feedback fixture is unavailable.");
+            await resizeScenario(placementScenario, width, height);
+            // End the current document's lifetime writer lease before replacing
+            // the shared draft. Otherwise its real pagehide save can race the
+            // fixture write and make the next document observe an unrelated
+            // conflict rather than testing restoration.
+            placementScenario.win.dispatchEvent(new placementScenario.win.Event("pagehide"));
+            await pause();
+            localStorage.setItem(TEST_PLACEMENT_DRAFT_KEY, incorrectDraftBytes);
+            await reloadScenario(placementScenario, `placement-feedback-layout-${viewport}`);
+            placementScenario.win.Audio = PlacementAudio;
+            const feedbackRestored = Boolean(await waitUntil(() => (
+              placementScenario.doc.querySelector(
+                '[data-placement-screen][data-placement-phase="feedback"] '
+                + '.feedback-state[data-feedback-state="incorrect"]',
+              )
+              && placementScenario.doc.querySelector('[data-action="placement-next"]')
+              && localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) === incorrectDraftBytes
+              && localStorage.getItem(TEST_SAVE_KEY) === mainBytesBeforeDenseSubmit
+            )));
+            keepAuditFramePainted(placementScenario);
+            const outcome = placementScenario.doc.querySelector(
+              '.feedback-state[data-feedback-state="incorrect"]',
+            );
+            const next = placementScenario.doc.querySelector('[data-action="placement-next"]');
+            const outcomeRect = outcome?.getBoundingClientRect();
+            const nextRect = next?.getBoundingClientRect();
+            const noHorizontalOverflow = placementScenario.doc.documentElement.scrollWidth
+              <= placementScenario.doc.documentElement.clientWidth + 1;
+            const firstScreen = Boolean(
+              outcomeRect
+              && nextRect
+              && outcomeRect.top >= -1
+              && outcomeRect.bottom <= placementScenario.win.innerHeight + 1
+              && nextRect.top >= -1
+              && nextRect.bottom <= placementScenario.win.innerHeight + 1
+            );
+            const naturalOuterFlow = Boolean(
+              allowNaturalOuterFlow
+              && nextRect
+              && nextRect.left >= -1
+              && nextRect.right <= placementScenario.win.innerWidth + 1
+              && placementScenario.doc.documentElement.scrollHeight
+                > placementScenario.doc.documentElement.clientHeight + 1
+            );
+            const metrics = visibleMetrics(placementScenario, "[data-placement-screen]");
+            placementFeedbackRows.push({
+              viewport,
+              feedbackRestored,
+              firstScreen,
+              naturalOuterFlow,
+              noHorizontalOverflow,
+              minFont: metrics.minFont,
+              minControl: metrics.minControl,
+              pass: Boolean(
+                feedbackRestored
+                && outcome
+                && next
+                && noHorizontalOverflow
+                && metrics.minFont >= 16
+                && metrics.minControl >= 44
+                && (firstScreen || naturalOuterFlow)
+              ),
+            });
+          } catch (error) {
+            placementFeedbackRows.push({
+              viewport,
+              feedbackRestored: false,
+              firstScreen: false,
+              naturalOuterFlow: false,
+              noHorizontalOverflow: false,
+              minFont: 0,
+              minControl: 0,
+              pass: false,
+              error: String(error?.message || error),
+            });
+          }
         }
         await resizeScenario(placementScenario, 1024, 900);
         placementScenario.doc.querySelector('[data-action="placement-next"]')?.click();
         await pause();
+        const boundaryQuestionId = JSON.parse(
+          localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) || "null",
+        )?.ui?.questionId || null;
+        placementScenario.win.navigator.serviceWorker?.dispatchEvent(
+          new placementScenario.win.Event("controllerchange"),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        const controllerSignalStayedAtQuestion = Boolean(
+          boundaryQuestionId
+          && placementScenario.doc.querySelector('[data-placement-screen][data-placement-phase="question"]')
+          && JSON.parse(localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) || "null")?.ui?.questionId
+            === boundaryQuestionId
+          && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes
+        );
         const boundaryDocumentBeforePause = placementScenario.doc;
         const boundaryDraftBeforePause = localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY);
         let boundaryNavigationObserved = false;
@@ -3296,6 +3466,7 @@
           && grownUpGuidanceAccessible
           && startNonceCommitted
           && Boolean(startedDraftBytes)
+          && denseRunValid
           && denseConstruction
           && touchConstructionSteps === total - remainder
           && Boolean(denseConfirm)
@@ -3303,6 +3474,7 @@
           && incorrectSavedSeparately
           && placementFeedbackRows.every((row) => row.pass)
           && pwaStayedAtSafeBoundary
+          && controllerSignalStayedAtQuestion
           && boundaryAfterPause
           && explicitResume
           && draftReloaded
@@ -3350,6 +3522,13 @@
             && selectionMainBeforeSubmit === placementMainBytes,
           separateDraftPresent: Boolean(startedDraftBytes),
           denseConstruction: {
+            runValidForCommittedNonce: denseRunValid,
+            priorResponsesReplayed: densePriorResponsesReplayed,
+            visibleTaskMatches: denseVisibleTaskMatches,
+            runNonce: denseRun?.nonce ?? null,
+            stateNonce: startedState?.placement?.runNonce ?? null,
+            questionId: denseQuestion?.questionId || null,
+            independentQuestionId: denseWitness?.question?.questionId || null,
             inputMethod: denseQuestion?.inputMethod || null,
             steps: touchConstructionSteps,
             expectedSteps: total - remainder,
@@ -3359,6 +3538,7 @@
           correctFocused,
           feedbackLayouts: placementFeedbackRows,
           pwaStayedAtSafeBoundary,
+          controllerSignalStayedAtQuestion,
           boundaryNavigationObserved,
           boundaryDraftRestored,
           boundaryAfterPause,
@@ -3575,7 +3755,7 @@
           },
           {
             caseId: "boundary-mq031-numeral-support",
-            family: "PICTURE_CHOICE",
+            family: "NUMBER_PAD",
             ordinary: denseMatching(ordinaryEarlyCandidates, (candidate) => (
               candidate.skill.skillId === "MQ-031"
             )),
@@ -3635,7 +3815,9 @@
         const layoutRows = [];
         const layoutViewports = Object.freeze([
           { width: 1366, height: 768, name: "desktop" },
-          { width: 820, height: 1180, name: "tablet" },
+          { width: 820, height: 1180, name: "tablet-portrait" },
+          { width: 1180, height: 820, name: "ipad-landscape-large" },
+          { width: 1024, height: 768, name: "ipad-landscape-standard" },
           { width: 390, height: 844, name: "phone" },
         ]);
         const layoutPhases = Object.freeze([
@@ -3710,6 +3892,25 @@
                 const order = responseBeforeConfirm(layoutScenario);
                 const responseControls = [...(answerControls?.querySelectorAll("button,input,select,textarea") || [])]
                   .filter((control) => renderedElement(layoutScenario, control));
+                const enabledResponseControls = responseControls.filter((control) => !control.disabled && control.tabIndex >= 0);
+                const firstResponseControl = enabledResponseControls[0] || null;
+                const lastResponseControl = enabledResponseControls.at(-1) || null;
+                firstResponseControl?.focus();
+                const firstResponseFocused = Boolean(
+                  firstResponseControl && doc.activeElement === firstResponseControl
+                );
+                lastResponseControl?.focus();
+                const lastResponseFocused = Boolean(
+                  lastResponseControl && doc.activeElement === lastResponseControl
+                );
+                const keyboardFocusReachable = Boolean(
+                  enabledResponseControls.length > 0
+                  && enabledResponseControls.every((control) => (
+                    /^(?:BUTTON|INPUT|SELECT|TEXTAREA)$/u.test(control.tagName)
+                  ))
+                  && firstResponseFocused
+                  && lastResponseFocused
+                );
                 const renderedFamily = question?.getAttribute("data-input-method") || "";
                 const controlsFamily = answerControls?.getAttribute("data-input-method") || "";
                 const familyMatches = renderedFamily === family && controlsFamily === family;
@@ -3744,6 +3945,7 @@
                   && answerControlsVisible
                   && confirmVisible
                   && everyResponseControlVisible
+                  && keyboardFocusReachable
                   && supportVisible
                   && !supportResponseCollision
                   && documentFitsFirstScreen
@@ -3771,7 +3973,11 @@
                   responseVisible,
                   answerControlsVisible,
                   responseControls: responseControls.length,
+                  enabledResponseControls: enabledResponseControls.length,
                   everyResponseControlVisible,
+                  firstResponseFocused,
+                  lastResponseFocused,
+                  keyboardFocusReachable,
                   confirmVisible,
                   supportRequired,
                   supportVisible,
@@ -3811,7 +4017,7 @@
         const expectedLayoutRows = layoutCases.length
           * layoutPhases.length
           * layoutViewports.length;
-        add("BR-21", "Dense witnesses for all 18 early response families and seven critical boundary variants keep question, Help, and re-teach on the first desktop, tablet, and phone screen", discoveryComplete
+        add("BR-21", "Dense witnesses for all 18 early response families and seven critical boundary variants keep question, Help, and re-teach visible and keyboard-focusable across desktop, tablet, iPad-landscape, and phone screens", discoveryComplete
           && requiredWitnessesComplete
           && layoutCases.length === 25
           && layoutRows.length === expectedLayoutRows
@@ -4365,10 +4571,15 @@
                   : instrument?.querySelector(".metric-capacity-liquid");
               const indicatorRect = indicator?.getBoundingClientRect();
               const targetMarkRect = targetMark?.getBoundingClientRect();
-              const instrumentAccessible = new RegExp(
-                `(^|\\W)mark ${witness.target}(\\W|$)`,
-                "iu",
-              ).test(instrument?.getAttribute("aria-label") || "");
+              const maximum = Number(task?.dataset.scaleMaximum);
+              const instrumentLabel = normalized(instrument?.getAttribute("aria-label") || "");
+              const instrumentAccessible = Boolean(
+                instrumentLabel.includes(`zero to ${maximum}`)
+                && instrumentLabel.includes(normalized(witness.unit))
+                && instrumentLabel.includes("endpoint")
+                && instrumentLabel.includes("unlabelled tick")
+                && !new RegExp(`(^|\\W)mark ${witness.target}(\\W|$)`, "iu").test(instrumentLabel)
+              );
               const alignmentDelta = witness.family === "capacity"
                 ? Math.abs((indicatorRect?.top ?? Infinity) - (targetMarkRect?.bottom ?? -Infinity))
                 : Math.abs((indicatorRect?.right ?? Infinity) - (
@@ -4376,7 +4587,6 @@
                     ? (targetMarkRect?.left ?? -Infinity) + (indicatorRect?.width || 0) / 2
                     : targetMarkRect?.left ?? -Infinity
                 ));
-              const maximum = Number(task?.dataset.scaleMaximum);
               const values = buttons.map((button) => Number(button.dataset.value));
               const expectedValues = Array.from({ length: maximum + 1 }, (_, value) => value);
               const taskWidth = [task?.clientWidth || 0, task?.scrollWidth || 0];
@@ -4677,8 +4887,9 @@
               scenario.doc.querySelector('[data-action="confirm"]:not([disabled])')?.click();
               await pause();
             }
+            const transitionedFeedback = scenario.doc.querySelector(`[data-feedback-state="${correct ? "correct" : "incorrect"}"]`);
+            const focusedAtTransition = scenario.doc.activeElement === transitionedFeedback;
             await awaitNextPaint(scenario);
-            await waitUntil(() => normalized(liveBefore?.textContent), 150, 20);
             const expectedStatus = correct ? "Correct." : "Not correct yet.";
             const expectedIcon = correct ? "correct" : "incorrect";
             const oppositeIcon = correct ? "incorrect" : "correct";
@@ -4696,7 +4907,7 @@
             const visibleStatus = normalized(feedback?.querySelector(".feedback-state__copy strong")?.textContent);
             const detail = normalized(feedback?.querySelector(".feedback-state__copy p")?.textContent);
             const action = scenario.doc.querySelector('[data-action="next"]');
-            const focusedOutcome = scenario.doc.activeElement === feedback;
+            const focusedOutcome = Boolean(focusedAtTransition && feedback === transitionedFeedback);
             const reviewModel = scenario.doc.querySelector(
               '.feedback-review .model[data-worked-result="true"]',
             );
@@ -4705,6 +4916,27 @@
             const liveText = normalized(liveAfter?.textContent);
             const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY) || "null");
             const attemptTruth = saved?.activeSession?.uiState?.lastAttempt?.firstAnswerCorrect;
+            const attemptTruthMatches = attemptTruth === correct;
+            const labelledBy = feedback?.getAttribute("aria-labelledby") || "";
+            const describedBy = feedback?.getAttribute("aria-describedby") || "";
+            const focusedAnnouncementContract = Boolean(
+              feedback?.dataset.feedbackAnnouncement === "focus"
+              && feedback.getAttribute("tabindex") === "-1"
+              && feedback.getAttribute("role") !== "alert"
+              && feedback.getAttribute("role") !== "status"
+              && !feedback.hasAttribute("aria-live")
+              && labelledBy
+              && describedBy
+              && feedback.querySelector(`#${CSS.escape(labelledBy)}`)
+              && feedback.querySelector(`#${CSS.escape(describedBy)}`)
+            );
+            const noDuplicateLiveAnnouncement = Boolean(
+              liveBefore && liveAfter === liveBefore && liveAfter.isConnected
+              && liveAfter.getAttribute("role") === "status"
+              && liveAfter.getAttribute("aria-live") === "polite"
+              && liveAfter.getAttribute("aria-atomic") === "true"
+              && liveText === ""
+            );
             const pass = Boolean(
               feedback && renderedElement(scenario, feedback)
               && visibleStatus === expectedStatus
@@ -4712,13 +4944,9 @@
               && actionVisibleInViewport(scenario, action)
               && focusedOutcome
               && (correct || reviewModelVisible)
-              && liveBefore && liveAfter === liveBefore && liveAfter.isConnected
-              && liveAfter.getAttribute("role") === "status"
-              && liveAfter.getAttribute("aria-live") === "polite"
-              && liveAfter.getAttribute("aria-atomic") === "true"
-              && liveText.startsWith(expectedStatus)
-              && (!detail || liveText.includes(detail))
-              && attemptTruth === correct
+              && focusedAnnouncementContract
+              && noDuplicateLiveAnnouncement
+              && attemptTruthMatches
               && deterministicFrameClock
             );
               feedbackRows.push({
@@ -4732,11 +4960,14 @@
                 semanticIcon,
                 liveText,
                 stableLiveNode: liveAfter === liveBefore,
+                focusedAnnouncementContract,
+                noDuplicateLiveAnnouncement,
                 actionVisible: actionVisibleInViewport(scenario, action),
                 actionBottom: action?.getBoundingClientRect().bottom ?? null,
                 outcomeFocused: focusedOutcome,
                 reviewModelVisible,
                 attemptTruth,
+                attemptTruthMatches,
                 deterministicFrameClock,
               });
             } finally {
@@ -5080,11 +5311,11 @@
           ].filter((control) => renderedElement(reteachSpeechScenario, control))
             .map((control) => normalized(control.getAttribute("aria-label")))
             .filter(Boolean);
-          const expectedReteachReplay = normalized([
+          const visibleReplayParts = [
             visibleReteachInstruction,
             keyboardReteachQuestion.prompt,
             ...reteachOptionLabels.map((label, index) => `Option ${index + 1}: ${label}.`),
-          ].filter(Boolean).join(" "));
+          ].map(normalized).filter(Boolean);
           speechAudit.reteachReplayOptionCount = reteachOptionLabels.length;
           speechAudit.reteachReplayOptionsSpoken = Boolean(
             reteachOptionLabels.length === keyboardReteachQuestion.options.length
@@ -5098,7 +5329,11 @@
           );
           speechAudit.reteachReplayIncludesVisibleInstruction = Boolean(
             reteachReplay && reteachHarness.calls.length === 1
-            && replayCall === expectedReteachReplay
+            && visibleReplayParts.every((part) => replayCall.includes(part))
+            && visibleReplayParts.every((part, index) => (
+              index === 0 || replayCall.indexOf(part) > replayCall.indexOf(visibleReplayParts[index - 1])
+            ))
+            && !/\[object Object\]|undefined|\bNaN\b/u.test(replayCall)
             && speechAudit.reteachReplayOptionsSpoken
             && speechAudit.reteachReplayPositionsSpoken,
           );
@@ -6494,6 +6729,411 @@
           rolloverDetails,
         );
 
+        const playgroundDetails = {
+          hiddenBeforeIntroduction: false,
+          regularStartKeepsFocusPriority: false,
+          exactActivitiesVisible: false,
+          familyMakerTurn: false,
+          deliberateHandoff: false,
+          familyBuilderTurn: false,
+          correctFeedback: false,
+          soloSkipsHandoff: false,
+          manyWaysJourney: false,
+          progressBytesUnchanged: false,
+          allStorageUnchanged: false,
+          phoneCoreNoScroll: false,
+          postFeedbackNoScroll: false,
+          earlyTargetFloor: false,
+          childTextFloor: false,
+          replayEveryScreen: false,
+          distinctWeightMatch: false,
+          noRelationalGlyphs: false,
+          homeFocusRestored: false,
+          distinctModeAndRoleIcons: false,
+          replayNarratesVisibleChoices: false,
+          handoffHidesTargetFromSpeechAndAccessibility: false,
+          replayNarratesCurrentConstruction: false,
+          duplicateEqualFeedbackTruthful: false,
+          duplicateEqualReplayTruthful: false,
+          duplicateEqualUsesNoIncorrectSound: false,
+          feedbackAnnouncedOnce: false,
+          lastUndoFocusRestored: false,
+          backToGamesClearsRoundAndRestoresFocus: false,
+          phoneNoHorizontalOverflow: false,
+          essentialControlsStayVisible: false,
+          deterministicDenseRound: false,
+          viewportMatrixComplete: false,
+          viewportMatrixRows: [],
+        };
+        const playgroundSaveBefore = localStorage.getItem(TEST_SAVE_KEY);
+        let lockedPlaygroundScenario = null;
+        let playgroundScenario = null;
+        try {
+          const lockedState = engine.createInitialState(playDay);
+          lockedPlaygroundScenario = await scenarioFrame(engine, "playground-locked", lockedState, 390, 844);
+          openFrames.push(lockedPlaygroundScenario.frame);
+          await requireScenarioHome(lockedPlaygroundScenario.frame, "Playground locked profile");
+          playgroundDetails.hiddenBeforeIntroduction = !lockedPlaygroundScenario.doc.querySelector('[data-action="playground-open"]');
+          lockedPlaygroundScenario.frame.remove();
+          openFrames.splice(openFrames.indexOf(lockedPlaygroundScenario.frame), 1);
+          lockedPlaygroundScenario = null;
+
+          const introducedAttempt = (skillId, ordinal) => {
+            const skill = engine.SKILL_BY_ID[skillId];
+            return {
+              recordId: `r-playground-${ordinal}`,
+              questionId: `q-playground-${skillId}`,
+              skillId,
+              level: skill.level,
+              stage: skill.stage,
+              taskType: skill.constraints.taskTypes[0],
+              tier: "HARD/TARGET",
+              representation: "PICTORIAL",
+              inputClass: "CONSTRUCTION",
+              selectionOptionCount: 0,
+              evidenceClass: "CONSTRUCTION",
+              feedbackClass: "FIRST_TRY_CLEAN",
+              coldTest: false,
+              scheduledReview: false,
+              sampleKey: `${skillId}|${engine.CONSTANTS.SAMPLE_KEY_VERSION}|playground|${ordinal}`,
+              firstAnswerCorrect: true,
+              hintUsed: false,
+              changed: false,
+              elapsed: 2_000,
+              idleMs: 0,
+              validTelemetry: true,
+              guessingLike: false,
+              modelUsed: true,
+              applied: false,
+              preview: false,
+              capstone: false,
+              reteachStep: false,
+              sessionId: "playground-introduction",
+              playDay,
+            };
+          };
+          let introducedState = engine.createInitialState(playDay);
+          introducedState.settings.soundEnabled = true;
+          for (const [ordinal, skillId] of ["MQ-010", "MQ-011", "MQ-019", "MQ-020", "MQ-021", "MQ-023"].entries()) {
+            introducedState = engine.applyAttempt(introducedState, introducedAttempt(skillId, ordinal)).state;
+          }
+          playgroundScenario = await scenarioFrame(engine, "playground-family", introducedState, 390, 844);
+          openFrames.push(playgroundScenario.frame);
+          await requireScenarioHome(playgroundScenario.frame, "Playground introduced profile");
+          let deterministicPlaygroundSeed = 1;
+          for (; deterministicPlaygroundSeed < 50_000; deterministicPlaygroundSeed += 1) {
+            const balanceWitness = engine.makePlaygroundRound({
+              state: introducedState,
+              activityId: "BALANCE_BAY",
+              mode: "FAMILY",
+              seed: deterministicPlaygroundSeed,
+              roundNumber: 0,
+            });
+            const manyWitness = engine.makePlaygroundRound({
+              state: introducedState,
+              activityId: "MANY_WAYS",
+              mode: "SOLO",
+              seed: deterministicPlaygroundSeed,
+              roundNumber: 0,
+            });
+            if (balanceWitness.targetChoices[0] === 10
+              && manyWitness.target === 10
+              && manyWitness.sourceKind === "NUMERAL"
+              && manyWitness.buildKind === "COUNTERS") break;
+          }
+          playgroundDetails.deterministicDenseRound = deterministicPlaygroundSeed < 50_000;
+          Object.defineProperty(playgroundScenario.win.crypto, "getRandomValues", {
+            configurable: true,
+            value: (words) => {
+              words[0] = deterministicPlaygroundSeed;
+              return words;
+            },
+          });
+          playgroundDetails.phoneCoreNoScroll = true;
+          playgroundDetails.phoneNoHorizontalOverflow = true;
+          playgroundDetails.essentialControlsStayVisible = true;
+          playgroundDetails.earlyTargetFloor = true;
+          playgroundDetails.childTextFloor = true;
+          const playgroundViewports = Object.freeze([
+            { width: 1366, height: 768, name: "desktop" },
+            { width: 820, height: 1180, name: "tablet-portrait" },
+            { width: 1180, height: 820, name: "ipad-landscape-large" },
+            { width: 1024, height: 768, name: "ipad-landscape-standard" },
+            { width: 390, height: 844, name: "phone" },
+          ]);
+          const auditPlaygroundGeometry = async (stateName) => {
+            for (const viewport of playgroundViewports) {
+              await resizeScenario(playgroundScenario, viewport.width, viewport.height);
+              const documentFits = playgroundScenario.doc.documentElement.scrollHeight
+                <= playgroundScenario.win.innerHeight + 2;
+              const noHorizontalOverflow = playgroundScenario.doc.documentElement.scrollWidth
+                <= playgroundScenario.win.innerWidth + 2;
+              const controls = [...playgroundScenario.doc.querySelectorAll('.playground-panel button,.topbar button')]
+                .filter((control) => renderedElement(playgroundScenario, control));
+              const controlsVisible = controls.length > 0 && controls.every((control) => {
+                const rect = control.getBoundingClientRect();
+                return rect.left >= -1 && rect.right <= playgroundScenario.win.innerWidth + 1
+                  && rect.top >= -1 && rect.bottom <= playgroundScenario.win.innerHeight + 1;
+              });
+              const targetFloor = controls.length > 0 && controls.every((control) => {
+                const rect = control.getBoundingClientRect();
+                return rect.width >= 64 && rect.height >= 64;
+              });
+              const enabledControls = controls.filter((control) => !control.disabled && control.tabIndex >= 0);
+              const firstControl = enabledControls[0] || null;
+              const lastControl = enabledControls.at(-1) || null;
+              const activeBeforeFocusProbe = playgroundScenario.doc.activeElement;
+              firstControl?.focus();
+              const firstFocused = Boolean(firstControl && playgroundScenario.doc.activeElement === firstControl);
+              lastControl?.focus();
+              const lastFocused = Boolean(lastControl && playgroundScenario.doc.activeElement === lastControl);
+              activeBeforeFocusProbe?.focus?.({ preventScroll: true });
+              const keyboardFocusReachable = enabledControls.length > 0 && firstFocused && lastFocused;
+              const text = [...playgroundScenario.doc.querySelectorAll('.playground-panel button,.playground-panel small,.playground-panel h2,.playground-panel p,.playground-panel strong,.playground-panel .eyebrow,.playground-panel .playground-role')]
+                .filter((element) => renderedElement(playgroundScenario, element) && normalized(element.textContent));
+              const textFloor = text.length > 0
+                && text.every((element) => Number.parseFloat(playgroundScenario.win.getComputedStyle(element).fontSize) >= 18);
+              const pass = documentFits && noHorizontalOverflow && controlsVisible
+                && targetFloor && textFloor && keyboardFocusReachable;
+              playgroundDetails.viewportMatrixRows.push({
+                state: stateName,
+                viewport: viewport.name,
+                width: viewport.width,
+                height: viewport.height,
+                documentFits,
+                noHorizontalOverflow,
+                controls: controls.length,
+                controlsVisible,
+                targetFloor,
+                textFloor,
+                firstFocused,
+                lastFocused,
+                keyboardFocusReachable,
+                pass,
+              });
+              if (viewport.name === "phone") {
+                playgroundDetails.phoneCoreNoScroll = playgroundDetails.phoneCoreNoScroll && documentFits;
+                playgroundDetails.phoneNoHorizontalOverflow = playgroundDetails.phoneNoHorizontalOverflow && noHorizontalOverflow;
+              }
+              playgroundDetails.essentialControlsStayVisible = playgroundDetails.essentialControlsStayVisible && controlsVisible;
+              playgroundDetails.earlyTargetFloor = playgroundDetails.earlyTargetFloor && targetFloor;
+              playgroundDetails.childTextFloor = playgroundDetails.childTextFloor && textFloor;
+            }
+            await resizeScenario(playgroundScenario, 390, 844);
+          };
+          const expectedProgressBytes = localStorage.getItem(TEST_SAVE_KEY);
+          const playgroundStorageImage = () => JSON.stringify(Array.from({ length: playgroundScenario.win.localStorage.length }, (_, index) => {
+            const key = playgroundScenario.win.localStorage.key(index);
+            return [key, playgroundScenario.win.localStorage.getItem(key)];
+          }).sort(([left], [right]) => String(left).localeCompare(String(right))));
+          const expectedStorageImage = playgroundStorageImage();
+          const playgroundSpeech = installSpeechHarness(playgroundScenario, [{
+            name: "Math Quest Free Play audit local voice",
+            lang: "en-CA",
+            localService: true,
+            default: true,
+          }], { completeInMicrotask: true });
+          const playgroundSounds = [];
+          class PlaygroundAuditAudio {
+            constructor(src) {
+              this.src = String(src);
+              this.currentTime = 0;
+              this.volume = 1;
+            }
+            play() {
+              playgroundSounds.push(this.src);
+              return Promise.resolve();
+            }
+            pause() {}
+          }
+          Object.defineProperty(playgroundScenario.win, "Audio", {
+            configurable: true,
+            value: PlaygroundAuditAudio,
+          });
+          playgroundDetails.regularStartKeepsFocusPriority = playgroundScenario.doc.activeElement?.dataset?.action === "start";
+          playgroundScenario.doc.querySelector('[data-action="playground-open"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("mode-choice");
+          const modeButtons = [...playgroundScenario.doc.querySelectorAll('[data-action="playground-mode"]')];
+          playgroundDetails.exactActivitiesVisible = modeButtons.length === 2
+            && modeButtons.some((button) => normalized(button.textContent).includes("Play Solo"))
+            && modeButtons.some((button) => normalized(button.textContent).includes("Family Play Together"));
+          playgroundDetails.distinctModeAndRoleIcons = Boolean(
+            playgroundScenario.doc.querySelector('[data-action="playground-mode"][data-mode="SOLO"] [data-icon="solo"]')
+            && playgroundScenario.doc.querySelector('[data-action="playground-mode"][data-mode="FAMILY"] [data-icon="family"]'),
+          );
+          playgroundDetails.replayEveryScreen = Boolean(playgroundScenario.doc.querySelector('[data-action="replay"]'));
+          playgroundScenario.doc.querySelector('[data-action="replay"]')?.click();
+          await pause();
+          const modeReplay = normalized(playgroundSpeech.calls.at(-1));
+          playgroundDetails.replayNarratesVisibleChoices = /Play Solo.+One builder.+Family Play Together.+Take turns/iu.test(modeReplay);
+          playgroundScenario.doc.querySelector('[data-action="playground-mode"][data-mode="FAMILY"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("activity-choice");
+          playgroundDetails.exactActivitiesVisible = playgroundDetails.exactActivitiesVisible
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-activity"]').length === 2
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-activity"][data-activity="MANY_WAYS"]'))
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-activity"][data-activity="BALANCE_BAY"]'));
+          playgroundDetails.replayEveryScreen = playgroundDetails.replayEveryScreen
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="replay"]'));
+          playgroundScenario.doc.querySelector('[data-action="playground-activity"][data-activity="BALANCE_BAY"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("family-maker");
+          playgroundDetails.familyMakerTurn = /Child’s turn/u.test(normalized(playgroundScenario.doc.querySelector(".playground-role")?.textContent))
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-target"]').length === 3
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-end-turn"][disabled]'));
+          playgroundDetails.distinctModeAndRoleIcons = playgroundDetails.distinctModeAndRoleIcons
+            && Boolean(playgroundScenario.doc.querySelector('.playground-role [data-icon="child"]'));
+          const visibleTargetChoices = [...playgroundScenario.doc.querySelectorAll('[data-action="playground-target"]')]
+            .map((button) => normalized(button.textContent));
+          playgroundScenario.doc.querySelector('[data-action="replay"]')?.click();
+          await pause();
+          const makerReplay = normalized(playgroundSpeech.calls.at(-1));
+          playgroundDetails.replayNarratesVisibleChoices = playgroundDetails.replayNarratesVisibleChoices
+            && visibleTargetChoices.length === 3
+            && visibleTargetChoices.every((value) => makerReplay.includes(value));
+          const targetButton = playgroundScenario.doc.querySelector('[data-action="playground-target"]');
+          const target = Number(targetButton?.dataset.value);
+          targetButton?.click();
+          playgroundScenario.doc.querySelector('[data-action="playground-end-turn"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("family-handoff");
+          playgroundDetails.deliberateHandoff = /Pass the device/u.test(normalized(playgroundScenario.doc.querySelector(".playground-heading")?.textContent))
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-ready"]').length === 1
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-build"]').length === 0;
+          playgroundDetails.distinctModeAndRoleIcons = playgroundDetails.distinctModeAndRoleIcons
+            && Boolean(playgroundScenario.doc.querySelector('.playground-role [data-icon="grown"]'));
+          playgroundDetails.replayEveryScreen = playgroundDetails.replayEveryScreen
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="replay"]'));
+          playgroundScenario.doc.querySelector('[data-action="replay"]')?.click();
+          await pause();
+          const handoffReplay = normalized(playgroundSpeech.calls.at(-1));
+          const handoffAccessibleText = [...playgroundScenario.doc.querySelectorAll("[aria-label],#live")]
+            .map((node) => normalized(node.getAttribute?.("aria-label") || node.textContent)).join(" ");
+          playgroundDetails.handoffHidesTargetFromSpeechAndAccessibility = !new RegExp(`\\b${target}\\b`, "u")
+            .test(`${handoffReplay} ${handoffAccessibleText}`);
+          playgroundScenario.doc.querySelector('[data-action="playground-ready"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("family-builder-empty");
+          playgroundDetails.familyBuilderTurn = /Grown-up’s turn/u.test(normalized(playgroundScenario.doc.querySelector(".playground-role")?.textContent))
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-build"][data-build-action="weight"]').length === 2;
+          for (let count = 0; count < target; count += 1) {
+            playgroundScenario.doc.querySelector('[data-action="playground-build"][data-build-action="weight"][data-value="1"]')?.click();
+          }
+          await auditPlaygroundGeometry("family-builder-dense");
+          playgroundDetails.replayEveryScreen = playgroundDetails.replayEveryScreen
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="replay"]'));
+          playgroundScenario.doc.querySelector('[data-action="replay"]')?.click();
+          await pause();
+          playgroundDetails.replayNarratesCurrentConstruction = normalized(playgroundSpeech.calls.at(-1))
+            .includes(`You built ${target}`);
+          const liveBeforeDuplicateCheck = normalized(playgroundScenario.doc.querySelector("#live")?.textContent);
+          const incorrectSoundsBeforeDuplicateCheck = playgroundSounds
+            .filter((src) => /\/incorrect\.wav$/u.test(src)).length;
+          playgroundScenario.doc.querySelector('[data-action="playground-check"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("family-duplicate-feedback");
+          const duplicateFeedback = normalized(playgroundScenario.doc.querySelector(".playground-feedback")?.textContent);
+          const duplicateRelation = playgroundScenario.doc.querySelector(".balance-relation");
+          playgroundDetails.duplicateEqualFeedbackTruthful = /Same amount/iu.test(duplicateFeedback)
+            && /Use at least one 2-unit weight/iu.test(duplicateFeedback)
+            && !/Not the same|needs more|has extra/iu.test(duplicateFeedback)
+            && Boolean(playgroundScenario.doc.querySelector('.playground-feedback [data-icon="many-ways"]'))
+            && !playgroundScenario.doc.querySelector('.playground-feedback [data-icon="incorrect"]')
+            && Boolean(duplicateRelation?.querySelector('[data-icon="many-ways"]'))
+            && /Same amount.+Use at least one 2-unit weight/iu.test(normalized(duplicateRelation?.getAttribute("aria-label")));
+          playgroundDetails.feedbackAnnouncedOnce = playgroundScenario.doc.activeElement?.classList.contains("playground-feedback")
+            && normalized(playgroundScenario.doc.querySelector("#live")?.textContent) === liveBeforeDuplicateCheck
+            && !playgroundScenario.doc.querySelector(".playground-feedback[aria-live],.playground-feedback[role='status']");
+          playgroundScenario.doc.querySelector('[data-action="replay"]')?.click();
+          await pause();
+          const duplicateReplay = normalized(playgroundSpeech.calls.at(-1));
+          playgroundDetails.duplicateEqualReplayTruthful = /Same amount/iu.test(duplicateReplay)
+            && /Use at least one 2-unit weight/iu.test(duplicateReplay)
+            && !/Not the same/iu.test(duplicateReplay);
+          playgroundDetails.duplicateEqualUsesNoIncorrectSound = playgroundSounds
+            .filter((src) => /\/incorrect\.wav$/u.test(src)).length === incorrectSoundsBeforeDuplicateCheck;
+          for (let count = 0; count < target; count += 1) {
+            playgroundScenario.doc.querySelector('[data-action="playground-undo"]')?.click();
+          }
+          playgroundDetails.lastUndoFocusRestored = playgroundScenario.doc.activeElement?.dataset?.action === "playground-build"
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-undo"][disabled]'));
+          playgroundScenario.doc.querySelector('[data-action="playground-build"][data-build-action="weight"][data-value="2"]')?.click();
+          for (let count = 0; count < target - 2; count += 1) {
+            playgroundScenario.doc.querySelector('[data-action="playground-build"][data-build-action="weight"][data-value="1"]')?.click();
+          }
+          playgroundScenario.doc.querySelector('[data-action="playground-check"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("family-correct-feedback");
+          playgroundDetails.correctFeedback = /That matches/u.test(normalized(playgroundScenario.doc.querySelector(".playground-feedback")?.textContent))
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-next"]'));
+          playgroundDetails.distinctWeightMatch = playgroundScenario.doc.querySelectorAll('.balance-platform .unit-weight[data-value="2"]').length >= 1;
+          playgroundDetails.noRelationalGlyphs = !/[=<>]/u.test(normalized(playgroundScenario.doc.querySelector(".balance-relation")?.textContent));
+          playgroundDetails.postFeedbackNoScroll = playgroundScenario.doc.documentElement.scrollHeight <= playgroundScenario.win.innerHeight + 2;
+          playgroundScenario.doc.querySelector('[data-action="playground-back-games"]')?.click();
+          await pause();
+          playgroundDetails.backToGamesClearsRoundAndRestoresFocus = playgroundScenario.doc.activeElement?.dataset?.action === "playground-activity"
+            && !playgroundScenario.doc.querySelector(".playground-round")
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-activity"]').length === 2;
+          playgroundScenario.doc.querySelector('.topbar [data-action="home"]')?.click();
+          await pause();
+          playgroundDetails.homeFocusRestored = playgroundScenario.doc.activeElement?.dataset?.action === "playground-open";
+
+          playgroundScenario.doc.querySelector('[data-action="playground-open"]')?.click();
+          playgroundScenario.doc.querySelector('[data-action="playground-mode"][data-mode="SOLO"]')?.click();
+          playgroundScenario.doc.querySelector('[data-action="playground-activity"][data-activity="MANY_WAYS"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("solo-builder");
+          playgroundDetails.soloSkipsHandoff = !playgroundScenario.doc.querySelector('[data-action="playground-target"]')
+            && !playgroundScenario.doc.querySelector('[data-action="playground-ready"]')
+            && playgroundScenario.doc.querySelectorAll('[data-action="playground-build"]').length > 0;
+          const numeralTarget = Number(playgroundScenario.doc.querySelector(".playground-number-marker")?.textContent);
+          const frameTarget = playgroundScenario.doc.querySelectorAll(".playground-five-frame i.on").length;
+          const manyTarget = Number.isInteger(numeralTarget) ? numeralTarget : frameTarget;
+          const counterCount = playgroundScenario.doc.querySelectorAll('[data-action="playground-build"][data-build-action="counter"]').length;
+          if (counterCount) {
+            for (let index = 0; index < manyTarget; index += 1) {
+              playgroundScenario.doc.querySelector(`[data-action="playground-build"][data-build-action="counter"][data-index="${index}"]`)?.click();
+            }
+          } else {
+            playgroundScenario.doc.querySelector('[data-action="playground-build"][data-build-action="part-add"][data-part="left"]')?.click();
+            for (let index = 1; index < manyTarget; index += 1) {
+              playgroundScenario.doc.querySelector('[data-action="playground-build"][data-build-action="part-add"][data-part="right"]')?.click();
+            }
+          }
+          playgroundScenario.doc.querySelector('[data-action="playground-check"]')?.click();
+          await pause();
+          await auditPlaygroundGeometry("solo-feedback");
+          playgroundDetails.manyWaysJourney = /That matches/u.test(normalized(playgroundScenario.doc.querySelector(".playground-feedback")?.textContent))
+            && Boolean(playgroundScenario.doc.querySelector('[data-action="playground-next"]'));
+          playgroundScenario.doc.querySelector('.topbar [data-action="home"]')?.click();
+          await pause();
+          playgroundDetails.progressBytesUnchanged = localStorage.getItem(TEST_SAVE_KEY) === expectedProgressBytes;
+          playgroundDetails.allStorageUnchanged = playgroundStorageImage() === expectedStorageImage;
+          playgroundDetails.viewportMatrixComplete = playgroundDetails.viewportMatrixRows.length
+            === playgroundViewports.length * 10
+            && playgroundDetails.viewportMatrixRows.every((row) => row.pass);
+        } catch (error) {
+          playgroundDetails.error = String(error?.message || error);
+        } finally {
+          for (const scenario of [lockedPlaygroundScenario, playgroundScenario]) {
+            if (!scenario?.frame) continue;
+            scenario.frame.remove();
+            const index = openFrames.indexOf(scenario.frame);
+            if (index >= 0) openFrames.splice(index, 1);
+          }
+          if (playgroundSaveBefore === null) localStorage.removeItem(TEST_SAVE_KEY);
+          else localStorage.setItem(TEST_SAVE_KEY, playgroundSaveBefore);
+        }
+        add(
+          "BR-36",
+          "Math Quest Free Play unlocks only after introduction, supports distinct Solo and Family construction loops across the full viewport matrix, and leaves progress bytes unchanged",
+          Object.entries(playgroundDetails).every(([key, value]) => (
+            key === "viewportMatrixRows" || value === true
+          )),
+          playgroundDetails,
+        );
+
         const canonicalStrings = canonicalChildStrings(engine.CHILD_STRINGS);
         const digestBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalStrings));
         const childDigest = [...new Uint8Array(digestBytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -6682,16 +7322,16 @@
           const expectedPaths = [shellManifestRelative, ...expectedShellEntryPaths];
           const readinessValid = Boolean(
             readiness?.type === "MATH_QUEST_READINESS_V1"
-            && readiness?.release === "1.0.0-beta.3"
-            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.3"
-            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.3"
+            && readiness?.release === "1.0.0-beta.4"
+            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.4"
+            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.4"
             && readiness?.ready === true
             && requiredPaths.length === expectedPaths.length
             && requiredPaths.every((entry) => entry?.ready === true)
             && JSON.stringify(requiredPaths.map((entry) => entry.path).sort()) === JSON.stringify([...expectedPaths].sort())
           );
           const shellManifestValid = Boolean(shellManifest?.schemaVersion === 1
-            && shellManifest?.release === "1.0.0-beta.3"
+            && shellManifest?.release === "1.0.0-beta.4"
             && shellManifest?.buildId === readiness?.buildId
             && shellManifest?.cacheName === readiness?.cacheIdentity
             && shellManifest?.entryPath === "./index.html"
@@ -6785,26 +7425,37 @@
           };
         } catch (error) {
           offlineDetails.error = String(error?.message || error);
+          if (/^PWA_READINESS_STAGE_(?:TIMEOUT|FAILED)$/u.test(error?.code || "")) {
+            offlineDetails.readinessFailure = {
+              code: error.code,
+              stage: error.stage,
+              timedOut: error.timedOut,
+              timeoutMs: error.timeoutMs,
+            };
+          }
         }
         add("BR-24", "The install manifest and controlled service worker cache the complete first-load shell for offline reopen", offlineReady, offlineDetails);
+        }
 
-        await auditWriterBarrier();
-        auditProgressMarker = "approved-visual-regression:starting";
-        const visualRegression = window.MathQuestApprovedVisualRegression;
-        if (!visualRegression || typeof visualRegression.run !== "function") throw new Error("Manifest visual regression helper did not load.");
-        const visual = await visualRegression.run({
-          engine,
-          hostWindow: win,
-          hostDocument: document,
-          storageKey,
-          childNameKey: TEST_CHILD_NAME_KEY,
-          placementDraftKey: TEST_PLACEMENT_DRAFT_KEY,
-          pause,
-          activeStateFactory: activeStateFor,
-        });
-        for (const [id, title] of Object.entries(visual.titles)) {
-          const check = visual.tests[id];
-          add(id, title, Boolean(check?.pass), check?.details || "No result returned.");
+        if (AUDIT_SHARD !== "core") {
+          await auditWriterBarrier();
+          auditProgressMarker = "approved-visual-regression:starting";
+          const visualRegression = window.MathQuestApprovedVisualRegression;
+          if (!visualRegression || typeof visualRegression.run !== "function") throw new Error("Manifest visual regression helper did not load.");
+          const visual = await visualRegression.run({
+            engine,
+            hostWindow: win,
+            hostDocument: document,
+            storageKey,
+            childNameKey: TEST_CHILD_NAME_KEY,
+            placementDraftKey: TEST_PLACEMENT_DRAFT_KEY,
+            pause,
+            activeStateFactory: activeStateFor,
+          });
+          for (const [id, title] of Object.entries(visual.titles)) {
+            const check = visual.tests[id];
+            add(id, title, Boolean(check?.pass), check?.details || "No result returned.");
+          }
         }
         auditProgressMarker = "complete";
       } catch (error) {

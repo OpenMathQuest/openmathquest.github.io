@@ -13,6 +13,8 @@ const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)
   .map((match) => match[1]);
 assert.equal(scripts.length, 2, "the shipped page must retain its engine and adapter scripts");
 const adapter = scripts[1];
+const auditPage = readFileSync(path.join(root, "audit.html"), "utf8");
+const approvedVisualSource = readFileSync(path.join(root, "audit", "approved-visual-regression.js"), "utf8");
 const extracted = await extractEngine(indexPath);
 const E = evaluateEngine(extracted.source);
 
@@ -311,7 +313,7 @@ function openingTagById(html, id) {
   return match[0];
 }
 
-test("QA-007: physical-model guidance uses large approved materials without erasing coin curriculum", () => {
+test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original practice tokens", () => {
   const representation = E.SKILL_BY_ID["MQ-001"].representation;
   const guidance = E.renderChildString("instruction.physicalModel", { representation });
   assert.match(guidance, /\blarge\b/iu);
@@ -322,11 +324,322 @@ test("QA-007: physical-model guidance uses large approved materials without eras
     "the generic floor-play cue must not invite small manipulatives",
   );
 
-  const coinQuestion = makeQuestion("MQ-048", { ordinal: 0 });
-  assert.equal(coinQuestion.semanticPromptStringId, "question.coinValue");
-  assert.match(coinQuestion.prompt, /\bCanadian\b.*\bcoin\b/iu);
-  assert.equal(coinQuestion.modelDescriptor.values.items[0].kind, "coin");
-  assert.ok(Number.isInteger(Number(coinQuestion.modelDescriptor.values.items[0].cents)));
+  const skill = E.SKILL_BY_ID["MQ-048"];
+  assert.equal(skill.title, "Match Canadian Practice Tokens to Values");
+  assert.doesNotMatch(skill.objective, /authentic|coin faces?|official artwork/iu);
+  assert.equal([...skill.phases].join(","), "P");
+  assert.equal(skill.representation, "pictures-and-symbols");
+
+  const expectedTokenByValue = new Map([
+    ["5¢", "single-dot"],
+    ["10¢", "double-stripe"],
+    ["25¢", "triangle-dots"],
+    ["$1", "cross-bars"],
+    ["$2", "ring-diamond"],
+  ]);
+  const expectedTaskByValue = new Map([
+    ["5¢", "match-practice-token-5-cents"],
+    ["10¢", "match-practice-token-10-cents"],
+    ["25¢", "match-practice-token-25-cents"],
+    ["$1", "match-practice-token-1-dollar"],
+    ["$2", "match-practice-token-2-dollars"],
+  ]);
+  const seenValues = new Set();
+  const seenTaskTypes = new Set();
+  for (const tier of ["EASY", "HARD/TARGET"]) {
+    for (let ordinal = 0; ordinal < 32; ordinal += 1) {
+        const question = makeQuestion("MQ-048", { ordinal, tier, representation: "PICTORIAL" });
+        const item = question.modelDescriptor.values.items[0];
+        assert.equal(question.taskType, expectedTaskByValue.get(question.answer.value));
+        assert.equal(question.semanticPromptStringId, "question.coinValue");
+        assert.equal(question.prompt, "Which Canadian money value does this practice token stand for?");
+        assert.equal(question.modelDescriptor.values.kind, "practiceMoney");
+        assert.equal(question.modelDescriptor.values.data.tokenSetVersion, "practice-coins-v1");
+        assert.equal(Object.hasOwn(question.modelDescriptor.values.data, "mode"), false,
+          "the sanitized shipped descriptor must not depend on an obsolete presentation-mode field");
+        assert.equal(item.kind, "practiceCoin");
+        assert.equal(item.tokenId, expectedTokenByValue.get(question.answer.value));
+        assert.equal(item.tokenId, question.params.tokenId);
+        assert.equal(item.label, question.params.tokenName);
+        assert.equal(Object.hasOwn(item, "cents"), false);
+        assert.equal(Object.hasOwn(item, "value"), false);
+        assert.doesNotMatch(item.label, /[0-9¢$]/u);
+        assert.equal(question.answer.kind, "text");
+        assert.equal(question.options.length, 5);
+        assert.equal(question.options.some((option) => option.value === question.answer.value), true);
+        assert.equal(new Set(question.options.map((option) => option.value)).size, question.options.length);
+        assert.deepEqual(new Set(question.options.map((option) => option.value)), new Set(expectedTokenByValue.keys()));
+        assert.equal(question.options.every((option) => /^(?:\d+¢|\$\d+)$/u.test(option.label)), true);
+        seenValues.add(question.answer.value);
+        seenTaskTypes.add(question.taskType);
+    }
+  }
+  assert.deepEqual(seenValues, new Set(expectedTokenByValue.keys()));
+  assert.deepEqual(seenTaskTypes, new Set(expectedTaskByValue.values()));
+
+  const practiceMoneyOracle = approvedVisualSource.match(
+    /if \(kind === "practiceMoney"\) \{([\s\S]*?)\n\s*\} else if \(\/money\/iu\.test\(kind\)\)/u,
+  )?.[1];
+  assert.ok(practiceMoneyOracle, "the approved visual oracle must retain its practice-money branch");
+  assert.match(practiceMoneyOracle, /data\.tokenSetVersion === "practice-coins-v1"/u);
+  assert.match(practiceMoneyOracle, /item\?\.kind === "practiceCoin"/u);
+  assert.match(practiceMoneyOracle, /candidates\.length === 5/u);
+  assert.doesNotMatch(practiceMoneyOracle, /data\.mode/u,
+    "the oracle must validate governed token semantics rather than a stripped UI hint");
+  assert.ok(
+    approvedVisualSource.indexOf('if (kind === "practiceMoney")')
+      < approvedVisualSource.indexOf('else if (/money/iu.test(kind))'),
+    "the specific practice-token oracle must run before the generic cents-bearing money branch",
+  );
+
+  const visualContext = { window: {} };
+  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
+    .runInNewContext(visualContext);
+  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
+  assert.equal(typeof visualContract?.semanticVisualObligationKey, "function");
+  const fixedVisualOracle = [
+    { tokenId: "single-dot", value: "5\u00a2" },
+    { tokenId: "double-stripe", value: "10\u00a2" },
+    { tokenId: "triangle-dots", value: "25\u00a2" },
+    { tokenId: "cross-bars", value: "$1" },
+    { tokenId: "ring-diamond", value: "$2" },
+  ];
+  assert.deepEqual(
+    Object.values(E.PRACTICE_COIN_TOKENS)
+      .sort((left, right) => left.cents - right.cents)
+      .map(({ tokenId, value }) => ({ tokenId, value })),
+    fixedVisualOracle,
+    "the public engine must expose one frozen authority for all five original token/value mappings",
+  );
+  assert.equal(Object.isFrozen(E.PRACTICE_COIN_TOKENS), true);
+  assert.equal(Object.values(E.PRACTICE_COIN_TOKENS).every(Object.isFrozen), true);
+  assert.deepEqual(
+    Array.from(visualContract.practiceTokenVisualOracle, ({ tokenId, value }) => ({ tokenId, value })),
+    fixedVisualOracle,
+    "the visual matrix must retain the independent exact five-token/value oracle",
+  );
+  const visualKeys = fixedVisualOracle.map(({ tokenId }) => visualContract.semanticVisualObligationKey({
+    modelDescriptor: { type: "visualPrompt" },
+    semanticPromptStringId: "question.coinValue",
+    params: { tokenId },
+  }));
+  assert.deepEqual(visualKeys, fixedVisualOracle.map(({ tokenId }) => (
+    `visualPrompt|question.coinValue|${tokenId}`
+  )));
+  assert.equal(new Set(visualKeys).size, fixedVisualOracle.length,
+    "semantic visual obligations must not collapse the five token designs into one prompt row");
+  const fixedViewports = [
+    { viewport: "desktop", width: 1366, height: 768 },
+    { viewport: "tablet-portrait", width: 820, height: 1180 },
+    { viewport: "ipad-landscape-large", width: 1180, height: 820 },
+    { viewport: "ipad-landscape-standard", width: 1024, height: 768 },
+    { viewport: "phone", width: 390, height: 844 },
+  ];
+  const fixedStates = ["ordinary", "help", "incorrect"];
+  const expectedVisualObligations = fixedVisualOracle.flatMap(({ tokenId, value }) => (
+    fixedViewports.flatMap(({ viewport, width, height }) => fixedStates.map((state) => ({
+      tokenId,
+      value,
+      viewport,
+      width,
+      height,
+      state,
+    })))
+  ));
+  const visualObligations = Array.from(
+    visualContract.practiceTokenVisualObligations(),
+    ({ tokenId, value, viewport, width, height, state }) => (
+      { tokenId, value, viewport, width, height, state }
+    ),
+  );
+  assert.equal(visualObligations.length, 75);
+  assert.deepEqual(visualObligations, expectedVisualObligations,
+    "the governed visual contract must require every token in every viewport and child state");
+
+  const practiceTokenSetSource = adapter.match(/const PRACTICE_COIN_TOKEN_IDS=new Set\([^;]+\);/u)?.[0];
+  assert.ok(practiceTokenSetSource, "the adapter must expose its exact practice-token renderer allowlist to the effect harness");
+  const { visualItemHtml: renderPracticeToken } = evaluateHarness({
+    prelude: `
+      ${practiceTokenSetSource}
+      function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
+      function geometryVisualHtml(){return "";}
+      function shapeName(){return "";}
+      function shapeVisualHtml(){return "";}
+    `,
+    functions: ["visualItemHtml"],
+    exposed: "visualItemHtml",
+    context: { E },
+  });
+  for (const tokenId of expectedTokenByValue.values()) {
+    const html = renderPracticeToken({ kind: "practiceCoin", tokenId, label: "practice token" }, "practiceMoney");
+    assert.match(html, new RegExp(`data-practice-token="${tokenId}"`, "u"));
+    assert.match(html, /practice-coin-token__mark/u);
+    assert.doesNotMatch(html, /(?:5¢|10¢|25¢|\$1|\$2)/u);
+  }
+  assert.equal(renderPracticeToken({ kind: "practiceCoin", tokenId: "unknown", label: "practice token" }), "");
+
+  const guideHarness = evaluateHarness({
+    prelude: `
+      ${practiceTokenSetSource}
+      const ui={world:"ocean"};
+      const s=id=>id==="ui.ready"?"Ready":id==="ritual.open"?"Let’s look closely together.":id==="question.coinValue"?"Which Canadian money value does this practice token stand for?":"";
+      function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
+      function accessibleOptionLabel(option){return String(option?.label||option?.value||"");}
+      function geometryVisualHtml(){return "";}
+      function shapeName(){return "";}
+      function shapeVisualHtml(){return "";}
+    `,
+    functions: [
+      "visualItemHtml",
+      "practiceTokenGuideItems",
+      "practiceTokenGuideSpeech",
+      "practiceTokenGuideHtml",
+    ],
+    exposed: "practiceTokenGuideItems,practiceTokenGuideSpeech,practiceTokenGuideHtml",
+    context: { E },
+  });
+  const firstTokenQuestion = makeQuestion("MQ-048", {
+    ordinal: 0,
+    tier: "EASY",
+    scaffolded: false,
+    coldTest: false,
+  });
+  const guideItems = Array.from(
+    guideHarness.practiceTokenGuideItems(firstTokenQuestion),
+    ({ tokenId, value }) => ({ tokenId, value }),
+  );
+  assert.deepEqual(guideItems, fixedVisualOracle,
+    "the first-use guide must teach every governed token/value mapping in curriculum order");
+  const guideHtml = String(guideHarness.practiceTokenGuideHtml(firstTokenQuestion));
+  assert.match(guideHtml, /data-practice-token-guide="true"/u);
+  assert.match(guideHtml, /<h2>Let’s look closely together\.<\/h2>/u);
+  assert.doesNotMatch(guideHtml, /Which Canadian money value does this practice token stand for\?/u,
+    "the five-token guide must not reuse a singular question with no unique referent");
+  assert.equal((guideHtml.match(/role="listitem"/gu) || []).length, 5);
+  for (const { tokenId, value } of fixedVisualOracle) {
+    assert.match(guideHtml, new RegExp(`data-practice-token="${tokenId}"`, "u"));
+    assert.match(guideHtml, new RegExp(`data-practice-token-value="${value.replace("$", "\\$")}"`, "u"));
+  }
+  assert.match(guideHtml, /data-action="physical-done">Ready<\/button>/u);
+  assert.doesNotMatch(guideHtml, /data-action="confirm"|<input|<select/iu,
+    "the teaching guide must not masquerade as an assessed answer screen");
+  const guideSpeech = String(guideHarness.practiceTokenGuideSpeech(firstTokenQuestion));
+  assert.match(guideSpeech, /^Let’s look closely together\./u);
+  for (const tokenName of [
+    "one-dot practice token",
+    "two-stripe practice token",
+    "three-dot practice token",
+    "cross practice token",
+    "ring-and-diamond practice token",
+  ]) assert.match(guideSpeech, new RegExp(tokenName, "iu"));
+
+  const activationHarness = evaluateHarness({
+    prelude: `
+      let state,ui;
+      const effects={saved:0,rendered:0,served:0,spoken:[]};
+      const now=()=>1000;
+      function markServed(){effects.served+=1;}
+      function save(){effects.saved+=1;return true;}
+      function render(){effects.rendered+=1;}
+      function replayText(){return "practice-token guide speech";}
+      function questionSpeechText(){return "question speech";}
+      function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
+      function configure(question,{acquisition="UNSEEN",evidence=[],screen="session"}={}){
+        state={skills:{[question.skillId]:{acquisition,evidence:[...evidence]}}};
+        ui={screen,question:null,choiceCandidates:[],selected:null,entry:"",fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],responseState:{},modelTouched:false,hintUsed:false,selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null,isReteach:false,capstoneSubmitted:false,promptFinishedAt:0,replayMs:0,manipulationMs:0,manipulationStartedAt:0,idleStart:0,maxIdleMs:0,phase:"question"};
+        effects.saved=0;effects.rendered=0;effects.served=0;effects.spoken=[];
+      }
+      function snapshot(){return {phase:ui.phase,question:ui.question,acquisition:state.skills[ui.question.skillId].acquisition,effects:{saved:effects.saved,rendered:effects.rendered,served:effects.served,spoken:[...effects.spoken]}};}
+    `,
+    functions: ["activateQuestion"],
+    exposed: "activateQuestion,configure,snapshot",
+    context: { E },
+  });
+  activationHarness.configure(firstTokenQuestion);
+  activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
+  const unseenActivation = activationHarness.snapshot();
+  assert.equal(unseenActivation.phase, "physical");
+  assert.equal(unseenActivation.question.scaffolded, false,
+    "the visual guide is a separate teaching step and must not mutate the ordinary question contract");
+  assert.equal(unseenActivation.acquisition, "LEARNING");
+  assert.deepEqual(JSON.parse(JSON.stringify(unseenActivation.effects)), {
+    saved: 1,
+    rendered: 1,
+    served: 1,
+    spoken: ["practice-token guide speech"],
+  });
+  activationHarness.configure(firstTokenQuestion, { acquisition: "PLACED" });
+  activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
+  assert.equal(activationHarness.snapshot().phase, "physical",
+    "a placement-inferred skill with no real evidence must receive the guide before its first review");
+  activationHarness.configure(firstTokenQuestion, { acquisition: "PRACTISING", evidence: [{ recordId: "prior" }] });
+  activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
+  assert.equal(activationHarness.snapshot().phase, "question",
+    "the guide must not repeat after a real MQ-048 attempt has been recorded");
+  const previewQuestion = makeQuestion("MQ-048", { ordinal: 0, tier: "EASY", preview: true, coldTest: false });
+  activationHarness.configure(previewQuestion);
+  activationHarness.activateQuestion(previewQuestion, { ordinal: 0 });
+  assert.equal(activationHarness.snapshot().phase, "question",
+    "preview and Parent Test paths must remain isolated from the child first-use guide");
+  const capstoneQuestion = makeQuestion("MQ-048", { ordinal: 0, tier: "EASY", capstone: true, scaffolded: true, coldTest: false });
+  activationHarness.configure(capstoneQuestion);
+  activationHarness.activateQuestion(capstoneQuestion, { ordinal: 0 });
+  assert.equal(activationHarness.snapshot().phase, "question");
+  activationHarness.configure(firstTokenQuestion);
+  activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 }, { reteach: true });
+  assert.equal(activationHarness.snapshot().phase, "reteach");
+
+  const guidedAttempt = E.submitAnswer(firstTokenQuestion, { optionId: firstTokenQuestion.options[firstTokenQuestion.correctIndex].optionId }, {
+    promptFinishedAt: 100,
+    submittedAt: 3100,
+    manipulationMs: 0,
+    replayMs: 0,
+    idleMs: 0,
+    hintUsed: false,
+    selectionEvents: [{ optionId: firstTokenQuestion.options[firstTokenQuestion.correctIndex].optionId, at: 2000 }],
+    sessionId: "mq048-guide",
+    playDay: 1,
+  });
+  assert.equal(guidedAttempt.evidenceClass, "GUESS_PRONE_SELECTION",
+    "after the separate guide, the unchanged ordinary question must remain governed by the existing mastery contract");
+});
+
+test("QA-033: the browser placement oracle submits valid complete responses for every adaptive boundary", () => {
+  const visualContext = { window: {} };
+  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
+    .runInNewContext(visualContext);
+  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
+  const state = E.createInitialState(21_000);
+  const traversal = visualContract.placementCases(E, state);
+  assert.equal(traversal.rows.length, E.CONSTANTS.LEVEL_MAX - E.CONSTANTS.LEVEL_MIN + 1);
+  assert.equal(traversal.rows.every((row) => row.pass), true,
+    "the browser oracle must reach each expected placement recommendation without an invalid fixture response");
+
+  const comparison = findGeneratedQuestion((question) => (
+    question.inputMethod === "PAIR_LINK"
+    && question.semanticPromptStringId === "question.compare"
+  ));
+  assert.ok(comparison, "a comparison PAIR_LINK question must remain reachable");
+  const answer = visualContract.correctAnswer(E, comparison);
+  assert.equal(answer.relation, comparison.answer.value,
+    "the worked browser fixture must include the child-visible comparison decision introduced by the approved task redesign");
+  const grade = E.gradeAnswer(comparison, answer);
+  assert.equal(grade.valid, true);
+  assert.equal(grade.correct, true);
+  assert.equal(grade.canonical, E.canonical({
+    links: answer.links.map((link) => [String(link[0]), String(link[1])]).sort(),
+    relation: answer.relation,
+  }));
+
+  for (const question of [
+    makeQuestion("MQ-063", { ordinal: 1, tier: "HARD/TARGET" }),
+    makeQuestion("MQ-097", { ordinal: 2, tier: "HARD/TARGET" }),
+  ]) {
+    const workedAnswer = visualContract.correctAnswer(E, question);
+    const workedGrade = E.gradeAnswer(question, workedAnswer);
+    assert.equal(workedGrade.valid, true, `${question.skillId} browser response must satisfy its exact construction schema`);
+    assert.equal(workedGrade.correct, true, `${question.skillId} browser response must exercise the governed correct result`);
+  }
 });
 
 test("QA-008: direct construction emits a primary action whose winning colour is white", () => {
@@ -702,7 +1015,7 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
       function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
       function responseAction(mode,action,extra=""){return 'data-control-mode="'+mode+'" data-response-action="'+action+'" '+extra;}
     `,
-    functions: ["metricScaleConstructionHtml"],
+    functions: ["unlabelledTickRunDescription", "metricScaleConstructionHtml"],
     exposed: "metricScaleConstructionHtml",
   });
   const families = new Map([
@@ -732,10 +1045,11 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
       assert.match(html, new RegExp(`data-scale-maximum="${maximum}"`, "u"));
       assert.match(html, /id="metric-scale-choices">Choices</u);
       assert.doesNotMatch(html, /overflow-x|scroll/iu);
-      assert.match(
+      assert.match(html, /role="img"[^>]*aria-label="[^"]*unlabelled tick/iu);
+      assert.doesNotMatch(
         html,
-        new RegExp(`role="img"[^>]*aria-label="[^"]*mark ${target}\\.`, "u"),
-        "the accessible instrument must communicate the same marked value as the picture",
+        new RegExp(`aria-label="[^"]*(?:mark|reaches|points to) ${target}(?:\\D|$)`, "iu"),
+        "the accessible equivalent may expose countable intervals but must not state the assessed mark",
       );
 
       const buttons = [...html.matchAll(
@@ -764,6 +1078,21 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
       }
     }
   }
+
+  const metricBrowserPredicate = auditPage.match(
+    /const instrumentLabel = normalized\(instrument\?\.getAttribute\("aria-label"\) \|\| ""\);[\s\S]*?const alignmentDelta/u,
+  )?.[0];
+  assert.ok(metricBrowserPredicate,
+    "the installed-browser audit must retain its metric accessibility predicate");
+  assert.ok(metricBrowserPredicate.includes('instrumentLabel.includes(`zero to ${maximum}`)'));
+  assert.ok(metricBrowserPredicate.includes("instrumentLabel.includes(normalized(witness.unit))"));
+  assert.ok(metricBrowserPredicate.includes('instrumentLabel.includes("endpoint")'));
+  assert.ok(metricBrowserPredicate.includes('instrumentLabel.includes("unlabelled tick")'));
+  assert.match(metricBrowserPredicate,
+    /!new RegExp\([\s\S]*?mark \$\{witness\.target\}[\s\S]*?\.test\(instrumentLabel\)/u,
+    "the browser predicate must reject an accessible label that leaks the assessed mark");
+  assert.doesNotMatch(metricBrowserPredicate, /const instrumentAccessible = new RegExp/u,
+    "the obsolete answer-leaking mark oracle must not return");
 
   const lengthQuestion = {
     answer: { kind: "integer", value: 8 },
@@ -1014,4 +1343,116 @@ test("QA-023: starting-point guidance and results disclose a broad heuristic, ab
     assert.doesNotMatch(visible, /placement[- ]covered/iu);
     assert.doesNotMatch(visible, /earlier (?:skills|levels) (?:were|are) completed/iu);
   }
+});
+
+test("QA-035: MQ-031 numeral support is audited through its shipped number-pad construction", () => {
+  for (const tier of ["EASY", "HARD/TARGET"]) {
+    for (let ordinal = 0; ordinal < 32; ordinal += 1) {
+      for (const reteachStep of [false, true]) {
+        const question = makeQuestion("MQ-031", {
+          tier: reteachStep ? "EASY" : tier,
+          ordinal: reteachStep ? 9000 + ordinal : ordinal,
+          eligibleQuestionOrdinal: ordinal,
+          representation: "PICTORIAL",
+          scaffolded: reteachStep,
+          reteachStep,
+        });
+        assert.equal(question.inputClass, "CONSTRUCTION");
+        assert.equal(question.inputMethod, "NUMBER_PAD");
+        assert.equal(question.semanticPromptStringId, "question.numeralForm");
+        assert.equal(question.options.length, 0);
+        const grade = E.gradeAnswer(question, { value: question.answer.value });
+        assert.equal(grade.valid, true);
+        assert.equal(grade.correct, true);
+      }
+    }
+  }
+
+  const supplementalCase = auditPage.match(
+    /caseId: "boundary-mq031-numeral-support",[\s\S]*?caseId: "boundary-mq002-maximum"/u,
+  )?.[0];
+  assert.ok(supplementalCase,
+    "the browser audit must retain the exact MQ-031 supplemental layout witness");
+  assert.match(supplementalCase, /family: "NUMBER_PAD"/u);
+  assert.doesNotMatch(supplementalCase, /family: "PICTURE_CHOICE"/u,
+    "an obsolete choice-family label must not make valid MQ-031 construction rows fail");
+});
+
+test("QA-036: placement and feedback browser fixtures protect the current lifecycle and announcement contracts", () => {
+  const visualContext = { window: {} };
+  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
+    .runInNewContext(visualContext);
+  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
+  const originalState = E.createInitialState(31_000);
+  const traversal = visualContract.placementCases(E, originalState);
+  const denseWitness = traversal.methods.find((row) => row.inputMethod === "SHARE_DEAL");
+  assert.ok(denseWitness, "the adaptive traversal must retain a real SHARE_DEAL witness");
+
+  const begun = E.beginPlacementRun({
+    state: originalState,
+    playDay: originalState.maxSeenPlayDay,
+    theme: "ocean",
+  });
+  assert.notEqual(begun.state.placement.runNonce, denseWitness.run.nonce,
+    "the real Start action must advance the private run identity");
+  assert.equal(E.validatePlacementRun(denseWitness.run, begun.state).valid, false,
+    "a pre-Start traversal fixture must be rejected as stale after Start commits a new nonce");
+
+  let compatibleRun = E.createPlacementRun({
+    state: begun.state,
+    playDay: denseWitness.run.playDay,
+    seed: denseWitness.run.seed,
+    theme: denseWitness.run.theme,
+  });
+  for (const prior of denseWitness.run.answers) {
+    const question = E.placementCurrentQuestion(compatibleRun);
+    compatibleRun = prior.responseKind === "correct"
+      ? E.submitPlacementAnswer(compatibleRun, visualContract.correctAnswer(E, question)).run
+      : E.submitPlacementNotSure(compatibleRun).run;
+  }
+  assert.equal(E.validatePlacementRun(compatibleRun, begun.state).valid, true);
+  assert.equal(
+    E.placementVisibleTaskSignature(E.placementCurrentQuestion(compatibleRun)),
+    E.placementVisibleTaskSignature(denseWitness.question),
+    "replaying the same deterministic decisions on the committed identity must reach the same visible task",
+  );
+
+  const placementAudit = auditPage.match(
+    /const denseWitness = traversal\.methodCases\.find\([\s\S]*?const placementFeedbackRows = \[\];/u,
+  )?.[0];
+  assert.ok(placementAudit, "the browser audit must retain its dense placement lifecycle fixture");
+  assert.match(placementAudit, /denseRun = engine\.createPlacementRun\(\{[\s\S]*?state: startedState/u);
+  assert.match(placementAudit, /engine\.validatePlacementRun\(denseRun, startedState\)/u);
+  assert.match(placementAudit, /engine\.placementVisibleTaskSignature\(denseQuestion\)[\s\S]*?engine\.placementVisibleTaskSignature\(denseWitness\.question\)/u);
+  const placementLifecycleAudit = auditPage.match(
+    /const denseWitness = traversal\.methodCases\.find\([\s\S]*?const placementSelectionCase =/u,
+  )?.[0];
+  assert.ok(placementLifecycleAudit);
+  assert.match(placementLifecycleAudit, /dispatchEvent\(new placementScenario\.win\.Event\("pagehide"\)\)[\s\S]*?localStorage\.setItem\(TEST_PLACEMENT_DRAFT_KEY, incorrectDraftBytes\)/u,
+    "the outgoing writer must release before the audit restores shared draft bytes");
+  assert.match(placementLifecycleAudit, /controllerSignalStayedAtQuestion/u,
+    "the controller-change fixture must prove the active question first and then navigate only at Pause");
+
+  const feedbackAudit = auditPage.match(
+    /const feedbackRows = \[\];[\s\S]*?add\("BR-26"/u,
+  )?.[0];
+  assert.ok(feedbackAudit, "the browser audit must retain the exact feedback matrix");
+  assert.match(feedbackAudit, /feedback\?\.dataset\.feedbackAnnouncement === "focus"/u);
+  assert.match(feedbackAudit, /liveText === ""/u,
+    "the focused outcome must not be duplicated through the global live region");
+  assert.match(feedbackAudit, /attemptTruthMatches = attemptTruth === correct/u);
+  assert.doesNotMatch(feedbackAudit, /liveText\.startsWith\(expectedStatus\)/u,
+    "the obsolete duplicate-live-announcement oracle must not return");
+});
+
+test("QA-037: exact short-viewport packing keeps governed text and target floors intact", () => {
+  assert.match(styleSource, /\.playground-panel\{height:calc\(100dvh - 116px\);min-height:0/u);
+  assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/u);
+  assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/u);
+  assert.match(styleSource, /data-skill-id="MQ-021"\] \.pair-object\{width:44px;height:44px/u);
+  assert.match(styleSource, /data-skill-id="MQ-007"\] \.sort-task\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) auto/u);
+  assert.match(styleSource, /data-skill-id="MQ-105"\] \.area-outline-svg\{max-height:148px\}/u);
+  assert.match(styleSource, /\.lab-question:is\(\[data-skill-id="MQ-007"\],\[data-skill-id="MQ-105"\],\[data-skill-id="MQ-122"\]\):has\(>\.model\)\{display:grid;grid-template-columns:/u);
+  assert.match(styleSource, /\.playground-panel button,\.playground-shell \.topbar button\{min-width:65px;min-height:65px\}/u);
+  assert.match(styleSource, /\.play-shell :is\(button,input,select,textarea\)[\s\S]*?min-height:45px/u);
 });

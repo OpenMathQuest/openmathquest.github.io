@@ -35,15 +35,48 @@ equality.
 This redesign resolves the architectural path selected for the rights concern,
 but it does not by itself approve publication.
 
+## Certification cadence and immutable candidate
+
+Status and evidence follow the
+[`AGENTS.md` finished-work policy](../../AGENTS.md#what-counts-as-finished-work).
+
+Ordinary development, pull requests, branch pushes, and pushes to `main` run
+the focused development suite plus change-specific effect-sensitive checks.
+They may establish that real production behavior is **implemented**, but they
+do not run or satisfy the complete certification gauntlet and cannot establish
+**release-certified** status.
+
+After all planned release work is finished, first commit the exact Beta 4
+qualification revision with pending clearance and pending browser evidence.
+After hosted-Windows observation, create the one direct evidence successor
+defined below. That successor is the exact final candidate commit and public
+payload. A clear owner instruction to publish authorizes the final complete
+certification run. Dispatch the **Math Quest checks** workflow from protected
+`main` with that exact 40-character `candidate_sha` and the intended
+`release_tag`. The complete run occurs once at this boundary, after freeze and
+immediately before the public tag, release, and deployment.
+
+After the run passes, create the annotated tag at that same commit. The Pages
+workflow must verify a successful release-certification workflow run for the
+tagged commit and deploy the exact tagged payload without rerunning the
+gauntlet. The candidate is **shipped** only when those certified bytes are
+actually published. Any intervening product, content, configuration, evidence,
+commit, or payload change invalidates certification and requires focused
+correction, a new freeze, and a complete rerun from the beginning. An earlier
+full run may occur only with explicit owner approval and is diagnostic rather
+than release certification.
+
 ## Remaining fail-closed review
 
-Before the Public Beta 3 push or deployment:
+During preparation and the single final Public Beta 4 certification cycle:
 
 1. Freeze and canonicalize the exact manifest.
 2. Compute the exact manifest and engine SHA-256 values from shipped bytes.
 3. Run the complete engine, generator, mastery, mutation, calibrated branch
    coverage, launcher, browser, accessibility, visual, privacy, metadata,
-   secret, rights, and deployment-allowlist review.
+   secret, rights, and deployment-allowlist review. The privacy gate must prove
+   there is no automatic child-data transmission and that local backup export
+   occurs only after a deliberate grown-up action.
 4. Reconcile predicted and actual audit counts, failures, skips, and residual
    risks. Classify every failure or materially affected check as a product,
    obsolete-test, environment/harness, or pending evidence/approval issue (or
@@ -62,18 +95,35 @@ Before the Public Beta 3 push or deployment:
    `https://openmathquest.github.io/` origin, empty Pages base path, absent
    CNAME, GitHub Actions publishing source, HTTPS, exact tagged workflow, and
    deployed allowlisted artifact.
-8. Complete real-device spot checks on Windows, iPhone, and iPad.
-9. Complete the Beta 2 host/privacy gate, three-generation physical Apple
-   matrix, exact offline/update/recovery checks, six fresh antagonist reviews,
-   and independent adjudication defined in
-   `docs/release/ios-ipados-pwa-beta2-plan.md`.
+8. Offer the documented six-lane real-device cycle on Windows, iPhone, and
+   iPad. If selected, complete every lane and its exact
+   offline/update/recovery checks; otherwise record `OPTIONAL_NOT_RUN`.
+9. For a semantic-version prerelease, bind the current host review and owner
+   decision as exact `DEFERRED_PRERELEASE`; never report the host as approved
+   or privacy-cleared. For Beta 4 only, retain the canary as exact
+   `OWNER_SKIPPED_BETA4`/`NONE` and visibly `OWNER_SKIPPED`; it is not a pass.
+   Complete adjudication, finding-disposition, hosted-Windows, and
+   owner-authorization gates defined in
+   `docs/release/ios-ipados-pwa-beta2-plan.md`. Before a
+   stable release, replace the deferral with affirmative host approval or move
+   the runtime to an approved host. Offer the optional six-reviewer cycle
+   separately under the bounded collaboration policy in `AGENTS.md`; it runs
+   once only after explicit owner opt-in for the named release scope and
+   initial exact candidate lineage,
+   uses the same reviewers for correction verification, and never creates a
+   preliminary and final pair of cohorts. If declined, retain the exact visible
+   optional state.
 10. Download the successful Windows audit artifact and review its
     machine-readable browser/runner tuple: exact product name, full four-part
     product version, executable SHA-256, and GitHub-hosted `ImageOS` and
     `ImageVersion`. Copy that tuple to
-    `audit/browser-runner-evidence-v1.json` as `REVIEWED`. After the owner
-    decision is recorded, rerun the exact resulting candidate commit. That
-    rerun must match every field before publication can be approved.
+    `audit/browser-runner-evidence-v1.json` as `REVIEWED`. Create the direct
+    evidence successor: one non-merge commit whose sole parent is the
+    qualification commit and whose exact changed-path set is only
+    `PUBLICATION_CLEARANCE.md` plus
+    `audit/browser-runner-evidence-v1.json`. The single final certification
+    runs on that successor and must match every field before publication can
+    be approved.
 11. Prove on the exact frozen candidate that an exact schema-2 save and backup
     migrate transactionally to schema 3 without changing the protected key or
     losing evidence; rejected migration, foreign backup, schema downgrade, and
@@ -100,12 +150,17 @@ unavailable, and cannot satisfy publication clearance.
 
 ## Publication-clearance record
 
-Before the final independent review, create `PUBLICATION_CLEARANCE.md` with
+Before qualification and independent review, create `PUBLICATION_CLEARANCE.md` with
 `Status: PENDING`, then synchronize the public-file manifest and component
 register. The pending record makes its path part of the candidate without
 claiming approval. Every other field in the exact schema must also contain
-`PENDING`. Review and audit that exact payload, then change only the clearance
-record to the exact ordered schema below:
+`PENDING`, except that an eligible prerelease may already carry the exact
+digest-bound `DEFERRED_PRERELEASE` host pair. Preparatory evidence acquisition
+against that commit is diagnostic, not the final gauntlet. After hosted
+observation and review, create exactly one direct evidence successor. It must
+have the qualification commit as its only parent and change exactly the two
+governed evidence paths—neither a subset nor a superset. The successor is then
+the immutable candidate on which the single final gauntlet runs:
 
 - `# Math Quest publication clearance`
 - `Status: APPROVED`
@@ -120,6 +175,8 @@ record to the exact ordered schema below:
 - `Reviewed rights-state SHA-256: <64 lowercase hexadecimal characters>`
 - `Reviewed public payload SHA-256: <64 lowercase hexadecimal characters>`
 - `Reviewed public payload tree OID: <40 or 64 lowercase hexadecimal characters>`
+- `Qualification commit SHA: <the exact 40-character sole-parent SHA>`
+- `Evidence successor policy: DIRECT_EVIDENCE_SUCCESSOR_V1`
 - `Reviewed browser product name: <Microsoft Edge or Google Chrome>`
 - `Reviewed browser full version: <exact four-part product version>`
 - `Reviewed browser executable SHA-256: <64 lowercase hexadecimal characters>`
@@ -127,19 +184,23 @@ record to the exact ordered schema below:
 - `Reviewed runner ImageVersion: <exact GitHub-hosted ImageVersion>`
 - `External evidence reviewed at: <exact UTC timestamp with whole seconds>`
 - `External evidence expires at: <later exact UTC timestamp with whole seconds>`
-- `Host qualification state: APPROVED`
+- `Host qualification state: DEFERRED_PRERELEASE` for an eligible prerelease,
+  or `APPROVED` after affirmative qualification; stable releases require
+  `APPROVED`.
+- A deferred record's residual-risk line must begin
+  `Host privacy deferred until stable:` and name ordinary provider request
+  metadata plus the unresolved under-13 host terms.
 - `Host qualification evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Canary reconciliation state: RECONCILED`
-- `Canary reconciliation evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Physical-device evidence state: COMPLETE`
-- `Physical-device evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Required physical-device lanes: 6`
-- `Passed physical-device lanes: 6`
-- `Primary iPad journey result: PASS`
-- `Independent-reviewer evidence state: COMPLETE`
-- `Independent-reviewer evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Required independent-reviewer reports: 6`
-- `Sealed independent-reviewer reports: 6`
+- `Canary reconciliation state: OWNER_SKIPPED_BETA4`
+- `Canary reconciliation evidence SHA-256: NONE`
+- `Physical-device evidence state: COMPLETE` with a 64-hex evidence digest,
+  `Required physical-device lanes: 6`, `Passed physical-device lanes: 6`, and
+  `Primary iPad journey result: PASS`; **or** `OPTIONAL_NOT_RUN`, `NONE`, `0`,
+  `0`, and `NOT_RUN` respectively.
+- `Independent-reviewer evidence state: COMPLETE` with a 64-hex evidence
+  digest, `Required independent-reviewer reports: 6`, and
+  `Sealed independent-reviewer reports: 6`; **or** `OPTIONAL_NOT_RUN`,
+  `NONE`, `0`, and `0` respectively.
 - `Adjudication state: APPROVED`
 - `Adjudication evidence SHA-256: <64 lowercase hexadecimal characters>`
 - `Adjudication recommendation: RELEASE`
@@ -153,9 +214,31 @@ record to the exact ordered schema below:
 - `Hosted-Windows evidence SHA-256: <SHA-256 of the exact canonical audit/browser-runner-evidence-v1.json bytes>`
 - `Owner authorization state: PR_PUSH_AUTHORIZED`
 - `Owner authorization evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Authorized release tag: v1.0.0-beta.3`
+- `Authorized release tag: v1.0.0-beta.4`
 - `Authorized protected ref: refs/heads/main`
 - `Review-bundle SHA-256: <64 lowercase hexadecimal characters>`
+
+For `v1.0.0-beta.4`, the owner selected the declined form of both optional
+cycles on 2026-08-02. The physical-device and independent-reviewer fields must
+therefore use their exact `OPTIONAL_NOT_RUN` alternatives above; no evidence
+or qualification claim is inferred from their zero counts.
+
+On 2026-08-09, the owner also directed that the Beta 4 trusted-HTTPS canary be
+skipped. `EXT-CANARY` is therefore `OWNER_SKIPPED`, not `PASS`, `RECONCILED`,
+or `WAIVED`. No canary evidence exists, and the missing trusted-HTTPS update,
+cache, repair, cold-offline, migration, teardown, and privacy observation must
+remain in the residual-risk text. This exception expires after Beta 4.
+
+“Direct evidence successor” has one closed meaning. The qualification commit
+must contain pending clearance and pending browser evidence. The successor
+must be its immediate and sole child; merges, rebases, cherry-picks, cousins,
+skipped ancestors, and later descendants do not qualify. `git diff --name-only
+--no-renames <qualification> <successor>` must yield exactly
+`PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`. Every
+other repository byte is therefore identical. The repository-wide public
+payload digest changes because reviewed browser evidence is part of that
+payload; only the game/runtime bytes remain unchanged. The final gauntlet,
+tag, and deployment bind the successor, never the qualification commit.
 
 The public-payload digest and payload-tree OID cover every staged entry except
 the bytes of `PUBLICATION_CLEARANCE.md`. The clearance path remains listed in
@@ -166,11 +249,19 @@ The deployment validator rejects missing, reordered, duplicate, additional,
 empty, pending, malformed, or mismatched fields.
 
 The eight external records are counted release-audit inputs, not narrative
-claims. Each is classified as a pending evidence/approval gate until its exact
-positive state and digest are present. The common review window must have
-started, must not have expired, and must remain bound to the exact candidate
-and reviewed hosted-Windows tuple. Missing, unknown, pending, stale, future,
-wrong-count, open-finding, digest-mismatched, tag-mismatched, or ref-mismatched
+claims. For Beta 4, four are mandatory PASS gates,
+`EXT-HOST` must be either genuinely `PASS` or visibly
+`DEFERRED_PRERELEASE`/`DEFERRED`, and `EXT-DEVICE` plus `EXT-REVIEWERS` are
+offered optional cycles. `EXT-CANARY` is the visible non-passing
+`OWNER_SKIPPED` exception. Neither exception is a pass or privacy-clearance
+claim. A stable release requires all six ordinarily mandatory gates to PASS.
+Each optional cycle either passes exact completed evidence or retains exact
+`OPTIONAL_NOT_RUN`, reported as `OPTIONAL`, never `PASS`. Selecting an optional
+cycle makes every declared lane/report and digest fail-closed. The common
+review window must have started, must not have expired, and must remain bound
+to the exact candidate and reviewed hosted-Windows tuple. Missing, unknown,
+pending, stale, future, wrong-count, partial selected-cycle, open-finding,
+digest-mismatched, tag-mismatched, ref-mismatched, or stable-host-deferred
 input forces `External release evidence: BLOCKED`, `Shippable: NO`, and a
 nonzero ordinary release-audit result. `--technical-only` may still produce
 candidate evidence, but it neither changes nor conceals the release decision.
@@ -193,16 +284,38 @@ checks; match the reviewed GitHub-hosted browser/runner tuple; and carry exact
 `EMERGENCY_APPROVED`, and every later release returns to the ordinary
 fail-closed requirements.
 
+### Prerelease host-qualification deferral
+
+On 2026-08-02, the project owner directed that external host privacy/legal
+qualification wait until Math Quest leaves prerelease. Beginning with
+`v1.0.0-beta.4`, an eligible prerelease may therefore bind the current host
+review as `DEFERRED_PRERELEASE`. The audit reports `EXT-HOST: DEFERRED`; it
+must not report `PASS`, `APPROVED`, `WAIVED`, or privacy clearance. This does
+not ordinarily relax the exact-candidate trusted-HTTPS canary or any
+application privacy, no-child-data, runtime-request, offline, metadata,
+secret, provenance, or PWA check. Beta 4 alone uses the later, explicit
+2026-08-09 owner skip below; that skip is visible non-passing missing evidence,
+not canary reconciliation.
+
+The residual risk must disclose that GitHub Pages can receive ordinary HTTPS
+request metadata and that the current under-13 host terms remain unqualified.
+The deferral expires before the first stable tag. Stable publication fails
+closed until the selected host is affirmatively approved or the runtime moves
+to a host that is.
+
 The audit workflow intentionally retains `runs-on: windows-latest`.
 **Residual risk (Medium):** that label is a floating GitHub-hosted image
 selector. It is not accepted as evidence by itself. Each run records and
 uploads the exact underlying `ImageOS`/`ImageVersion` and exact browser binary
 identity. A browser update or hosted-image drift invalidates the reviewed
-record and publication clearance, requiring a fresh independent review.
+record and publication clearance, requiring a new bounded evidence review.
+That review is a role assigned within the `AGENTS.md` collaboration cap; it
+does not automatically authorize another agent or critic cohort.
 
 The rights-state digest binds the policy, component register, licence and
 attribution evidence, workflows, font, sound generator, and shipped sound
 bytes. Any change to the manifest, engine, approved child-string table,
 rights state, or public artifact after approval invalidates the matching
-clearance and requires the affected review to run again. The Pages workflow
-must fail while clearance is missing, malformed, stale, or hash-mismatched.
+clearance. Correct it with focused checks, freeze a new candidate, and rerun
+the complete certification system from the beginning. The Pages workflow must
+fail while clearance is missing, malformed, stale, or hash-mismatched.

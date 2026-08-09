@@ -1,0 +1,99 @@
+name: Observe hosted Windows browser identity
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact protected-main commit whose hosted browser identity is being observed
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  observe-identity-only:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    env:
+      MQ_OBSERVATION_RUNNER_LABEL: windows-latest
+      MQ_OBSERVATION_CERTIFICATION_STATUS: OBSERVATION_ONLY_NOT_CERTIFICATION
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Verify observation boundary
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_REF_TYPE -cne 'branch' -or
+              $env:GITHUB_REF_NAME -cne 'main') {
+            throw 'Hosted identity observation must be dispatched from protected main in the public Math Quest repository.'
+          }
+          if ($env:CANDIDATE_SHA -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_SHA -cne $env:GITHUB_SHA) {
+            throw 'candidate_sha must exactly equal the protected-main commit selected for this observation.'
+          }
+          if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+              [string]::IsNullOrWhiteSpace($env:ImageOS) -or
+              [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'Hosted identity observation requires exact ImageOS and ImageVersion metadata from a GitHub-hosted runner.'
+          }
+
+      - name: Observe browser and runner identity only
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          & .\audit\observe-hosted-windows.ps1 `
+            -CandidateSha $env:CANDIDATE_SHA `
+            -OutputPath 'audit-artifacts/hosted-windows-observation-v1.json'
+
+      - name: Set up Node.js 24 for schema validation
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Validate canonical non-certifying observation
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          node .\audit\validate-hosted-windows-observation.mjs `
+            audit-artifacts/hosted-windows-observation-v1.json `
+            $env:CANDIDATE_SHA
+
+      - name: Summarize observation boundary
+        shell: powershell
+        run: |
+          $observation = Get-Content -LiteralPath 'audit-artifacts/hosted-windows-observation-v1.json' -Raw | ConvertFrom-Json
+          $lines = @(
+            '### Hosted Windows browser identity observation'
+            ''
+            '> Observation only. This workflow does not run or satisfy release certification.'
+            ''
+            '| Field | Value |'
+            '|---|---|'
+            "| Candidate | ``$($observation.candidateSha)`` |"
+            "| Browser product | ``$($observation.browserProductName)`` |"
+            "| Full product version | ``$($observation.browserFullVersion)`` |"
+            "| Executable SHA-256 | ``$($observation.browserExecutableSha256)`` |"
+            "| ImageOS | ``$($observation.runnerImageOS)`` |"
+            "| ImageVersion | ``$($observation.runnerImageVersion)`` |"
+          )
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, (($lines -join "`n") + "`n"), $utf8NoBom)
+
+      - name: Upload observation artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-hosted-windows-identity-${{ github.sha }}-${{ github.run_id }}
+          path: audit-artifacts/hosted-windows-observation-v1.json
+          if-no-files-found: error
+          retention-days: 30

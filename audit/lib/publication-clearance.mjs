@@ -1,4 +1,6 @@
 export const PUBLICATION_CLEARANCE_PATH = "PUBLICATION_CLEARANCE.md";
+export const CURRENT_RELEASE_TAG = "v1.0.0-beta.4";
+export const EMERGENCY_BETA3_RELEASE_TAG = "v1.0.0-beta.3";
 export const EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
   "EXT-HOST",
   "EXT-CANARY",
@@ -9,6 +11,19 @@ export const EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
   "EXT-HOSTED-WINDOWS",
   "EXT-OWNER",
 ]);
+export const OPTIONAL_EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
+  "EXT-DEVICE",
+  "EXT-REVIEWERS",
+]);
+export const PRERELEASE_DEFERRED_EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
+  "EXT-HOST",
+]);
+export const PRERELEASE_HOST_QUALIFICATION_STATE = "DEFERRED_PRERELEASE";
+export const BETA4_CANARY_OWNER_SKIP_STATE = "OWNER_SKIPPED_BETA4";
+export const BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS = Object.freeze(["EXT-CANARY"]);
+export const REQUIRED_EXTERNAL_RELEASE_GATE_IDS = Object.freeze(
+  EXTERNAL_RELEASE_GATE_IDS.filter((id) => !OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(id)),
+);
 export const EMERGENCY_BETA3_WAIVED_GATE_IDS = Object.freeze(EXTERNAL_RELEASE_GATE_IDS.slice(0, 6));
 
 const FIELD_ORDER = Object.freeze([
@@ -24,6 +39,8 @@ const FIELD_ORDER = Object.freeze([
   "Reviewed rights-state SHA-256",
   "Reviewed public payload SHA-256",
   "Reviewed public payload tree OID",
+  "Qualification commit SHA",
+  "Evidence successor policy",
   "Reviewed browser product name",
   "Reviewed browser full version",
   "Reviewed browser executable SHA-256",
@@ -77,6 +94,8 @@ function result(valid, fields, issues) {
     reviewedRightsSha256: fields["Reviewed rights-state SHA-256"] || null,
     reviewedPayloadSha256: fields["Reviewed public payload SHA-256"] || null,
     reviewedPayloadTreeOid: fields["Reviewed public payload tree OID"] || null,
+    qualificationCommitSha: fields["Qualification commit SHA"] || null,
+    evidenceSuccessorPolicy: fields["Evidence successor policy"] || null,
     reviewedBrowserProductName: fields["Reviewed browser product name"] || null,
     reviewedBrowserFullVersion: fields["Reviewed browser full version"] || null,
     reviewedBrowserExecutableSha256: fields["Reviewed browser executable SHA-256"] || null,
@@ -127,6 +146,10 @@ function sha256(value) {
   return /^[a-f0-9]{64}$/u.test(String(value || ""));
 }
 
+export function isPrereleaseReleaseTag(value) {
+  return /^v\d+\.\d+\.\d+-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*$/u.test(String(value || ""));
+}
+
 export function parsePublicationClearance(text) {
   const issues = [];
   const source = String(text);
@@ -149,12 +172,69 @@ export function parsePublicationClearance(text) {
     issues.push("Status must be PENDING, APPROVED, or EMERGENCY_APPROVED");
   }
   if (fields.Status === "PENDING") {
-    for (const key of FIELD_ORDER.slice(1)) {
+    const optionalProgressKeys = new Set([
+      "Host qualification state",
+      "Host qualification evidence SHA-256",
+      "Physical-device evidence state",
+      "Physical-device evidence SHA-256",
+      "Required physical-device lanes",
+      "Passed physical-device lanes",
+      "Primary iPad journey result",
+      "Independent-reviewer evidence state",
+      "Independent-reviewer evidence SHA-256",
+      "Required independent-reviewer reports",
+      "Sealed independent-reviewer reports",
+    ]);
+    for (const key of FIELD_ORDER.slice(1).filter((key) => !optionalProgressKeys.has(key))) {
       if (fields[key] !== "PENDING") issues.push(`${key} must be PENDING while Status is PENDING`);
+    }
+    const hostProgress = [
+      fields["Host qualification state"],
+      fields["Host qualification evidence SHA-256"],
+    ];
+    const validPendingHost = hostProgress.every((value) => value === "PENDING");
+    const validDeferredHost = hostProgress[0] === PRERELEASE_HOST_QUALIFICATION_STATE
+      && sha256(hostProgress[1])
+      && isPrereleaseReleaseTag(CURRENT_RELEASE_TAG);
+    if (!validPendingHost && !validDeferredHost) {
+      issues.push("Host qualification fields must be uniformly PENDING or an exact digest-bound prerelease deferral while Status is PENDING");
+    }
+    const deviceProgress = [
+      fields["Physical-device evidence state"],
+      fields["Physical-device evidence SHA-256"],
+      fields["Required physical-device lanes"],
+      fields["Passed physical-device lanes"],
+      fields["Primary iPad journey result"],
+    ];
+    const validPendingDevice = deviceProgress.every((value) => value === "PENDING");
+    const validDeclinedDevice = JSON.stringify(deviceProgress)
+      === JSON.stringify(["OPTIONAL_NOT_RUN", "NONE", "0", "0", "NOT_RUN"]);
+    const validCompleteDevice = fields["Physical-device evidence state"] === "COMPLETE"
+      && sha256(fields["Physical-device evidence SHA-256"])
+      && JSON.stringify(deviceProgress.slice(2)) === JSON.stringify(["6", "6", "PASS"]);
+    if (!validPendingDevice && !validDeclinedDevice && !validCompleteDevice) {
+      issues.push("Physical-device fields must be uniformly PENDING or an exact COMPLETE or OPTIONAL_NOT_RUN optional-cycle record while Status is PENDING");
+    }
+    const reviewerProgress = [
+      fields["Independent-reviewer evidence state"],
+      fields["Independent-reviewer evidence SHA-256"],
+      fields["Required independent-reviewer reports"],
+      fields["Sealed independent-reviewer reports"],
+    ];
+    const validPendingReviewers = reviewerProgress.every((value) => value === "PENDING");
+    const validDeclinedReviewers = JSON.stringify(reviewerProgress)
+      === JSON.stringify(["OPTIONAL_NOT_RUN", "NONE", "0", "0"]);
+    const validCompleteReviewers = fields["Independent-reviewer evidence state"] === "COMPLETE"
+      && sha256(fields["Independent-reviewer evidence SHA-256"])
+      && JSON.stringify(reviewerProgress.slice(2)) === JSON.stringify(["6", "6"]);
+    if (!validPendingReviewers && !validDeclinedReviewers && !validCompleteReviewers) {
+      issues.push("Independent-reviewer fields must be uniformly PENDING or an exact COMPLETE or OPTIONAL_NOT_RUN optional-cycle record while Status is PENDING");
     }
   }
   if (fields.Status === "APPROVED" || fields.Status === "EMERGENCY_APPROVED") {
     const emergency = fields.Status === "EMERGENCY_APPROVED";
+    const prerelease = isPrereleaseReleaseTag(fields["Authorized release tag"]);
+    const hostDeferred = fields["Host qualification state"] === PRERELEASE_HOST_QUALIFICATION_STATE;
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(fields["Review date"] || "")) issues.push("Review date must use YYYY-MM-DD");
     if (fields["Review result"] !== (emergency ? "EMERGENCY_PASS" : "PASS")) {
       issues.push(`Review result must be ${emergency ? "EMERGENCY_PASS" : "PASS"}`);
@@ -163,6 +243,12 @@ export function parsePublicationClearance(text) {
     if (fields["Required skips"] !== "0") issues.push("Required skips must be 0");
     if (!fields["Residual risks"] || fields["Residual risks"] === "PENDING" || fields["Residual risks"].length > 500) {
       issues.push("Residual risks must be an explicit one-line statement of at most 500 characters");
+    }
+    if (hostDeferred && !prerelease) {
+      issues.push("Host qualification may be deferred only for a semantic-version prerelease tag");
+    }
+    if (hostDeferred && !/^Host privacy deferred until stable:/u.test(fields["Residual risks"] || "")) {
+      issues.push("A prerelease host deferral must state its host-metadata and under-13 residual risk explicitly");
     }
     for (const key of [
       "Reviewed engine SHA-256",
@@ -178,6 +264,13 @@ export function parsePublicationClearance(text) {
     }
     if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(fields["Reviewed public payload tree OID"] || "")) {
       issues.push("Reviewed public payload tree OID must be 40 or 64 lowercase hexadecimal characters");
+    }
+    if (emergency) {
+      if (fields["Qualification commit SHA"] !== "NOT_APPLICABLE_BETA3") issues.push("Qualification commit SHA must be NOT_APPLICABLE_BETA3 for emergency Beta 3");
+      if (fields["Evidence successor policy"] !== "NOT_APPLICABLE_BETA3") issues.push("Evidence successor policy must be NOT_APPLICABLE_BETA3 for emergency Beta 3");
+    } else {
+      if (!/^[a-f0-9]{40}$/u.test(fields["Qualification commit SHA"] || "")) issues.push("Qualification commit SHA must be 40 lowercase hexadecimal characters");
+      if (fields["Evidence successor policy"] !== "DIRECT_EVIDENCE_SUCCESSOR_V1") issues.push("Evidence successor policy must be DIRECT_EVIDENCE_SUCCESSOR_V1");
     }
     if (!["Microsoft Edge", "Google Chrome"].includes(fields["Reviewed browser product name"])) {
       issues.push("Reviewed browser product name must be Microsoft Edge or Google Chrome");
@@ -206,9 +299,6 @@ export function parsePublicationClearance(text) {
     }
     for (const key of [
       "Host qualification evidence SHA-256",
-      "Canary reconciliation evidence SHA-256",
-      "Physical-device evidence SHA-256",
-      "Independent-reviewer evidence SHA-256",
       "Adjudication evidence SHA-256",
       "Finding-disposition evidence SHA-256",
       "Hosted-Windows evidence SHA-256",
@@ -217,33 +307,114 @@ export function parsePublicationClearance(text) {
     ]) {
       if (!sha256(fields[key])) issues.push(`${key} must be 64 lowercase hexadecimal characters`);
     }
+    if (emergency) {
+      if (!sha256(fields["Canary reconciliation evidence SHA-256"])) issues.push("Canary reconciliation evidence SHA-256 must be 64 lowercase hexadecimal characters");
+    } else {
+      if (fields["Canary reconciliation state"] !== BETA4_CANARY_OWNER_SKIP_STATE) issues.push(`Canary reconciliation state must be ${BETA4_CANARY_OWNER_SKIP_STATE}`);
+      if (fields["Canary reconciliation evidence SHA-256"] !== "NONE") issues.push("Canary reconciliation evidence SHA-256 must be NONE when Beta 4 canary evidence is owner-skipped");
+      if (!/Beta 4 canary owner-skipped:/u.test(fields["Residual risks"] || "")) issues.push("Beta 4 residual risks must disclose that canary evidence was owner-skipped");
+    }
     for (const [key, expected] of [
-      ["Host qualification state", emergency ? "WAIVED_BETA3" : "APPROVED"],
-      ["Canary reconciliation state", emergency ? "WAIVED_BETA3" : "RECONCILED"],
-      ["Physical-device evidence state", emergency ? "WAIVED_BETA3" : "COMPLETE"],
-      ["Primary iPad journey result", emergency ? "NOT_RUN" : "PASS"],
-      ["Independent-reviewer evidence state", emergency ? "WAIVED_BETA3" : "COMPLETE"],
+      ["Host qualification state", emergency ? "WAIVED_BETA3" : hostDeferred ? PRERELEASE_HOST_QUALIFICATION_STATE : "APPROVED"],
+      ["Canary reconciliation state", emergency ? "WAIVED_BETA3" : BETA4_CANARY_OWNER_SKIP_STATE],
       ["Adjudication state", emergency ? "WAIVED_BETA3" : "APPROVED"],
       ["Adjudication recommendation", emergency ? "NOT_RUN" : "RELEASE"],
       ["Finding-disposition state", emergency ? "AUTOMATED_ONLY" : "COMPLETE"],
       ["Hosted-Windows evidence state", "REVIEWED"],
       ["Owner authorization state", emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED"],
-      ["Authorized release tag", "v1.0.0-beta.3"],
+      ["Authorized release tag", emergency ? EMERGENCY_BETA3_RELEASE_TAG : CURRENT_RELEASE_TAG],
       ["Authorized protected ref", "refs/heads/main"],
     ]) {
       if (fields[key] !== expected) issues.push(`${key} must be ${expected}`);
     }
     for (const [key, expected] of [
-      ["Required physical-device lanes", "6"],
-      ["Passed physical-device lanes", emergency ? "0" : "6"],
-      ["Required independent-reviewer reports", "6"],
-      ["Sealed independent-reviewer reports", emergency ? "0" : "6"],
       ["Open critical findings", "0"],
       ["Open high findings", "0"],
       ["Unaccepted medium findings", emergency ? "UNKNOWN" : "0"],
       ["Unrecorded low findings", emergency ? "UNKNOWN" : "0"],
     ]) {
       if (fields[key] !== expected) issues.push(`${key} must be ${expected}`);
+    }
+    if (emergency) {
+      if (fields["Physical-device evidence state"] !== "WAIVED_BETA3") {
+        issues.push("Physical-device evidence state must be WAIVED_BETA3");
+      }
+      if (!sha256(fields["Physical-device evidence SHA-256"])) {
+        issues.push("Physical-device evidence SHA-256 must be 64 lowercase hexadecimal characters");
+      }
+      if (fields["Required physical-device lanes"] !== "6") {
+        issues.push("Required physical-device lanes must be 6");
+      }
+      if (fields["Passed physical-device lanes"] !== "0") {
+        issues.push("Passed physical-device lanes must be 0");
+      }
+      if (fields["Primary iPad journey result"] !== "NOT_RUN") {
+        issues.push("Primary iPad journey result must be NOT_RUN");
+      }
+    } else if (fields["Physical-device evidence state"] === "COMPLETE") {
+      if (!sha256(fields["Physical-device evidence SHA-256"])) {
+        issues.push("Physical-device evidence SHA-256 must be 64 lowercase hexadecimal characters when the optional device cycle is completed");
+      }
+      if (fields["Required physical-device lanes"] !== "6") {
+        issues.push("Required physical-device lanes must be 6 when the optional device cycle is selected");
+      }
+      if (fields["Passed physical-device lanes"] !== "6") {
+        issues.push("Passed physical-device lanes must be 6 when the optional device cycle is selected");
+      }
+      if (fields["Primary iPad journey result"] !== "PASS") {
+        issues.push("Primary iPad journey result must be PASS when the optional device cycle is selected");
+      }
+    } else if (fields["Physical-device evidence state"] === "OPTIONAL_NOT_RUN") {
+      if (fields["Physical-device evidence SHA-256"] !== "NONE") {
+        issues.push("Physical-device evidence SHA-256 must be NONE when the optional device cycle is not run");
+      }
+      if (fields["Required physical-device lanes"] !== "0") {
+        issues.push("Required physical-device lanes must be 0 when the optional device cycle is not run");
+      }
+      if (fields["Passed physical-device lanes"] !== "0") {
+        issues.push("Passed physical-device lanes must be 0 when the optional device cycle is not run");
+      }
+      if (fields["Primary iPad journey result"] !== "NOT_RUN") {
+        issues.push("Primary iPad journey result must be NOT_RUN when the optional device cycle is not run");
+      }
+    } else {
+      issues.push("Physical-device evidence state must be COMPLETE or OPTIONAL_NOT_RUN");
+    }
+    if (emergency) {
+      if (fields["Independent-reviewer evidence state"] !== "WAIVED_BETA3") {
+        issues.push("Independent-reviewer evidence state must be WAIVED_BETA3");
+      }
+      if (!sha256(fields["Independent-reviewer evidence SHA-256"])) {
+        issues.push("Independent-reviewer evidence SHA-256 must be 64 lowercase hexadecimal characters");
+      }
+      if (fields["Required independent-reviewer reports"] !== "6") {
+        issues.push("Required independent-reviewer reports must be 6");
+      }
+      if (fields["Sealed independent-reviewer reports"] !== "0") {
+        issues.push("Sealed independent-reviewer reports must be 0");
+      }
+    } else if (fields["Independent-reviewer evidence state"] === "COMPLETE") {
+      if (!sha256(fields["Independent-reviewer evidence SHA-256"])) {
+        issues.push("Independent-reviewer evidence SHA-256 must be 64 lowercase hexadecimal characters when the optional review is completed");
+      }
+      if (fields["Required independent-reviewer reports"] !== "6") {
+        issues.push("Required independent-reviewer reports must be 6 when the optional review is selected");
+      }
+      if (fields["Sealed independent-reviewer reports"] !== "6") {
+        issues.push("Sealed independent-reviewer reports must be 6 when the optional review is selected");
+      }
+    } else if (fields["Independent-reviewer evidence state"] === "OPTIONAL_NOT_RUN") {
+      if (fields["Independent-reviewer evidence SHA-256"] !== "NONE") {
+        issues.push("Independent-reviewer evidence SHA-256 must be NONE when the optional review is not run");
+      }
+      if (fields["Required independent-reviewer reports"] !== "0") {
+        issues.push("Required independent-reviewer reports must be 0 when the optional review is not run");
+      }
+      if (fields["Sealed independent-reviewer reports"] !== "0") {
+        issues.push("Sealed independent-reviewer reports must be 0 when the optional review is not run");
+      }
+    } else {
+      issues.push("Independent-reviewer evidence state must be COMPLETE or OPTIONAL_NOT_RUN");
     }
     if (emergency) {
       const waiverDigest = fields["Owner authorization evidence SHA-256"];
@@ -280,6 +451,14 @@ function artifactIdentityMatches(parsed, expected = {}) {
     && parsed.reviewedBrowserExecutableSha256 === expected.browserExecutableSha256
     && parsed.reviewedRunnerImageOS === expected.runnerImageOS
     && parsed.reviewedRunnerImageVersion === expected.runnerImageVersion
+    && (
+      parsed.status === "EMERGENCY_APPROVED"
+      || (
+        parsed.qualificationCommitSha === expected.qualificationCommitSha
+        && parsed.evidenceSuccessorPolicy === "DIRECT_EVIDENCE_SUCCESSOR_V1"
+        && expected.evidenceSuccessorValid === true
+      )
+    )
   );
 }
 
@@ -290,11 +469,23 @@ function gate(id, title, status, reasons) {
     status,
     classification: status === "PASS"
       ? "VERIFIED"
+      : status === "OWNER_SKIPPED"
+        ? "OWNER_AUTHORIZED_BETA4_CANARY_SKIP"
+      : status === "OPTIONAL"
+        ? "OPTIONAL_REVIEW_NOT_RUN"
+      : status === "DEFERRED"
+        ? "OWNER_DIRECTED_PRERELEASE_DEFERRAL"
       : status === "WAIVED"
         ? "OWNER_AUTHORIZED_EMERGENCY_BETA3_WAIVER"
         : "PENDING_EVIDENCE_APPROVAL_GATE",
     details: status === "PASS"
       ? "Exact current evidence is present and bound to the reviewed candidate."
+      : status === "OWNER_SKIPPED"
+        ? "The project owner directed that the trusted-HTTPS canary not run for Beta 4; no canary, reconciliation, secure-update, offline-relaunch, or privacy-clearance pass is claimed."
+      : status === "OPTIONAL"
+        ? "This optional evidence cycle was offered but not selected; no pass or release-readiness claim is made for it."
+      : status === "DEFERRED"
+        ? "The project owner deferred external host privacy/legal qualification for prerelease builds until the first stable release; no host approval or privacy-clearance claim is made."
       : status === "WAIVED"
         ? "The project owner explicitly waived this external evidence gate for emergency Beta 3 only; no pass is claimed."
         : reasons.join("; "),
@@ -306,8 +497,18 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   const currentTime = instant.getTime();
   const reviewedTime = Date.parse(parsed?.externalEvidenceReviewedAt || "");
   const expiresTime = Date.parse(parsed?.externalEvidenceExpiresAt || "");
-  const emergency = parsed?.status === "EMERGENCY_APPROVED";
+  const expectedReleaseTag = expected.releaseTag || CURRENT_RELEASE_TAG;
+  const prerelease = isPrereleaseReleaseTag(expectedReleaseTag);
+  const emergencyRequested = parsed?.status === "EMERGENCY_APPROVED";
+  const emergency = emergencyRequested && expectedReleaseTag === EMERGENCY_BETA3_RELEASE_TAG;
+  const beta4CanaryOwnerSkipped = !emergency
+    && expectedReleaseTag === CURRENT_RELEASE_TAG
+    && parsed?.canaryReconciliationState === BETA4_CANARY_OWNER_SKIP_STATE
+    && parsed?.canaryReconciliationEvidenceSha256 === "NONE";
   const commonReasons = [];
+  if (emergencyRequested && !emergency) {
+    commonReasons.push(`the emergency Beta 3 exception cannot authorize ${expectedReleaseTag}`);
+  }
   if (!parsed?.valid) commonReasons.push(`clearance schema is invalid${parsed?.issues?.length ? ` (${parsed.issues.join("; ")})` : ""}`);
   if (!["APPROVED", "EMERGENCY_APPROVED"].includes(parsed?.status)) {
     commonReasons.push(`clearance status is ${parsed?.status || "UNKNOWN"}`);
@@ -322,40 +523,64 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
     [
       "EXT-HOST",
       "Host and child-facing privacy qualification",
-      parsed?.hostQualificationState === "APPROVED" && sha256(parsed?.hostQualificationEvidenceSha256),
-      parsed?.hostQualificationState === "APPROVED" ? null : `host qualification is ${parsed?.hostQualificationState || "UNKNOWN"}`,
+      (parsed?.hostQualificationState === "APPROVED"
+        || (prerelease && parsed?.hostQualificationState === PRERELEASE_HOST_QUALIFICATION_STATE))
+        && sha256(parsed?.hostQualificationEvidenceSha256),
+      parsed?.hostQualificationState === "APPROVED"
+        || (prerelease && parsed?.hostQualificationState === PRERELEASE_HOST_QUALIFICATION_STATE)
+        ? null
+        : `host qualification is ${parsed?.hostQualificationState || "UNKNOWN"}`,
       sha256(parsed?.hostQualificationEvidenceSha256) ? null : "host qualification evidence digest is missing or malformed",
     ],
     [
       "EXT-CANARY",
-      "Canary artifact and response reconciliation",
+      "Trusted-HTTPS canary reconciliation or explicit Beta 4 owner skip",
       parsed?.canaryReconciliationState === "RECONCILED" && sha256(parsed?.canaryReconciliationEvidenceSha256),
-      parsed?.canaryReconciliationState === "RECONCILED" ? null : `canary reconciliation is ${parsed?.canaryReconciliationState || "UNKNOWN"}`,
-      sha256(parsed?.canaryReconciliationEvidenceSha256) ? null : "canary evidence digest is missing or malformed",
+      parsed?.canaryReconciliationState === "RECONCILED" || beta4CanaryOwnerSkipped ? null : `canary reconciliation is ${parsed?.canaryReconciliationState || "UNKNOWN"}`,
+      sha256(parsed?.canaryReconciliationEvidenceSha256) || beta4CanaryOwnerSkipped ? null : "canary evidence digest is missing or malformed",
     ],
     [
       "EXT-DEVICE",
-      "Required physical-device matrix",
+      "Optional six-lane physical-device matrix",
       parsed?.physicalDeviceEvidenceState === "COMPLETE"
         && parsed?.requiredPhysicalDeviceLanes === "6"
         && parsed?.passedPhysicalDeviceLanes === "6"
         && parsed?.primaryIPadJourneyResult === "PASS"
         && sha256(parsed?.physicalDeviceEvidenceSha256),
-      parsed?.physicalDeviceEvidenceState === "COMPLETE" ? null : `physical-device evidence is ${parsed?.physicalDeviceEvidenceState || "UNKNOWN"}`,
-      parsed?.requiredPhysicalDeviceLanes === "6" && parsed?.passedPhysicalDeviceLanes === "6" ? null : "all six required physical-device lanes are not recorded as passed",
-      parsed?.primaryIPadJourneyResult === "PASS" ? null : "the primary-iPad journey is not PASS",
-      sha256(parsed?.physicalDeviceEvidenceSha256) ? null : "physical-device evidence digest is missing or malformed",
+      ["COMPLETE", "OPTIONAL_NOT_RUN"].includes(parsed?.physicalDeviceEvidenceState)
+        ? null
+        : `physical-device evidence is ${parsed?.physicalDeviceEvidenceState || "UNKNOWN"}`,
+      parsed?.physicalDeviceEvidenceState === "OPTIONAL_NOT_RUN"
+        || (parsed?.requiredPhysicalDeviceLanes === "6" && parsed?.passedPhysicalDeviceLanes === "6")
+        ? null
+        : "the selected optional six-lane physical-device cycle is incomplete",
+      parsed?.physicalDeviceEvidenceState === "OPTIONAL_NOT_RUN"
+        || parsed?.primaryIPadJourneyResult === "PASS"
+        ? null
+        : "the selected optional primary-iPad journey is not PASS",
+      parsed?.physicalDeviceEvidenceState === "OPTIONAL_NOT_RUN"
+        || sha256(parsed?.physicalDeviceEvidenceSha256)
+        ? null
+        : "physical-device evidence digest is missing or malformed",
     ],
     [
       "EXT-REVIEWERS",
-      "Six context-independent reviewer packets",
+      "Optional six-reviewer cycle",
       parsed?.independentReviewerEvidenceState === "COMPLETE"
         && parsed?.requiredIndependentReviewerReports === "6"
         && parsed?.sealedIndependentReviewerReports === "6"
         && sha256(parsed?.independentReviewerEvidenceSha256),
-      parsed?.independentReviewerEvidenceState === "COMPLETE" ? null : `independent-reviewer evidence is ${parsed?.independentReviewerEvidenceState || "UNKNOWN"}`,
-      parsed?.requiredIndependentReviewerReports === "6" && parsed?.sealedIndependentReviewerReports === "6" ? null : "six required sealed reviewer reports are not present",
-      sha256(parsed?.independentReviewerEvidenceSha256) ? null : "independent-reviewer evidence digest is missing or malformed",
+      ["COMPLETE", "OPTIONAL_NOT_RUN"].includes(parsed?.independentReviewerEvidenceState)
+        ? null
+        : `independent-reviewer evidence is ${parsed?.independentReviewerEvidenceState || "UNKNOWN"}`,
+      parsed?.independentReviewerEvidenceState === "OPTIONAL_NOT_RUN"
+        || (parsed?.requiredIndependentReviewerReports === "6" && parsed?.sealedIndependentReviewerReports === "6")
+        ? null
+        : "the selected optional six-reviewer cycle is incomplete",
+      parsed?.independentReviewerEvidenceState === "OPTIONAL_NOT_RUN"
+        || sha256(parsed?.independentReviewerEvidenceSha256)
+        ? null
+        : "independent-reviewer evidence digest is missing or malformed",
     ],
     [
       "EXT-ADJUDICATION",
@@ -401,14 +626,14 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.ownerAuthorizationState === (emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED")
         && sha256(parsed?.ownerAuthorizationEvidenceSha256)
         && sha256(parsed?.reviewBundleSha256)
-        && parsed?.authorizedReleaseTag === "v1.0.0-beta.3"
+        && parsed?.authorizedReleaseTag === expectedReleaseTag
         && parsed?.authorizedProtectedRef === "refs/heads/main",
       parsed?.ownerAuthorizationState === (emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED")
         ? null
         : `owner authorization is ${parsed?.ownerAuthorizationState || "UNKNOWN"}`,
       sha256(parsed?.ownerAuthorizationEvidenceSha256) ? null : "owner-authorization evidence digest is missing or malformed",
       sha256(parsed?.reviewBundleSha256) ? null : "review-bundle digest is missing or malformed",
-      parsed?.authorizedReleaseTag === "v1.0.0-beta.3" ? null : "owner authorization names a different release tag",
+      parsed?.authorizedReleaseTag === expectedReleaseTag ? null : "owner authorization names a different release tag",
       parsed?.authorizedProtectedRef === "refs/heads/main" ? null : "owner authorization names a different protected ref",
     ],
   ];
@@ -417,23 +642,77 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
     if (emergency && EMERGENCY_BETA3_WAIVED_GATE_IDS.includes(id) && commonReasons.length === 0) {
       return gate(id, title, "WAIVED", reasons);
     }
+    if (
+      beta4CanaryOwnerSkipped
+      && BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS.includes(id)
+      && commonReasons.length === 0
+    ) {
+      return gate(id, title, "OWNER_SKIPPED", reasons);
+    }
+    if (
+      !emergency
+      && prerelease
+      && PRERELEASE_DEFERRED_EXTERNAL_RELEASE_GATE_IDS.includes(id)
+      && commonReasons.length === 0
+      && parsed?.hostQualificationState === PRERELEASE_HOST_QUALIFICATION_STATE
+      && sha256(parsed?.hostQualificationEvidenceSha256)
+    ) {
+      return gate(id, title, "DEFERRED", reasons);
+    }
+    if (
+      !emergency
+      && OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(id)
+      && commonReasons.length === 0
+      && (
+        id === "EXT-DEVICE"
+          ? parsed?.physicalDeviceEvidenceState === "OPTIONAL_NOT_RUN"
+          : parsed?.independentReviewerEvidenceState === "OPTIONAL_NOT_RUN"
+      )
+    ) {
+      return gate(id, title, "OPTIONAL", reasons);
+    }
     return gate(id, title, commonReasons.length === 0 && specificPass ? "PASS" : "BLOCKED", reasons);
   });
+  const standardPattern = gates.every((item, index) => (
+    item.id === EXTERNAL_RELEASE_GATE_IDS[index]
+    && (
+      item.status === "PASS"
+      || (beta4CanaryOwnerSkipped && item.id === "EXT-CANARY" && item.status === "OWNER_SKIPPED")
+      || (prerelease && item.id === "EXT-HOST" && item.status === "DEFERRED")
+      || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL")
+    )
+  ));
   const emergencyPattern = gates.every((item, index) => (
     item.id === EXTERNAL_RELEASE_GATE_IDS[index]
     && item.status === (index < EMERGENCY_BETA3_WAIVED_GATE_IDS.length ? "WAIVED" : "PASS")
   ));
   return Object.freeze({
-    status: gates.length === EXTERNAL_RELEASE_GATE_IDS.length && gates.every((item) => item.status === "PASS")
+    status: gates.length === EXTERNAL_RELEASE_GATE_IDS.length && standardPattern
       ? "PASS"
       : emergency && emergencyPattern
         ? "EMERGENCY_WAIVER"
         : "BLOCKED",
     reviewedAt: parsed?.externalEvidenceReviewedAt || null,
     expiresAt: parsed?.externalEvidenceExpiresAt || null,
-    passCount: gates.filter((item) => item.status === "PASS").length,
+    passCount: gates.filter((item) => (
+      REQUIRED_EXTERNAL_RELEASE_GATE_IDS.includes(item.id)
+      && !(prerelease && item.id === "EXT-HOST")
+      && !(beta4CanaryOwnerSkipped && item.id === "EXT-CANARY")
+      && item.status === "PASS"
+    )).length,
     waivedCount: gates.filter((item) => item.status === "WAIVED").length,
-    requiredCount: EXTERNAL_RELEASE_GATE_IDS.length,
+    ownerSkippedCount: gates.filter((item) => item.status === "OWNER_SKIPPED").length,
+    deferredCount: gates.filter((item) => item.status === "DEFERRED").length,
+    prereleaseHostDeferralEligible: prerelease
+      && gates.find((item) => item.id === "EXT-HOST")?.status === "DEFERRED",
+    optionalCount: OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.length,
+    optionalCompletedCount: gates.filter((item) => (
+      OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "PASS"
+    )).length,
+    requiredCount: emergency
+      ? EXTERNAL_RELEASE_GATE_IDS.length
+      : REQUIRED_EXTERNAL_RELEASE_GATE_IDS.length - (prerelease ? 1 : 0) - (beta4CanaryOwnerSkipped ? 1 : 0),
+    beta4CanaryOwnerSkipped,
     gates: Object.freeze(gates),
   });
 }
@@ -454,7 +733,23 @@ export function computeReleaseDecision({ technicalShippable, publicationStatus, 
     && externalReleaseEvidence?.status === "PASS"
     && Array.isArray(gates)
     && gates.length === EXTERNAL_RELEASE_GATE_IDS.length
-    && gates.every((item, index) => item?.id === EXTERNAL_RELEASE_GATE_IDS[index] && item.status === "PASS");
+    && gates.every((item, index) => (
+      item?.id === EXTERNAL_RELEASE_GATE_IDS[index]
+      && (
+        item.status === "PASS"
+        || (
+          item.id === "EXT-CANARY"
+          && item.status === "OWNER_SKIPPED"
+          && externalReleaseEvidence?.beta4CanaryOwnerSkipped === true
+        )
+        || (
+          item.id === "EXT-HOST"
+          && item.status === "DEFERRED"
+          && externalReleaseEvidence?.prereleaseHostDeferralEligible === true
+        )
+        || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL")
+      )
+    ));
   const emergency = publicationStatus === "EMERGENCY_APPROVED"
     && externalReleaseEvidence?.status === "EMERGENCY_WAIVER"
     && Array.isArray(gates)

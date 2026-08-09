@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { writeFile } from "node:fs/promises";
+import test, { after } from "node:test";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadManifest, validateManifest } from "../lib/curriculum-manifest.mjs";
+import { childStringArtifact } from "../lib/child-strings.mjs";
 import { runEngineSuite } from "./engine-suite.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -10,6 +12,22 @@ const indexPath = () => process.env.MQ_INDEX_PATH || path.join(root, "index.html
 const engineFilename = () => process.env.MQ_ENGINE_COVERAGE_FILE || "math-quest.coverage.engine.js";
 const clone = (value) => JSON.parse(JSON.stringify(value));
 let sharedSuitePromise;
+const structuredAudit = { engine: null, semantic: null };
+
+after(async () => {
+  const outputPath = process.env.MQ_STRUCTURED_AUDIT_FILE;
+  if (!outputPath) return;
+  if (!structuredAudit.engine || !structuredAudit.semantic) {
+    throw new Error("The structured coverage audit cannot be emitted before engine and semantic suites complete.");
+  }
+  await writeFile(outputPath, `${JSON.stringify({
+    schemaVersion: 1,
+    artifactKind: "MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1",
+    complete: true,
+    engine: structuredAudit.engine,
+    semantic: structuredAudit.semantic,
+  })}\n`, { encoding: "utf8", flag: "wx" });
+});
 function sharedEngineSuite() {
   if (!sharedSuitePromise) {
     const only = process.env.MQ_AUDIT_ONLY ? new Set(process.env.MQ_AUDIT_ONLY.split(",").filter(Boolean)) : null;
@@ -273,6 +291,18 @@ test("canonical curriculum validator is closed at every governed object boundary
 
 test("exact shipped engine behavioral audit", async (t) => {
   const suite = await sharedEngineSuite();
+  const stringArtifact = childStringArtifact(suite.engine.CHILD_STRINGS ?? suite.engine.CHILD_STRING_TABLE);
+  structuredAudit.engine = {
+    sha256: suite.extracted.sha256,
+    summary: suite.summary,
+    results: suite.harness.results,
+    effectMap: suite.harness.effectMap,
+    childStringCandidateSha256: stringArtifact.sha256,
+    childStringConstants: {
+      pendingApproval: suite.engine.CONSTANTS.CHILD_STRINGS_PENDING_APPROVAL,
+      approvalSha256: suite.engine.CONSTANTS.CHILD_STRING_APPROVAL_SHA256 ?? suite.engine.CONSTANTS.CHILD_STRING_DIGEST ?? null,
+    },
+  };
   for (const result of suite.harness.results) {
     await t.test(`${result.id} ${result.title}`, () => {
       if (result.status === "SKIP" || (!result.required && result.status !== "PASS")) return;
@@ -295,6 +325,12 @@ test("canonical manifest-to-generator semantic audit", async (t) => {
     indexPath: process.env.MQ_INDEX_PATH || path.join(root, "index.html"),
     engineFilename: process.env.MQ_ENGINE_COVERAGE_FILE || "math-quest.semantic.engine.js",
   });
+  structuredAudit.semantic = {
+    assertions: suite.assertions,
+    summary: suite.summary,
+    failures: suite.failures,
+    contractPass: suite.ok === true,
+  };
   assert.ok(Array.isArray(suite.assertions), "semantic suite must return an assertions array");
   assert.equal(suite.assertions.length, 130, "semantic assertion count drifted");
   assert.equal(suite.summary?.skills, manifestArtifact.manifest.skills.length, "semantic skill count drifted");
@@ -501,6 +537,17 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   assert.equal(engine.loadState(clone(validState), 22_000).ok, true, "object-form save loads through defensive clone");
   await accept("construction question", stateWithUi(engine, baseUi(construction)));
   await accept("physical phase", stateWithUi(engine, baseUi(selection, { phase: "physical" })));
+  const practiceTokenQuestion = findActiveQuestion(
+    engine,
+    (question) => question.skillId === "MQ-048" && question.preview === false && question.scaffolded === false,
+    { skillId: "MQ-048" },
+  );
+  const practiceTokenGuideState = stateWithUi(
+    engine,
+    baseUi(practiceTokenQuestion, { phase: "physical" }),
+  );
+  practiceTokenGuideState.skills["MQ-048"].acquisition = "LEARNING";
+  await accept("MQ-048 first-use visual guide resumes without changing the question", practiceTokenGuideState);
   const reteachQuestion = engine.makeQuestion({
     skillId: selection.skillId,
     tier: "EASY",
@@ -788,24 +835,26 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   assert.deepEqual(clone(migratedActive.state.sessionLog), preservedSessionHistory);
   assert.deepEqual(clone(migratedActive.state.feedbackHistory), preservedFeedbackHistory);
 
-  const priorBeta2Active = clone(populatedRoot);
-  const priorBeta2Questions = [
-    priorBeta2Active.activeSession.uiState.question,
-    ...(priorBeta2Active.activeSession.uiState.choiceCandidates || []),
+  const priorV4Active = clone(populatedRoot);
+  const priorV4Questions = [
+    priorV4Active.activeSession.uiState.question,
+    ...(priorV4Active.activeSession.uiState.choiceCandidates || []),
   ].filter(Boolean);
-  assert.ok(priorBeta2Questions.length > 0);
-  for (const question of priorBeta2Questions) {
-    question.generatorContractVersion = "question-generator-v3";
+  assert.ok(priorV4Questions.length > 0);
+  for (const question of priorV4Questions) {
+    question.generatorContractVersion = "question-generator-v4";
   }
-  const priorBeta2Progress = clone(priorBeta2Active.skills);
-  const priorBeta2History = clone(priorBeta2Active.sessionLog);
-  const migratedPriorBeta2 = engine.loadState(JSON.stringify(priorBeta2Active), 22_001);
-  assert.equal(migratedPriorBeta2.ok, true, migratedPriorBeta2.error);
-  assert.equal(migratedPriorBeta2.migrated, true);
-  assert.equal(migratedPriorBeta2.state.activeSession, null);
-  assert.equal(migratedPriorBeta2.state.previewLevel, null);
-  assert.deepEqual(clone(migratedPriorBeta2.state.skills), priorBeta2Progress);
-  assert.deepEqual(clone(migratedPriorBeta2.state.sessionLog), priorBeta2History);
+  const priorV4Progress = clone(priorV4Active.skills);
+  const priorV4SessionHistory = clone(priorV4Active.sessionLog);
+  const priorV4FeedbackHistory = clone(priorV4Active.feedbackHistory);
+  const migratedPriorV4 = engine.loadState(JSON.stringify(priorV4Active), 22_001);
+  assert.equal(migratedPriorV4.ok, true, migratedPriorV4.error);
+  assert.equal(migratedPriorV4.migrated, true);
+  assert.equal(migratedPriorV4.state.activeSession, null);
+  assert.equal(migratedPriorV4.state.previewLevel, null);
+  assert.deepEqual(clone(migratedPriorV4.state.skills), priorV4Progress);
+  assert.deepEqual(clone(migratedPriorV4.state.sessionLog), priorV4SessionHistory);
+  assert.deepEqual(clone(migratedPriorV4.state.feedbackHistory), priorV4FeedbackHistory);
 
   const malformedCurrentActive = clone(populatedRoot);
   malformedCurrentActive.activeSession.uiState.question.inputClass = "BROKEN";
@@ -2063,22 +2112,20 @@ test("active-session questions must be exact deterministic regenerations", async
   const { engine } = await sharedEngineSuite();
   const question = findActiveQuestion(engine, (candidate) => (
     candidate.inputClass === "SELECTION"
-    && candidate.options.some((option) => option.value === "more")
-    && candidate.options.some((option) => option.value === "fewer")
+    && candidate.options.length >= 2
+    && candidate.options[0].label !== candidate.options[1].label
   ));
   const control = stateWithUi(engine, baseUi(question));
   assert.equal(engine.validateState(control), null, "canonical control question must validate");
 
   const hostile = clone(control);
   const hostileOptions = hostile.activeSession.uiState.question.options;
-  const moreIndex = hostileOptions.findIndex((option) => option.value === "more");
-  const fewerIndex = hostileOptions.findIndex((option) => option.value === "fewer");
   [
-    hostileOptions[moreIndex].label,
-    hostileOptions[fewerIndex].label,
+    hostileOptions[0].label,
+    hostileOptions[1].label,
   ] = [
-    hostileOptions[fewerIndex].label,
-    hostileOptions[moreIndex].label,
+    hostileOptions[1].label,
+    hostileOptions[0].label,
   ];
   assert.equal(
     engine.validateQuestionContract(hostile.activeSession.uiState.question).valid,
@@ -2759,9 +2806,11 @@ test("public engine APIs cover defensive and boundary branches effect-sensitivel
     restoreState.skills[restoreSkill.skillId].acquisition = "PRACTISING";
     restoreState.skills[restoreSkill.skillId].restoreNeeded = true;
     restoreState.skills[restoreSkill.skillId].restoreAfterDay = 22_000;
+    const restoreRepresentation = ({ C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" })[restoreSkill.phases.at(-1)];
     const restored = engine.applyAttempt(restoreState, evidenceAttempt(restoreSkill, {
       scheduledReview: true,
       playDay: 22_001,
+      representation: restoreRepresentation,
     }));
     assert.equal(restored.state.skills[restoreSkill.skillId].acquisition, "SOLID");
     assert.equal(restored.state.skills[restoreSkill.skillId].restoreNeeded, false);
@@ -2776,6 +2825,7 @@ test("public engine APIs cover defensive and boundary branches effect-sensitivel
     const clearedTarget = engine.applyAttempt(sinceFallbackState, evidenceAttempt(restoreSkill, {
       scheduledReview: true,
       playDay: 1,
+      representation: restoreRepresentation,
     }));
     assert.equal(clearedTarget.state.levelReteachActive, false);
     assert.deepEqual(clone(clearedTarget.state.levelReteachTargets), []);
@@ -2887,7 +2937,7 @@ test("every declared skill preserves its mathematical task across CPA representa
                 );
               }
             } else if (![
-              "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+              "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
               "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
               "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
               "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
@@ -3040,6 +3090,7 @@ test("question generation and contract APIs fail closed with effect-specific rea
       ["MQ-002", "COUNT_TOUCH"],
       ["MQ-010", "ORDER_BUILD"],
       ["MQ-038", "PLACE_VALUE_BUILD"],
+      ["MQ-040", "STRATEGY_BUILD"],
       ["MQ-051", "COIN_BUILD"],
       ["MQ-007", "SORT_BINS"],
       ["MQ-106", "SYMMETRY_BUILD"],
@@ -3095,7 +3146,7 @@ test("all structured response methods reject malformed child actions without cha
   const { engine } = await sharedEngineSuite();
   const { correctStructuredResponse } = await import("./manifest-semantic-suite.mjs");
   const structuredMethods = new Set([
-    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
     "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
     "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
     "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
@@ -3392,7 +3443,7 @@ test("structured response persistence rejects every method-specific boundary wit
   const { engine } = await sharedEngineSuite();
   const { correctStructuredResponse } = await import("./manifest-semantic-suite.mjs");
   const structuredMethods = new Set([
-    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
     "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
     "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
     "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",

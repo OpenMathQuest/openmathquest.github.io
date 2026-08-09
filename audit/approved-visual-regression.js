@@ -587,7 +587,22 @@
       const candidates = Array.isArray(values.candidates) ? values.candidates : [];
       const data = object(values.data) ? values.data : {};
       let truthful = Boolean(kind && (items.length || candidates.length || Object.keys(data).length));
-      if (/money/iu.test(kind)) {
+      if (kind === "practiceMoney") {
+        const item = items[0];
+        const candidateValues = candidates.map((candidate) => normalized(candidate.optionValue));
+        const questionValues = (question.options || []).map((option) => normalized(option.value));
+        const tokenExact = items.length === 1
+          && item?.kind === "practiceCoin"
+          && normalized(item.tokenId)
+          && normalized(item.label)
+          && data.tokenSetVersion === "practice-coins-v1";
+        const candidatesExact = candidates.length === 5
+          && candidateValues.every(Boolean)
+          && new Set(candidateValues).size === 5
+          && JSON.stringify([...candidateValues].sort()) === JSON.stringify([...questionValues].sort())
+          && candidateValues.filter((value) => value === normalized(question.answer?.value)).length === 1;
+        truthful &&= Boolean(tokenExact && candidatesExact);
+      } else if (/money/iu.test(kind)) {
         const cents = items.map((item) => Number(item.cents)).filter(Number.isFinite);
         truthful &&= cents.length >= 1;
         if (/compare/iu.test(normalized(question.semanticPromptStringId))) truthful &&= cents.length >= 2 && new Set(cents).size >= 2;
@@ -621,15 +636,18 @@
         const word = normalized(data.numberWord).toLowerCase();
         const derived = numberWords.indexOf(word);
         const candidateValues = candidates.map((candidate) => exactNumber(candidate?.optionValue));
-        const candidatesExact = candidates.length >= 2 && candidateValues.every((value) => value !== null)
+        const selectionCandidatesExact = candidates.length >= 2 && candidateValues.every((value) => value !== null)
           && new Set(candidateValues).size === candidateValues.length
           && candidateValues.filter((value) => value === derived).length === 1
           && candidates.every((candidate) => normalized(candidate.label) === normalized(candidate.optionValue));
+        const constructionPromptExact = question.inputClass === "CONSTRUCTION"
+          && question.inputMethod === "NUMBER_PAD"
+          && candidates.length === 0;
         const semanticExact = derived >= 0 && word === normalized(question.params?.numberWord).toLowerCase()
           && (!own(data, "numeral") || Number(data.numeral) === derived)
           && exactNumber(question.answer?.value) === derived;
         const answerFree = items.length === 0;
-        truthful &&= candidatesExact && semanticExact && answerFree;
+        truthful &&= (selectionCandidatesExact || constructionPromptExact) && semanticExact && answerFree;
       } else if (kind === "numericPrompt") {
         truthful &&= typeof data.semanticPromptStringId === "string";
       } else if (kind === "volume") {
@@ -656,12 +674,53 @@
   }
 
   const STRUCTURED_RESPONSE_METHODS = new Set([
-    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
+    "COUNT_TOUCH", "ORDER_BUILD", "PLACE_VALUE_BUILD", "STRATEGY_BUILD", "COIN_BUILD", "SYMMETRY_BUILD",
     "EXPRESSION_BUILD", "PAIR_LINK", "SORT_BINS", "SHARE_DEAL", "GROUP_BUILD",
     "BOND_SPLIT", "PATTERN_BUILD", "LANDMARK_PLACE", "ACTION_SCENE", "SLOT_COMPOSER",
     "FACT_FAMILY", "GRAPH_BUILD", "FRACTION_PARTITION", "GRID_ROUTE", "CLOCK_READ",
     "METRIC_SCALE", "ANGLE_MEASURE", "MEASURE_OBJECT", "AREA_DECOMPOSE", "VOLUME_INSPECT",
   ]);
+  const RENDERER_CAPABLE_METHODS = Object.freeze([
+    "ACTION_SCENE", "ANGLE_MEASURE", "AREA_DECOMPOSE", "BAR_MODEL", "BOND_SPLIT",
+    "CLOCK_READ", "COIN_BUILD", "COUNT_TOUCH", "EXPRESSION_BUILD", "FACT_FAMILY",
+    "FRACTION_ENTRY", "FRACTION_PARTITION", "GRAPH_BUILD", "GRID_ROUTE", "GROUP_BUILD",
+    "LANDMARK_PLACE", "MEASURE_OBJECT", "METRIC_SCALE", "MIXED_NUMBER_ENTRY", "NUMBER_BOND",
+    "NUMBER_CHOICE", "NUMBER_LINE", "NUMBER_PAD", "ORDER_BUILD", "PAIR_LINK", "PATTERN_BUILD",
+    "PICTURE_CHOICE", "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "STRATEGY_BUILD",
+    "SYMMETRY_BUILD", "TEN_FRAME", "VOLUME_INSPECT",
+  ]);
+  const RELEASE_REACHABLE_METHODS = Object.freeze([
+    "ACTION_SCENE", "ANGLE_MEASURE", "AREA_DECOMPOSE", "BAR_MODEL", "BOND_SPLIT",
+    "CLOCK_READ", "COIN_BUILD", "COUNT_TOUCH", "EXPRESSION_BUILD", "FACT_FAMILY",
+    "FRACTION_ENTRY", "FRACTION_PARTITION", "GRAPH_BUILD", "GRID_ROUTE", "GROUP_BUILD",
+    "LANDMARK_PLACE", "MEASURE_OBJECT", "METRIC_SCALE", "MIXED_NUMBER_ENTRY", "NUMBER_LINE",
+    "NUMBER_PAD", "ORDER_BUILD", "PAIR_LINK", "PATTERN_BUILD", "PICTURE_CHOICE",
+    "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "STRATEGY_BUILD", "SYMMETRY_BUILD",
+    "TEN_FRAME", "VOLUME_INSPECT",
+  ]);
+  const PLACEMENT_REACHABLE_METHODS = Object.freeze([
+    "ACTION_SCENE", "BAR_MODEL", "BOND_SPLIT", "CLOCK_READ", "COIN_BUILD", "COUNT_TOUCH",
+    "EXPRESSION_BUILD", "FACT_FAMILY", "FRACTION_ENTRY", "FRACTION_PARTITION", "GRAPH_BUILD",
+    "GRID_ROUTE", "GROUP_BUILD", "LANDMARK_PLACE", "MEASURE_OBJECT", "MIXED_NUMBER_ENTRY",
+    "NUMBER_LINE", "NUMBER_PAD", "ORDER_BUILD", "PAIR_LINK", "PATTERN_BUILD", "PICTURE_CHOICE",
+    "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "STRATEGY_BUILD", "SYMMETRY_BUILD",
+    "TEN_FRAME",
+  ]);
+  const PRACTICE_TOKEN_VISUAL_ORACLE = Object.freeze([
+    Object.freeze({ tokenId: "single-dot", value: "5\u00a2" }),
+    Object.freeze({ tokenId: "double-stripe", value: "10\u00a2" }),
+    Object.freeze({ tokenId: "triangle-dots", value: "25\u00a2" }),
+    Object.freeze({ tokenId: "cross-bars", value: "$1" }),
+    Object.freeze({ tokenId: "ring-diamond", value: "$2" }),
+  ]);
+  const PRACTICE_TOKEN_VISUAL_VIEWPORTS = Object.freeze([
+    Object.freeze({ viewport: "desktop", width: 1366, height: 768 }),
+    Object.freeze({ viewport: "tablet-portrait", width: 820, height: 1180 }),
+    Object.freeze({ viewport: "ipad-landscape-large", width: 1180, height: 820 }),
+    Object.freeze({ viewport: "ipad-landscape-standard", width: 1024, height: 768 }),
+    Object.freeze({ viewport: "phone", width: 390, height: 844 }),
+  ]);
+  const PRACTICE_TOKEN_VISUAL_STATES = Object.freeze(["ordinary", "help", "incorrect"]);
 
   const indexedItems = (prefix, count) => Array.from(
     { length: Math.max(0, Number(count) || 0) },
@@ -672,6 +731,58 @@
     const text = normalized(label);
     const value = Number(text.replace(/[^\d]/gu, ""));
     return text.startsWith("$") ? value * 100 : value;
+  }
+
+  function strategyBuildAnswer(question) {
+    const params = question.params || {};
+    const left = Number(params.a);
+    const right = Number(params.b);
+    const expression = String(params.expression || "").match(/^(\d+)\s*([+−×])\s*(\d+)$/u);
+    let strategy = null;
+    if (question.skillId === "MQ-040") strategy = ({
+      "add-by-counting-on": "count-on", "add-by-making-ten": "make-ten", "add-by-known-bond": "known-bond",
+    })[question.taskType];
+    else if (question.skillId === "MQ-041") strategy = ({
+      "subtract-by-counting-back": "count-back", "subtract-by-counting-up": "count-up", "subtract-by-known-bond": "known-bond",
+    })[question.taskType];
+    else if (question.skillId === "MQ-079") strategy = ["partition", "array", "written layout"][Number(question.ordinal) % 3];
+    else if (question.skillId === "MQ-095") strategy = "mental";
+    else if (question.skillId === "MQ-097" && expression) strategy = expression[2] === "×"
+      ? (Number(expression[1]) % 2 === 0 || Number(expression[3]) % 2 === 0 ? "an even factor makes an even product" : "two odd factors make an odd product")
+      : (Number(expression[1]) % 2 === Number(expression[3]) % 2 ? "same-parity numbers give an even result" : "different-parity numbers give an odd result");
+    else if (question.skillId === "MQ-101") strategy = "use subtraction";
+    let value;
+    if (question.skillId === "MQ-040") value = left + right;
+    else if (question.skillId === "MQ-041") value = left - right;
+    else if (question.skillId === "MQ-079") value = left * right;
+    else if (question.skillId === "MQ-095") value = question.taskType === "addition" ? left + right : left - right;
+    else if (question.skillId === "MQ-097" && expression) {
+      const a = Number(expression[1]), b = Number(expression[3]);
+      const result = expression[2] === "+" ? a + b : expression[2] === "−" ? a - b : a * b;
+      value = result % 2 === 0 ? "even" : "odd";
+    } else if (question.skillId === "MQ-101") value = Number(params.whole) - Number(question.semanticPromptStringId === "question.missingSubtrahend" ? params.result : params.part);
+    let work = [];
+    if (question.skillId === "MQ-040") {
+      if (strategy === "count-on") work = Array.from({ length: Math.min(left, right) }, (_, index) => String(Math.max(left, right) + index + 1));
+      else if (strategy === "make-ten") work = [String(10 - left), String(right - (10 - left))];
+      else work = [String(left), String(right)];
+    } else if (question.skillId === "MQ-041") {
+      if (strategy === "count-back") work = Array.from({ length: right }, (_, index) => String(left - index - 1));
+      else if (strategy === "count-up") work = Array.from({ length: left - right }, (_, index) => String(right + index + 1));
+      else work = [String(right), String(value)];
+    } else if (question.skillId === "MQ-079") {
+      const operands = [left, right], twoDigit = operands.find((number) => number >= 10), oneDigit = operands.find((number) => number <= 9);
+      const tens = Math.floor(twoDigit / 10) * 10, ones = twoDigit % 10;
+      if (strategy === "array") work = [String(twoDigit), String(oneDigit)];
+      else if (strategy === "partition") work = [String(tens), String(ones), String(tens * oneDigit), String(ones * oneDigit)];
+      else { const onesProduct = ones * oneDigit; work = [String(onesProduct), String(Math.floor(onesProduct / 10)), String(Math.floor(twoDigit / 10) * oneDigit + Math.floor(onesProduct / 10))]; }
+    } else if (question.skillId === "MQ-095") {
+      const chunks = String(Math.abs(right)).split("").map((digit, index, digits) => Number(digit) * 10 ** (digits.length - index - 1)).filter(Boolean);
+      let running = left;
+      work = chunks.map((chunk) => String(running = question.taskType === "addition" ? running + chunk : running - chunk));
+    } else if (question.skillId === "MQ-097" && expression) work = [Number(expression[1]) % 2 ? "odd" : "even", Number(expression[3]) % 2 ? "odd" : "even"];
+    else if (question.skillId === "MQ-101") work = [String(question.semanticPromptStringId === "question.missingSubtrahend" ? params.result : params.part), String(value)];
+    return { strategy, work, value };
   }
 
   function structuredAnswer(engine, question) {
@@ -686,12 +797,18 @@
         state.order = [Number(params.before), Number(question.answer.value), Number(params.after)];
         break;
       case "PLACE_VALUE_BUILD":
-        state.action = question.semanticPromptStringId === "question.renamePlace" ? "trade"
-          : question.semanticPromptStringId === "question.scalePlace" ? "shift"
-            : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId)
-              ? "partition" : "build";
-        state.value = Number(question.answer.value);
+        state.action = Array.isArray(params.strategyChoices) && params.strategyChoices.length
+          ? String(params.strategy ?? params.strategyChoices[0])
+          : question.semanticPromptStringId === "question.renamePlace" ? "trade"
+            : question.semanticPromptStringId === "question.scalePlace" ? "shift"
+              : ["question.addition", "question.appliedAddition", "question.subtraction", "question.appliedSubtraction"].includes(question.semanticPromptStringId)
+                ? "partition" : "build";
+        state.value = Array.isArray(params.responseValueChoices) && params.responseValueChoices.length
+          ? String(question.answer.value)
+          : Number(question.answer.value);
         break;
+      case "STRATEGY_BUILD":
+        return strategyBuildAnswer(question);
       case "COIN_BUILD":
         state.coins = Array.from({ length: Number(question.answer.value) }, () => coinValueCents(params.secondCoin));
         break;
@@ -709,6 +826,9 @@
           { length: Math.min(Number(params.leftCount ?? params.count), Number(params.rightCount ?? params.count)) },
           (_, index) => [`a${index}`, `b${index}`],
         );
+        if (question.semanticPromptStringId === "question.compare") {
+          state.relation = String(question.answer.value);
+        }
         break;
       case "SORT_BINS": {
         const values = question.modelDescriptor.values;
@@ -786,7 +906,9 @@
       }
       case "FACT_FAMILY": {
         const a = Number(params.a), b = Number(params.b), whole = Number(params.whole);
-        state.selected = [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
+        state.selected = params.equationFamily === "multiply-divide"
+          ? [`${a}\u00d7${b}=${whole}`, `${b}\u00d7${a}=${whole}`, `${whole}\u00f7${a}=${b}`, `${whole}\u00f7${b}=${a}`]
+          : [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
         break;
       }
       case "GRAPH_BUILD": {
@@ -1164,6 +1286,38 @@
     });
   }
 
+  function semanticVisualObligationKey(question) {
+    const semanticFacet = [
+      question.params?.place,
+      question.params?.interpretation,
+      question.params?.format,
+      question.params?.representation,
+      question.params?.unit,
+      question.params?.solid,
+      question.params?.tokenId,
+    ].filter(Boolean).join("|");
+    return `${question.modelDescriptor.type}|${question.semanticPromptStringId}${semanticFacet ? `|${semanticFacet}` : ""}`;
+  }
+
+  function practiceTokenVisualObligations() {
+    return Object.freeze(PRACTICE_TOKEN_VISUAL_ORACLE.flatMap(({ tokenId, value }) => (
+      PRACTICE_TOKEN_VISUAL_VIEWPORTS.flatMap(({ viewport, width, height }) => (
+        PRACTICE_TOKEN_VISUAL_STATES.map((state) => Object.freeze({
+          tokenId,
+          value,
+          viewport,
+          width,
+          height,
+          state,
+        }))
+      ))
+    )));
+  }
+
+  function practiceTokenVisualRowKey(row) {
+    return `${row.tokenId}|${row.value}|${row.viewport}|${row.width}x${row.height}|${row.state}`;
+  }
+
   function generatedCaseMap(engine) {
     const byMethod = new Map();
     const byDescriptor = new Map();
@@ -1174,15 +1328,7 @@
           const question = make(engine, skill, tier, ordinal);
           if (!byMethod.has(question.inputMethod)) byMethod.set(question.inputMethod, { skill, tier, ordinal, question });
           if (!byDescriptor.has(question.modelDescriptor.type)) byDescriptor.set(question.modelDescriptor.type, { skill, tier, ordinal, question });
-          const semanticFacet = [
-            question.params?.place,
-            question.params?.interpretation,
-            question.params?.format,
-            question.params?.representation,
-            question.params?.unit,
-            question.params?.solid,
-          ].filter(Boolean).join("|");
-          const semanticKey = `${question.modelDescriptor.type}|${question.semanticPromptStringId}${semanticFacet ? `|${semanticFacet}` : ""}`;
+          const semanticKey = semanticVisualObligationKey(question);
           if (!bySemanticModel.has(semanticKey)) bySemanticModel.set(semanticKey, { skill, tier, ordinal, question });
         }
       }
@@ -1354,11 +1500,26 @@
     }
     const classes = [...new Set(allQuestions.map((question) => question.inputClass))].sort();
     const methods = [...new Set(allQuestions.map((question) => question.inputMethod))].sort();
+    const rendererCapableMethods = Object.keys(engine.CONSTANTS.INPUT_CLASS_BY_METHOD || {}).sort();
     const descriptorTypes = [...new Set(allQuestions.map((question) => question.modelDescriptor?.type))].sort();
-    titles["VIS-CAPABILITIES"] = "Both answer classes and every generated input/model capability are discoverable";
+    const exactRendererSet = engine.canonical(rendererCapableMethods) === engine.canonical(RENDERER_CAPABLE_METHODS);
+    const exactReachableSet = engine.canonical(methods) === engine.canonical(RELEASE_REACHABLE_METHODS);
+    const rendererOnlyMethods = rendererCapableMethods.filter((method) => !methods.includes(method));
+    titles["VIS-CAPABILITIES"] = "Renderer-capable and release-reachable input/model capabilities are exact and non-circular";
     tests["VIS-CAPABILITIES"] = result(
-      classes.includes("SELECTION") && classes.includes("CONSTRUCTION") && methods.length >= 2 && descriptorTypes.length >= 2,
-      { classes, methods, descriptorTypes, inspected: allQuestions.length },
+      classes.includes("SELECTION") && classes.includes("CONSTRUCTION")
+        && exactRendererSet && exactReachableSet
+        && engine.canonical(rendererOnlyMethods) === engine.canonical(["NUMBER_BOND", "NUMBER_CHOICE"])
+        && descriptorTypes.length >= 2,
+      {
+        classes,
+        rendererCapableMethods,
+        releaseReachableMethods: methods,
+        rendererOnlyMethods,
+        descriptorTypes,
+        inspected: allQuestions.length,
+        reachabilityPolicy: "Only states emitted by the shipped manifest and generator are release-reachable. NUMBER_BOND and NUMBER_CHOICE remain renderer-capable but have no shipped question witness; impossible method/skill/mode combinations are excluded explicitly rather than counted as untested.",
+      },
     );
 
     const moneySkills = engine.SKILLS.filter((skill) => skill.generatorProfile === "money-model");
@@ -1481,6 +1642,8 @@
         if (labDocument.querySelector("[data-progress-protection]") || labDocument.getElementById("app")?.inert) {
           throw new Error(`${name} could not acquire the audit writer lease.`);
         }
+        await pause();
+        await pause();
         instrumentStorage();
       };
       const selectCase = async ({ skill, tier = "HARD/TARGET", ordinal = 0 }) => {
@@ -1581,22 +1744,16 @@
         if (!labDocument.querySelector(".lab-question")) throw new Error(`Parent Test Lab did not reopen for the ${theme} world.`);
       };
 
-      const expectedPlacementMethods = Object.freeze([
-        "ACTION_SCENE", "BAR_MODEL", "BOND_SPLIT", "CLOCK_READ", "COIN_BUILD",
-        "COUNT_TOUCH", "EXPRESSION_BUILD", "FACT_FAMILY", "FRACTION_ENTRY",
-        "FRACTION_PARTITION", "GRAPH_BUILD", "GRID_ROUTE", "GROUP_BUILD",
-        "LANDMARK_PLACE", "MEASURE_OBJECT", "MIXED_NUMBER_ENTRY", "NUMBER_LINE",
-        "NUMBER_PAD", "ORDER_BUILD", "PAIR_LINK", "PATTERN_BUILD", "PICTURE_CHOICE",
-        "PLACE_VALUE_BUILD", "SHARE_DEAL", "SLOT_COMPOSER", "SORT_BINS", "SYMMETRY_BUILD",
-        "TEN_FRAME",
-      ]);
+      const expectedPlacementMethods = PLACEMENT_REACHABLE_METHODS;
       const placementStateLoad = engine.loadState(baseline, playDay);
       if (!placementStateLoad.ok) throw new Error(`Placement visual baseline is invalid: ${placementStateLoad.error}`);
       const placementState = placementStateLoad.state;
       const placementTraversal = placementCases(engine, placementState, playDay);
       const placementProfiles = Object.freeze([
         { viewport: "desktop", width: 1366, height: 768 },
-        { viewport: "tablet", width: 820, height: 1180 },
+        { viewport: "tablet-portrait", width: 820, height: 1180 },
+        { viewport: "ipad-landscape-large", width: 1180, height: 820 },
+        { viewport: "ipad-landscape-standard", width: 1024, height: 768 },
         { viewport: "phone", width: 390, height: 844 },
       ]);
       const placementRows = [];
@@ -1659,6 +1816,22 @@
         const controls = shell
           ? [...shell.querySelectorAll("button,input,select,textarea")].filter(visible)
           : [];
+        const enabledFocusControls = controls.filter((control) => !control.disabled && control.tabIndex >= 0);
+        const firstFocusControl = enabledFocusControls[0] || null;
+        const lastFocusControl = enabledFocusControls.at(-1) || null;
+        firstFocusControl?.focus();
+        const firstFocusReached = Boolean(firstFocusControl && labDocument.activeElement === firstFocusControl);
+        lastFocusControl?.focus();
+        const lastFocusReached = Boolean(lastFocusControl && labDocument.activeElement === lastFocusControl);
+        notSure?.focus();
+        const notSureFocusReached = Boolean(notSure && labDocument.activeElement === notSure);
+        const keyboardFocusReachable = Boolean(
+          enabledFocusControls.length >= 2
+          && enabledFocusControls.every((control) => /^(?:BUTTON|INPUT|SELECT|TEXTAREA)$/u.test(control.tagName))
+          && firstFocusReached
+          && lastFocusReached
+          && notSureFocusReached
+        );
         const minControl = controls.length
           ? Math.min(...controls.map((node) => {
             const rect = node.getBoundingClientRect();
@@ -1724,6 +1897,7 @@
           && descendantCollisions.length === 0
           && noHorizontalOverflow
           && noticeBeforeContent
+          && keyboardFocusReachable
           && essentialMinFont >= 18
           && minControl >= 44
           && (confirmOnFirstScreen || naturalOuterFlow),
@@ -1739,6 +1913,11 @@
           noHorizontalOverflow,
           essentialMinFont,
           minControl,
+          focusableControls: enabledFocusControls.length,
+          firstFocusReached,
+          lastFocusReached,
+          notSureFocusReached,
+          keyboardFocusReachable,
           nestedVerticalOffenders,
           descendantCollisions,
           noticeProbeInserted: Boolean(noticeProbe),
@@ -1751,14 +1930,10 @@
         return result;
       };
 
-      for (const [index, witness] of placementTraversal.methods.entries()) {
-        const profile = placementProfiles[index % placementProfiles.length];
+      for (const witness of placementTraversal.methods) {
         await replaceActiveFixture(placementState, `placement-${witness.inputMethod}`, {
           placementDraft: placementDraftRecord(engine, placementState, witness.run, witness.question),
         });
-        await resize(profile.width, profile.height);
-        placementDraftPresent ||= Boolean(labWindow.localStorage.getItem(placementDraftKey));
-        const layout = placementLayoutSnapshot(profile, witness.inputMethod);
 
         const speechCalls = [];
         const localVoice = {
@@ -1815,29 +1990,36 @@
         const positionalCueSpoken = optionLabels.length === 0
           || /(?:\boption\b|\bchoice\b|\bfirst\b|\bsecond\b|\bthird\b|\bfourth\b|\bleft\b|\bright\b|\btop\b|\bbottom\b|\b1\b|\b2\b)/iu.test(spoken);
 
-        placementRows.push({
-          ...layout,
-          skillId: witness.question.skillId,
-          questionId: witness.question.questionId,
-          inputClass: witness.question.inputClass,
-          replayCalls: speechCalls.length,
-          promptSpoken,
-          spoken,
-          optionLabels,
-          optionCount: optionLabels.length,
-          optionsSpoken,
-          positionalCueSpoken,
-          pass: layout.pass
-            && speechCalls.length === 1
-            && promptSpoken
-            && optionsSpoken
-            && positionalCueSpoken,
-        });
+        for (const profile of placementProfiles) {
+          await resize(profile.width, profile.height);
+          placementDraftPresent ||= Boolean(labWindow.localStorage.getItem(placementDraftKey));
+          const layout = placementLayoutSnapshot(profile, witness.inputMethod);
+          placementRows.push({
+            ...layout,
+            skillId: witness.question.skillId,
+            questionId: witness.question.questionId,
+            inputClass: witness.question.inputClass,
+            replayCalls: speechCalls.length,
+            promptSpoken,
+            spoken,
+            optionLabels,
+            optionCount: optionLabels.length,
+            optionsSpoken,
+            positionalCueSpoken,
+            pass: layout.pass
+              && speechCalls.length === 1
+              && promptSpoken
+              && optionsSpoken
+              && positionalCueSpoken,
+          });
+        }
 
         if (witness.inputMethod === "SHARE_DEAL") {
           for (const wrapperProfile of [
             { viewport: "desktop", width: 1366, height: 768, allowNaturalOuterFlow: false },
-            { viewport: "tablet", width: 820, height: 1180, allowNaturalOuterFlow: false },
+            { viewport: "tablet-portrait", width: 820, height: 1180, allowNaturalOuterFlow: false },
+            { viewport: "ipad-landscape-large", width: 1180, height: 820, allowNaturalOuterFlow: false },
+            { viewport: "ipad-landscape-standard", width: 1024, height: 768, allowNaturalOuterFlow: false },
             { viewport: "phone", width: 390, height: 844, allowNaturalOuterFlow: false },
             { viewport: "landscape-phone", width: 844, height: 390, allowNaturalOuterFlow: true },
           ]) {
@@ -1865,23 +2047,21 @@
       labDocument.querySelector('[data-action="placement-discard"]')?.click();
       await pause();
       const placementDraftRemoved = labWindow.localStorage.getItem(placementDraftKey) === null;
-      const placementMethodNames = placementRows.map((row) => row.inputMethod).sort();
+      const placementMethodNames = [...new Set(placementRows.map((row) => row.inputMethod))].sort();
       const expectedPlacementMethodNames = [...expectedPlacementMethods].sort();
       const profileCounts = Object.fromEntries(placementProfiles.map((profile) => [
         profile.viewport,
         placementRows.filter((row) => row.viewport === profile.viewport).length,
       ]));
       const profileCountValues = Object.values(profileCounts);
-      const profilesBalanced = profileCountValues.reduce((sum, count) => sum + count, 0)
-        === expectedPlacementMethods.length
-        && Math.max(...profileCountValues) - Math.min(...profileCountValues) <= 1;
+      const profilesBalanced = profileCountValues.every((count) => count === expectedPlacementMethods.length);
       titles["VIS-PLACEMENT-LAYOUT"] = "Every reachable starting-point control is legible, actionable, and narratable in the child placement wrapper";
       tests["VIS-PLACEMENT-LAYOUT"] = result(
         placementTraversal.rows.every((row) => row.pass)
-          && placementRows.length === expectedPlacementMethods.length
+          && placementRows.length === expectedPlacementMethods.length * placementProfiles.length
           && engine.canonical(placementMethodNames) === engine.canonical(expectedPlacementMethodNames)
           && placementRows.every((row) => row.pass)
-          && placementWrapperRows.length === 4
+          && placementWrapperRows.length === 6
           && placementWrapperRows.every((row) => row.pass)
           && profilesBalanced
           && placementMainBytesUnchanged
@@ -1898,7 +2078,8 @@
           separateDraftPresent: placementDraftPresent,
           neutralNotSure,
           draftRemovedAfterDiscard: placementDraftRemoved,
-          matrixPolicy: "Each of 28 reachable methods receives one deterministic portrait profile in a 10/9/9 matrix whose profile counts differ by at most one; the dense SHARE_DEAL wrapper separately exercises all four approved viewports.",
+          matrixPolicy: "Each of the exact 29 placement-reachable methods is rendered at desktop, tablet portrait, both iPad-landscape sizes, and phone; the dense SHARE_DEAL wrapper additionally exercises short landscape-phone natural flow.",
+          ipadEvidencePolicy: "The 1180x820 and 1024x768 rows are automated rendered-browser geometry and focus evidence only. Physical iPad Safari, touch, software-keyboard, and VoiceOver evidence remains pending until run on a real device; automation cannot convert it to PASS.",
           landscapePolicy: "844x390 may use natural outer-document flow; nested scrolling and horizontal overflow remain forbidden.",
         },
       );
@@ -1948,14 +2129,22 @@
           });
         }
         const storageUnchanged = labWindow.localStorage.getItem(storageKey) === baseline && writes === 0;
-        titles["VIS-LAB-CONTROLS"] = "Parent Test Lab renders every discovered input method without writing progress";
+        const methodNames = methodRows.map((row) => row.method).sort();
+        titles["VIS-LAB-CONTROLS"] = "Parent Test Lab renders every exact release-reachable input method without writing progress";
         tests["VIS-LAB-CONTROLS"] = result(
-          methodRows.length === methods.length
+          methodRows.length === RELEASE_REACHABLE_METHODS.length
+            && engine.canonical(methodNames) === engine.canonical(RELEASE_REACHABLE_METHODS)
             && methodRows.every((row) => row.pass)
             && storageUnchanged
             && labDocument.querySelector(".lab-question")?.dataset.labMode === "isolated"
             && labDocument.querySelector(".lab-question")?.dataset.storageIntact === "true",
-          { methods: methodRows, writes, bytesIdentical: labWindow.localStorage.getItem(storageKey) === baseline },
+          {
+            methods: methodRows,
+            expectedMethods: RELEASE_REACHABLE_METHODS,
+            rendererOnlyExcluded: ["NUMBER_BOND", "NUMBER_CHOICE"],
+            writes,
+            bytesIdentical: labWindow.localStorage.getItem(storageKey) === baseline,
+          },
         );
 
         const modelRows = [];
@@ -2002,10 +2191,19 @@
               && labels.some((label) => label.includes(question.params.startTime))
               && labels.some((label) => label.includes(question.params.endTime)));
           }
-          modelRows.push({ semanticKey, type, promptId: question.semanticPromptStringId, skillId: auditCase.skill.skillId, modelHasRenderableData: Boolean(modelHasRenderableData), rendered, variantRendered, pass: !modelHasRenderableData || rendered && variantRendered });
+          modelRows.push({ semanticKey, type, promptId: question.semanticPromptStringId, skillId: auditCase.skill.skillId, tokenId: question.params?.tokenId || null, modelHasRenderableData: Boolean(modelHasRenderableData), rendered, variantRendered, pass: !modelHasRenderableData || rendered && variantRendered });
         }
+        const practiceTokenSemanticRows = modelRows.filter((row) => row.skillId === "MQ-048");
+        const practiceTokenSemanticIds = [...new Set(practiceTokenSemanticRows.map((row) => row.tokenId).filter(Boolean))].sort();
+        const expectedPracticeTokenIds = PRACTICE_TOKEN_VISUAL_ORACLE.map((row) => row.tokenId).sort();
+        const practiceTokenSemanticsExact = practiceTokenSemanticRows.length === PRACTICE_TOKEN_VISUAL_ORACLE.length
+          && engine.canonical(practiceTokenSemanticIds) === engine.canonical(expectedPracticeTokenIds);
         titles["VIS-LAB-MODELS"] = "Every semantically renderable prompt/model variant appears as derived math in Parent Test Lab";
-        tests["VIS-LAB-MODELS"] = result(modelRows.every((row) => row.pass), { models: modelRows });
+        tests["VIS-LAB-MODELS"] = result(modelRows.every((row) => row.pass) && practiceTokenSemanticsExact, {
+          models: modelRows,
+          practiceTokenSemantics: practiceTokenSemanticRows,
+          practiceTokenSemanticsExact,
+        });
 
         const profileCases = expectedProfiles.map((profile) => ({
           profile,
@@ -2016,7 +2214,9 @@
         const desktopRows = [];
         for (const [width, height, viewport] of [
           [1366, 768, "desktop"],
-          [820, 1180, "tablet"],
+          [820, 1180, "tablet-portrait"],
+          [1180, 820, "ipad-landscape-large"],
+          [1024, 768, "ipad-landscape-standard"],
         ]) {
           await resize(width, height);
           for (const auditCase of profileCases) {
@@ -2035,23 +2235,50 @@
             const answer = labDocument.querySelector(".answer-controls");
             const gradeRect = grade?.getBoundingClientRect();
             const answerRect = answer?.getBoundingClientRect();
+            const controls = [...(article?.querySelectorAll("button,input,select,textarea") || [])]
+              .filter((control) => visible(control));
+            const enabledControls = controls.filter((control) => !control.disabled && control.tabIndex >= 0);
+            const firstControl = enabledControls[0] || null;
+            const lastControl = enabledControls.at(-1) || null;
+            firstControl?.focus();
+            const firstFocused = Boolean(firstControl && labDocument.activeElement === firstControl);
+            lastControl?.focus();
+            const lastFocused = Boolean(lastControl && labDocument.activeElement === lastControl);
+            const everyControlVisible = controls.length > 0 && controls.every((control) => {
+              const rect = control.getBoundingClientRect();
+              return rect.left >= -1 && rect.right <= labWindow.innerWidth + 1
+                && rect.top >= -1 && rect.bottom <= labWindow.innerHeight + 1;
+            });
+            const keyboardFocusReachable = enabledControls.length > 0
+              && enabledControls.every((control) => /^(?:BUTTON|INPUT|SELECT|TEXTAREA)$/u.test(control.tagName))
+              && firstFocused && lastFocused;
             const noOverflow = labDocument.documentElement.scrollWidth <= labDocument.documentElement.clientWidth + 1;
-            const pass = Boolean(article && gradeRect && answerRect && gradeRect.bottom <= labWindow.innerHeight + 1
-              && answerRect.top < labWindow.innerHeight && noOverflow);
+            const pass = Boolean(article && gradeRect && answerRect
+              && answerRect.top >= -1 && answerRect.bottom <= labWindow.innerHeight + 1
+              && gradeRect.top >= -1 && gradeRect.bottom <= labWindow.innerHeight + 1
+              && everyControlVisible && keyboardFocusReachable && noOverflow);
             desktopRows.push({
               profile: auditCase.profile,
               skillId: auditCase.skill.skillId,
               viewport,
               pass,
+              answerTop: answerRect && Math.round(answerRect.top),
+              answerBottom: answerRect && Math.round(answerRect.bottom),
               gradeBottom: gradeRect && Math.round(gradeRect.bottom),
+              controls: controls.length,
+              everyControlVisible,
+              firstFocused,
+              lastFocused,
+              keyboardFocusReachable,
               noOverflow,
             });
           }
         }
-        titles["VIS-DESKTOP-LAYOUT"] = "Every generator profile keeps Parent Test answers visible at desktop and tablet sizes";
+        titles["VIS-DESKTOP-LAYOUT"] = "Every generator profile keeps complete Parent Test answers, controls, and focus visible at desktop, tablet, and iPad-landscape sizes";
         tests["VIS-DESKTOP-LAYOUT"] = result(desktopRows.every((row) => row.pass), {
           inspected: desktopRows.length,
           failures: desktopRows.filter((row) => !row.pass).slice(0, 10),
+          ipadEvidencePolicy: "1180x820 and 1024x768 are automated rendered-browser geometry and focus rows; physical iPad Safari, software-keyboard, touch, and VoiceOver evidence remains pending.",
         });
 
         await resize(390, 844);
@@ -2439,7 +2666,7 @@
           await pause();
           return { method: "COUNT_TOUCH", objectCount: itemIds.length, reportedCount };
         };
-        const feedbackSnapshot = (expectedState, viewport, fixture) => {
+        const feedbackSnapshot = (expectedState, viewport, fixture, outcomeFocusedAtTransition) => {
           const stateNode = labDocument.querySelector(`.feedback-state[data-feedback-state="${CSS.escape(expectedState)}"]`);
           const icon = stateNode?.querySelector(`.feedback-state__icon .mq-icon[data-icon="${CSS.escape(expectedState)}"]`);
           const status = stateNode?.querySelector(".feedback-state__copy strong");
@@ -2471,7 +2698,7 @@
           );
           const iconLarge = Boolean(iconRect && iconRect.width >= 54 && iconRect.height >= 54);
           const noOverflow = labDocument.documentElement.scrollWidth <= labDocument.documentElement.clientWidth + 1;
-          const outcomeFocused = labDocument.activeElement === stateNode;
+          const outcomeFocused = Boolean(outcomeFocusedAtTransition);
           return {
             family: "CHILD-FEEDBACK",
             state: expectedState,
@@ -2514,12 +2741,14 @@
           labDocument.querySelector('[data-action="start"]')?.click();
           await pause();
           const correctFixture = await submitPairing();
+          const correctFocusedAtTransition = labDocument.activeElement
+            === labDocument.querySelector('.feedback-state[data-feedback-state="correct"]');
           for (const [width, height, viewport] of [
             [1366, 768, "desktop"],
             [390, 844, "phone"],
           ]) {
             await resize(width, height);
-            feedbackRows.push(feedbackSnapshot("correct", viewport, correctFixture));
+            feedbackRows.push(feedbackSnapshot("correct", viewport, correctFixture, correctFocusedAtTransition));
           }
           await resize(1366, 768);
           if (typeof activeStateFactory !== "function") {
@@ -2545,12 +2774,14 @@
           });
           await replaceActiveFixture(countState, "child-feedback-count-touch");
           const incorrectFixture = await submitIncorrectCountTouch();
+          const incorrectFocusedAtTransition = labDocument.activeElement
+            === labDocument.querySelector('.feedback-state[data-feedback-state="incorrect"]');
           for (const [width, height, viewport] of [
             [1366, 768, "desktop"],
             [390, 844, "phone"],
           ]) {
             await resize(width, height);
-            feedbackRows.push(feedbackSnapshot("incorrect", viewport, incorrectFixture));
+            feedbackRows.push(feedbackSnapshot("incorrect", viewport, incorrectFixture, incorrectFocusedAtTransition));
           }
         } catch (error) {
           feedbackFixtureError = String(error?.stack || error?.message || error);
@@ -2571,32 +2802,376 @@
           }
         }
 
+        const practiceTokenRows = [];
+        const practiceTokenGuideRows = [];
+        let practiceTokenFixtureError = null;
+        try {
+          if (typeof activeStateFactory !== "function") {
+            throw new Error("The visual audit did not receive its validated active-state fixture factory.");
+          }
+          const skill = engine.SKILL_BY_ID["MQ-048"];
+          if (!skill) throw new Error("The exact MQ-048 practice-token visual obligation is unavailable.");
+
+          const optionOracle = PRACTICE_TOKEN_VISUAL_ORACLE.map((row) => row.value).sort();
+          const fixtures = [];
+          for (const expected of PRACTICE_TOKEN_VISUAL_ORACLE) {
+            let fixture = null;
+            for (let canonicalIndex = 0; canonicalIndex < 40 && !fixture; canonicalIndex += 1) {
+              const probeQuestion = engine.makeQuestion({
+                skillId: skill.skillId,
+                tier: "EASY",
+                representation: "PICTORIAL",
+                seed: LAB_SEED,
+                ordinal: canonicalIndex,
+                eligibleQuestionOrdinal: canonicalIndex,
+                scheduledReview: false,
+                coldTest: false,
+                preview: false,
+                theme: "ocean",
+                scaffolded: true,
+              });
+              const state = activeStateFactory(engine, playDay, probeQuestion, { canonicalIndex });
+              const activeQuestion = state.activeSession?.uiState?.question;
+              const optionValues = activeQuestion?.options?.map((option) => option.value).sort() || [];
+              if (activeQuestion?.skillId === "MQ-048"
+                && activeQuestion.params?.tokenId === expected.tokenId
+                && activeQuestion.answer?.value === expected.value
+                && activeQuestion.inputMethod === "PICTURE_CHOICE"
+                && engine.canonical(optionValues) === engine.canonical(optionOracle)) {
+                fixture = { expected, canonicalIndex, state, question: activeQuestion };
+              }
+            }
+            if (!fixture) throw new Error(`No real child-session fixture exposes ${expected.tokenId} as ${expected.value}.`);
+            fixtures.push(fixture);
+          }
+
+          const guideState = JSON.parse(JSON.stringify(fixtures[0].state));
+          guideState.skills["MQ-048"].acquisition = "LEARNING";
+          guideState.activeSession.uiState.phase = "physical";
+          guideState.activeSession.uiState.modelTouched = false;
+          const practiceTokenGuideSnapshot = (profile) => {
+            const questionNode = labDocument.querySelector('.question[data-skill-id="MQ-048"]');
+            const guide = questionNode?.querySelector('[data-practice-token-guide="true"]');
+            const cards = [...(guide?.querySelectorAll('.practice-token-guide__item[role="listitem"]') || [])]
+              .filter((node) => visible(node));
+            const mappings = cards.map((card) => ({
+              tokenId: card.querySelector('.practice-coin-token[data-practice-token]')?.dataset.practiceToken || "",
+              value: card.dataset.practiceTokenValue || "",
+              ariaLabel: card.getAttribute("aria-label") || "",
+            }));
+            const exactMappings = engine.canonical(mappings.map(({ tokenId, value }) => ({ tokenId, value })))
+              === engine.canonical(PRACTICE_TOKEN_VISUAL_ORACLE);
+            const accessibleMappings = mappings.every((mapping) => (
+              mapping.ariaLabel
+              && normalized(mapping.ariaLabel).includes(normalized(mapping.value))
+            ));
+            const ready = guide?.querySelector('[data-action="physical-done"]');
+            const forbiddenControls = guide?.querySelectorAll('[data-action="confirm"],[data-action="select"],input,select').length || 0;
+            const guideRect = guide?.getBoundingClientRect();
+            const readyRect = ready?.getBoundingClientRect();
+            const tokenRects = cards.map((card) => card.querySelector('.practice-coin-token')?.getBoundingClientRect());
+            const contentOnFirstScreen = Boolean(
+              guideRect
+              && readyRect
+              && guideRect.left >= -1
+              && guideRect.right <= labWindow.innerWidth + 1
+              && guideRect.top >= -1
+              && readyRect.bottom <= labWindow.innerHeight + 1
+            );
+            const tokensLarge = tokenRects.length === PRACTICE_TOKEN_VISUAL_ORACLE.length
+              && tokenRects.every((rect) => rect && rect.width >= 50 && rect.height >= 50);
+            const metrics = scopedFloorMetrics(questionNode);
+            const noHorizontalOverflow = labDocument.documentElement.scrollWidth
+              <= labDocument.documentElement.clientWidth + 1;
+            const readyFocused = labDocument.activeElement === ready;
+            const pass = Boolean(
+              questionNode
+              && guide
+              && guideState.activeSession.uiState.question.scaffolded === false
+              && cards.length === PRACTICE_TOKEN_VISUAL_ORACLE.length
+              && exactMappings
+              && accessibleMappings
+              && ready
+              && visible(ready)
+              && forbiddenControls === 0
+              && contentOnFirstScreen
+              && tokensLarge
+              && metrics.minFont >= 16
+              && metrics.minControl >= 44
+              && noHorizontalOverflow
+              && readyFocused
+            );
+            return {
+              viewport: profile.viewport,
+              width: profile.width,
+              height: profile.height,
+              mappingCount: mappings.length,
+              mappings,
+              exactMappings,
+              accessibleMappings,
+              forbiddenControls,
+              contentOnFirstScreen,
+              tokensLarge,
+              minFont: metrics.minFont,
+              minControl: metrics.minControl,
+              noHorizontalOverflow,
+              readyFocused,
+              pass,
+            };
+          };
+          for (const profile of PRACTICE_TOKEN_VISUAL_VIEWPORTS) {
+            await resize(profile.width, profile.height);
+            await replaceActiveFixture(guideState, `practice-token-first-use-guide-${profile.viewport}`);
+            practiceTokenGuideRows.push(practiceTokenGuideSnapshot(profile));
+          }
+
+          const practiceTokenSnapshot = (fixture, profile, stateName, feedbackFocusedAtTransition = null) => {
+            const question = fixture.question;
+            const expected = fixture.expected;
+            const questionNode = labDocument.querySelector('.question[data-skill-id="MQ-048"]');
+            const prompt = questionNode?.querySelector(".prompt");
+            const source = questionNode?.querySelector('.stimulus[data-answer-free="true"]');
+            const worked = questionNode?.querySelector('[data-worked-result="true"]');
+            const answer = questionNode?.querySelector('.answer-controls[data-input-method="PICTURE_CHOICE"]');
+            const confirm = questionNode?.querySelector('[data-action="confirm"]');
+            const outcome = questionNode?.querySelector('.feedback-state[data-feedback-state="incorrect"]');
+            const next = questionNode?.querySelector('[data-action="next"]');
+            const action = stateName === "incorrect" ? next : confirm;
+            const expectedSelector = `.practice-coin-token[data-practice-token="${CSS.escape(expected.tokenId)}"]`;
+            const tokenNodes = [...(questionNode?.querySelectorAll(".practice-coin-token[data-practice-token]") || [])]
+              .filter((node) => visible(node));
+            const expectedTokenNodes = tokenNodes.filter((node) => node.dataset.practiceToken === expected.tokenId);
+            const unexpectedTokenIds = [...new Set(tokenNodes
+              .map((node) => node.dataset.practiceToken)
+              .filter((tokenId) => tokenId !== expected.tokenId))];
+            const sourceToken = source?.querySelector(expectedSelector);
+            const workedToken = worked?.querySelector(expectedSelector);
+            const valueLeaksIntoSource = PRACTICE_TOKEN_VISUAL_ORACLE.some((row) => (
+              normalized(source?.textContent).includes(normalized(row.value))
+            ));
+            const workedNamesValue = Boolean(worked && normalized(worked.textContent).includes(normalized(expected.value)));
+            const renderedOptions = [...(answer?.querySelectorAll('[data-action="select"][data-id]') || [])]
+              .filter((node) => visible(node));
+            const renderedOptionIds = renderedOptions.map((node) => node.dataset.id).sort();
+            const expectedOptionIds = question.options.map((option) => option.optionId).sort();
+            const exactOptions = stateName === "incorrect" || Boolean(
+              renderedOptions.length === PRACTICE_TOKEN_VISUAL_ORACLE.length
+              && engine.canonical(renderedOptionIds) === engine.canonical(expectedOptionIds)
+              && engine.canonical(question.options.map((option) => option.value).sort()) === engine.canonical(optionOracle),
+            );
+            const requiredElements = stateName === "incorrect"
+              ? [prompt, source, worked, outcome, next]
+              : stateName === "help"
+                ? [prompt, source, worked, answer, confirm]
+                : [prompt, source, answer, confirm];
+            const requiredRects = requiredElements.map((element) => element?.getBoundingClientRect());
+            const contentOnFirstScreen = requiredRects.every((rect) => Boolean(
+              rect
+              && rect.left >= -1
+              && rect.right <= labWindow.innerWidth + 1
+              && rect.top >= -1
+              && rect.bottom <= labWindow.innerHeight + 1
+            ));
+            const tokenRects = expectedTokenNodes.map((node) => node.getBoundingClientRect());
+            const tokensOnFirstScreen = tokenRects.length >= (stateName === "ordinary" ? 1 : 2)
+              && tokenRects.every((rect) => rect.left >= -1 && rect.right <= labWindow.innerWidth + 1
+                && rect.top >= -1 && rect.bottom <= labWindow.innerHeight + 1);
+            const tokensLarge = tokenRects.length > 0
+              && tokenRects.every((rect) => rect.width >= 50 && rect.height >= 50);
+            const responseBeforeAction = stateName === "incorrect" || Boolean(
+              answer?.getBoundingClientRect().bottom <= confirm?.getBoundingClientRect().top + 1,
+            );
+            const feedbackBeforeAction = stateName !== "incorrect" || Boolean(
+              outcome?.getBoundingClientRect().bottom <= next?.getBoundingClientRect().top + 1,
+            );
+            const metrics = scopedFloorMetrics(questionNode);
+            const noHorizontalOverflow = labDocument.documentElement.scrollWidth
+              <= labDocument.documentElement.clientWidth + 1;
+            const mark = sourceToken?.querySelector(".practice-coin-token__mark");
+            const markStyle = mark ? labWindow.getComputedStyle(mark) : null;
+            const afterStyle = mark ? labWindow.getComputedStyle(mark, "::after") : null;
+            const fingerprint = markStyle ? [
+              markStyle.backgroundImage,
+              markStyle.backgroundColor,
+              markStyle.borderRadius,
+              markStyle.borderTopWidth,
+              markStyle.borderTopStyle,
+              afterStyle?.content,
+              afterStyle?.backgroundColor,
+              afterStyle?.transform,
+            ].join("|") : "";
+            const stateContract = stateName === "ordinary"
+              ? !worked && !outcome
+              : stateName === "help"
+                ? Boolean(worked && workedToken && !outcome && workedNamesValue)
+                : Boolean(worked && workedToken && outcome && workedNamesValue && feedbackFocusedAtTransition);
+            const pass = Boolean(
+              questionNode
+              && questionNode.dataset.inputMethod === "PICTURE_CHOICE"
+              && question.params?.tokenId === expected.tokenId
+              && question.answer?.value === expected.value
+              && source
+              && sourceToken
+              && !valueLeaksIntoSource
+              && unexpectedTokenIds.length === 0
+              && exactOptions
+              && action
+              && visible(action)
+              && stateContract
+              && contentOnFirstScreen
+              && tokensOnFirstScreen
+              && tokensLarge
+              && responseBeforeAction
+              && feedbackBeforeAction
+              && metrics.minFont >= 16
+              && metrics.minControl >= 44
+              && noHorizontalOverflow
+              && fingerprint,
+            );
+            return {
+              tokenId: expected.tokenId,
+              value: expected.value,
+              canonicalIndex: fixture.canonicalIndex,
+              state: stateName,
+              viewport: profile.viewport,
+              width: profile.width,
+              height: profile.height,
+              renderedTokens: expectedTokenNodes.length,
+              unexpectedTokenIds,
+              renderedOptions: renderedOptions.length,
+              exactOptions,
+              valueLeaksIntoSource,
+              workedNamesValue,
+              stateContract,
+              contentOnFirstScreen,
+              tokensOnFirstScreen,
+              tokensLarge,
+              responseBeforeAction,
+              feedbackBeforeAction,
+              feedbackFocusedAtTransition,
+              minFont: metrics.minFont,
+              minControl: metrics.minControl,
+              noHorizontalOverflow,
+              fingerprint,
+              pass,
+            };
+          };
+
+          for (const fixture of fixtures) {
+            await replaceActiveFixture(fixture.state, `practice-token-${fixture.expected.tokenId}`);
+            for (const profile of PRACTICE_TOKEN_VISUAL_VIEWPORTS) {
+              await resize(profile.width, profile.height);
+              practiceTokenRows.push(practiceTokenSnapshot(fixture, profile, "ordinary"));
+            }
+
+            await resize(1366, 768);
+            const help = [...labDocument.querySelectorAll('[data-action="hint"]')].find((button) => visible(button));
+            if (!help || help.disabled) throw new Error(`${fixture.expected.tokenId} did not expose its real Help control.`);
+            help.click();
+            await pause();
+            await pause();
+            for (const profile of PRACTICE_TOKEN_VISUAL_VIEWPORTS) {
+              await resize(profile.width, profile.height);
+              practiceTokenRows.push(practiceTokenSnapshot(fixture, profile, "help"));
+            }
+
+            await resize(1366, 768);
+            const wrongOption = fixture.question.options.find((option) => option.value !== fixture.question.answer.value);
+            const wrongControl = wrongOption
+              ? labDocument.querySelector(`[data-action="select"][data-id="${CSS.escape(wrongOption.optionId)}"]`)
+              : null;
+            if (!wrongControl) throw new Error(`${fixture.expected.tokenId} did not expose a legitimate incorrect option.`);
+            wrongControl.click();
+            await pause();
+            const confirm = labDocument.querySelector('[data-action="confirm"]');
+            if (!confirm || confirm.disabled) throw new Error(`${fixture.expected.tokenId} did not enable Confirm after selection.`);
+            confirm.click();
+            await pause();
+            await pause();
+            const feedbackFocusedAtTransition = labDocument.activeElement
+              === labDocument.querySelector('.feedback-state[data-feedback-state="incorrect"]');
+            for (const profile of PRACTICE_TOKEN_VISUAL_VIEWPORTS) {
+              await resize(profile.width, profile.height);
+              practiceTokenRows.push(practiceTokenSnapshot(fixture, profile, "incorrect", feedbackFocusedAtTransition));
+            }
+          }
+        } catch (error) {
+          practiceTokenFixtureError = String(error?.stack || error?.message || error);
+        }
+
         const baseDesktopResult = tests["VIS-DESKTOP-LAYOUT"];
         const baseMobileResult = tests["VIS-MOBILE-LAYOUT"];
         const desktopApproved = approvedEarlyRows.filter((row) => row.viewport === "desktop");
         const phoneApproved = approvedEarlyRows.filter((row) => row.viewport === "phone");
         const desktopFeedback = feedbackRows.filter((row) => row.viewport === "desktop");
         const phoneFeedback = feedbackRows.filter((row) => row.viewport === "phone");
+        const desktopPracticeTokens = practiceTokenRows.filter((row) => row.viewport !== "phone");
+        const phonePracticeTokens = practiceTokenRows.filter((row) => row.viewport === "phone");
+        const desktopPracticeTokenGuides = practiceTokenGuideRows.filter((row) => row.viewport !== "phone");
+        const phonePracticeTokenGuides = practiceTokenGuideRows.filter((row) => row.viewport === "phone");
+        const requiredPracticeTokenObligations = practiceTokenVisualObligations();
+        const requiredPracticeTokenKeys = requiredPracticeTokenObligations.map(practiceTokenVisualRowKey).sort();
+        const observedPracticeTokenKeys = practiceTokenRows.map(practiceTokenVisualRowKey).sort();
+        const practiceTokenObligationsExact = engine.canonical(observedPracticeTokenKeys)
+          === engine.canonical(requiredPracticeTokenKeys);
+        const expectedDesktopPracticeTokenRows = requiredPracticeTokenObligations
+          .filter((row) => row.viewport !== "phone").length;
+        const expectedPhonePracticeTokenRows = requiredPracticeTokenObligations
+          .filter((row) => row.viewport === "phone").length;
+        const practiceTokenFingerprints = Object.fromEntries(PRACTICE_TOKEN_VISUAL_ORACLE.map(({ tokenId }) => [
+          tokenId,
+          practiceTokenRows.find((row) => row.tokenId === tokenId)?.fingerprint || "",
+        ]));
+        const practiceTokenFingerprintsDistinct = Object.values(practiceTokenFingerprints).every(Boolean)
+          && new Set(Object.values(practiceTokenFingerprints)).size === PRACTICE_TOKEN_VISUAL_ORACLE.length;
         tests["VIS-DESKTOP-LAYOUT"] = result(
           baseDesktopResult.pass
             && desktopApproved.every((row) => row.visualPass && row.controlPass && row.layoutPass)
-            && desktopFeedback.every((row) => row.visualPass && row.controlPass && row.layoutPass),
+            && desktopFeedback.every((row) => row.visualPass && row.controlPass && row.layoutPass)
+            && desktopPracticeTokens.length === expectedDesktopPracticeTokenRows
+            && desktopPracticeTokens.every((row) => row.pass)
+            && desktopPracticeTokenGuides.length === PRACTICE_TOKEN_VISUAL_VIEWPORTS.filter((row) => row.viewport !== "phone").length
+            && desktopPracticeTokenGuides.every((row) => row.pass)
+            && practiceTokenObligationsExact
+            && practiceTokenFingerprintsDistinct,
           {
             base: JSON.parse(baseDesktopResult.details),
             approvedEarly: desktopApproved,
             childFeedback: desktopFeedback,
             childFeedbackFixtureError: feedbackFixtureError,
+            practiceTokens: desktopPracticeTokens,
+            practiceTokenGuides: desktopPracticeTokenGuides,
+            expectedPracticeTokenRows: expectedDesktopPracticeTokenRows,
+            practiceTokenFingerprints,
+            practiceTokenFingerprintsDistinct,
+            practiceTokenObligationsExact,
+            practiceTokenFixtureError,
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, Help, and real incorrect-feedback states, and the separate first-use guide renders all five mappings without answer controls, at desktop, tablet portrait, and both automated iPad-landscape viewports.",
           },
         );
         tests["VIS-MOBILE-LAYOUT"] = result(
           baseMobileResult.pass
             && phoneApproved.every((row) => row.visualPass && row.controlPass && row.layoutPass)
-            && phoneFeedback.every((row) => row.visualPass && row.controlPass && row.layoutPass),
+            && phoneFeedback.every((row) => row.visualPass && row.controlPass && row.layoutPass)
+            && phonePracticeTokens.length === expectedPhonePracticeTokenRows
+            && phonePracticeTokens.every((row) => row.pass)
+            && phonePracticeTokenGuides.length === 1
+            && phonePracticeTokenGuides.every((row) => row.pass)
+            && practiceTokenObligationsExact
+            && practiceTokenFingerprintsDistinct,
           {
             base: JSON.parse(baseMobileResult.details),
             approvedEarly: phoneApproved,
             childFeedback: phoneFeedback,
             childFeedbackFixtureError: feedbackFixtureError,
+            practiceTokens: phonePracticeTokens,
+            practiceTokenGuides: phonePracticeTokenGuides,
+            expectedPracticeTokenRows: expectedPhonePracticeTokenRows,
+            practiceTokenFingerprints,
+            practiceTokenFingerprintsDistinct,
+            practiceTokenObligationsExact,
+            practiceTokenFixtureError,
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, Help, and real incorrect-feedback states, and the separate first-use guide renders all five mappings without answer controls, at 390x844.",
           },
         );
         approvedChecksComplete = true;
@@ -2607,9 +3182,9 @@
       const approvedFailure = approvedChecksStarted && !approvedChecksComplete;
       for (const [id, title] of [
         ["VIS-PLACEMENT-LAYOUT", "Every reachable starting-point control is legible, actionable, and narratable in the child placement wrapper"],
-        ["VIS-LAB-CONTROLS", "Parent Test Lab renders every discovered input method without writing progress"],
+        ["VIS-LAB-CONTROLS", "Parent Test Lab renders every exact release-reachable input method without writing progress"],
         ["VIS-LAB-MODELS", "Every semantically renderable model type appears as derived math in Parent Test Lab"],
-        ["VIS-DESKTOP-LAYOUT", "Every generator profile keeps Parent Test answers visible at desktop and tablet sizes"],
+        ["VIS-DESKTOP-LAYOUT", "Every generator profile keeps complete Parent Test answers, controls, and focus visible at desktop, tablet, and iPad-landscape sizes"],
         ["VIS-MOBILE-LAYOUT", "Every manifest level is question-first, legible, and actionable at 390×844"],
       ]) {
         titles[id] ||= title;
@@ -2628,5 +3203,12 @@
     return Object.freeze({ titles: Object.freeze(titles), tests: Object.freeze(tests) });
   }
 
-  window.MathQuestApprovedVisualRegression = Object.freeze({ run, correctAnswer, placementCases });
+  window.MathQuestApprovedVisualRegression = Object.freeze({
+    run,
+    correctAnswer,
+    placementCases,
+    semanticVisualObligationKey,
+    practiceTokenVisualObligations,
+    practiceTokenVisualOracle: PRACTICE_TOKEN_VISUAL_ORACLE,
+  });
 })();

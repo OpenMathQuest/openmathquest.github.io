@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Port = 8771
-$ProductRelease = '1.0.0-beta.3'
+$ProductRelease = '1.0.0-beta.4'
 $ServerIdentity = 'math-quest-local-server:v2'
 $HealthSchemaVersion = 1
 $HealthPath = '/__math_quest_health__'
@@ -292,7 +292,7 @@ function Write-HttpResponse {
         'X-Content-Type-Options: nosniff'
         'Cross-Origin-Resource-Policy: same-origin'
         'Referrer-Policy: no-referrer'
-        "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+        "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
         'Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()'
         "$IdentityHeader`: $ServerIdentity"
         'Connection: close'

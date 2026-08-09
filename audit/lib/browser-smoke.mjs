@@ -17,6 +17,28 @@ const TYPES = Object.freeze({
   ".wav": "audio/wav",
 });
 
+export const AUDIT_SERVED_RELATIVE_PATHS = Object.freeze([
+  "audit.html",
+  "index.html",
+  "manifest.webmanifest",
+  "release-shell-v1.json",
+  "sw.js",
+  "LICENSE",
+  "PRIVACY.md",
+  "THIRD_PARTY_NOTICES.md",
+  "audit/approved-visual-regression.js",
+  "assets/fonts/Inter-Variable.ttf",
+  "assets/icons/apple-touch-icon.png",
+  "assets/icons/icon-192.png",
+  "assets/icons/icon-512.png",
+  "assets/sounds/tap.wav",
+  "assets/sounds/confirm.wav",
+  "assets/sounds/incorrect.wav",
+  "assets/sounds/close.wav",
+  "licenses/Inter-OFL.txt",
+  "licenses/app-icons.md",
+]);
+
 export const BROWSER_AUDIT_TIMING = Object.freeze({
   inPageWatchdogMs: 2_280_000,
   wallTimeoutMs: 2_400_000,
@@ -26,12 +48,17 @@ export const BROWSER_AUDIT_TIMING = Object.freeze({
   browserCloseGraceMs: 10_000,
 });
 
-export const EXPECTED_BROWSER_RESULT_IDS = Object.freeze([
+export const AUDIT_COMPLETION_EXPRESSION =
+  "document.documentElement?.dataset.auditComplete === 'true'";
+
+const CORE_BROWSER_RESULT_IDS = Object.freeze([
   "BR-01", "BR-02", "BR-03", "BR-04", "BR-05", "BR-06", "BR-07",
   "BR-08", "BR-09", "BR-10", "BR-11", "BR-12", "BR-13", "BR-14",
   "BR-15", "BR-16", "BR-17", "BR-18", "BR-19", "BR-20", "BR-21",
   "BR-22", "BR-23", "BR-24", "BR-25", "BR-26", "BR-27", "BR-28",
-  "BR-29", "BR-30", "BR-31", "BR-32", "BR-33", "BR-34", "BR-35",
+  "BR-29", "BR-30", "BR-31", "BR-32", "BR-33", "BR-34", "BR-35", "BR-36",
+]);
+const VISUAL_BROWSER_RESULT_IDS = Object.freeze([
   "PROFILE-AREA-MODEL",
   "PROFILE-CHANCE-EXPERIMENT",
   "PROFILE-DATA-DISPLAY",
@@ -69,6 +96,14 @@ export const EXPECTED_BROWSER_RESULT_IDS = Object.freeze([
   "VIS-DESKTOP-LAYOUT",
   "VIS-MOBILE-LAYOUT",
 ]);
+export const BROWSER_AUDIT_SHARDS = Object.freeze({
+  core: CORE_BROWSER_RESULT_IDS,
+  visual: VISUAL_BROWSER_RESULT_IDS,
+});
+export const EXPECTED_BROWSER_RESULT_IDS = Object.freeze([
+  ...CORE_BROWSER_RESULT_IDS,
+  ...VISUAL_BROWSER_RESULT_IDS,
+]);
 
 const exactObjectKeys = (value, expected) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -77,12 +112,15 @@ const exactObjectKeys = (value, expected) => {
   return actual.length === wanted.length && actual.every((key, index) => key === wanted[index]);
 };
 
-export function validateBrowserAuditPayload(payload) {
+export function validateBrowserAuditPayload(payload, { shard = "all" } = {}) {
   const errors = [];
-  const expected = new Set(EXPECTED_BROWSER_RESULT_IDS);
-  if (!exactObjectKeys(payload, ["completed", "generatedAt", "results", "fail", "skipped"])) {
+  const expectedIds = shard === "all" ? EXPECTED_BROWSER_RESULT_IDS : BROWSER_AUDIT_SHARDS[shard];
+  if (!expectedIds) errors.push(`Browser payload requested unknown shard ${shard}.`);
+  const expected = new Set(expectedIds || []);
+  if (!exactObjectKeys(payload, ["completed", "generatedAt", "shard", "results", "fail", "skipped"])) {
     errors.push("The browser payload does not use the closed result schema.");
   }
+  if (payload?.shard !== shard) errors.push(`Browser payload shard ${payload?.shard || "UNKNOWN"} does not equal ${shard}.`);
   if (payload?.completed !== true) errors.push("The browser payload is not marked complete.");
   if (typeof payload?.generatedAt !== "string"
     || !Number.isFinite(Date.parse(payload.generatedAt))
@@ -119,11 +157,11 @@ export function validateBrowserAuditPayload(payload) {
       recomputedFail += 1;
     }
   }
-  for (const id of EXPECTED_BROWSER_RESULT_IDS) {
+  for (const id of expectedIds || []) {
     if (!seen.has(id)) errors.push(`Browser result id ${id} is missing.`);
   }
-  if (results.length !== EXPECTED_BROWSER_RESULT_IDS.length) {
-    errors.push(`Browser result count ${results.length} does not equal ${EXPECTED_BROWSER_RESULT_IDS.length}.`);
+  if (results.length !== (expectedIds?.length || 0)) {
+    errors.push(`Browser result count ${results.length} does not equal ${expectedIds?.length || 0}.`);
   }
   if (!Number.isInteger(payload?.fail) || payload.fail !== recomputedFail) {
     errors.push("The browser payload fail count does not match its result records.");
@@ -203,30 +241,18 @@ export function serveWorkspace(root, requests) {
       response.end('{"disconnected":true}', () => server.closeIdleConnections?.());
       return;
     }
+    if (pathname === "/favicon.ico") {
+      response.writeHead(204, {
+        "Cache-Control": "no-store",
+        "X-Math-Quest-Audit-Server": "math-quest-audit:v1",
+      });
+      response.end();
+      return;
+    }
     const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
     const resolved = path.resolve(root, relative);
     const rootPrefix = `${path.resolve(root)}${path.sep}`;
-    const allowed = new Set([
-      "audit.html",
-      "index.html",
-      "manifest.webmanifest",
-      "release-shell-v1.json",
-      "sw.js",
-      "LICENSE",
-      "PRIVACY.md",
-      "THIRD_PARTY_NOTICES.md",
-      "audit/approved-visual-regression.js",
-      "assets/fonts/Inter-Variable.ttf",
-      "assets/icons/apple-touch-icon.png",
-      "assets/icons/icon-192.png",
-      "assets/icons/icon-512.png",
-      "assets/sounds/tap.wav",
-      "assets/sounds/confirm.wav",
-      "assets/sounds/incorrect.wav",
-      "assets/sounds/close.wav",
-      "licenses/Inter-OFL.txt",
-      "licenses/app-icons.md",
-    ]);
+    const allowed = new Set(AUDIT_SERVED_RELATIVE_PATHS);
     if (!resolved.startsWith(rootPrefix) || !allowed.has(relative.replaceAll("\\", "/"))) {
       response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); response.end("Not found"); return;
     }
@@ -240,7 +266,7 @@ export function serveWorkspace(root, requests) {
           ? "default-src 'self' data: 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'"
           : relative === "sw.js"
             ? "default-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'"
-          : "default-src 'self' data: 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'",
+          : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; media-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
       });
       response.end(bytes);
     } catch (error) {
@@ -252,6 +278,19 @@ export function serveWorkspace(root, requests) {
 
 function waitMs(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export function waitForBrowserCleanup(promise, {
+  remainingMs,
+  wait = waitMs,
+} = {}) {
+  if (typeof remainingMs !== "function") throw new TypeError("remainingMs must be a function.");
+  if (typeof wait !== "function") throw new TypeError("wait must be a function.");
+  const budget = Math.max(
+    1,
+    Math.min(BROWSER_AUDIT_TIMING.browserCloseGraceMs, Number(remainingMs()) || 0),
+  );
+  return Promise.race([promise, wait(budget)]);
 }
 
 function throwIfAborted(signal) {
@@ -422,7 +461,7 @@ async function captureCompletedAudit({ profile, url, timeoutMs, signal }) {
       signal,
       evaluate: async () => {
         const evaluation = await client.send("Runtime.evaluate", {
-          expression: "document.documentElement.dataset.auditComplete === 'true'",
+          expression: AUDIT_COMPLETION_EXPRESSION,
           returnByValue: true,
         });
         if (evaluation.exceptionDetails) {
@@ -538,12 +577,7 @@ async function spawnBrowser(browserPath, args, {
   }
   const deadline = Date.now() + timeoutMs;
   const remainingMs = () => Math.max(0, deadline - Date.now());
-  const boundedWait = (promise, maximumMs = BROWSER_AUDIT_TIMING.browserCloseGraceMs) => (
-    Promise.race([
-      promise,
-      waitMs(Math.max(1, Math.min(maximumMs, remainingMs()))),
-    ])
-  );
+  const boundedCleanupWait = (promise) => waitForBrowserCleanup(promise, { remainingMs });
   const controller = new AbortController();
   let wallTimer;
   const wallTimeout = new Promise((resolve) => {
@@ -574,7 +608,7 @@ async function spawnBrowser(browserPath, args, {
       ? await requestBrowserClose(capture.browserWebSocketUrl, { timeoutMs: closeBudget })
       : { requested: true, error: "Browser.close had no time remaining before the audit deadline." };
     if (!exitResult) {
-      await boundedWait(exitPromise);
+      await boundedCleanupWait(exitPromise);
     }
   } else {
     controller.abort();
@@ -588,8 +622,8 @@ async function spawnBrowser(browserPath, args, {
   controller.abort();
   if (!exitResult) {
     forcedTermination = true;
-    await boundedWait(terminateBrowserTree(child), Math.max(1, remainingMs()));
-    if (!exitResult) await boundedWait(exitPromise);
+    await boundedCleanupWait(terminateBrowserTree(child));
+    if (!exitResult) await boundedCleanupWait(exitPromise);
   }
   return {
     status: exitResult?.status ?? null,
@@ -673,15 +707,17 @@ export async function observeBrowserRunnerEvidence(browserPath, environment = pr
   return evidence;
 }
 
-export async function runBrowserSmoke({
+async function runBrowserAuditShard({
   root,
   browserPath,
+  shard,
   timeoutMs = BROWSER_AUDIT_TIMING.wallTimeoutMs,
 }) {
   if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
+  if (!BROWSER_AUDIT_SHARDS[shard]) throw new TypeError(`Unknown browser audit shard ${shard}.`);
   const requests = [];
   const server = serveWorkspace(root, requests);
-  const profile = await mkdtemp(path.join(root, "audit", ".tmp-browser-audit-"));
+  const profile = await mkdtemp(path.join(root, "audit", `.tmp-browser-audit-${shard}-`));
   let auditResult = null;
   try {
     const evidence = await observeBrowserRunnerEvidence(browserPath);
@@ -691,7 +727,7 @@ export async function runBrowserSmoke({
     });
     const address = server.address();
     if (!address || typeof address === "string" || address.address !== "127.0.0.1") throw new Error("Audit server did not bind IPv4 loopback.");
-    const url = `http://127.0.0.1:${address.port}/audit.html?autorun=1`;
+    const url = `http://127.0.0.1:${address.port}/audit.html?autorun=1&audit-shard=${encodeURIComponent(shard)}`;
     const args = browserLaunchArgs({ profile, url });
     const run = await spawnBrowser(browserPath, args, {
       profile,
@@ -713,31 +749,13 @@ export async function runBrowserSmoke({
       try { payload = JSON.parse(match[1].replace(/&quot;/gu, '"').replace(/&amp;/gu, "&")); }
       catch (error) { parseError = String(error); }
     }
-    const payloadValidation = validateBrowserAuditPayload(payload);
+    const payloadValidation = validateBrowserAuditPayload(payload, { shard });
     const complete = Boolean(payloadValidation.valid && payload?.completed);
     const fail = payloadValidation.valid ? payloadValidation.fail : null;
     const skipped = payloadValidation.valid ? payloadValidation.skipped : null;
     const expectedPaths = new Set([
       "/",
-      "/audit.html",
-      "/index.html",
-      "/manifest.webmanifest",
-      "/release-shell-v1.json",
-      "/sw.js",
-      "/LICENSE",
-      "/PRIVACY.md",
-      "/THIRD_PARTY_NOTICES.md",
-      "/audit/approved-visual-regression.js",
-      "/assets/fonts/Inter-Variable.ttf",
-      "/assets/icons/apple-touch-icon.png",
-      "/assets/icons/icon-192.png",
-      "/assets/icons/icon-512.png",
-      "/assets/sounds/tap.wav",
-      "/assets/sounds/confirm.wav",
-      "/assets/sounds/incorrect.wav",
-      "/assets/sounds/close.wav",
-      "/licenses/Inter-OFL.txt",
-      "/licenses/app-icons.md",
+      ...AUDIT_SERVED_RELATIVE_PATHS.map((relative) => `/${relative}`),
       "/favicon.ico",
       "/__audit_disconnect__",
     ]);
@@ -756,6 +774,7 @@ export async function runBrowserSmoke({
         && evidence.status !== "INVALID"
         ? "PASS"
         : "FAIL",
+      shard,
       browserPath,
       evidence,
       url,
@@ -793,4 +812,165 @@ export async function runBrowserSmoke({
       else throw error;
     }
   }
+}
+
+const browserEvidenceIdentity = (evidence) => JSON.stringify({
+  browserProductName: evidence?.browserProductName,
+  browserFullVersion: evidence?.browserFullVersion,
+  browserExecutableSha256: evidence?.browserExecutableSha256,
+  requestedRunnerLabel: evidence?.requestedRunnerLabel,
+  runnerKind: evidence?.runnerKind,
+  runnerImageOS: evidence?.runnerImageOS,
+  runnerImageVersion: evidence?.runnerImageVersion,
+});
+
+export function browserShardEvidenceProjection(report) {
+  const identity = JSON.parse(browserEvidenceIdentity(report?.evidence || {}));
+  for (const key of Object.keys(identity)) identity[key] ??= null;
+  return {
+    schemaVersion: 1,
+    shard: report?.shard ?? null,
+    status: report?.status ?? null,
+    complete: report?.complete === true,
+    identity,
+    process: {
+      status: report?.process?.status ?? null,
+      signal: report?.process?.signal ?? null,
+      errorPresent: report?.process?.error != null,
+      timedOut: report?.process?.timedOut === true,
+      forcedTermination: report?.process?.forcedTermination === true,
+      closeRequested: report?.process?.close?.requested === true,
+      closeErrorPresent: report?.process?.close?.error != null,
+    },
+    payload: {
+      valid: report?.payloadValidation?.valid === true,
+      resultStatuses: [...(report?.results || [])]
+        .map((result) => ({ id: result?.id ?? null, status: result?.status ?? null }))
+        .sort((left, right) => String(left.id).localeCompare(String(right.id))),
+      requestCount: report?.requests?.length ?? 0,
+      unexpectedRequestCount: report?.unexpectedRequests?.length ?? 0,
+      parseErrorPresent: report?.parseError != null,
+      cleanupErrorPresent: report?.cleanupError != null,
+    },
+  };
+}
+
+export function aggregateBrowserShardReports(shardReports, { browserPath = null, executionMode = "TEST" } = {}) {
+  if (!Array.isArray(shardReports) || shardReports.length !== Object.keys(BROWSER_AUDIT_SHARDS).length) {
+    throw new TypeError("Browser aggregation requires exactly one report for every declared shard.");
+  }
+  const shardNames = shardReports.map((report) => report?.shard);
+  if (new Set(shardNames).size !== shardNames.length
+    || Object.keys(BROWSER_AUDIT_SHARDS).some((shard) => !shardNames.includes(shard))) {
+    throw new TypeError("Browser shard reports are missing, duplicated, or unknown.");
+  }
+  const shardIntegrity = shardReports.map((report) => {
+    const payload = {
+      completed: report.complete === true,
+      generatedAt: "2000-01-01T00:00:00.000Z",
+      shard: report.shard,
+      results: report.results || [],
+      fail: (report.results || []).filter((result) => result.status === "FAIL").length,
+      skipped: 0,
+    };
+    const payloadCheck = validateBrowserAuditPayload(payload, { shard: report.shard });
+    const valid = report.status === "PASS"
+      && report.complete === true
+      && report.payloadValidation?.valid === true
+      && payloadCheck.valid
+      && report.parseError === null
+      && !report.cleanupError
+      && report.evidence?.browserIdentityValid === true
+      && report.evidence?.validForPublication === true
+      && report.evidence?.status !== "INVALID"
+      && report.process?.status === 0
+      && report.process?.signal === null
+      && report.process?.error === null
+      && report.process?.timedOut !== true
+      && report.process?.forcedTermination !== true
+      && report.process?.close?.requested === true
+      && report.process?.close?.error === null;
+    return { shard: report.shard, valid, errors: payloadCheck.errors };
+  });
+  const results = shardReports.flatMap((report) => report.results || []);
+  const aggregatePayload = {
+    completed: shardReports.every((report) => report.complete === true),
+    generatedAt: new Date().toISOString(),
+    shard: "all",
+    results,
+    fail: results.filter((result) => result.status === "FAIL").length,
+    skipped: 0,
+  };
+  const payloadValidation = validateBrowserAuditPayload(aggregatePayload);
+  const identitySet = new Set(shardReports.map((report) => browserEvidenceIdentity(report.evidence)));
+  const evidence = structuredClone(shardReports[0]?.evidence || {});
+  if (identitySet.size !== 1) {
+    evidence.issues = [...(evidence.issues || []), "Browser audit shards observed different browser or runner identities."];
+    evidence.browserIdentityValid = false;
+    evidence.validForPublication = false;
+    evidence.status = "INVALID";
+  }
+  const unexpectedRequests = shardReports.flatMap((report) => (report.unexpectedRequests || []).map((request) => ({ ...request, shard: report.shard })));
+  const requests = shardReports.flatMap((report) => (report.requests || []).map((request) => ({ ...request, shard: report.shard })));
+  const shardEvidence = shardReports.map((report) => {
+    const projection = browserShardEvidenceProjection(report);
+    return {
+      projection,
+      canonicalEvidenceSha256: createHash("sha256").update(JSON.stringify(projection)).digest("hex"),
+    };
+  });
+  const processSummary = {
+    status: shardReports.every((report) => report.process?.status === 0) ? 0 : 1,
+    signal: shardReports.find((report) => report.process?.signal)?.process?.signal || null,
+    error: shardReports.find((report) => report.process?.error)?.process?.error || null,
+    timedOut: shardReports.some((report) => report.process?.timedOut === true),
+    forcedTermination: shardReports.some((report) => report.process?.forcedTermination === true),
+    close: {
+      requested: shardReports.every((report) => report.process?.close?.requested === true),
+      error: shardReports.find((report) => report.process?.close?.error)?.process?.close?.error || null,
+    },
+    stderr: shardReports.map((report) => report.process?.stderr || "").filter(Boolean).join("\n").slice(-4_000),
+  };
+  return {
+    status: shardIntegrity.every((item) => item.valid)
+      && payloadValidation.valid
+      && identitySet.size === 1
+      && evidence.browserIdentityValid === true
+      && evidence.validForPublication === true
+      && evidence.status !== "INVALID"
+      && unexpectedRequests.length === 0
+      ? "PASS"
+      : "FAIL",
+    browserPath,
+    evidence,
+    url: null,
+    process: processSummary,
+    complete: aggregatePayload.completed && payloadValidation.valid,
+    parseError: shardReports.find((report) => report.parseError)?.parseError || null,
+    payloadValidation: { valid: payloadValidation.valid, errors: [...payloadValidation.errors] },
+    results: payloadValidation.valid ? [...payloadValidation.results] : results,
+    requests,
+    unexpectedRequests,
+    shardEvidence,
+    shardIntegrity,
+    executionMode,
+    dumpTail: shardReports.filter((report) => !report.complete).map((report) => report.dumpTail || "").join("\n").slice(-8_000),
+  };
+}
+
+export async function runBrowserSmoke({
+  root,
+  browserPath,
+  timeoutMs = BROWSER_AUDIT_TIMING.wallTimeoutMs,
+} = {}) {
+  if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
+  const shardNames = Object.keys(BROWSER_AUDIT_SHARDS);
+  const runOne = (shard) => runBrowserAuditShard({ root, browserPath, shard, timeoutMs });
+  const shardReports = process.env.GITHUB_ACTIONS === "true"
+    ? await Promise.all(shardNames.map(runOne))
+    : await shardNames.reduce(async (promise, shard) => [...await promise, await runOne(shard)], Promise.resolve([]));
+  return aggregateBrowserShardReports(shardReports, {
+    browserPath,
+    executionMode: process.env.GITHUB_ACTIONS === "true" ? "PARALLEL_GITHUB_HOSTED" : "SEQUENTIAL_LOCAL",
+  });
 }

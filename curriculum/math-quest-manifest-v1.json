@@ -2497,7 +2497,8 @@
         ],
         "items": 2,
         "taskTypes": [
-          "explain-a-direct-comparison"
+          "compare-two-objects-directly",
+          "name-compared-attribute"
         ]
       },
       "rationaleId": "R-MEASURE",
@@ -2509,7 +2510,8 @@
         "version": 1,
         "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
         "requiredTaskTypes": [
-          "explain-a-direct-comparison"
+          "compare-two-objects-directly",
+          "name-compared-attribute"
         ]
       }
     },
@@ -2712,7 +2714,9 @@
           "known-bond"
         ],
         "taskTypes": [
-          "add-within-twenty"
+          "add-by-counting-on",
+          "add-by-making-ten",
+          "add-by-known-bond"
         ]
       },
       "rationaleId": "R-MODEL",
@@ -2724,7 +2728,9 @@
         "version": 1,
         "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
         "requiredTaskTypes": [
-          "add-within-twenty"
+          "add-by-counting-on",
+          "add-by-making-ten",
+          "add-by-known-bond"
         ]
       }
     },
@@ -2756,7 +2762,9 @@
           "known-bond"
         ],
         "taskTypes": [
-          "subtract-within-twenty"
+          "subtract-by-counting-back",
+          "subtract-by-counting-up",
+          "subtract-by-known-bond"
         ]
       },
       "rationaleId": "R-MODEL",
@@ -2768,7 +2776,9 @@
         "version": 1,
         "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
         "requiredTaskTypes": [
-          "subtract-within-twenty"
+          "subtract-by-counting-back",
+          "subtract-by-counting-up",
+          "subtract-by-known-bond"
         ]
       }
     },
@@ -3028,19 +3038,17 @@
       "level": 8,
       "band": "G1",
       "strand": "attribute-scaling",
-      "title": "Recognize Canadian Coin Values",
-      "objective": "Identify Canadian 5-cent, 10-cent, 25-cent, 1-dollar and 2-dollar coin values without size cues.",
+      "title": "Match Canadian Practice Tokens to Values",
+      "objective": "Match five original practice-token designs to the Canadian money values 5 cents, 10 cents, 25 cents, 1 dollar and 2 dollars without relying on relative size.",
       "masteryRole": "SUPPORTING",
       "prerequisites": [
         "MQ-031",
         "MQ-037"
       ],
       "phases": [
-        "C",
-        "P",
-        "A"
+        "P"
       ],
-      "representation": "objects-pictures-symbols",
+      "representation": "pictures-and-symbols",
       "family": "money",
       "generatorProfile": "money-model",
       "constraints": {
@@ -3054,7 +3062,11 @@
         ],
         "sizeCueDisabled": true,
         "taskTypes": [
-          "recognize-canadian-coin-values"
+          "match-practice-token-5-cents",
+          "match-practice-token-10-cents",
+          "match-practice-token-25-cents",
+          "match-practice-token-1-dollar",
+          "match-practice-token-2-dollars"
         ]
       },
       "rationaleId": "R-MODEL",
@@ -3066,7 +3078,11 @@
         "version": 1,
         "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
         "requiredTaskTypes": [
-          "recognize-canadian-coin-values"
+          "match-practice-token-5-cents",
+          "match-practice-token-10-cents",
+          "match-practice-token-25-cents",
+          "match-practice-token-1-dollar",
+          "match-practice-token-2-dollars"
         ]
       }
     },
@@ -3716,7 +3732,8 @@
         "productMax": 120,
         "remainder": 0,
         "taskTypes": [
-          "link-multiplication-and-division"
+          "model-related-multiplication-and-division",
+          "write-related-multiplication-and-division-equations"
         ]
       },
       "rationaleId": "R-MODEL",
@@ -3728,7 +3745,8 @@
         "version": 1,
         "masteryPolicy": "one-clean-evidentiary-witness-per-task-type",
         "requiredTaskTypes": [
-          "link-multiplication-and-division"
+          "model-related-multiplication-and-division",
+          "write-related-multiplication-and-division-equations"
         ]
       }
     },

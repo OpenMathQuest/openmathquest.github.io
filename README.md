@@ -1,11 +1,11 @@
 # Math Quest
 
 Math Quest is an offline-first, browser-based mathematics game for a child and
-a grown-up to use together. Public Beta 3 is driven by an independently
+a grown-up to use together. The Public Beta 4 candidate is driven by an independently
 authored, neutral curriculum manifest containing 126 skills across 21 ordered
 levels, from pre-kindergarten through Grade 5.
 
-Release target: **v1.0.0-beta.3**
+Release target: **v1.0.0-beta.4**
 
 > This is beta software. A grown-up should co-play, especially when a skill is
 > new, and report any ambiguous question or grading error.
@@ -32,12 +32,22 @@ a file cannot silently change what an already-running game serves.
 
 ### Hosted beta
 
-Public Beta 1 is hosted at
-[https://openmathquest.github.io/](https://openmathquest.github.io/). That
-origin is only a candidate host for Public Beta 3 until the child-facing
-host/privacy/legal gate is affirmatively cleared. If it cannot be cleared,
-the runnable child-facing build must move to a suitable host while the source
-repository can remain on GitHub.
+The public beta is hosted at
+[https://openmathquest.github.io/](https://openmathquest.github.io/). During a
+release transition, that address may continue serving the preceding beta until
+the exact tagged replacement passes deployment verification. The origin is not
+host/privacy/legal-cleared for direct child-facing use. The project owner has
+explicitly deferred that external qualification for Beta 4 and later
+prereleases, so the host gate must remain visibly
+`DEFERRED_PRERELEASE`, never passed or approved. Before the first stable
+release, the origin must be affirmatively qualified or the runnable game must
+move to a suitable host; the source repository can remain on GitHub.
+
+The project owner skipped the external trusted-HTTPS canary for Beta 4. That
+gate is visibly `OWNER_SKIPPED`, not passed or reconciled, so this beta does
+not claim external observation of its trusted-HTTPS update, cache-repair, or
+cold-offline path. Application-level privacy, local testing, and the final
+frozen-candidate audit remain required.
 
 The `OpenMathQuest` organization and its root Pages repository,
 `OpenMathQuest/openmathquest.github.io`, are reserved exclusively for Math
@@ -54,7 +64,7 @@ launcher and a hosted site requires a deliberate backup and restore.
 
 The Pages workflow is dispatched from protected `main` only while that branch
 and its exact `release_tag` input resolve to the same annotated
-`v1.0.0-beta.3` commit. Its product version and publication-clearance hashes
+`v1.0.0-beta.4` commit. Its product version and publication-clearance hashes
 must match the reviewed candidate. Publication clearance also binds the exact
 audited browser product, full product version, executable SHA-256, and
 GitHub-hosted runner `ImageOS`/`ImageVersion`. The hosted link is not considered verified
@@ -68,6 +78,10 @@ leave **Open as Web App** enabled when it appears, and tap **Add**. Open Math
 Quest from its Home Screen icon once while online and use the in-game
 readiness check before testing an offline cold launch.
 
+On the game’s Home screen, the grown-up **Check for updates** control reports
+whether the verified version is current and offers Apply or safe Reload only
+at that progress-safe boundary.
+
 Safari cannot let a web page install itself, and its ordinary tab and an
 installed Home Screen app can use separate local-data containers. Progress
 does not automatically move between them. Export in Safari, then import in the
@@ -75,9 +89,11 @@ installed app only when a grown-up deliberately wants to transfer progress.
 See the [iPhone and iPad installation guide](docs/release/install-ios-ipados.md).
 
 Essential actions use visible touch controls; a hardware keyboard is optional.
-The exact supported Apple generations remain a Beta 3 release gate until the
-physical-device matrix is complete. Safari Lockdown Mode and managed
-configurations that disable Web Locks are outside the Beta 3 support claim:
+The owner declined both the optional six-lane physical-device cycle and the
+optional six-reviewer cycle for Beta 4. This release therefore makes no tested-
+generation support claim for Apple devices and no independent-review
+qualification claim. Safari Lockdown Mode and managed
+configurations that disable Web Locks are outside the Beta 4 support claim:
 the game pauses before child play rather than using an unsafe persistence
 fallback. Do not weaken a security setting just for Math Quest; use another
 qualified device or browser configuration.
@@ -119,6 +135,9 @@ Trigonometry is outside this pre-kindergarten-to-Grade-5 scope.
   available on demand
 - Touch, mouse, keyboard, switch-style scanning, and reduced-motion support
 - A progress-isolated Parent Test lab for inspecting every manifest skill
+- Optional Math Quest Free Play, revealed only after its exact prerequisite
+  skills have been introduced, with Play Solo and Family Play Together
+  versions of original construction activities
 - Local backup, transactional restore, reset, preview, limits, and evidence
   views in the Grown-ups corner
 
@@ -135,10 +154,15 @@ application-level uploads, or cloud database.
 - The display name is stored separately from progress.
 - Removing the display name does not erase progress.
 - Resetting progress is a separate grown-up action.
+- Math Quest never automatically transmits child data. Export creates a local
+  backup only after a deliberate grown-up action; Math Quest does not upload
+  it.
 - Exported backups contain learning history and should be kept private.
 - Never attach a backup or identifying screenshot to a public issue.
 - A hosting provider can receive ordinary request metadata while serving the
-  site.
+  site, including an IP address, browser or device information, requested path,
+  and request time. This Beta host has not been privacy/legal-cleared; that
+  qualification is mandatory before the first stable release.
 
 See [PRIVACY.md](PRIVACY.md) for the exact storage boundary, deletion steps,
 and public issue-reporting guidance.
@@ -154,15 +178,34 @@ The stable development contract is
 [`docs/development/build-spec.md`](docs/development/build-spec.md). The
 repository layout and generated-file boundary are documented in
 [`docs/repository-structure.md`](docs/repository-structure.md).
+The [normative finished-work policy](AGENTS.md#what-counts-as-finished-work)
+defines **implemented**, **release-certified**, and **shipped** status and the
+evidence required for each.
 The effect-only installation, readiness, repair, and update boundary is
 documented in
 [`docs/development/pwa-adapter-contract.md`](docs/development/pwa-adapter-contract.md).
+The non-evidentiary Free Play boundary, exact unlock mapping, family handoff,
+and clean-room design are documented in
+[`docs/development/math-quest-free-play-pilot.md`](docs/development/math-quest-free-play-pilot.md).
 
-On Windows:
+For ordinary Windows development, run the fast focused suite and any additional
+effect-sensitive tests required by the changed behavior:
+
+```powershell
+.\audit\run-audit.ps1 -DevelopmentOnly
+```
+
+After all planned release work is finished, freeze the exact candidate. Only
+then, immediately before its public tag, release, and deployment, run the
+complete certification system:
 
 ```powershell
 .\audit.bat
 ```
+
+Ordinary pull requests and pushes run focused CI. The complete gate is bound to
+the exact frozen commit and public payload; any later change requires a new
+freeze and a complete rerun.
 
 The release review checks the exact shipped engine and manifest bytes,
 deterministic generation and grading, mastery behavior, native branch coverage,

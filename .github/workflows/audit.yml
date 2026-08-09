@@ -1,4 +1,4 @@
-name: Math Quest audit
+name: Math Quest checks
 
 on:
   pull_request:
@@ -6,12 +6,64 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact frozen main-branch commit to certify
+        required: true
+        type: string
+      release_tag:
+        description: Public beta or release tag that will be created after certification
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
+  development-checks:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Run focused development checks
+        shell: powershell
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          $baseSha = if ($env:EVENT_NAME -ceq 'pull_request') { $env:PR_BASE_SHA } else { $env:BEFORE_SHA }
+          $changedPaths = @()
+          if ($baseSha -match '^[a-f0-9]{40}$' -and $baseSha -cne ('0' * 40)) {
+            git cat-file -e "$baseSha^{commit}"
+            if ($LASTEXITCODE -eq 0) {
+              $changedPaths = @(git diff --name-only --diff-filter=ACDMRTUXB $baseSha $env:GITHUB_SHA)
+              if ($LASTEXITCODE -ne 0) { $changedPaths = @() }
+              $renames = @(git diff --name-status --diff-filter=R $baseSha $env:GITHUB_SHA)
+              if ($LASTEXITCODE -ne 0 -or $renames.Count -gt 0) {
+                # A rename's old path may carry the broader impact; fail safe.
+                $changedPaths += '__rename_unknown__'
+              }
+            }
+          }
+          # An empty or unavailable diff deliberately selects the broad fail-safe plan.
+          & .\audit\run-audit.ps1 -NodePath $nodePath -DevelopmentOnly -ChangedPath $changedPaths
+
   full-audit:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 45
     env:
@@ -29,32 +81,37 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          # DIRECT_EVIDENCE_SUCCESSOR_V1 must inspect the named qualification
+          # parent and its exact two-path diff. A one-commit shallow checkout
+          # cannot prove that relationship.
+          fetch-depth: 0
+
+      - name: Verify immutable release-candidate boundary
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_REF_TYPE -cne 'branch' -or
+              $env:GITHUB_REF_NAME -cne 'main') {
+            throw 'Release certification must be dispatched from protected main in the public Math Quest repository.'
+          }
+          if ($env:CANDIDATE_SHA -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_SHA -cne $env:GITHUB_SHA) {
+            throw 'candidate_sha must exactly equal the frozen commit selected for this workflow run.'
+          }
+          $version = (Get-Content -LiteralPath 'VERSION' -Raw).Trim()
+          if ($env:RELEASE_TAG_INPUT -cne "v$version") {
+            throw "release_tag must exactly equal v$version for the frozen candidate."
+          }
 
       - name: Set up Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24.14.0
           package-manager-cache: false
-
-      - name: Reject private, legacy, or unregistered material
-        run: node audit/public-candidate-guard.mjs
-
-      - name: Verify publication and browser-evidence schemas
-        run: node --test audit/tests/publication-clearance.test.mjs
-
-      - name: Validate versioned curriculum manifest
-        shell: powershell
-        run: |
-          $manifestCheck = @'
-          import { CURRICULUM_PATH, loadManifest } from "./audit/lib/curriculum-manifest.mjs";
-          const loaded = await loadManifest(CURRICULUM_PATH);
-          const strands = new Set(loaded.manifest.skills.map((skill) => skill.strand));
-          const completeLevels = loaded.manifest.levels.every((level) => loaded.manifest.skills.filter((skill) => skill.level === level.number).length === loaded.manifest.counts.skillsPerLevel);
-          if (loaded.manifest.levels.length !== 21 || strands.size !== 6 || loaded.manifest.skills.length !== 126 || !completeLevels) throw new Error(`Expected 21 six-skill levels and 126 skills across 6 declared strands; found ${loaded.manifest.levels.length} levels, ${strands.size} strands, and ${loaded.manifest.skills.length} skills.`);
-          console.log(`${loaded.manifest.manifestId} v${loaded.manifest.version} sha256:${loaded.sha256}`);
-          '@
-          $manifestCheck | node --input-type=module
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run deterministic engine and browser audit
         shell: powershell
@@ -65,7 +122,7 @@ jobs:
             throw 'The audit requires exact ImageOS and ImageVersion metadata from a GitHub-hosted runner.'
           }
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
-          & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+          & .\audit\run-audit.ps1 -NodePath $nodePath
 
       - name: Export exact browser and runner evidence
         if: always()
@@ -126,8 +183,3 @@ jobs:
           path: audit/last-report.json
           if-no-files-found: error
           retention-days: 90
-
-      - name: Verify the exact offline PWA shell
-        run: |
-          node tools/build-pwa-release-manifest.mjs --check
-          node --test audit/tests/pwa-release.test.mjs
