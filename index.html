@@ -272,6 +272,7 @@
       .placement-question .answer-controls[data-input-method="GRID_ROUTE"] .direct-undo{grid-area:route-undo}
     }
     @media(min-width:851px) and (max-height:800px){
+      .play-shell:has(.early-level-question[data-input-method="PICTURE_CHOICE"].support-expanded)>.topbar{margin-bottom:0}
       .play-shell .early-level-question[data-input-method="PICTURE_CHOICE"] .support-scroll{display:grid;grid-template-columns:minmax(250px,.72fr) minmax(0,1.28fr);grid-template-areas:"cue prompt" "stimulus response";gap:4px 12px;align-items:start}
       .play-shell .early-level-question[data-input-method="PICTURE_CHOICE"] .early-symbol-cue{grid-area:cue;min-height:64px;margin:0}
       .play-shell .early-level-question[data-input-method="PICTURE_CHOICE"] .prompt{grid-area:prompt;align-self:center;margin:0 auto 2px!important}
