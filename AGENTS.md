@@ -21,6 +21,14 @@ custom approach—do not implement the substantial version until approved.
 
 ## Owner interaction and identity-placeholder policy
 
+All communication addressed to the project owner—not child-facing game copy
+or other user-facing product content—must follow Zinsser's four principles of
+quality writing: **simplicity, brevity, clarity, and humanity**. Use plain,
+direct language; include only what is useful; make the outcome, meaning, and
+next action unmistakable; and retain a warm, respectful human voice. This
+applies to questions, commentary, status updates, reviews, reports, release
+notices, and final responses.
+
 For work the project owner has already authorized, proceed autonomously through
 ordinary file, focused-test, Git, GitHub, and release operations. Do not
 repeatedly ask for execution permission, reconfirm an approved scope, or
