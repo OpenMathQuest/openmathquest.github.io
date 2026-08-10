@@ -34,6 +34,7 @@
     "use strict";
 
     const TEST_SAVE_KEY = "math-quest:progress:v2";
+    const TEST_PROGRESS_WRITE_LOCK = `${TEST_SAVE_KEY}:exclusive-progress-write`;
     const BETA1_SAVE_KEY = "math-quest:v2";
     const LEGACY_SAVE_KEY = "math-quest:v1";
     const TEST_CHILD_NAME_KEY = "math-quest:child-name:v1";
@@ -385,7 +386,43 @@
       const appRoot = frame.contentDocument?.getElementById("app");
       return Boolean(appRoot && appRoot.inert === false && appRoot.childElementCount > 0);
     }
-    async function requireScenarioAppReady(frame, label = frame.title || "scenario") {
+    function scenarioFailClosedState(frame) {
+      const frameDocument = frame.contentDocument;
+      if (frameDocument?.querySelector("[data-progress-protection]")) return "progress-protection";
+      if (frameDocument?.querySelector("[data-save-recovery]")) return "save-recovery";
+      return null;
+    }
+    async function auditWriterLockSnapshot() {
+      const locks = navigator.locks;
+      if (!locks || typeof locks.query !== "function") {
+        throw new Error("The browser audit requires Web Locks query support to prove writer isolation.");
+      }
+      const snapshot = await locks.query();
+      const relevant = (records) => (Array.isArray(records) ? records : [])
+        .filter((record) => record?.name === TEST_PROGRESS_WRITE_LOCK)
+        .map((record) => ({ name: record.name, mode: record.mode || null }));
+      return {
+        held: relevant(snapshot?.held),
+        pending: relevant(snapshot?.pending),
+      };
+    }
+    async function requireAuditWriterIdle() {
+      let consecutiveIdleObservations = 0;
+      let lastSnapshot = { held: [], pending: [] };
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        lastSnapshot = await auditWriterLockSnapshot();
+        const idle = lastSnapshot.held.length === 0 && lastSnapshot.pending.length === 0;
+        consecutiveIdleObservations = idle ? consecutiveIdleObservations + 1 : 0;
+        if (consecutiveIdleObservations >= 2) return lastSnapshot;
+        await new Promise((resolve) => setTimeout(resolve, idle ? 0 : 20));
+      }
+      throw new Error(`The browser audit writer lease did not become idle: ${JSON.stringify(lastSnapshot)}`);
+    }
+    async function requireScenarioAppReady(
+      frame,
+      label = frame.title || "scenario",
+      { allowFailClosedScreen = false } = {},
+    ) {
       const ready = await waitUntil(() => scenarioAppReady(frame), 600, 20);
       if (!ready) {
         const frameDocument = frame.contentDocument;
@@ -401,6 +438,17 @@
           progressProtection: Boolean(frameDocument?.querySelector('[data-action="progress-reload"]')),
         };
         throw new Error(`${label} did not render a usable app within 12000 ms: ${JSON.stringify(diagnostic)}`);
+      }
+      const failClosedState = scenarioFailClosedState(frame);
+      if (failClosedState && !allowFailClosedScreen) {
+        const lockSnapshot = await auditWriterLockSnapshot();
+        const warning = normalized(
+          frame.contentDocument?.querySelector(".runtime-warning,[role=alert]")?.textContent,
+        );
+        throw new Error(
+          `${label} entered unexpected ${failClosedState}; `
+          + `writer locks ${JSON.stringify(lockSnapshot)}; warning ${JSON.stringify(warning)}.`,
+        );
       }
       return true;
     }
@@ -437,10 +485,17 @@
         iframe.contentWindow?.dispatchEvent(new iframe.contentWindow.Event("pagehide"));
         primaryWriterLeaseReleased = true;
       }
-      await navigator.locks.request(`${TEST_SAVE_KEY}:exclusive-progress-write`, { mode: "exclusive" }, () => true);
+      await navigator.locks.request(TEST_PROGRESS_WRITE_LOCK, { mode: "exclusive" }, () => true);
+      await requireAuditWriterIdle();
     }
 
-    async function scenarioFrameBytes(name, bytes, width = 1024, height = 900, { writerBarrier = true } = {}) {
+    async function scenarioFrameBytes(
+      name,
+      bytes,
+      width = 1024,
+      height = 900,
+      { writerBarrier = true, allowFailClosedScreen = false } = {},
+    ) {
       auditProgressMarker = `scenario:${name}:writer-barrier`;
       if (writerBarrier) await auditWriterBarrier();
       localStorage.setItem(TEST_SAVE_KEY, bytes);
@@ -467,7 +522,7 @@
       try {
         await waitFrame(frame);
         await pause();
-        await requireScenarioAppReady(frame);
+        await requireScenarioAppReady(frame, frame.title, { allowFailClosedScreen });
         auditProgressMarker = `scenario:${name}:ready`;
         return scenario;
       } catch (error) {
@@ -673,10 +728,15 @@
       if (!ready) {
         const app = scenario.doc?.getElementById("app");
         const renderedSkill = scenario.doc?.querySelector(".question")?.getAttribute("data-skill-id") || "none";
-        const renderedScreen = app?.querySelector("main,section")?.className || "empty";
+        const renderedScreen = scenarioFailClosedState(scenario.frame)
+          || (scenario.doc?.querySelector(".name-gate-form") ? "name-gate" : null)
+          || app?.querySelector("main,section")?.className
+          || "empty";
+        const lockSnapshot = await auditWriterLockSnapshot();
         throw new Error(
           `${label} did not reach expected skill ${skillId} within 7000 ms `
-          + `(rendered skill ${renderedSkill}; screen ${renderedScreen}).`,
+          + `(rendered skill ${renderedSkill}; screen ${renderedScreen}; `
+          + `writer locks ${JSON.stringify(lockSnapshot)}).`,
         );
       }
     }
@@ -2262,7 +2322,13 @@
   "schemaVersion": 999,
   "sentinel": "PRESERVE THESE EXACT BYTES"
 }`;
-          invalidScenario = await scenarioFrameBytes("invalid-live-save", invalidBytes, 1024, 900);
+          invalidScenario = await scenarioFrameBytes(
+            "invalid-live-save",
+            invalidBytes,
+            1024,
+            900,
+            { allowFailClosedScreen: true },
+          );
           openFrames.push(invalidScenario.frame);
           storageSafety.invalidBootPreservedBytes = localStorage.getItem(TEST_SAVE_KEY) === invalidBytes;
           storageSafety.invalidBootRecoveryVisible = Boolean(invalidScenario.doc.querySelector("[data-save-recovery]"))
@@ -2358,7 +2424,7 @@
             raceBaseline,
             1024,
             900,
-            { writerBarrier: false },
+            { writerBarrier: false, allowFailClosedScreen: true },
           );
           openFrames.push(competingWriterScenario.frame);
           lockedWriterScenario.doc.querySelector('[data-action="grown"]')?.click();
