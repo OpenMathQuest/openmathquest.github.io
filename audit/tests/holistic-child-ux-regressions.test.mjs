@@ -1443,6 +1443,22 @@ test("QA-036: placement and feedback browser fixtures protect the current lifecy
   assert.match(feedbackAudit, /attemptTruthMatches = attemptTruth === correct/u);
   assert.doesNotMatch(feedbackAudit, /liveText\.startsWith\(expectedStatus\)/u,
     "the obsolete duplicate-live-announcement oracle must not return");
+
+  const writerIsolationAudit = auditPage.match(
+    /function scenarioFailClosedState\(frame\)[\s\S]*?async function waitForScenarioNavigation/u,
+  )?.[0];
+  assert.ok(writerIsolationAudit,
+    "the browser audit must retain its synthetic-frame writer-isolation boundary");
+  assert.match(writerIsolationAudit, /typeof locks\.query !== "function"/u);
+  assert.match(writerIsolationAudit, /consecutiveIdleObservations >= 2/u,
+    "the handoff must observe an empty held/pending lock set across two task turns");
+  assert.match(writerIsolationAudit, /await requireAuditWriterIdle\(\)/u);
+  assert.match(writerIsolationAudit, /entered unexpected \$\{failClosedState\}/u,
+    "ordinary fixtures must reject progress-protection and save-recovery screens explicitly");
+  assert.match(auditPage, /allowFailClosedScreen: true/u,
+    "only the deliberate BR-20 fail-closed fixtures may opt into those screens");
+  assert.match(auditPage, /waitUntil\([\s\S]*?\}, 350, 20\);[\s\S]*?did not reach expected skill/u,
+    "the existing seven-second BR-21 bound must remain intact rather than becoming a retry mask");
 });
 
 test("QA-037: exact short-viewport packing keeps governed text and target floors intact", () => {

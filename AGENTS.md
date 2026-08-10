@@ -22,28 +22,60 @@ custom approach—do not implement the substantial version until approved.
 ## Owner interaction and identity-placeholder policy
 
 For work the project owner has already authorized, proceed autonomously through
-ordinary file, test, Git, and release operations. Do not repeatedly ask for an
-execution permission, reconfirm an approved scope, or present the same approval
-in slightly different forms. Reuse an existing authorization and batch related
-operations whenever the platform permits it.
+ordinary file, focused-test, Git, GitHub, and release operations. Do not
+repeatedly ask for execution permission, reconfirm an approved scope, or
+present the same approval in slightly different forms. Reuse the current
+authorization and batch related operations whenever the platform permits it.
+Where Codex requires sandbox escalation, submit one narrowly scoped request for
+automatic review; do not turn that platform boundary into another product-
+owner decision.
 
-The routine interactive authorization exception is GitHub authentication when
-the current credential is missing, expired, or lacks a required scope. Use the
-GitHub device-sign-in flow used by this repository: provide one fresh,
+An explicit instruction to publish a named Math Quest beta or stable release
+is end-to-end authority for that release scope. It covers the ordinary steps
+needed to implement and verify the release, create or update its branch, commit
+and push, open and maintain its pull request, monitor required checks, integrate
+with the repository-approved method, run the one frozen-candidate gauntlet,
+create a new annotated tag, publish the corresponding GitHub release, deploy
+Pages, and verify the public result. That release instruction is the meaningful
+human authorization boundary; do not insert command-by-command approval gates.
+
+Release authorization continues across a **direct successor**: a descendant
+revision on the same named release line whose changes are limited to correcting
+findings, adding or repairing the checks that guard those corrections,
+regenerating derived manifests or evidence, and satisfying the already-selected
+release gates. It does not cover a different repository or organization, a new
+version or destination, changed visibility, a package-registry publication,
+unrelated product scope, force-push or history rewrite, or replacing, moving,
+or deleting an existing tag, release, or asset. Those materially different or
+destructive outcomes require a new explicit owner decision. A pause or stop
+instruction remains controlling until the owner explicitly resumes the work.
+
+GitHub authentication is separate from task authorization. Diagnose it with
+`gh auth status` and use the existing GitHub CLI credential from the operating-
+system keyring and HTTPS credential helper when valid. The routine interactive
+exception is a missing, expired, insufficiently scoped, or organization-blocked
+GitHub credential. Use the GitHub device-sign-in flow: provide one fresh,
 mobile-friendly `https://github.com/login/device` link and its one-time code,
-then verify the resulting scope before continuing. Do not generate repeated
-codes while a current code remains valid.
+then verify access before continuing. Do not generate repeated codes while a
+current code remains valid. Never display, request, copy, log, or invoke
+`gh auth token`, and never expose a PAT, OAuth token, cookie, credential-manager
+content, password, or private key.
 
 Never invent a person's name, email address, street address, password, token,
 or other identity-like value as a placeholder, fixture, commit identity, or
-example. Use clearly non-personal structural tokens that do not resemble real
-identity data, and fail closed if an external tool genuinely requires identity
-information that the repository does not already provide.
+example. In particular, never request or fabricate a "neutral" or fake email
+address. Use an existing repository-approved real role identity or a verified
+GitHub-provided noreply identity when one is already available. If an external
+operation genuinely requires missing identity information, fail closed and
+report the single blocker instead of fabricating it.
 
-This standing preference does not authorize an agent to guess a material
-product, safety, privacy, legal, or destructive-scope decision that higher
-instructions require the owner to make. In that exceptional case, explain the
-single concrete decision needed once; otherwise continue without asking.
+This standing authorization does not permit bypassing branch protection,
+required reviews, rulesets, environment gates, SSO, repository policy, or the
+focused-versus-frozen-candidate testing cadence below. It also does not permit
+guessing a material product, child-safety, privacy, legal, or destructive-scope
+decision. If such a genuinely new decision cannot be resolved from existing
+authority, identify it once and stop only the affected operation; otherwise
+continue without asking.
 
 ## Agent collaboration and bounded review
 
