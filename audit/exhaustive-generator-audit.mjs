@@ -1,5 +1,6 @@
 import { loadShippedEngine } from "./lib/engine-loader.mjs";
 import { canonicalizeJson, loadManifest } from "./lib/curriculum-manifest.mjs";
+import { correctStrategyBuildResponse } from "./tests/strategy-build-oracle.mjs";
 
 const { engine, sha256 } = await loadShippedEngine(new URL("../index.html", import.meta.url));
 const manifestArtifact = await loadManifest(new URL("../curriculum/math-quest-manifest-v1.json", import.meta.url));
@@ -151,6 +152,16 @@ function correctStructuredState(question) {
             : "build";
       state.value = answer;
       break;
+    case "STRATEGY_BUILD": {
+      const response = correctStrategyBuildResponse(
+        question,
+        question.skillId === "MQ-095" ? "mental" : null,
+      );
+      state.strategy = response.strategy;
+      state.work = [...response.work];
+      state.value = response.value;
+      break;
+    }
     case "COIN_BUILD": {
       const coinCount = Number(answer);
       const coinValue = coinCount > 0 ? Number(p.amount) / coinCount : Number.NaN;
@@ -170,6 +181,7 @@ function correctStructuredState(question) {
       const pairs = Math.min(Number(p.leftCount ?? p.count), Number(p.rightCount ?? p.count));
       state.links = Array.from({ length: pairs }, (_, index) => [`a${index}`, `b${index}`]);
       state.pending = null;
+      if (Object.hasOwn(state, "relation")) state.relation = String(question.answer.value);
       break;
     }
     case "SORT_BINS": {
@@ -244,7 +256,9 @@ function correctStructuredState(question) {
     }
     case "FACT_FAMILY": {
       const a = Number(p.a), b = Number(p.b), whole = Number(p.whole);
-      state.selected = [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
+      state.selected = p.equationFamily === "multiply-divide"
+        ? [`${a}\u00d7${b}=${whole}`, `${b}\u00d7${a}=${whole}`, `${whole}\u00f7${a}=${b}`, `${whole}\u00f7${b}=${a}`]
+        : [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}\u2212${a}=${b}`, `${whole}\u2212${b}=${a}`];
       break;
     }
     case "GRAPH_BUILD": {
@@ -579,14 +593,17 @@ for (const skill of engine.SKILLS) {
 
           if (question.inputClass === "SELECTION") {
             const expectedCount = Number(question.optionCount);
-            if (!Number.isInteger(expectedCount) || expectedCount < 2 || expectedCount > 4) issue(`${skill.skillId}: invalid selection optionCount ${question.optionCount}`);
+            const approvedFiveTokenRecognition = question.skillId === "MQ-048"
+              && question.semanticPromptStringId === "question.coinValue"
+              && expectedCount === 5;
+            if (!Number.isInteger(expectedCount) || expectedCount < 2 || expectedCount > 4 && !approvedFiveTokenRecognition) issue(`${skill.skillId}: invalid selection optionCount ${question.optionCount}`);
             if (question.options.length !== expectedCount) issue(`${skill.skillId}: selection exposes ${question.options.length} options but declares ${expectedCount}`);
             const positionGroupKey = JSON.stringify([question.taskType, question.semanticPromptStringId, expectedCount]);
             const positionGroup = correctPositionGroups.get(positionGroupKey) ?? {
               selectionArity: expectedCount,
               taskType: question.taskType,
               semanticPromptStringId: question.semanticPromptStringId,
-              correctPositions: [0, 0, 0, 0],
+              correctPositions: Array.from({ length: expectedCount }, () => 0),
             };
             correctPositionGroups.set(positionGroupKey, positionGroup);
             const correctPositions = positionGroup.correctPositions;
