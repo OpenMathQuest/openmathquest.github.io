@@ -4,7 +4,7 @@ const RELEASE = "1.0.0-beta.4";
 const BUILD_ID = "math-quest-pwa-v1.0.0-beta.4";
 const CACHE_NAME = "math-quest-static-v1.0.0-beta.4";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "e665e1e8a832bf0f2870f164900232614ddc35df7f4d2e6b20a5ee4d0abc1b95";
+const RELEASE_MANIFEST_SHA256 = "5bac5f1816be8f24d0fbb9584f36905f2a63901b3541460944ec9d2ec4867da9";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 const STAGING_CACHE_NAME = `${CACHE_STORAGE_NAME}-staging`;
 const KNOWN_OBSOLETE_CACHES = Object.freeze([
@@ -44,6 +44,10 @@ const KNOWN_OBSOLETE_CACHES = Object.freeze([
   "math-quest-static-v1.0.0-beta.4-3c21b62994b9477b7751afd969b9cbf4274013cfc9ef88bbc6680cd39f8ec7a1-staging",
   "math-quest-static-v1.0.0-beta.4-4fcc5f6dd37eac8144cc62e9ad9928197378b8961eb68a510e30899b6c297adf",
   "math-quest-static-v1.0.0-beta.4-4fcc5f6dd37eac8144cc62e9ad9928197378b8961eb68a510e30899b6c297adf-staging",
+  "math-quest-static-v1.0.0-beta.4-e665e1e8a832bf0f2870f164900232614ddc35df7f4d2e6b20a5ee4d0abc1b95",
+  "math-quest-static-v1.0.0-beta.4-e665e1e8a832bf0f2870f164900232614ddc35df7f4d2e6b20a5ee4d0abc1b95-staging",
+  "math-quest-static-v1.0.0-beta.4-3c5a3fa08e11431804154d1171b5270ee9205b67bcb56ac0abf98973cee24cc5",
+  "math-quest-static-v1.0.0-beta.4-3c5a3fa08e11431804154d1171b5270ee9205b67bcb56ac0abf98973cee24cc5-staging",
 ]);
 const APP_ENTRY_PATHS = new Set([
   new URL("./", self.registration.scope).pathname,

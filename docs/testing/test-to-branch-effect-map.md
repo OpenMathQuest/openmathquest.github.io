@@ -451,6 +451,7 @@ ending.
 | `QA-033` | The browser placement oracle completes every adaptive level-boundary traversal with only valid child responses. Comparison pair-link fixtures include the visible `more`/`fewer`/`same` decision; strategy-bearing classification constructions preserve their textual result; and multiplication/division fact-family fixtures use the four governed multiplication/division equations. This replaces stale fixture assumptions from before those task contracts changed and prevents an obsolete oracle from aborting all later rendered-browser checks. |
 | `QA-034` | A multiplication/division fact-family question renders the exact four governed multiplication and division equations plus only same-family distractors, labels the source as product and factors, and the real engine grades the rendered four-equation response as correct. This permanently detects the defect where MQ-063 displayed addition/subtraction equations that its grader could never accept. |
 | `QA-035` | Across both tiers and ordinary/re-teach generation, MQ-031 remains a valid `NUMBER_PAD` construction and grades its exact numeral correctly. The browser supplement is bound to that generated family, preventing an obsolete `PICTURE_CHOICE` label from falsely failing every otherwise valid layout row. |
+| `QA-038` | Every `STRATEGY_BUILD` response begins with its answer-free source model before the method controls. This protects the number-bond meaning of MQ-040 and the visible parity expression of MQ-097; the rendered-browser model and viewport matrices independently require the real derived model and first-screen controls. |
 | Fresh defaults | Every newly created state keeps automatic speech and bundled sound effects off until a grown-up deliberately enables them. |
 
 ### Beta 3 and Beta 4 affected-check validity classification
@@ -471,7 +472,16 @@ ending.
 - **Harness defects corrected:** `Browser.close` could exceed the intended
   wall-clock budget, and a count-shaped browser payload could be trusted
   without an exact closed result oracle. Bounded-close and payload-forgery
-  regressions now protect both effects.
+  regressions now protect both effects. The exhaustive `PAIR_LINK` fixture now
+  records the required visible `more` / `fewer` / `same` relation before asking
+  the real engine to complete, serialize, and grade each comparison; omitting
+  that child decision can no longer misreport every MQ-003 question as a
+  generator failure. Its `STRATEGY_BUILD` fixture uses the independent
+  six-skill oracle to construct governed method, intermediate work, and result
+  bytes before self-grading, rather than trusting hidden question answers. The
+  same exhaustive oracle recognizes the approved five-token MQ-048 selection
+  boundary, allocates one bias bucket per rendered option, and builds MQ-063
+  multiplication/division facts instead of an obsolete addition family.
 - **Environment or approval gates:** no external, hosted, privacy, or
   physical-device result is converted into a pass by these corrections. Those
   gates remain pending until the exact frozen Beta 4 candidate supplies the

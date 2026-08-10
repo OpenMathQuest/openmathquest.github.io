@@ -1453,6 +1453,38 @@ test("QA-037: exact short-viewport packing keeps governed text and target floors
   assert.match(styleSource, /data-skill-id="MQ-007"\] \.sort-task\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) auto/u);
   assert.match(styleSource, /data-skill-id="MQ-105"\] \.area-outline-svg\{max-height:148px\}/u);
   assert.match(styleSource, /\.lab-question:is\(\[data-skill-id="MQ-007"\],\[data-skill-id="MQ-105"\],\[data-skill-id="MQ-122"\]\):has\(>\.model\)\{display:grid;grid-template-columns:/u);
+  assert.match(styleSource, /\.lab-question:has\(>\.model\) \.strategy-build-task>\.math-model\{display:none\}/u);
+  assert.match(styleSource, /data-skill-id="MQ-097"\] \.strategy-build-task\{grid-template-columns:minmax\(0,2fr\) minmax\(140px,\.75fr\)/u);
   assert.match(styleSource, /\.playground-panel button,\.playground-shell \.topbar button\{min-width:65px;min-height:65px\}/u);
   assert.match(styleSource, /\.play-shell :is\(button,input,select,textarea\)[\s\S]*?min-height:45px/u);
+});
+
+test("QA-038: strategy construction owns and renders its answer-free source model", () => {
+  const harness = evaluateHarness({
+    prelude: `
+      function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
+      function s(id,slots={}){return id+Object.values(slots).join("");}
+      function responseAction(mode,action,extra=""){return 'data-control-mode="'+mode+'" data-response-action="'+action+'" '+extra;}
+      function strategyActionLabel(strategy){return String(strategy);}
+      function questionModelHtml(question){return '<div class="math-model" data-model-family="'+escape(question.modelDescriptor.type)+'" data-model-derived="true"></div>';}
+    `,
+    functions: ["strategyBuildConstructionHtml"],
+    exposed: "strategyBuildConstructionHtml",
+    context: { E },
+  });
+
+  for (const question of [
+    makeQuestion("MQ-040", { ordinal: 1, tier: "HARD/TARGET" }),
+    makeQuestion("MQ-097", { ordinal: 2, tier: "HARD/TARGET" }),
+  ]) {
+    assert.equal(question.inputMethod, "STRATEGY_BUILD");
+    const rendered = String(harness.strategyBuildConstructionHtml(question, "lab", {
+      responseState: E.createResponseState(question),
+    }));
+    assert.match(rendered, new RegExp(`data-model-family="${question.modelDescriptor.type}"`, "u"),
+      `${question.skillId} must show the visual source that gives meaning to its strategy work`);
+    assert.match(rendered, /data-response-kind="STRATEGY_BUILD"/u);
+    assert.ok(rendered.indexOf("data-model-family=") < rendered.indexOf("data-response-action=\"strategy-select\""),
+      "the source model must precede the strategy controls in reading order");
+  }
 });
