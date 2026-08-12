@@ -459,12 +459,16 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
-  assert.match(runnerText, /Import-Certificate -FilePath \$path -CertStoreLocation 'Cert:\\\\CurrentUser\\\\Root'/u);
+  assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::CurrentUser\)/u);
+  assert.match(runnerText, /\$store\.Add\(\$certificate\)/u);
+  assert.match(runnerText, /\$store\.Remove\(\$certificate\)/u);
   assert.match(runnerText, /canonicalCertificateThumbprint\(certificateThumbprint\)/u);
   assert.match(runnerText, /persistCleanupIdentifiers\(workRoot, \{ processIds: \[caddy\.child\.pid\], certificateThumbprint, originPort \}\);\s*assert\.equal\(Number\(await run\("powershell\.exe"/u);
   assert.match(wrapperText, /certificateCleanup\.WaitForExit\(30000\)/u);
   assert.match(wrapperText, /certificateCleanup\.Kill\(\)/u);
   assert.match(wrapperText, /Fallback certificate removal did not remove the exact canary root/u);
+  assert.match(wrapperText, /X509Store\]::new\('Root', \[Security\.Cryptography\.X509Certificates\.StoreLocation\]::CurrentUser\)/u);
+  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /Import-Certificate/u);
   assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /certutil\.exe/u);
   assert.doesNotMatch(runnerText, /\$args\[0\]/u);
 });
