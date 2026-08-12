@@ -32,6 +32,7 @@ import {
   sha256Bytes,
   snapshotSha256,
   validateCanaryBrowserArguments,
+  waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
 const execFile = promisify(execFileCallback);
@@ -404,12 +405,21 @@ async function portAccepting(port) {
 }
 
 async function assertLoopbackListener(port, pid) {
-  const script = "$rows=@(Get-NetTCPConnection -State Listen -LocalPort ([int]$args[0]) -ErrorAction Stop | Select-Object LocalAddress,OwningProcess);$rows|ConvertTo-Json -Compress";
-  const raw = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, String(port)]);
-  const value = JSON.parse(raw);
-  const rows = Array.isArray(value) ? value : [value];
-  assert.ok(rows.length >= 1);
-  assert.ok(rows.every((row) => row.LocalAddress === "127.0.0.1" && Number(row.OwningProcess) === pid));
+  const script = [
+    "$port=[int]$args[0]",
+    "try { $rows=@(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction Stop) }",
+    "catch { if ($_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*') { $rows=@() } else { throw } }",
+    "$selected=@($rows | Select-Object LocalAddress,OwningProcess)",
+    "ConvertTo-Json -InputObject $selected -Compress",
+  ].join(";");
+  await waitForExactLoopbackListener({
+    expectedPid: pid,
+    probe: async () => {
+      const raw = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, String(port)]);
+      const value = JSON.parse(raw);
+      return Array.isArray(value) ? value : [value];
+    },
+  });
 }
 
 async function inspectTrustedTls(port) {
