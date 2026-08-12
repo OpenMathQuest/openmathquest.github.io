@@ -574,13 +574,15 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
   issueIf(issues, !validSha64OrNull(value.teardown?.remainingProfileProcessSetSha256, failed), "remaining profile process-set SHA-256 is invalid");
 
   const allChecksPass = Array.isArray(value.checks) && value.checks.every((check) => check.status === "PASS");
-  const teardownPass = value.teardown?.status === "PASS"
+  const cleanupPass = value.teardown?.status === "PASS"
     && ["browserClosed", "caddyStopped", "backendStopped", "certificateRemoved", "profileRemoved", "temporaryFilesRemoved", "portClosed"].every((key) => value.teardown?.[key] === true)
     && SHA40.test(String(value.teardown?.certificateThumbprint || ""))
     && value.teardown?.remainingMatchingCertificateCount === 0
-    && value.teardown?.observedProfileProcessCount >= 1
     && value.teardown?.remainingProfileProcessCount === 0
     && value.teardown?.remainingProfileProcessSetSha256 === EMPTY_PROFILE_PROCESS_SET_SHA256;
+  const teardownPass = cleanupPass
+    && value.teardown?.observedProfileProcessCount >= 1;
+  issueIf(issues, value.teardown?.status === "PASS" && !cleanupPass, "PASS teardown evidence requires every cleanup and absence proof");
   if (value.reconciliationState === "RECONCILED") {
     issueIf(issues, !allChecksPass, "RECONCILED evidence requires every canary check to pass");
     issueIf(issues, !teardownPass, "RECONCILED evidence requires complete teardown");
@@ -622,7 +624,7 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
     issueIf(issues, allChecksPass, "FAILED evidence must identify at least one failed or unrun check");
   }
   const teardownCheck = Array.isArray(value.checks) ? value.checks.at(-1) : null;
-  issueIf(issues, teardownCheck?.status !== (teardownPass ? "PASS" : "FAIL"), "TEARDOWN_COMPLETE must mirror the teardown verdict");
+  issueIf(issues, teardownCheck?.status !== (value.teardown?.status === "PASS" ? "PASS" : "FAIL"), "TEARDOWN_COMPLETE must mirror the teardown verdict");
 
   if (expected.candidateSha !== undefined && value.candidateSha !== expected.candidateSha) issues.push("candidateSha does not match the requested candidate");
   if (expected.runnerImageOS !== undefined && value.runner?.imageOS !== expected.runnerImageOS) issues.push("runner imageOS does not match the live runner");

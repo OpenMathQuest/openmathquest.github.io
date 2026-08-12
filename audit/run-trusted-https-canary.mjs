@@ -411,9 +411,9 @@ const IMPORT_DISPOSABLE_ROOT_SCRIPT = [
   "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
   "$certificate=[Security.Cryptography.X509Certificates.X509Certificate2]::new($path)",
   "if($certificate.Thumbprint -cne $thumb){throw 'Imported root thumbprint did not match the reviewed Caddy root.'}",
-  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)",
   "try{$store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);$store.Add($certificate)}finally{$store.Close();$certificate.Dispose()}",
-  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)",
   "try{$verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly);$count=@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false)).Count}finally{$verify.Close()}",
   "if($count -ne 1){throw 'Disposable Caddy root was not installed exactly once.'};$count",
 ].join("\n");
@@ -421,9 +421,9 @@ const IMPORT_DISPOSABLE_ROOT_SCRIPT = [
 const REMOVE_DISPOSABLE_ROOT_SCRIPT = [
   "$ErrorActionPreference='Stop'",
   "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
-  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)",
   "try{$store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);$matches=@($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false));foreach($certificate in $matches){$store.Remove($certificate)}}finally{$store.Close()}",
-  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)",
   "try{$verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly);@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false)).Count}finally{$verify.Close()}",
 ].join("\n");
 
@@ -1004,6 +1004,7 @@ async function main() {
     edgeSha256 = await hashFile(edgePath);
     const playwrightPackage = JSON.parse(await readFile(path.join(process.cwd(), "node_modules", "playwright-core", "package.json"), "utf8"));
     assert.equal(playwrightPackage.version, PLAYWRIGHT_CORE_VERSION);
+    assert.equal(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent());if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'Hosted canary requires the disposable Windows administrator boundary.'};'ADMINISTRATOR'"], { timeoutMs: 15_000 }), "ADMINISTRATOR");
 
     backendState = snapshotServerState(snapshots.beta1);
     backend = await startBackend(backendState);

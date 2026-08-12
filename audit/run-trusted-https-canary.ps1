@@ -116,13 +116,13 @@ finally {
         $certificateCleanupScript = @'
 $ErrorActionPreference = 'Stop'
 $thumb = $env:MQ_CANARY_CERT_THUMBPRINT
-$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
 try {
   $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
   foreach ($certificate in @($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumb, $false))) { $store.Remove($certificate) }
 }
 finally { $store.Close() }
-$verify = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+$verify = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
 try {
   $verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
   if (@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumb, $false)).Count -ne 0) { exit 1 }
@@ -143,7 +143,7 @@ finally { $verify.Close() }
         finally {
           Remove-Item Env:MQ_CANARY_CERT_THUMBPRINT -ErrorAction SilentlyContinue
         }
-        $verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+        $verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
         try {
           $verificationStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
           $remaining = @($verificationStore.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false)).Count
