@@ -12,6 +12,7 @@ import {
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
+  LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
   PLAYWRIGHT_CORE_VERSION,
   TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
@@ -26,6 +27,7 @@ import {
   canonicalCanaryEvidence,
   canaryWorkspaceRemovalAllowed,
   canaryBrowserArguments,
+  loopbackListenerProbeInvocation,
   profileProcessSetSha256,
   runCanaryTeardown,
   safeRuntimePath,
@@ -405,17 +407,11 @@ async function portAccepting(port) {
 }
 
 async function assertLoopbackListener(port, pid) {
-  const script = [
-    "$port=[int]$args[0]",
-    "try { $rows=@(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction Stop) }",
-    "catch { if ($_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*') { $rows=@() } else { throw } }",
-    "$selected=@($rows | Select-Object LocalAddress,OwningProcess)",
-    "ConvertTo-Json -InputObject $selected -Compress",
-  ].join(";");
+  const invocation = loopbackListenerProbeInvocation(port);
   await waitForExactLoopbackListener({
     expectedPid: pid,
     probe: async () => {
-      const raw = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, String(port)]);
+      const raw = await run(invocation.command, invocation.args, invocation.options);
       const value = JSON.parse(raw);
       return Array.isArray(value) ? value : [value];
     },

@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
+import { execFile as execFileCallback } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
+  LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
   PLAYWRIGHT_CORE_VERSION,
   TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
@@ -22,6 +25,7 @@ import {
   canaryBrowserArguments,
   canaryWorkspaceRemovalAllowed,
   canonicalCanaryEvidence,
+  loopbackListenerProbeInvocation,
   parseTrustedHttpsCanaryEvidence,
   profileProcessSetSha256,
   runCanaryTeardown,
@@ -38,6 +42,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
 const sha = (character) => character.repeat(64);
 const candidateSha = "1".repeat(40);
+const execFile = promisify(execFileCallback);
 
 function validEvidence() {
   return {
@@ -315,8 +320,40 @@ test("hosted Windows listener observation tolerates only transient no-match resu
   }
 
   const runnerText = await read("audit/run-trusted-https-canary.mjs");
-  assert.match(runnerText, /CmdletizationQuery_NotFound/u);
+  assert.match(LOOPBACK_LISTENER_QUERY_SCRIPT, /CmdletizationQuery_NotFound/u);
   assert.match(runnerText, /waitForExactLoopbackListener/u);
+
+  const parserScript = [
+    "$tokens=$null",
+    "$errors=$null",
+    "[Management.Automation.Language.Parser]::ParseInput($env:MQ_LISTENER_QUERY_SCRIPT,[ref]$tokens,[ref]$errors) | Out-Null",
+    "if ($errors.Count -ne 0) { $errors | ForEach-Object { [Console]::Error.WriteLine($_.Message) }; exit 1 }",
+  ].join("\n");
+  await execFile("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    parserScript,
+  ], {
+    windowsHide: true,
+    env: { ...process.env, MQ_LISTENER_QUERY_SCRIPT: LOOPBACK_LISTENER_QUERY_SCRIPT },
+  });
+
+  const invocation = loopbackListenerProbeInvocation(52_409, process.env);
+  assert.equal(invocation.command, "powershell.exe");
+  assert.deepEqual(invocation.args, ["-NoProfile", "-NonInteractive", "-Command", LOOPBACK_LISTENER_QUERY_SCRIPT]);
+  assert.equal(invocation.options.env.MQ_CANARY_LISTENER_PORT, "52409");
+  const stub = [
+    "function Get-NetTCPConnection {",
+    "  param($State,$LocalPort,$ErrorAction)",
+    "  [pscustomobject]@{ LocalAddress='127.0.0.1'; OwningProcess=[int]$LocalPort }",
+    "}",
+  ].join("\n");
+  const { stdout } = await execFile(invocation.command, [
+    ...invocation.args.slice(0, -1),
+    `${stub}\n${invocation.args.at(-1)}`,
+  ], { windowsHide: true, env: invocation.options.env });
+  assert.deepEqual(JSON.parse(stdout), [{ LocalAddress: "127.0.0.1", OwningProcess: 52_409 }]);
 });
 
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
