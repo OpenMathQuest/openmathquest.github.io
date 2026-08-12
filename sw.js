@@ -1,56 +1,12 @@
 "use strict";
 
-const RELEASE = "1.0.0-beta.4";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.4";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.4";
+const RELEASE = "1.0.0-beta.5";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.5";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.5";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "32e091055452a6d9e000bd48096ca53a8207300bc25f19198de8aabafc1c7280";
+const RELEASE_MANIFEST_SHA256 = "38d353d846a7b6994b71af202d1e60d7d49516b69d995331e285e4545694ecad";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 const STAGING_CACHE_NAME = `${CACHE_STORAGE_NAME}-staging`;
-const KNOWN_OBSOLETE_CACHES = Object.freeze([
-  "math-quest-static-v1.0.0-beta.4",
-  "math-quest-static-v1.0.0-beta.1",
-  "math-quest-static-v1.0.0-beta.2",
-  "math-quest-static-v1.0.0-beta.3",
-  "math-quest-static-v1.0.0-beta.2-305f13f90c33f234211bd6b9d261f02f8ca796a262c26db8dad1e953a8a64606",
-  "math-quest-static-v1.0.0-beta.2-305f13f90c33f234211bd6b9d261f02f8ca796a262c26db8dad1e953a8a64606-staging",
-  "math-quest-static-v1.0.0-beta.2-19aae561602b303457f0af909bcb8773be3fb72e48d2bc4a78fb1e4ce30a9f8d",
-  "math-quest-static-v1.0.0-beta.2-19aae561602b303457f0af909bcb8773be3fb72e48d2bc4a78fb1e4ce30a9f8d-staging",
-  "math-quest-static-v1.0.0-beta.2-d98c17994a79cafc0990bbc431ad5cf2b873b77a6b9e26ca9dae93952d567e3e",
-  "math-quest-static-v1.0.0-beta.2-d98c17994a79cafc0990bbc431ad5cf2b873b77a6b9e26ca9dae93952d567e3e-staging",
-  "math-quest-static-v1.0.0-beta.3-5dfe794f25ac4c48e23b6c6419bc01ee4a4bf3401eb54d89992c0f3764161e12",
-  "math-quest-static-v1.0.0-beta.3-5dfe794f25ac4c48e23b6c6419bc01ee4a4bf3401eb54d89992c0f3764161e12-staging",
-  "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7",
-  "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7-staging",
-  "math-quest-static-v1.0.0-beta.4-de4561565ff353337729ad9f1978630295fce6087fb2342d98f7c20c169d09a1",
-  "math-quest-static-v1.0.0-beta.4-de4561565ff353337729ad9f1978630295fce6087fb2342d98f7c20c169d09a1-staging",
-  "math-quest-static-v1.0.0-beta.4-3a96e21fca5c60ba6071b42ceb2f94c7c4930e116e6fc31405b74ff95cbf87b5",
-  "math-quest-static-v1.0.0-beta.4-3a96e21fca5c60ba6071b42ceb2f94c7c4930e116e6fc31405b74ff95cbf87b5-staging",
-  "math-quest-static-v1.0.0-beta.4-206bb1fc9bb5ca23745648a1542d1cb9b0f73a8d2fca12291bbb1b20b8b8cdcb",
-  "math-quest-static-v1.0.0-beta.4-206bb1fc9bb5ca23745648a1542d1cb9b0f73a8d2fca12291bbb1b20b8b8cdcb-staging",
-  "math-quest-static-v1.0.0-beta.4-1a133c97504274fa4395cbf0ff4eb97dc1935f2650eef846bbc50e1ed1059ceb",
-  "math-quest-static-v1.0.0-beta.4-1a133c97504274fa4395cbf0ff4eb97dc1935f2650eef846bbc50e1ed1059ceb-staging",
-  "math-quest-static-v1.0.0-beta.4-7c5c684ea388e7af0780fd34d959b1d7d282049a6ddaac330e52393553565fa6",
-  "math-quest-static-v1.0.0-beta.4-7c5c684ea388e7af0780fd34d959b1d7d282049a6ddaac330e52393553565fa6-staging",
-  "math-quest-static-v1.0.0-beta.4-0fd0cf9a463ccc2bbefd0e9b47c947e04ff61dfc5e71e1b54182dff7fb30dcef",
-  "math-quest-static-v1.0.0-beta.4-0fd0cf9a463ccc2bbefd0e9b47c947e04ff61dfc5e71e1b54182dff7fb30dcef-staging",
-  "math-quest-static-v1.0.0-beta.4-94a093bfb885aceb4d66ffbdec799a4c8afc6c2f403f4baeeef7d0fa0c6c2c91",
-  "math-quest-static-v1.0.0-beta.4-94a093bfb885aceb4d66ffbdec799a4c8afc6c2f403f4baeeef7d0fa0c6c2c91-staging",
-  "math-quest-static-v1.0.0-beta.4-a3ae9d679df9a96c47fa15689fe7a7729f511cf344720fab75be32f46f1cb8d8",
-  "math-quest-static-v1.0.0-beta.4-a3ae9d679df9a96c47fa15689fe7a7729f511cf344720fab75be32f46f1cb8d8-staging",
-  "math-quest-static-v1.0.0-beta.4-96ca61dddd312b362a9fc9006537a1a4fece1d49802a1e0860229dc14a41dff7",
-  "math-quest-static-v1.0.0-beta.4-96ca61dddd312b362a9fc9006537a1a4fece1d49802a1e0860229dc14a41dff7-staging",
-  "math-quest-static-v1.0.0-beta.4-3c21b62994b9477b7751afd969b9cbf4274013cfc9ef88bbc6680cd39f8ec7a1",
-  "math-quest-static-v1.0.0-beta.4-3c21b62994b9477b7751afd969b9cbf4274013cfc9ef88bbc6680cd39f8ec7a1-staging",
-  "math-quest-static-v1.0.0-beta.4-4fcc5f6dd37eac8144cc62e9ad9928197378b8961eb68a510e30899b6c297adf",
-  "math-quest-static-v1.0.0-beta.4-4fcc5f6dd37eac8144cc62e9ad9928197378b8961eb68a510e30899b6c297adf-staging",
-  "math-quest-static-v1.0.0-beta.4-e665e1e8a832bf0f2870f164900232614ddc35df7f4d2e6b20a5ee4d0abc1b95",
-  "math-quest-static-v1.0.0-beta.4-e665e1e8a832bf0f2870f164900232614ddc35df7f4d2e6b20a5ee4d0abc1b95-staging",
-  "math-quest-static-v1.0.0-beta.4-3c5a3fa08e11431804154d1171b5270ee9205b67bcb56ac0abf98973cee24cc5",
-  "math-quest-static-v1.0.0-beta.4-3c5a3fa08e11431804154d1171b5270ee9205b67bcb56ac0abf98973cee24cc5-staging",
-  "math-quest-static-v1.0.0-beta.4-5bac5f1816be8f24d0fbb9584f36905f2a63901b3541460944ec9d2ec4867da9",
-  "math-quest-static-v1.0.0-beta.4-5bac5f1816be8f24d0fbb9584f36905f2a63901b3541460944ec9d2ec4867da9-staging",
-]);
 const APP_ENTRY_PATHS = new Set([
   new URL("./", self.registration.scope).pathname,
   new URL("./index.html", self.registration.scope).pathname,
@@ -445,13 +401,13 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     await requireExactInstalledShell();
-    const names = await caches.keys();
-    await self.clients.claim();
     try {
-      await Promise.all(KNOWN_OBSOLETE_CACHES.filter((name) => names.includes(name)).map((name) => caches.delete(name)));
+      const names = await caches.keys();
       if (names.includes(STAGING_CACHE_NAME)) await caches.delete(STAGING_CACHE_NAME);
     } catch {
-      // Cache cleanup is best effort and never touches localStorage progress.
+      // Staging cleanup is best effort and never touches localStorage progress.
+      // Prior release caches remain available to older open tabs until those
+      // tabs are deliberately reloaded or closed by their grown-up.
     }
   })());
 });

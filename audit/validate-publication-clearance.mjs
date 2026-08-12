@@ -16,7 +16,7 @@ import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   parseReviewedBrowserRunnerEvidence,
 } from "./lib/browser-runner-evidence.mjs";
-import { observeDirectEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const payloadSha256 = String(process.env.MQ_PUBLIC_PAYLOAD_SHA256 || "");
@@ -41,9 +41,9 @@ try {
   }
   const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
     ? { valid: true, issues: [] }
-    : await observeDirectEvidenceSuccessor(root, parsed.qualificationCommitSha);
+    : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
   if (!evidenceSuccessor.valid) {
-    throw new Error(`Direct release-evidence successor is invalid: ${evidenceSuccessor.issues.join("; ")}`);
+    throw new Error(`Runtime-equivalent release-evidence successor is invalid: ${evidenceSuccessor.issues.join("; ")}`);
   }
   const expected = {
     engineSha256: engine.sha256,

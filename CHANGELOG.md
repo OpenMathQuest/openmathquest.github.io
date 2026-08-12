@@ -2,6 +2,29 @@
 
 All notable public changes to Math Quest are recorded here.
 
+## 1.0.0-beta.5 — 2026-08-12
+
+- Added a small, direct Playwright Test journey suite that operates the shipped
+  game with real browser click, touch-profile tap, and keyboard input. It checks
+  actionability, focus, feedback, persistence isolation, page errors, console
+  errors, and unexpected requests without replacing the deeper engine or
+  browser audits.
+- Added the Playwright Deep UX Census framework: a deterministic 72,576-question
+  inventory, closed risk-selected scenarios, six Edge viewport/touch profiles,
+  four rendered states, and mandatory anomaly-only visual, ARIA, and geometry
+  evidence. Complete census runs occur on even-numbered betas; Beta 5 includes
+  the framework and its non-certifying 100-cell benchmark only.
+- Expanded the grown-up Parent Test Lab with explicit representation, world,
+  and sample controls while keeping every test isolated from child progress.
+- Added a first-party favicon and tightened cold-start focus so a newly opened
+  Home screen or question begins at its intended accessible control.
+- Kept existing tabs stable during service-worker updates. Math Quest no longer
+  probes, classifies, or forcibly navigates silent or suspended tabs; a grown-up
+  deliberately reloads or closes and reopens an older tab.
+- Restored the mandatory trusted-HTTPS canary for Beta 5 after Beta 4's
+  release-scoped skip, while retaining the prerelease host-qualification
+  deferral and clearly reporting its residual provider-metadata risk.
+
 ## 1.0.0-beta.4 — 2026-08-08
 
 - Moved the grown-up **Check for updates** control to Home, with live

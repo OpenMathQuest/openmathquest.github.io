@@ -263,7 +263,7 @@ function Get-LauncherAuditExpectation {
     $canonicalPayload = ($records -join "`n") + "`n"
     $servedPayloadSha256 = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($canonicalPayload))
     $identity = 'math-quest-local-server:v2'
-    $release = '1.0.0-beta.4'
+    $release = '1.0.0-beta.5'
     $port = 8771
     $body = "{`"schemaVersion`":1,`"identity`":`"$identity`",`"release`":`"$release`",`"port`":$port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$servedPayloadSha256`"}"
 
@@ -378,6 +378,14 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The changed-path development-suite planner and watcher batching tests failed.'
     }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-focused-contract.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The closed direct Playwright journey, privacy, and toolchain contract tests failed.'
+    }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-deep-ux-census.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The alternating-beta Playwright Deep UX Census planner, cadence, privacy, and evidence contract tests failed.'
+    }
     & $node.Path --test (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs')
     if ($LASTEXITCODE -ne 0) {
         throw 'The deduplicated, instrumented, and sharded audit orchestration tests failed.'
@@ -445,6 +453,19 @@ try {
         Write-Host 'Focused deterministic engine and semantic development checks passed.'
     } elseif ($DevelopmentOnly) {
         Write-Host 'Engine and semantic checks not selected by the changed-path development plan.'
+    }
+    if ($DevelopmentOnly -and $developmentPlan.suites -contains 'playwright') {
+        Push-Location $workspace
+        try {
+            & $node.Path (Join-Path $auditDirectory 'run-playwright-focused.mjs')
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The direct native-input Playwright journey matrix failed.'
+            }
+        } finally {
+            Pop-Location
+        }
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Direct Playwright journeys not selected by the changed-path development plan.'
     }
     if ($DevelopmentOnly) {
         $candidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path

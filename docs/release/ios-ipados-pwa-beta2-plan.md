@@ -83,6 +83,36 @@ canary remains mandatory, uses synthetic data, and proves only
 candidate/PWA/offline behavior—not host privacy qualification. Beta 4 records
 `OWNER_SKIPPED_BETA4`/`NONE`; no canary effect is claimed.
 
+### 1.3 Beta 5 release-scoped gate decisions
+
+On 2026-08-12, the project owner selected the following exact Beta 5 states:
+
+- `EXT-HOST` remains digest-bound `DEFERRED_PRERELEASE`, reported as
+  `DEFERRED`, never PASS or privacy-cleared;
+- the trusted-HTTPS canary is mandatory and must be exact `RECONCILED` with its
+  canonical evidence digest;
+- the six-device cycle is `OPTIONAL_NOT_RUN` / `NONE` / `0` / `0` /
+  `NOT_RUN`, and the six-reviewer cycle is `OPTIONAL_NOT_RUN` / `NONE` / `0` /
+  `0`; neither creates a platform or independent-review claim;
+- owner authorization is exact `PR_PUSH_AUTHORIZED` for
+  `v1.0.0-beta.5` on `refs/heads/main`; and
+- the full Playwright Deep UX Census is exact `NOT_REQUIRED_BY_CADENCE` for
+  this odd-numbered beta. Its local balanced 100-cell benchmark may run only as
+  non-certifying development evidence.
+
+Beta 5 uses `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. First commit the
+protected-main qualification revision with final game/runtime/PWA bytes and
+pending clearance/browser evidence. Run the canary and hosted-Windows
+observation against that exact commit. The final candidate must then be its
+immediate non-merge sole child, with an exact diff containing only
+`PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`. The
+canary binds the qualification commit and runtime snapshot; the successor
+validator proves every runtime/PWA byte is exactly identical. Reviewed browser
+evidence changes the repository-wide public-payload digest, so whole-payload
+identity must not be claimed. Run the complete certification system once on
+the successor, and tag and deploy only that successor. Beta 4's canary skip and
+`DIRECT_EVIDENCE_SUCCESSOR_V1` remain historical and cannot authorize Beta 5.
+
 ## 2. Release objective
 
 Beta 2 qualifies only if a grown-up can:
@@ -333,15 +363,14 @@ Implementation requirements:
 - accepting an update first obtains an exact challenged readiness proof from
   the current `registration.waiting` object, saves state, then messages that
   same worker to call `skipWaiting()`;
-- one lifetime `controllerchange` listener distinguishes initial
-  `clients.claim()` control acquisition from later replacement: first control
-  refreshes readiness and defers its exact-cache reload without losing
-  first-use input; initial acquisition and later replacement both reload
-  exactly once only at Home or the Grown-ups corner;
-- activation repeats full exact-cache validation, successfully claims clients,
-  and only then removes known obsolete Math Quest static caches; a
-  post-handshake mutation or claim failure preserves the prior cache, while
-  failure to finish later cleanup is non-fatal;
+- the tab that deliberately chose Apply observes its exact waiting worker and
+  reloads once after activation; any independent `controllerchange` only
+  refreshes readiness and offers a grown-up-controlled Reload action without
+  losing first-use or question input;
+- activation repeats full exact-cache validation but never calls
+  `clients.claim()` or removes a prior release cache, so another open tab keeps
+  both control and the offline bytes it may still use; only disposable staging
+  cleanup is attempted and its failure is non-fatal;
 - cache cleanup never touches progress in `localStorage`;
 - navigation fallback serves only the approved Math Quest entry point;
 - non-GET and cross-origin requests are not intercepted;
@@ -546,7 +575,8 @@ once, immediately before public tagging and deployment:
 - calibrated branch coverage and mutation tests;
 - offline shell and same-origin network policy;
 - storage-key separation;
-- browser smoke, accessibility, responsive layout, and visual review; and
+- exhaustive browser smoke, direct-user Playwright journeys, accessibility,
+  responsive layout, and visual review; and
 - predicted-versus-actual audit reconciliation.
 
 The complete audit is a regression floor within the final certification
@@ -1126,7 +1156,7 @@ frozen review bundle.
 1. implementation work is finished and focused checks pass; formal completion
    remains pending the final frozen-candidate certification;
 2. exact expected coverage sets reconcile in focused preparation; the single
-   complete frozen-candidate certification remains pending until the direct
+   complete frozen-candidate certification remains pending until the governed
    evidence successor is pushed, and then must pass once with its reviewed
    fresh-state and order permutations exercised internally and zero required
    failures/timeouts/flakes;
@@ -1135,8 +1165,8 @@ frozen review bundle.
 4. if the device cycle is selected, the primary-iPad journey and every lane
    pass;
 5. mandatory automated install, standalone, offline, update, and deterministic
-   removal/recovery tests pass; Beta 4 records the hosted trusted-HTTPS canary
-   as exact owner-skipped evidence, not as a pass;
+   removal/recovery tests pass; Beta 5 records the hosted trusted-HTTPS canary
+   as exact `RECONCILED` evidence and `EXT-CANARY: PASS`;
 6. privacy review confirms no application-level child learning/content
    transmission or new third-party runtime request, and the child-facing host
    is either affirmatively cleared or, for an eligible prerelease only, bound
@@ -1149,7 +1179,7 @@ frozen review bundle.
 11. every medium finding is fixed or explicitly accepted by the project owner;
 12. low findings are recorded;
 13. the review-bundle digest and pre-push authorization match the candidate;
-14. the clearance binding, direct evidence-successor proof, and all
+14. the clearance binding, runtime-equivalent evidence-successor proof, and all
     preparatory evidence are current; the complete audit is the next and only
     certification action after the successor reaches protected main; and
 15. any remote-vendor qualification remains current, unrevoked, and bound to
@@ -1205,16 +1235,17 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
    one sealed cycle. Collect any proposed owner medium acceptances one at a
    time, then run the bounded adjudicator under section 16.
 10. Correct defects with focused checks and repeat from step 8 until the exact
-    qualification commit is ready.
-11. For Beta 4, do not run the trusted-HTTPS canary. Record the exact owner
-    decision as `OWNER_SKIPPED_BETA4`/`NONE` and `EXT-CANARY: OWNER_SKIPPED`;
-    never convert it to pass or reconciliation evidence. Later releases return
-    to the ordinary canary requirement unless the owner gives a new decision.
-12. Push the qualification commit to protected main and run only the hosted-
-    Windows identity observation. Offer the optional primary-iPad and
-    remaining real-device matrix/long-reopen cycle; run it completely only if
-    selected.
-13. If shipped bytes change, invalidate the qualification payload, repeat the
+    Beta 5 qualification commit is ready with final game/runtime/PWA bytes and
+    pending clearance/browser evidence.
+11. Push that qualification commit to protected `main`. Run the mandatory
+    trusted-HTTPS canary and hosted-Windows identity observation against its
+    exact commit and runtime snapshot. Require exact `RECONCILED` canary
+    evidence and a reviewed browser/runner tuple.
+12. Retain the owner-selected physical-device and reviewer cycles as exact
+    `OPTIONAL_NOT_RUN`/`NONE`/zero states. Do not infer any platform or
+    independent-review claim.
+13. If game/runtime/PWA bytes change, invalidate the qualification payload,
+    canary, and hosted observation; repeat the
     focused and automated work from step 8, and have the same selected
     reviewers verify only affected corrections.
 14. Freeze the exact optional-cycle state and any completed optional evidence.
@@ -1225,23 +1256,27 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
 16. Compute the pre-adjudication evidence digest, run the bounded adjudicator on the
     sealed reports/evidence/proposed acceptances, then build the canonical
     review bundle.
-17. Create the direct evidence successor under
-    `DIRECT_EVIDENCE_SUCCESSOR_V1`: its sole parent is the qualification
-    commit, and its exact diff changes only `PUBLICATION_CLEARANCE.md` and
-    `audit/browser-runner-evidence-v1.json`. Record the final payload hashes
-    and issue **PR_PUSH_AUTHORIZED** for that successor.
-18. Push only that authorized direct successor to the named protected branch
-    and wait for exact focused remote checks. Any other changed path, parent,
-    merge, rebase, or skipped ancestor invalidates the exception.
+17. Create the runtime-equivalent evidence successor under
+    `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`: its sole parent is the
+    qualification commit, and its exact diff changes only
+    `PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`.
+    Validate exact game/runtime/PWA byte identity while retaining the changed
+    public-payload digest caused by reviewed evidence. Bind the owner's exact
+    **PR_PUSH_AUTHORIZED** decision for `v1.0.0-beta.5` on
+    `refs/heads/main` to that successor.
+18. Push only that authorized runtime-equivalent successor to the named
+    protected branch and wait for exact focused remote checks. Any other
+    changed path, runtime/PWA byte, parent, merge, rebase, or skipped ancestor
+    invalidates the successor policy.
 19. Freeze that exact protected-main successor and run the complete
     certification system once. A failure or any change returns to focused
     correction and a new qualification/successor sequence. After a pass, issue
-    **MERGE_TAG_AUTHORIZED**, create and protect `v1.0.0-beta.4`, and verify
+    **MERGE_TAG_AUTHORIZED**, create and protect `v1.0.0-beta.5`, and verify
     commit/tag identity.
 20. Issue **DEPLOY_AUTHORIZED** and publish only the exact certified tagged
     artifact without rerunning the gauntlet.
 21. Reconcile the live site, headers, offline relaunch, tag, release page, and
-    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 4.
+    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 5.
 
 ## 20. Source register
 

@@ -160,7 +160,7 @@ a passing run.
 | `BR-21` | Dense witnesses for every early response family, the exact MQ-004 pattern-support and MQ-031 numeral-support cases, and all three MQ-006 duration pairs keep child question, Help, and re-teach states on the first 1366×768, 820×1180, 1180×820, 1024×768, and 390×844 screen. Before each viewport measurement the harness requires the intended skill question, response controls, and Confirm to be rendered, so a transient blank iframe is reported as a harness-readiness error instead of a product-layout result. The check requires every response and Confirm to remain visible in natural DOM order, focuses the first and last enabled native response control, rejects document-level and question-panel horizontal overflow and any support-descendant collision with the response region, keeps essential support models visible and decorations separate, and preserves the 16 px text and 44 px target floors. The two landscape-iPad-size rows are automated geometry/focus evidence only; physical iPad Safari, touch, software-keyboard, and VoiceOver evidence remains pending until selected and executed. |
 | `BR-22` | The exact approved child-string table reproduces its shipped canonicalization version and SHA-256. |
 | `BR-23` | Grown-up iPad installation help is present before nickname creation and in the Grown-ups corner, states Safari’s eight honest steps, reports readiness without pretending to install, warns about separate storage, offers recovery help, traps/restores focus, and preserves the 16 px/44 px/Inter/responsive floors at 390×844. |
-| `BR-24` | The install manifest preserves the reviewed app identity and icon set; independent explicit generator, worker, page, and audit oracles agree on the exact 13 shell-entry paths plus the detached manifest; the controlled worker reports the exact release/build/logical-cache identity and all 14 required cached URLs ready. The readiness probe starts as soon as the shipped primary frame is available and independently bounds registration readiness, controller readiness, and the message-channel response. A missing stage produces an exact stage-specific `BR-24` failure, removes its listener or closes its port, and allows the remaining visual/profile audit to run instead of consuming the whole-audit watchdog. The audit requires exactly one physical cache whose name is that logical identity plus a 64-hex suffix, hashes the cached release manifest, requires the suffix to equal that digest, refuses to create or inspect the obsolete logical cache, and verifies every cached response in the bound physical cache. Successful activation removes legacy logical-name storage and the exact physical cache shipped by public Beta 3 only after exact-shell proof and a successful client claim; failed install, proof, or claim preserves those previously usable caches. The paired focused worker harness—not this current-shell browser row alone—proves that activation never probes or automatically navigates responsive current, suspended or unknown post-Beta-1, malformed, or true silent Beta 1 clients, regardless of obsolete-cache lineage. Recovery is a grown-up's deliberate reload or close/reopen; the current page's reviewed safe-boundary controller-change path remains limited to its own exact responsive lifecycle. A real retained-client canary must prove zero automatic navigation and then one explicit reload before that environment-dependent effect is reported as observed. A fresh worker over the verified physical cache performs zero network fetches even when the network would never settle; corrupt bytes fail closed or repair transactionally; an offline navigation loads the same manifest-bound engine after the audit server disconnects; and the three exact public legal links remain hash-verified and usable offline without intercepting other document paths. |
+| `BR-24` | The install manifest preserves the reviewed app identity and icon set; independent explicit generator, worker, page, and audit oracles agree on the exact 13 shell-entry paths plus the detached manifest; the controlled worker reports the exact release/build/logical-cache identity and all 14 required cached URLs ready. The readiness probe starts as soon as the shipped primary frame is available and independently bounds registration readiness, controller readiness, and the message-channel response. A missing stage produces an exact stage-specific `BR-24` failure, removes its listener or closes its port, and allows the remaining visual/profile audit to run instead of consuming the whole-audit watchdog. The audit requires exactly one candidate physical cache whose name is that logical identity plus a 64-hex suffix, hashes the cached release manifest, requires the suffix to equal that digest, and verifies every cached response in the bound physical cache. Successful activation repeats exact-shell proof but neither calls `clients.claim()` nor deletes prior release caches; another open tab therefore keeps control and the offline bytes it may still use until its grown-up deliberately reloads or closes it. The focused page harness proves that an independent `controllerchange` never reloads at a later safe boundary, while the tab that explicitly selected Apply may reload once from the exact waiting worker's activated state. The paired worker harness proves that activation never probes or automatically navigates responsive current, suspended or unknown post-Beta-1, malformed, or true silent Beta 1 clients. A real retained-client canary must prove zero automatic navigation and then one explicit reload before that environment-dependent effect is reported as observed. A fresh worker over the verified physical cache performs zero network fetches even when the network would never settle; corrupt bytes fail closed or repair transactionally; an offline navigation loads the same manifest-bound engine after the audit server disconnects; and the three exact public legal links remain hash-verified and usable offline without intercepting other document paths. |
 | `BR-25` | Child answer controls and feedback actions remain before their submit/advance controls in natural document order, without nested vertical scrollers or clipping at the audited desktop, tablet, and phone viewports. Exact MQ-121 Help and re-teach witnesses at 1366×768 additionally require the composite-area response model to remain horizontally contained while allowing the outer document to grow and scroll vertically. The exact Batch 2 witnesses require the C9 MQ-034 Help case at 768×1024 to keep all four route arrows at least 44 px, center-unobscured, outside the route grid, horizontally contained in up/left/down/right order, Inter-rendered at 16 px or larger, free of nested scrolling, and followed by a fully visible Confirm; MQ-122 ordinary play at 390×844 must horizontally contain the unit-cube SVG, visual wrapper, construction task, both fieldsets, instructional status, and every essential 44 px control while preserving outer vertical page scrolling. |
 | `BR-26` | Correct and incorrect answers show exact persistent outcome text and distinct check/X symbols at both 1366×768 and 390×844; the large outcome receives focus through the single deliberate assistive-technology announcement path while Next remains fully visible and usable. The outcome is not also placed in an assertive or global live region. Incorrect outcomes must retain their visible worked review model, so hiding instruction cannot satisfy the layout gate. The desktop incorrect witness permanently protects the former 772.08 px Next bottom against the 768 px viewport. |
 | `BR-27` | Automatic read-aloud and effects create and play no media while defaults are off; deliberate local Replay, Test Voice, and Test Sound remain explicit one-shot force paths without changing those defaults; non-English-only automatic fallback stays silent; cancelled callbacks cannot leak status; one re-teach Replay contains its visible instruction and prompt plus every rendered selection option’s accessible label and position in order, permits the approved additional visible operand and teaching support, and rejects malformed `[object Object]`, `undefined`, or `NaN` speech; interrupted Replay time is excluded before grading; and an active Replay cannot race a deferred, inert, keyboard-blocked transactional import. The import must advance exactly one generation beyond both live and imported records while otherwise preserving the imported projection, and a stale Replay callback cannot overwrite those exact committed bytes before reload. |
@@ -235,6 +235,65 @@ pre-answer unit disclosure in the model, first-screen reachability, and real
 correct feedback. The metric-reading instrument's accessible equivalent must
 name its zero-to-maximum range, unit, endpoint, and countable unlabelled tick
 intervals, and must not state the assessed target mark.
+
+## Direct Playwright journey effect map
+
+`audit/playwright/critical-journeys.spec.mjs` supplements the exhaustive
+72-record browser audit with native, direct-user interactions. Each stable
+case runs in installed Microsoft Edge at 1366x768 desktop and 390x844 touch
+phone profiles, producing exactly 16 closed results. Playwright's ordinary
+actionability checks must succeed; the suite forbids forced clicks, synthetic
+event dispatch, direct DOM `.click()`, and scripted `.focus()` as substitutes
+for real pointer or keyboard operation. Service workers are blocked for these
+focused UI journeys so the separate PWA audit remains the update/offline
+authority. Retries are zero; a retry cannot conceal a release failure. Traces
+and screenshots are retained only on failure and use anonymous synthetic
+state.
+
+| Test | Protected direct-user effect |
+|---|---|
+| `PW-F-01` | First use can continue without a nickname, reaches Home, exposes the session start action, and opens a world through visible, enabled, unobscured native controls. |
+| `PW-F-02` | Home exposes the grown-up **Check for updates** control as a visible, enabled target at least 44 px high and the control can be activated normally. |
+| `PW-F-03` | A real selection response can be chosen and confirmed, producing visible correct feedback and a usable advance action. |
+| `PW-F-04` | A real incorrect selection produces the distinct visible try-again outcome and keeps the correction/review path operable. |
+| `PW-F-05` | Help opens through its real control while the response region and Confirm remain discoverable on the first screen at each project viewport. |
+| `PW-F-06` | Native Tab and Enter operate the child flow, Home returns through its real button, and Parent Test activity remains isolated from child progress. |
+| `PW-F-07` | A real `PAIR_LINK` construction is completed with native pointer/touch actions and confirmed through the shipped construction controls. |
+| `PW-F-08` | An unfinished answer survives an actual page reload and returns as the same usable response rather than being lost or falsely graded. |
+
+`audit/lib/playwright-focused-contract.mjs` rejects unknown, duplicate,
+missing, skipped, retried, wrong-project, failed, or privacy-unsafe reports.
+The focused contract tests also pin one worker, zero retries, installed Edge,
+failure-only artifacts, the exact case/project matrix, native-action policy,
+and disposable-server cleanup. This automation is rendered-browser evidence,
+not physical iPhone/iPad, Safari, VoiceOver, software-keyboard, pronunciation,
+or child-comprehension evidence.
+
+## Playwright Deep UX Census effect map
+
+The census is a separate alternating-beta diagnostic owned by
+`audit/lib/playwright-deep-ux-census.mjs`. It is required for Beta 4, 6, 8,
+and later even-numbered semantic-version betas. It never runs completely in
+ordinary development and does not enlarge or repeat the single frozen-
+candidate gauntlet. The local 100-cell mode is always non-certifying.
+For odd-numbered Beta 5, the full-census result is exact
+`NOT_REQUIRED_BY_CADENCE`; only the balanced local 100-cell benchmark may run,
+and it cannot certify or satisfy any release gate.
+
+| Contract | Protected effect |
+|---|---|
+| Deterministic source inventory | Exactly 126 skills × 2 tiers × 3 representations × 3 worlds × 32 ordinals produce 72,576 source questions under one exact seed and engine/curriculum identity. Missing or extra source combinations fail plan validation. |
+| Risk-selected plan | Maximum-risk structural signatures plus required skill/tier, method/representation/theme, and model/representation witnesses form a closed, hash-bound scenario and six-viewport cell set. The planner cannot silently hand-pick only favourable examples. |
+| Rendered state census | Every selected cell checks initial and changed-response states, visibly proved expected-answer disclosure, and a visibly proved teaching model when one exists. It uses native click/tap/form actions with normal Playwright actionability and `scroll: "none"` where first-screen discoverability matters. Later-grade content on the 844 by 390 short-landscape profile may use one deliberate outer-page wheel sequence before the same no-auto-scroll actionability proof; early levels and all other profiles remain first-screen strict. Unapproved nested vertical scrolling and ancestor-clipped controls fail; only the governed large route-grid scroller is exempt. |
+| UX and accessibility invariants | The rendered question enforces 16 px text, 44 px controls, accessible names, visible response/grade regions, no horizontal clipping or placeholder text, valid question contracts, unchanged child-save bytes, and zero unexpected requests, page errors, or console errors. |
+| Anomaly-only evidence | Passing cells create no screenshots, traces, or videos. A failure produces synthetic WebP, AI-mode ARIA-with-boxes, and geometry records plus one compact closed report. |
+| Cadence and identity | Complete mode requires the exact frozen protected-main candidate on GitHub-hosted Windows, reviewed Edge 1.62.1 toolchain identity, exact server-root and served-payload digests, all six project shards, no retries/skips/unknowns/duplicates, and a matching executed-cell digest. |
+| Claim boundary | The census does not replace the 72-result browser audit, mathematics or grading oracles, human play testing, physical devices, Safari/iOS, assistive-technology speech, pronunciation, or installed-PWA evidence. |
+
+`audit/tests/playwright-deep-ux-census.test.mjs` effect-tests cadence mutants,
+the exact 72,576 inventory, balanced 100-cell non-certifying mode, closed plan
+and report schemas, missing/duplicate/identity/privacy mutants, native-action
+rules, context-level network observation, and anomaly-only artifact policy.
 
 ## Browser-runner completion and capacity effect
 
@@ -322,7 +381,7 @@ effect-sensitive tests.
 | Browser-smoke legal MIME | The real loopback audit server returns exact legal-document bytes and normalized `text/markdown` response types, so service-worker MIME validation is exercised against HTTP effects rather than only an in-memory response mock. |
 | Fresh versus verified-active PWA copy | Checking, caching, error, and activation-failure states promise preservation only while a current controller plus validated active readiness proves an exact shell. The same states on a fresh, uncontrolled, or unready page make no offline-availability claim and direct the grown-up to stay online or retry. |
 | Caregiver-safe PWA errors | Hostile registration and update exceptions containing script URLs, scope tuples, quotes, and doubled punctuation are effect-injected into shipped lifecycle functions. The resulting PWA state contains only bounded fixed caregiver copy and an optional allowlisted diagnostic identifier; no exception text is rendered. |
-| Transactional exact-shell population | The worker derives content-addressed physical live/staging cache names from the exact embedded manifest hash, so two scripts with the same logical identity cannot collide. It fills and revalidates staging before touching its candidate cache. An exact live cache receives zero write effects and survives same-length bad network bytes, wrong MIME, redirect, unsuccessful status, or a cross-origin response. Injected mid-copy failure removes an already-invalid partial candidate, while readiness fails closed; a later exact repair restores all 14 URLs. Two simultaneous repair messages share one population/network effect and cannot race staging. Activation repeats the full exact proof and successfully claims clients before deleting any prior cache, so post-handshake mutation or claim failure preserves the fallback. |
+| Transactional exact-shell population | The worker derives content-addressed physical live/staging cache names from the exact embedded manifest hash, so two scripts with the same logical identity cannot collide. It fills and revalidates staging before touching its candidate cache. An exact live cache receives zero write effects and survives same-length bad network bytes, wrong MIME, redirect, unsuccessful status, or a cross-origin response. Injected mid-copy failure removes an already-invalid partial candidate, while readiness fails closed; a later exact repair restores all 14 URLs. Two simultaneous repair messages share one population/network effect and cannot race staging. Activation repeats the full exact proof, removes only candidate staging, and neither claims clients nor deletes any prior release cache, so post-handshake mutation and older open tabs preserve their fallback bytes. |
 | Non-mutating manifest preparation | The generator writes a current exact manifest and bound worker copy only into a caller-provided empty review directory, refuses overwrite, and leaves the repository's frozen manifest and worker bytes unchanged. It carries the prior content-addressed physical live/staging caches into the exact obsolete list while excluding both current caches. The release freeze is a separate explicit `--write` operation with rollback. |
 
 ## Placement-adapter effect map
@@ -485,7 +544,7 @@ ending.
   multiplication/division facts instead of an obsolete addition family.
 - **Environment or approval gates:** no external, hosted, privacy, or
   physical-device result is converted into a pass by these corrections. Those
-  gates remain pending until the exact frozen Beta 4 candidate supplies the
+  gates remain pending until the exact frozen Beta 5 candidate supplies the
   evidence required by the release documents.
 
 ## Manifest-driven visual and profile map
@@ -554,8 +613,9 @@ first observes and hashes at least one Edge process bound to the exact
 disposable user-data directory, then requires the exact remaining process set
 to be empty before deleting either that profile or its workspace; a lingering
 process mutant keeps both paths for the wrapper's crash fallback. A closed
-supply-chain validator and its six mutants protect the sole Playwright Core
-dependency, npm hardening flags, Caddy URL and dual hashes, manual-only narrow
+supply-chain validator and its fourteen mutants protect the exact Playwright
+Test dependency closure, npm hardening flags, omitted optional dependencies,
+suppressed browser downloads, Caddy URL and dual hashes, manual-only narrow
 workflow, sanitized JSON artifact, loopback bindings, real shipped update and
 recovery controls, and exclusion of every CI-only file/tool from the release
 shell and service worker. This is focused technical evidence only: it neither
@@ -579,15 +639,16 @@ branches:
 | Test branch | Protected effect |
 |---|---|
 | `EXT-HOST` | A stable release requires exact `APPROVED` host/privacy qualification with a valid digest. An eligible prerelease may instead carry exact digest-bound `DEFERRED_PRERELEASE`, reported as `DEFERRED`, never PASS, approved, waived, or privacy-cleared. Stable-tag deferral, missing disclosure, pending, malformed, stale, future-dated, or candidate-mismatched evidence blocks. |
-| `EXT-CANARY` | Beta 4's exact owner decision is `OWNER_SKIPPED_BETA4`/`NONE`, reported as visible non-passing `OWNER_SKIPPED`; it expires after Beta 4 and cannot impersonate reconciliation, evidence, host approval, or privacy clearance. Other tags require actual `RECONCILED` evidence. State, digest, and tag mutants prevent `Shippable: YES`. |
+| `EXT-CANARY` | Beta 5 requires exact `RECONCILED` evidence with a canonical digest and reports PASS only after the trusted-HTTPS canary binds its qualification commit and runtime snapshot. Beta 4's historical `OWNER_SKIPPED_BETA4`/`NONE` state remains visible, non-passing, expired, and unable to impersonate reconciliation, evidence, host approval, or privacy clearance. State, digest, snapshot, candidate, and tag mutants prevent `Shippable: YES`. |
 | `EXT-DEVICE` | The six-lane device cycle is offered but optional. A declined cycle must use exact `OPTIONAL_NOT_RUN`/`NONE`/zero/`NOT_RUN` fields and is reported as `OPTIONAL`, never `PASS`; if selected, all six lanes and the primary-iPad journey must pass under one digest-bound `COMPLETE` record. Partial, inferred, emulator-only, malformed, or concealed states block. |
 | `EXT-REVIEWERS` | The six-reviewer cycle is offered but optional. A declined cycle must use exact `OPTIONAL_NOT_RUN`/`NONE`/zero fields and is reported as `OPTIONAL`, never `PASS`; if selected, all six context-independent reports must be sealed under one digest-bound `COMPLETE` record. Partial, malformed, or concealed review evidence blocks. |
 | `EXT-ADJUDICATION` | Independent adjudication must be `APPROVED`, recommend `RELEASE`, and carry its exact digest. Pending, missing, contrary, or malformed adjudication blocks. |
 | `EXT-FINDINGS` | Disposition must be `COMPLETE`, with zero open Critical/High, zero unaccepted Medium, and zero unrecorded Low findings. Each nonzero-count mutant blocks independently. |
 | `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest must equal the canonical reviewed browser/runner evidence bytes whose exact tuple also matches the live hosted run. Local, stale, or digest-mismatched evidence blocks. |
-| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.4`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
+| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.5`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
 
-The suite also effect-tests `DIRECT_EVIDENCE_SUCCESSOR_V1`: the final Beta 4
+The suite preserves the historical Beta 4 effect test for
+`DIRECT_EVIDENCE_SUCCESSOR_V1`: the final Beta 4
 candidate must be the single-parent immediate child of the named qualification
 commit; its exact diff contains only `PUBLICATION_CLEARANCE.md` and
 `audit/browser-runner-evidence-v1.json`; and both predecessor records are
@@ -597,13 +658,29 @@ temporary Git repository exercises the production Git observer across two
 actual commits, while the workflow regression requires the release checkout to
 fetch full parent history so the hosted gauntlet can prove the same relation.
 
-`audit/run-audit.mjs` predicts and observes all eight records separately,
-raising the closed technical-plus-external total from 259 to 267. The decision helper requires the
-exact eight IDs in exact order. For Beta 4 it requires four mandatory results
-`PASS`, exact evaluator-bound `EXT-HOST: DEFERRED`, exact visible non-passing
-`EXT-CANARY: OWNER_SKIPPED`, each optional result either
-`PASS` or exact `OPTIONAL`, external aggregate `PASS`, publication `APPROVED`,
-and technical gates true. A fully approved prerelease host may still PASS. A
+For Beta 5, the suite instead effect-tests
+`RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. The protected-main qualification
+commit contains final game/runtime/PWA bytes and pending clearance/browser
+evidence; its final successor is the immediate non-merge sole child, and the
+exact diff contains only `PUBLICATION_CLEARANCE.md` and
+`audit/browser-runner-evidence-v1.json`. The reconciled canary binds the
+qualification commit and its runtime snapshot, while a separate identity
+validator proves every governed runtime/PWA byte is identical in the
+successor. Wrong-parent, merge, skipped-ancestor, missing/extra path,
+runtime-byte, PWA-byte, snapshot, or qualification-commit mutants fail closed.
+The public-payload digest must differ because reviewed browser evidence is
+public; a forged whole-payload-equality claim also fails.
+
+`audit/run-audit.mjs` predicts and observes all eight records separately. The
+16 direct Playwright journeys raise the closed technical-plus-external total
+from 267 to 283. The decision helper requires the
+exact eight IDs in exact order. For Beta 5 it requires five mandatory results
+`PASS`, including exact digest-bound `EXT-CANARY: PASS` from `RECONCILED`
+evidence; exact evaluator-bound `EXT-HOST: DEFERRED`; both optional results as
+exact `OPTIONAL_NOT_RUN`/`OPTIONAL` under PB-047; external aggregate `PASS`;
+publication `APPROVED`; and technical gates true. A fully approved prerelease
+host may still PASS. The historical Beta 4 branch separately preserves its
+four mandatory PASS results and visible non-passing owner-skipped canary. A
 stable release requires all six ordinarily mandatory results to PASS. Tests
 delete, duplicate, reorder, block, partially complete, forge optional,
 DEFERRED, or OWNER_SKIPPED states, mutate the host digest/disclosure, retain a pending canary,

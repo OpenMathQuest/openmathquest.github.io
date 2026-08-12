@@ -23,8 +23,8 @@
     "timing": "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
     "scope": "COMPLETE_CERTIFICATION_SYSTEM",
     "qualificationEvidenceSuccessor": {
-      "policy": "DIRECT_EVIDENCE_SUCCESSOR_V1",
-      "releaseTag": "v1.0.0-beta.4",
+      "policy": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
+      "releaseTag": "v1.0.0-beta.5",
       "parentCount": 1,
       "parentMustEqualQualificationCommit": true,
       "exactChangedPaths": [
@@ -33,7 +33,35 @@
       ],
       "qualificationClearanceStatus": "PENDING",
       "qualificationBrowserEvidenceStatus": "PENDING",
-      "finalCertificationTarget": "DIRECT_EVIDENCE_SUCCESSOR"
+      "requiredQualificationEvidence": [
+        "RECONCILED_CANARY",
+        "REVIEWED_HOSTED_WINDOWS"
+      ],
+      "finalCertificationTarget": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR"
+    },
+    "deepUxCensus": {
+      "policy": "ALTERNATING_BETA_V1",
+      "firstRequiredBetaOrdinal": 4,
+      "interval": 2,
+      "requiredVersionExamples": [
+        "1.0.0-beta.4",
+        "1.0.0-beta.6",
+        "1.0.0-beta.8"
+      ],
+      "inventoryQuestions": 72576,
+      "viewports": 6,
+      "renderedStates": [
+        "INITIAL",
+        "PARTIAL_RESPONSE",
+        "EXPECTED_REVEALED",
+        "TEACHING_MODEL_WHEN_AVAILABLE"
+      ],
+      "localBenchmarkCells": 100,
+      "routineDevelopmentRunsCompleteCensus": false,
+      "completeRunEnvironment": "GITHUB_HOSTED_WINDOWS",
+      "failureEvidence": "ANOMALY_ONLY",
+      "replacesExistingCertificationOrHumanEvidence": false,
+      "publicationRequiresPassWhenScheduled": true
     },
     "postCertificationChange": "INVALIDATE_REFREEZE_RERUN_FULL",
     "publicationRequiresPass": true

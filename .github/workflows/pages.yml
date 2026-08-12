@@ -7,7 +7,7 @@ on:
         description: Exact annotated beta tag to deploy
         required: true
         type: string
-        default: v1.0.0-beta.4
+        default: v1.0.0-beta.5
 
 permissions:
   contents: read
@@ -38,9 +38,9 @@ jobs:
              [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
              [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
              [[ "$GITHUB_REF_NAME" != "main" ]] ||
-             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.4" ]]
+             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.5" ]]
           then
-            echo "::error::Deploy only OpenMathQuest Public Beta 4 from the protected main branch."
+            echo "::error::Deploy only OpenMathQuest Public Beta 5 from the protected main branch."
             exit 1
           fi
 
@@ -576,9 +576,9 @@ jobs:
           fi
           if [[ -z "$RELEASE_COMMIT" ]] ||
              [[ ! "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]] ||
-             [[ "$RELEASE_TAG" != "v1.0.0-beta.4" ]] ||
+             [[ "$RELEASE_TAG" != "v1.0.0-beta.5" ]] ||
              [[ ! "$SNAPSHOT_SHA256" =~ ^[a-f0-9]{64}$ ]]
           then
-            echo "::error::The deployment is not bound to the verified Public Beta 4 tag, commit, and immutable snapshot."
+            echo "::error::The deployment is not bound to the verified Public Beta 5 tag, commit, and immutable snapshot."
             exit 1
           fi

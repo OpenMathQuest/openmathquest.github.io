@@ -1,5 +1,9 @@
+import { RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY } from "./release-evidence-successor.mjs";
+
 export const PUBLICATION_CLEARANCE_PATH = "PUBLICATION_CLEARANCE.md";
-export const CURRENT_RELEASE_TAG = "v1.0.0-beta.4";
+export const CURRENT_RELEASE_TAG = "v1.0.0-beta.5";
+export const BETA4_RELEASE_TAG = "v1.0.0-beta.4";
+export const CURRENT_EVIDENCE_SUCCESSOR_POLICY = RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY;
 export const EMERGENCY_BETA3_RELEASE_TAG = "v1.0.0-beta.3";
 export const EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
   "EXT-HOST",
@@ -270,7 +274,9 @@ export function parsePublicationClearance(text) {
       if (fields["Evidence successor policy"] !== "NOT_APPLICABLE_BETA3") issues.push("Evidence successor policy must be NOT_APPLICABLE_BETA3 for emergency Beta 3");
     } else {
       if (!/^[a-f0-9]{40}$/u.test(fields["Qualification commit SHA"] || "")) issues.push("Qualification commit SHA must be 40 lowercase hexadecimal characters");
-      if (fields["Evidence successor policy"] !== "DIRECT_EVIDENCE_SUCCESSOR_V1") issues.push("Evidence successor policy must be DIRECT_EVIDENCE_SUCCESSOR_V1");
+      if (fields["Evidence successor policy"] !== CURRENT_EVIDENCE_SUCCESSOR_POLICY) {
+        issues.push(`Evidence successor policy must be ${CURRENT_EVIDENCE_SUCCESSOR_POLICY}`);
+      }
     }
     if (!["Microsoft Edge", "Google Chrome"].includes(fields["Reviewed browser product name"])) {
       issues.push("Reviewed browser product name must be Microsoft Edge or Google Chrome");
@@ -307,16 +313,12 @@ export function parsePublicationClearance(text) {
     ]) {
       if (!sha256(fields[key])) issues.push(`${key} must be 64 lowercase hexadecimal characters`);
     }
-    if (emergency) {
-      if (!sha256(fields["Canary reconciliation evidence SHA-256"])) issues.push("Canary reconciliation evidence SHA-256 must be 64 lowercase hexadecimal characters");
-    } else {
-      if (fields["Canary reconciliation state"] !== BETA4_CANARY_OWNER_SKIP_STATE) issues.push(`Canary reconciliation state must be ${BETA4_CANARY_OWNER_SKIP_STATE}`);
-      if (fields["Canary reconciliation evidence SHA-256"] !== "NONE") issues.push("Canary reconciliation evidence SHA-256 must be NONE when Beta 4 canary evidence is owner-skipped");
-      if (!/Beta 4 canary owner-skipped:/u.test(fields["Residual risks"] || "")) issues.push("Beta 4 residual risks must disclose that canary evidence was owner-skipped");
+    if (!sha256(fields["Canary reconciliation evidence SHA-256"])) {
+      issues.push("Canary reconciliation evidence SHA-256 must be 64 lowercase hexadecimal characters");
     }
     for (const [key, expected] of [
       ["Host qualification state", emergency ? "WAIVED_BETA3" : hostDeferred ? PRERELEASE_HOST_QUALIFICATION_STATE : "APPROVED"],
-      ["Canary reconciliation state", emergency ? "WAIVED_BETA3" : BETA4_CANARY_OWNER_SKIP_STATE],
+      ["Canary reconciliation state", emergency ? "WAIVED_BETA3" : "RECONCILED"],
       ["Adjudication state", emergency ? "WAIVED_BETA3" : "APPROVED"],
       ["Adjudication recommendation", emergency ? "NOT_RUN" : "RELEASE"],
       ["Finding-disposition state", emergency ? "AUTOMATED_ONLY" : "COMPLETE"],
@@ -455,7 +457,7 @@ function artifactIdentityMatches(parsed, expected = {}) {
       parsed.status === "EMERGENCY_APPROVED"
       || (
         parsed.qualificationCommitSha === expected.qualificationCommitSha
-        && parsed.evidenceSuccessorPolicy === "DIRECT_EVIDENCE_SUCCESSOR_V1"
+        && parsed.evidenceSuccessorPolicy === CURRENT_EVIDENCE_SUCCESSOR_POLICY
         && expected.evidenceSuccessorValid === true
       )
     )
@@ -502,7 +504,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   const emergencyRequested = parsed?.status === "EMERGENCY_APPROVED";
   const emergency = emergencyRequested && expectedReleaseTag === EMERGENCY_BETA3_RELEASE_TAG;
   const beta4CanaryOwnerSkipped = !emergency
-    && expectedReleaseTag === CURRENT_RELEASE_TAG
+    && expectedReleaseTag === BETA4_RELEASE_TAG
     && parsed?.canaryReconciliationState === BETA4_CANARY_OWNER_SKIP_STATE
     && parsed?.canaryReconciliationEvidenceSha256 === "NONE";
   const commonReasons = [];
@@ -534,7 +536,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
     ],
     [
       "EXT-CANARY",
-      "Trusted-HTTPS canary reconciliation or explicit Beta 4 owner skip",
+      "Trusted-HTTPS canary reconciliation",
       parsed?.canaryReconciliationState === "RECONCILED" && sha256(parsed?.canaryReconciliationEvidenceSha256),
       parsed?.canaryReconciliationState === "RECONCILED" || beta4CanaryOwnerSkipped ? null : `canary reconciliation is ${parsed?.canaryReconciliationState || "UNKNOWN"}`,
       sha256(parsed?.canaryReconciliationEvidenceSha256) || beta4CanaryOwnerSkipped ? null : "canary evidence digest is missing or malformed",

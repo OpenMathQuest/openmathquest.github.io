@@ -8,7 +8,7 @@ records in distinct locations.
 | `/` | Persistent agent governance, runtime entry points, Windows launchers, install manifest, service worker, exact release-shell manifest, standard project files, and a private CI-only Node dependency manifest/lockfile excluded from the child payload |
 | `.github/` | Issue, pull-request, dependency, audit, and deployment automation |
 | `assets/` | Bundled app icons, fonts, sounds, and their first-party generation source |
-| `audit/` | Machine-readable collaboration, certification-cadence, and finished-work mirrors; executable focused-development and complete-release checks; the reviewed browser/runner tuple and exact direct-evidence-successor validator; and the disposable trusted-HTTPS canary runner, validator, and regressions |
+| `audit/` | Machine-readable collaboration, certification-cadence, and finished-work mirrors; executable focused-development and complete-release checks; direct-user Playwright journeys; the alternating-beta Deep UX Census planner, runner, evidence validator, and anomaly-only renderer; the reviewed browser/runner tuple and exact direct-evidence-successor validator; and the disposable trusted-HTTPS canary runner, validator, and regressions |
 | `curriculum/` | Canonical versioned curriculum manifest and provenance |
 | `docs/development/` | Stable development contract |
 | `docs/release/` | Release gates, checklists, reviews, and public-tree inventory |
@@ -22,12 +22,23 @@ private research, archives, editor state, and dependency caches are ignored
 and must not be committed. Scratch or one-time migration scripts should be
 removed once their reviewed output is canonical.
 
-The root `package.json` and `package-lock.json` exist only to install the exact
-Playwright Core development dependency used by the private GitHub-hosted
-trusted-HTTPS canary. Caddy is downloaded only by that canary's reviewed
-wrapper with both reviewed hashes enforced. Neither tool, dependency metadata,
-nor `licenses/ci-toolchain.md` is included in `release-shell-v1.json`, the
-service-worker cache, or the Pages runtime payload.
+The root `package.json` and `package-lock.json` install the exact Playwright
+1.62.1 development toolchain. Playwright Test drives a small, direct-user
+browser-journey suite in installed Microsoft Edge; Playwright Core also drives
+the private GitHub-hosted trusted-HTTPS canary. The reviewed installer disables
+lifecycle scripts, optional dependencies, audit submission, funding requests,
+and Playwright browser downloads. Caddy is downloaded only by the canary's
+reviewed wrapper with both reviewed hashes enforced. None of these tools,
+dependency metadata, browser artifacts, traces, or `licenses/ci-toolchain.md`
+is included in `release-shell-v1.json`, the service-worker cache, or the Pages
+runtime payload.
+
+`playwright.deep-ux.config.mjs` is a separate release diagnostic rather than
+an expansion of the 16-result focused journey lane. Its complete mode is
+cadence-gated to Beta 4, 6, 8, and later even-numbered betas and runs only on
+the exact frozen GitHub-hosted Windows candidate. Its local 100-cell mode is a
+non-certifying benchmark. Passing cells produce no screenshots or traces;
+synthetic WebP, ARIA, and geometry evidence is created only for anomalies.
 
 Under the
 [`AGENTS.md` finished-work policy](../AGENTS.md#what-counts-as-finished-work),

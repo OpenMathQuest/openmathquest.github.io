@@ -100,11 +100,16 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   const runAuditBody = runner.split(/export async function runAudit/u)[1] || "";
   assert.doesNotMatch(runAuditBody, /runEngineSuite|runManifestSemanticAudit/u);
   assert.match(runAuditBody, /structuredAuditValid/iu);
+  assert.match(runAuditBody, /playwright = await runPlaywrightFocusedAudit\(\)/u);
+  assert.match(runAuditBody, /playwright\.status === "PASS"/u);
+  assert.match(runner, /playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS\.length/u);
+  assert.match(runner, /actual\.playwrightAssertions/u);
   assert.match(coverage, /MQ_STRUCTURED_AUDIT_FILE/u);
   assert.match(coverage, /structuredAuditValid/u);
   assert.match(nodeEngine, /MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1/u);
   assert.match(auditPage, /AUDIT_SHARD !== "visual"/u);
   assert.match(auditPage, /AUDIT_SHARD !== "core"/u);
+  assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 3);
 });
 
 test("canonical coverage artifact rejects count-correct but internally failed evidence", () => {

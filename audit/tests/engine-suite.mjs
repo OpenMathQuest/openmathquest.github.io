@@ -960,8 +960,12 @@ export async function runEngineSuite({
       "audit/tests/audit-orchestration.test.mjs",
       "audit/certification-cadence-v1.json",
       "audit/lib/development-suite-plan.mjs",
+      "audit/lib/playwright-focused-contract.mjs",
+      "audit/lib/playwright-deep-ux-census.mjs",
       "audit/lib/release-evidence-successor.mjs",
       "audit/tests/development-suite-plan.test.mjs",
+      "audit/tests/playwright-focused-contract.test.mjs",
+      "audit/tests/playwright-deep-ux-census.test.mjs",
       "audit/finished-work-policy-v1.json",
       "audit/tests/finished-work-policy.test.mjs",
       "curriculum/math-quest-manifest-v1.json",
@@ -970,6 +974,7 @@ export async function runEngineSuite({
       "research/pedagogy-notes.md",
       "README.md",
       "THIRD_PARTY_NOTICES.md",
+      "playwright.deep-ux.config.mjs",
     ]) {
       assert.ok((await readFile(path.join(root, file), "utf8")).trim().length > 0, file);
     }
@@ -986,6 +991,7 @@ export async function runEngineSuite({
       ["no size or context omission", /Do not omit a certification requirement merely to reduce file size, token use,[\s\S]*instruction length/iu],
       ["mandatory fail-closed gate", /mandatory, fail-closed release gate/iu],
       ["focused development cadence", /During ordinary development[\s\S]*run the defined fast development suite[\s\S]*Do not run the complete certification gauntlet merely/iu],
+      ["alternating-beta Deep UX Census", /every second semantic-version beta[\s\S]*Beta 4,[\s\S]*Beta 6,[\s\S]*72,576[\s\S]*100-cell[\s\S]*non-certifying/iu],
       ["frozen candidate final cadence", /complete certification system once after all planned release work[\s\S]*public payload are frozen[\s\S]*publication[\s\S]*next intended operation/iu],
       ["publication instruction authorizes final run", /clear owner instruction to publish[\s\S]*authorizes this final run/iu],
       ["exact immutable release identity", /exact immutable commit and exact[\s\S]*public payload that will be tagged and deployed/iu],

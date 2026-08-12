@@ -1,11 +1,11 @@
 # Release review: privacy and de-identification
 
-- **Updated:** 2026-08-03
+- **Updated:** 2026-08-12
 - **Public product:** Math Quest
-- **Release target:** `1.0.0-beta.4`
+- **Release target:** `1.0.0-beta.5`
 - **Review scope:** prospective public release artifact and reachable Git history
-- **Status:** **APPLICATION PRIVACY CONTRACT PRESERVED; REACHABLE-HISTORY
-  RESIDUAL RISK ACCEPTED; EXACT-CANDIDATE SCAN PENDING**
+- **Status:** **APPLICATION PRIVACY CONTRACT PRESERVED; HISTORICAL BETA 4
+  REACHABLE-HISTORY DISPOSITION RETAINED; EXACT-CANDIDATE SCAN PENDING**
 
 The public beta is designed as a neutral product. The exact staged candidate
 is enumerated by the release guard and
@@ -158,7 +158,8 @@ artifact, but it remains obtainable through published Beta 1 ancestry, tags,
 and source archives.
 
 On 2026-08-03, the project owner explicitly chose to retain the existing public
-Git history and accepted this narrow residual risk for Beta 4. The decision
+Git history and accepted this narrow residual risk for Beta 4. This remains a
+historical Beta 4 disposition rather than a new Beta 5 privacy finding. The decision
 does not waive the exact-candidate privacy, metadata, archive, or secret scans,
 and it does not support a claim that all reachable repository history is
 de-identified. The obsolete audit-only fixture remains outside the current
@@ -195,6 +196,13 @@ exact-candidate or external host privacy approval. The public-history finding
 has the explicit owner disposition recorded above; the final exact staged
 scan, full implementation audit, deployment, and the
 applicable release evidence listed in `docs/release/publication-gates.md`
-remain required. For prereleases beginning Beta 4, external host qualification
+remain required. The reachable-history acceptance above is retained as an
+explicit Beta 4 record and is not silently rewritten as a new Beta 5
+disposition. For prereleases beginning Beta 4, external host qualification
 is visibly deferred with provider request metadata disclosed; affirmative
 qualification or a host change remains mandatory before stable release.
+For Beta 5, that exact digest-bound host state remains
+`DEFERRED_PRERELEASE`/`DEFERRED`, while the separate trusted-HTTPS canary must
+be `RECONCILED` with canonical evidence. Canary reconciliation proves only the
+qualification commit's candidate/PWA/offline behavior; it neither qualifies
+the host nor turns this contract review into exact-candidate privacy approval.

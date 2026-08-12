@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "1.0.0-beta.4",
-  "buildId": "math-quest-pwa-v1.0.0-beta.4",
-  "cacheName": "math-quest-static-v1.0.0-beta.4",
+  "release": "1.0.0-beta.5",
+  "buildId": "math-quest-pwa-v1.0.0-beta.5",
+  "cacheName": "math-quest-static-v1.0.0-beta.5",
   "entryPath": "./index.html",
   "excludedPaths": [
     "./release-shell-v1.json",
@@ -67,8 +67,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "ed157346932b5ccf1dba1d362ba27962cb8ca5b54466afbad6cff53f7b7e4e9d",
-      "bytes": 1095781,
+      "sha256": "ea8d1a0b86d7d1a584187d182ab2b0ed27d3eb695d4c31a46fad9ed50e5111d6",
+      "bytes": 1097624,
       "mime": "text/html",
       "status": 200
     },

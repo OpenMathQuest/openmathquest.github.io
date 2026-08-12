@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: Exact protected-main Beta 4 commit to reconcile through the private loopback canary
+        description: Exact protected-main Beta 5 qualification commit to reconcile through the private loopback canary
         required: true
         type: string
 
@@ -48,8 +48,8 @@ jobs:
               [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
             throw 'Trusted-HTTPS canary requires exact GitHub-hosted Windows runner metadata.'
           }
-          if ((Get-Content -LiteralPath 'VERSION' -Raw).Trim() -cne '1.0.0-beta.4') {
-            throw 'Trusted-HTTPS canary is release-scoped to Beta 4.'
+          if ((Get-Content -LiteralPath 'VERSION' -Raw).Trim() -cne '1.0.0-beta.5') {
+            throw 'Trusted-HTTPS canary is release-scoped to Beta 5.'
           }
           if ((git rev-parse 'refs/tags/v1.0.0-beta.1^{tag}') -cne '140693bff04733ce890a0a8be2d7c9499dfa24cc' -or
               (git rev-parse 'refs/tags/v1.0.0-beta.1^{}') -cne 'f989bf3bfe0c40824c4d2ab6f0ec2fb3450e314e') {
@@ -62,7 +62,7 @@ jobs:
           node-version: 24.14.0
           package-manager-cache: false
 
-      - name: Run disposable trusted-HTTPS Beta 1 to Beta 4 canary
+      - name: Run disposable trusted-HTTPS Beta 1 to Beta 5 canary
         id: canary
         continue-on-error: true
         shell: powershell

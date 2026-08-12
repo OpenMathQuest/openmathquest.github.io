@@ -7,6 +7,10 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { EXPECTED_BROWSER_RESULT_IDS, runBrowserSmoke } from "./lib/browser-smoke.mjs";
 import {
+  PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS,
+  playwrightFocusedReportFindings,
+} from "./lib/playwright-focused-contract.mjs";
+import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   browserRunnerTuplesMatch,
   parseReviewedBrowserRunnerEvidence,
@@ -21,14 +25,14 @@ import {
   parsePublicationClearance,
   PUBLICATION_CLEARANCE_PATH,
 } from "./lib/publication-clearance.mjs";
-import { observeDirectEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
 import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT, runCoverage } from "./run-coverage.mjs";
 import { runMutations } from "./mutation-runner.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED_SEMANTIC = Object.freeze({ assertions: 130, skills: 126, taskTypes: 166, questions: 6_048 });
-const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, mutationFamilies: 11, coverageGates: 1, generatorGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
+const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, mutationFamilies: 11, coverageGates: 1, generatorGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
 const EXPECTED = Object.freeze({ ...EXPECTED_COMPONENTS, total: Object.values(EXPECTED_COMPONENTS).reduce((sum, value) => sum + value, 0) });
 const execFileAsync = promisify(execFile);
 
@@ -216,7 +220,7 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     const parsed = parsePublicationClearance(clearance);
     const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
       ? { valid: true, issues: [] }
-      : await observeDirectEvidenceSuccessor(root, parsed.qualificationCommitSha);
+      : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
     expected.qualificationCommitSha = parsed.qualificationCommitSha;
     expected.evidenceSuccessorValid = evidenceSuccessor.valid;
     const browserEvidenceMatches = liveBrowserEvidence.validForPublication === true
@@ -296,6 +300,43 @@ async function runGeneratorAudit() {
   }
 }
 
+async function runPlaywrightFocusedAudit() {
+  const reportPath = path.join(root, "audit", ".tmp-playwright-focused-report.json");
+  let processFailure = null;
+  let stdout = "";
+  let stderr = "";
+  try {
+    const result = await execFileAsync(process.execPath, [path.join(root, "audit", "run-playwright-focused.mjs")], {
+      cwd: root, encoding: "utf8", timeout: 180_000, windowsHide: true, maxBuffer: 4 * 1024 * 1024,
+    });
+    stdout = String(result.stdout || "");
+    stderr = String(result.stderr || "");
+  } catch (error) {
+    processFailure = String(error.stack || error);
+    stdout = String(error.stdout || "");
+    stderr = String(error.stderr || "");
+  }
+  try {
+    const report = JSON.parse(await readFile(reportPath, "utf8"));
+    const findings = playwrightFocusedReportFindings(report);
+    if (processFailure) findings.unshift(processFailure);
+    return {
+      ...report,
+      status: findings.length ? "FAIL" : "PASS",
+      findings: [...new Set(findings)],
+      process: { status: processFailure ? "FAIL" : "PASS", stdout: stdout.slice(-8_000), stderr: stderr.slice(-8_000) },
+    };
+  } catch (error) {
+    return {
+      status: "FAIL",
+      findings: [processFailure, String(error.stack || error)].filter(Boolean),
+      summary: { expected: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, actual: 0, passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 },
+      results: [],
+      process: { status: "FAIL", stdout: stdout.slice(-8_000), stderr: stderr.slice(-8_000) },
+    };
+  }
+}
+
 function markdown(report, { final = false } = {}) {
   const engineResults = report.engine.results;
   const semanticResults = report.semantic.assertions;
@@ -306,10 +347,12 @@ function markdown(report, { final = false } = {}) {
     ...(report.semantic.contractPass ? [] : [`Semantic contract totals: expected ${EXPECTED_SEMANTIC.assertions} assertions, ${EXPECTED_SEMANTIC.skills} skills, ${EXPECTED_SEMANTIC.taskTypes} task types, and ${EXPECTED_SEMANTIC.questions} questions; observed ${semanticResults.length}, ${report.semantic.summary.skills ?? "unavailable"}, ${report.semantic.summary.taskTypes ?? "unavailable"}, and ${report.semantic.summary.questions ?? "unavailable"}.`]),
     ...engineResults.filter((x) => x.status === "FAIL").map((x) => `${x.id}: ${x.title} — ${x.details}`),
     ...report.browser.results.filter((x) => x.status === "FAIL").map((x) => `${x.id}: ${x.title} — ${x.details}`),
+    ...report.playwright.results.filter((x) => x.status !== "passed").map((x) => `${x.key}: direct Playwright journey ended ${x.status}`),
     ...report.mutation.families.filter((x) => x.status === "FAIL").map((x) => `Mutation ${x.family}: ${x.reason}`),
     ...(report.generator.status === "PASS" ? [] : [`Exhaustive generator gate: ${(report.generator.issues || []).join("; ") || report.generator.error || "process did not pass"}`]),
     ...(report.coverage.status === "PASS" ? [] : [`Coverage: ${report.coverage.calibration.reasons.join("; ") || report.coverage.aggregationError || `engine branch result ${report.coverage.branchPct ?? "unavailable"}`}`]),
     ...(report.browser.status === "PASS" ? [] : [`Browser smoke process: ${report.browser.reason || report.browser.process?.error || report.browser.process?.stderr || "did not complete"}`]),
+    ...(report.playwright.status === "PASS" ? [] : report.playwright.findings.map((item) => `Playwright Test: ${item}`)),
     ...(report.curriculumManifest.status === "PASS" ? [] : [`Curriculum manifest: ${report.curriculumManifest.issues.join("; ") || "validation failed"}`]),
     ...(report.countsMatch ? [] : ["Predicted and actual audit counts do not match."]),
   ];
@@ -358,6 +401,7 @@ function markdown(report, { final = false } = {}) {
     `| Engine assertions | ${EXPECTED.engineAssertions} | ${report.actual.engineAssertions} | ${report.actual.engineAssertions === EXPECTED.engineAssertions ? "MATCH" : "MISMATCH"} |`,
     `| Manifest semantic assertions | ${EXPECTED.semanticAssertions} | ${report.actual.semanticAssertions} | ${report.actual.semanticAssertions === EXPECTED.semanticAssertions ? "MATCH" : "MISMATCH"} |`,
     `| Browser assertions | ${EXPECTED.browserAssertions} | ${report.actual.browserAssertions} | ${report.actual.browserAssertions === EXPECTED.browserAssertions ? "MATCH" : "MISMATCH"} |`,
+    `| Direct Playwright assertions | ${EXPECTED.playwrightAssertions} | ${report.actual.playwrightAssertions} | ${report.actual.playwrightAssertions === EXPECTED.playwrightAssertions ? "MATCH" : "MISMATCH"} |`,
     `| Mutation families | ${EXPECTED.mutationFamilies} | ${report.actual.mutationFamilies} | ${report.actual.mutationFamilies === EXPECTED.mutationFamilies ? "MATCH" : "MISMATCH"} |`,
     `| Coverage gates | ${EXPECTED.coverageGates} | ${report.actual.coverageGates} | ${report.actual.coverageGates === EXPECTED.coverageGates ? "MATCH" : "MISMATCH"} |`,
     `| Exhaustive generator gates | ${EXPECTED.generatorGates} | ${report.actual.generatorGates} | ${report.actual.generatorGates === EXPECTED.generatorGates ? "MATCH" : "MISMATCH"} |`,
@@ -378,6 +422,7 @@ function markdown(report, { final = false } = {}) {
     `| Exhaustive generated-question audit | ${report.generator.status} | ${report.generator.questions ?? 0} questions; ${report.generator.skills ?? 0} skills |`,
     `| Eleven-family mutation sanity | ${report.mutation.status} | ${report.mutation.families.filter((x) => x.status === "PASS").length}/11 families; ${mutationCases.filter((x) => x.status === "PASS").length}/${mutationCases.length} effect-sensitive cases killed |`,
     `| Browser smoke | ${report.browser.status} | ${report.browser.results.filter((x) => x.status === "PASS").length} pass, ${report.browser.results.filter((x) => x.status === "FAIL").length} fail, ${report.browser.results.filter((x) => x.status === "SKIP").length} skip |`,
+    `| Direct Playwright journeys | ${report.playwright.status} | ${report.playwright.summary.passed}/${report.playwright.summary.expected} pass; ${report.playwright.summary.failed} fail; ${report.playwright.summary.skipped} skip; zero retries required |`,
     `| Browser executable identity | ${report.browser.evidence?.browserIdentityValid ? "PASS" : "FAIL"} | ${esc(report.browser.evidence?.browserProductName || "unavailable")} ${esc(report.browser.evidence?.browserFullVersion || "unavailable")}; sha256:${esc(report.browser.evidence?.browserExecutableSha256 || "unavailable")} |`,
     `| GitHub-hosted runner image identity | ${report.browser.evidence?.validForPublication ? "PASS" : "NOT_HOSTED"} | ImageOS ${esc(report.browser.evidence?.runnerImageOS || "unavailable")}; ImageVersion ${esc(report.browser.evidence?.runnerImageVersion || "unavailable")}; requested label ${esc(report.browser.evidence?.requestedRunnerLabel || "unavailable")} |`,
     `| Reviewed browser/runner tuple | ${report.reviewedBrowserRunnerEvidence.status === "REVIEWED" ? "PASS" : "PENDING"} | live tuple ${report.publication.browserEvidenceMatches ? "matches" : "does not match"} the reviewed record |`,
@@ -407,7 +452,7 @@ export async function runAudit({ browserPath = null } = {}) {
     metadata(),
     curriculumManifestStatus(),
   ]);
-  let coverage; let mutation; let browser; let generator;
+  let coverage; let mutation; let browser; let generator; let playwright;
   const coverageTask = async () => {
     try { return await runCoverage({ nodePath: process.execPath, indexPath }); }
     catch (error) { return { status: "FAIL", calibrated: false, calibration: { reasons: [String(error)], fullBranchPct: null, partialBranchPct: null, aggregateBranchPct: null }, exactBytes: false, branchPct: null, engineSha256: null, structuredAuditValid: false, structuredAudit: null }; }
@@ -423,12 +468,14 @@ export async function runAudit({ browserPath = null } = {}) {
   if (process.env.GITHUB_ACTIONS === "true") {
     coverage = await coverageTask();
     browser = await browserTask();
+    playwright = await runPlaywrightFocusedAudit();
     [mutation, generator] = await Promise.all([mutationTask(), runGeneratorAudit()]);
   } else {
     coverage = await coverageTask();
     mutation = await mutationTask();
     generator = await runGeneratorAudit();
     browser = await browserTask();
+    playwright = await runPlaywrightFocusedAudit();
   }
   const structured = coverage.structuredAuditValid ? coverage.structuredAudit : null;
   const engine = structured
@@ -482,13 +529,14 @@ export async function runAudit({ browserPath = null } = {}) {
     engineAssertions: engine.results.length,
     semanticAssertions: semantic.assertions.length,
     browserAssertions: browser.results.length,
+    playwrightAssertions: playwright.results.length,
     mutationFamilies: mutation.families.length,
     coverageGates: coverage.branchPct === null ? 0 : 1,
     generatorGates: generator && typeof generator.status === "string" ? 1 : 0,
     launcherGates: process.env.MQ_LAUNCHER_PREFLIGHT ? 1 : 0,
     externalEvidenceGates: externalReleaseEvidence.gates.length,
   };
-  actual.total = actual.engineAssertions + actual.semanticAssertions + actual.browserAssertions + actual.mutationFamilies + actual.coverageGates + actual.generatorGates + actual.launcherGates + actual.externalEvidenceGates;
+  actual.total = actual.engineAssertions + actual.semanticAssertions + actual.browserAssertions + actual.playwrightAssertions + actual.mutationFamilies + actual.coverageGates + actual.generatorGates + actual.launcherGates + actual.externalEvidenceGates;
   const countsMatch = Object.entries(EXPECTED).every(([key, value]) => actual[key] === value);
   const delivered = await deliveredFiles();
   const residualRisks = [];
@@ -498,6 +546,7 @@ export async function runAudit({ browserPath = null } = {}) {
   unverifiedClaims.push("This local automated review does not verify control of the OpenMathQuest organization and OpenMathQuest/openmathquest.github.io repository, exclusive use of that organization for Math Quest Pages, the root Pages configuration, absence of a CNAME, HTTPS, deployment from the exact reviewed release tag, the deployed artifact, physical Windows/iPhone/iPad devices, or external legal/privacy review.");
   if (parentStrings.status !== "APPROVED") residualRisks.push("Child-facing strings are placeholders pending the project owner's parent approval; the game is not shippable.");
   if (browser.status !== "PASS") unverifiedClaims.push("The complete real-browser interaction flow is not verified.");
+  if (playwright.status !== "PASS") unverifiedClaims.push("The direct native-input Playwright journey matrix is not verified.");
   if (!browser.evidence?.validForPublication) unverifiedClaims.push("This run did not record a complete GitHub-hosted browser/runner tuple suitable for publication approval.");
   if (reviewedBrowserEvidence.status !== "REVIEWED") unverifiedClaims.push("The exact GitHub-hosted browser/runner tuple remains pending independent review.");
   if (coverage.status !== "PASS") unverifiedClaims.push(`At least ${MINIMUM_ENGINE_BRANCH_COVERAGE_PCT}% branch coverage of the exact shipped engine bytes is not verified.`);
@@ -515,7 +564,7 @@ export async function runAudit({ browserPath = null } = {}) {
       unverifiedClaims.push(`${gateResult.id} [${gateResult.classification}]: ${gateResult.title} is not verified (${gateResult.details}).`);
     }
   }
-  const gatesPass = engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
+  const gatesPass = engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && playwright.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
   const technicalShippable = gatesPass && parentStrings.status === "APPROVED";
   if (!["APPROVED", "EMERGENCY_APPROVED"].includes(publication.status)) residualRisks.push(publication.reason);
   const shippable = computeReleaseDecision({
@@ -525,7 +574,7 @@ export async function runAudit({ browserPath = null } = {}) {
   });
   const report = {
     generatedAt: auditTime.toISOString(), status: gatesPass ? (parentStrings.status === "APPROVED" ? (shippable ? "PASS" : "PUBLICATION_BLOCKED") : "PENDING_PARENT_APPROVAL") : "FAIL",
-    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, engine, semantic, coverage, mutation, generator, browser,
+    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,
   };
   const publicReport = sanitizeHostDetails(report);
@@ -580,6 +629,7 @@ process.stdout.write(`${JSON.stringify({
   generator: report.generator.status,
   mutation: report.mutation.status,
   browser: report.browser.status,
+  playwright: report.playwright.status,
   browserEvidence: report.browser.evidence ?? null,
   browserDiagnostic,
   parentStrings: report.parentStrings.status,

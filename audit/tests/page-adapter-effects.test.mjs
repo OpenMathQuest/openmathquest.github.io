@@ -1058,9 +1058,9 @@ test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mi
   const effects = { requests: [], replyMode: "valid" };
   const harness = evaluateHarness({
     prelude: `
-      const PWA_RELEASE="1.0.0-beta.4";
-      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.4";
-      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.4";
+      const PWA_RELEASE="1.0.0-beta.5";
+      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.5";
+      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.5";
       const PWA_REQUIRED_PATHS=Object.freeze(["./index.html","./PRIVACY.md"]);
       const PWA_ACTIVATION_CHALLENGE_PATTERN=/^[a-f0-9]{64}$/;
       const waiting={
@@ -1287,7 +1287,7 @@ test("activation timeout leaves the current version usable and a second Apply at
   assert.equal(effects.removedListeners, 1);
 });
 
-test("every service-worker controller change interlocks input and reloads only after a committed save", async () => {
+test("an explicit update reload interlocks input and reloads only after a committed save", async () => {
   const buildHarness = (saveResult) => {
     const effects = {
       saveResult,

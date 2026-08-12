@@ -1,4 +1,4 @@
-# Public Beta 4 release readiness
+# Public Beta 5 release readiness
 
 This document describes the release boundary; it is not publication approval.
 
@@ -12,11 +12,13 @@ change-specific effect-sensitive test. Pull requests and ordinary pushes do
 not run the complete gauntlet. Their passing checks may establish that real
 production behavior is **implemented**, but not **release-certified**.
 
-When publication is the next intended action, create the qualification commit,
-gather hosted-Windows identity, and create the exact two-file direct evidence
-successor defined in `AGENTS.md`. Freeze that successor as the candidate. Run
-the complete certification system once against that immutable commit and
-public payload. A clear owner publication instruction
+When publication is the next intended action, create the qualification commit
+on protected `main` with final game/runtime/PWA bytes and pending clearance
+records. Run the trusted-HTTPS canary and hosted-Windows observation against
+that commit, then create its exact two-file runtime-equivalent evidence
+successor under PB-046. Freeze that successor as the candidate. Run the
+complete certification system once against that immutable commit and public
+payload. A clear owner publication instruction
 authorizes the run. If it passes, tag and deploy the same bytes. If it fails or
 anything changes, use focused checks for the correction, freeze a new
 candidate, and rerun the complete system from the beginning. The Pages workflow
@@ -90,19 +92,18 @@ generated
   `ImageVersion`; and
 - a `REVIEWED` `audit/browser-runner-evidence-v1.json` tuple that matches both
   that live audit and the exact fields in `PUBLICATION_CLEARANCE.md`.
-- exactly eight reported external release-evidence records: for Beta 4, four
-  mandatory PASS gates for independent adjudication, complete finding
-  disposition, reviewed hosted-Windows evidence, and exact
-  project-owner `PR_PUSH_AUTHORIZED` authorization; one visible non-passing
-  `EXT-HOST: DEFERRED` record bound to the owner-directed prerelease deferral;
-  one visible non-passing `EXT-CANARY: OWNER_SKIPPED` record bound to the
-  Beta 4-only owner decision with no evidence or reconciliation claim; and
-  visible optional records for the offered six-lane physical-device matrix
-  and offered six-reviewer cycle; and
+- exactly eight reported external release-evidence records: for Beta 5, five
+  mandatory PASS gates for reconciled trusted-HTTPS canary evidence,
+  independent adjudication, complete finding disposition, reviewed
+  hosted-Windows evidence, and exact project-owner `PR_PUSH_AUTHORIZED`
+  authorization; one visible non-passing `EXT-HOST: DEFERRED` record bound to
+  the owner-directed prerelease deferral; and visible `OPTIONAL_NOT_RUN`
+  records for the offered six-lane physical-device matrix and offered
+  six-reviewer cycle; and
 - a current (already reviewed and not expired) external-evidence window, exact
   evidence digest for every mandatory gate and every completed optional
   cycle, zero open Critical/High findings, zero
-  unaccepted Medium findings, zero unrecorded Low findings, the Beta 4 tag and
+  unaccepted Medium findings, zero unrecorded Low findings, the Beta 5 tag and
   protected-main binding, and the canonical review-bundle digest.
 
 The generated report is intentionally ignored because it contains a run
@@ -122,32 +123,41 @@ the component register, listed in the exact public-file manifest, inspected by
 the guard, and match the working tree. Excluding its approval bytes avoids a
 cryptographic self-reference. The qualification and successor public-payload
 digests are not equal because the successor contains the reviewed browser
-evidence; only game/runtime bytes are unchanged. The single final
-certification run binds the successor's exact commit and final payload.
+evidence; only the game/runtime/PWA bytes are exactly unchanged. The canary
+binds the qualification commit and its runtime snapshot, while the successor
+validator proves that exact runtime equivalence. The single final certification
+run binds the successor's exact commit and final payload.
 
-The remaining mandatory Beta adjudication, finding, hosted-Windows, and
-owner-authorization requirements; the visible prerelease host deferral; the
-Beta 4-only visible canary skip;
-and the separately offered optional physical-device and six-reviewer cycles
-are listed in
+The mandatory Beta 5 canary reconciliation, adjudication, finding,
+hosted-Windows, and owner-authorization requirements; the visible prerelease
+host deferral; and the separately offered optional physical-device and
+six-reviewer cycles are listed in
 `docs/release/ios-ipados-pwa-beta2-plan.md` and
 `docs/release/publication-gates.md`. The manual Pages workflow must not be run
 until all mandatory gates are independently completed.
 
-For `v1.0.0-beta.4`, the owner declined both optional cycles on 2026-08-02.
+Beta 5 is odd-numbered, so its full Playwright Deep UX Census status is exact
+`NOT_REQUIRED_BY_CADENCE` under `ALTERNATING_BETA_V1`; no complete hosted census
+is a Beta 5 release gate. The local 100-cell mode may run only as a
+non-certifying development benchmark and cannot satisfy or strengthen any
+release claim. Historically, Beta 4 was the first scheduled census release;
+Beta 6 is the next scheduled beta. Neither mode makes a physical-device,
+Safari, screen-reader, pronunciation, child-comprehension, or visual-taste
+claim.
+
+For `v1.0.0-beta.5`, the owner declined both optional cycles on 2026-08-12.
 The clearance consequently retains exact `OPTIONAL_NOT_RUN` fields for the
 six-device and six-reviewer records, and this release will make neither a
 physical-device qualification claim nor an independent-review claim.
 
 These requirements are now machine-enforced through the closed ordered
 `PUBLICATION_CLEARANCE.md` schema. The ordinary audit predicts and observes
-eight external records (267 total counted results). For Beta 4, four are
-mandatory PASS gates, `EXT-HOST` is a separately visible
-`DEFERRED_PRERELEASE`/`DEFERRED` record, `EXT-CANARY` is a separately visible
-`OWNER_SKIPPED_BETA4`/`OWNER_SKIPPED` record, and two are optional. A later
-prerelease without a distinct owner exception requires five PASS gates. A
-stable release requires affirmative host approval and all six ordinarily mandatory gates to
-PASS. Any missing, additional,
+eight external records (283 total counted results, including 16 direct
+Playwright browser journeys). For Beta 5, five are mandatory PASS gates,
+including `EXT-CANARY` backed by exact `RECONCILED` evidence; `EXT-HOST` is a
+separately visible `DEFERRED_PRERELEASE`/`DEFERRED` record, and two records are
+optional. A stable release requires affirmative host approval and all six
+ordinarily mandatory gates to PASS. Any missing, additional,
 reordered, malformed, pending, unknown, stale, future-dated, artifact-
 mismatched, browser-evidence-mismatched, open-finding, incomplete selected
 optional cycle, tag/ref-mismatched, or unauthorized state is classified
@@ -157,6 +167,11 @@ unverified claims, and it forces `External release evidence: BLOCKED` and
 `OPTIONAL_NOT_RUN`/`NONE`/zero state and is reported as `OPTIONAL`, never
 `PASS`. An exit-zero technical-only evidence run is not release approval and
 does not alter those fields.
+
+Historical Beta 4 evidence remains governed by its one-release
+`OWNER_SKIPPED_BETA4` canary state and `DIRECT_EVIDENCE_SUCCESSOR_V1`. Neither
+may be copied into Beta 5: the skip expired, and PB-046 instead requires
+`RECONCILED` canary evidence plus `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`.
 
 The prerelease host deferral is never reported as a pass, waiver, or privacy
 clearance. It remains nonblocking only for a semantic-version prerelease and

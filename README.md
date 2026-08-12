@@ -1,11 +1,11 @@
 # Math Quest
 
 Math Quest is an offline-first, browser-based mathematics game for a child and
-a grown-up to use together. The Public Beta 4 candidate is driven by an independently
+a grown-up to use together. The Public Beta 5 candidate is driven by an independently
 authored, neutral curriculum manifest containing 126 skills across 21 ordered
 levels, from pre-kindergarten through Grade 5.
 
-Release target: **v1.0.0-beta.4**
+Release target: **v1.0.0-beta.5**
 
 > This is beta software. A grown-up should co-play, especially when a skill is
 > new, and report any ambiguous question or grading error.
@@ -43,11 +43,11 @@ prereleases, so the host gate must remain visibly
 release, the origin must be affirmatively qualified or the runnable game must
 move to a suitable host; the source repository can remain on GitHub.
 
-The project owner skipped the external trusted-HTTPS canary for Beta 4. That
-gate is visibly `OWNER_SKIPPED`, not passed or reconciled, so this beta does
-not claim external observation of its trusted-HTTPS update, cache-repair, or
-cold-offline path. Application-level privacy, local testing, and the final
-frozen-candidate audit remain required.
+The Beta 4 trusted-HTTPS canary was explicitly skipped and remains recorded as
+missing evidence for that historical release. Beta 5 restores the mandatory
+canary: its exact qualification bytes must pass the private trusted-HTTPS
+update, cache-repair, migration, teardown, privacy, and cold-offline checks
+before publication clearance can be approved.
 
 The `OpenMathQuest` organization and its root Pages repository,
 `OpenMathQuest/openmathquest.github.io`, are reserved exclusively for Math
@@ -64,7 +64,7 @@ launcher and a hosted site requires a deliberate backup and restore.
 
 The Pages workflow is dispatched from protected `main` only while that branch
 and its exact `release_tag` input resolve to the same annotated
-`v1.0.0-beta.4` commit. Its product version and publication-clearance hashes
+`v1.0.0-beta.5` commit. Its product version and publication-clearance hashes
 must match the reviewed candidate. Publication clearance also binds the exact
 audited browser product, full product version, executable SHA-256, and
 GitHub-hosted runner `ImageOS`/`ImageVersion`. The hosted link is not considered verified
@@ -89,11 +89,11 @@ installed app only when a grown-up deliberately wants to transfer progress.
 See the [iPhone and iPad installation guide](docs/release/install-ios-ipados.md).
 
 Essential actions use visible touch controls; a hardware keyboard is optional.
-The owner declined both the optional six-lane physical-device cycle and the
-optional six-reviewer cycle for Beta 4. This release therefore makes no tested-
+The optional six-lane physical-device cycle and optional six-reviewer cycle are
+not selected for Beta 5. This release therefore makes no tested-
 generation support claim for Apple devices and no independent-review
 qualification claim. Safari Lockdown Mode and managed
-configurations that disable Web Locks are outside the Beta 4 support claim:
+configurations that disable Web Locks are outside the Beta 5 support claim:
 the game pauses before child play rather than using an unsafe persistence
 fallback. Do not weaken a security setting just for Math Quest; use another
 qualified device or browser configuration.

@@ -2,15 +2,15 @@
 
 The deterministic engine does not register a service worker, inspect install
 state, read Cache Storage, or perform network effects. The browser adapter
-outside the engine owns the Public Beta 4 PWA lifecycle.
+outside the engine owns the Public Beta 5 PWA lifecycle.
 
 ## Frozen identities
 
-- Release: `1.0.0-beta.4`
-- Build: `math-quest-pwa-v1.0.0-beta.4`
-- Reported logical cache identity: `math-quest-static-v1.0.0-beta.4`
+- Release: `1.0.0-beta.5`
+- Build: `math-quest-pwa-v1.0.0-beta.5`
+- Reported logical cache identity: `math-quest-static-v1.0.0-beta.5`
 - Physical cache storage:
-  `math-quest-static-v1.0.0-beta.4-<release-manifest-sha256>`
+  `math-quest-static-v1.0.0-beta.5-<release-manifest-sha256>`
 - Readiness request/reply: `MATH_QUEST_GET_READINESS_V1` /
   `MATH_QUEST_READINESS_V1`
 - Waiting-readiness request/reply:
@@ -67,7 +67,7 @@ manifest. Only when no valid cached copy exists may it request the manifest
 from the network. Thus readiness and navigation from an already populated
 exact cache cannot wait on a slow or never-settling network request.
 The physical cache name includes the worker's embedded exact manifest hash.
-Two worker scripts that accidentally reuse the same logical Beta 4 identity
+Two worker scripts that accidentally reuse the same logical Beta 5 identity
 therefore cannot read, overwrite, stage into, or delete each other's live shell
 storage. The logical identity remains the closed readiness-protocol value.
 
@@ -109,12 +109,14 @@ To accept an update:
    cache entry ready;
 5. commit current valid state under the progress Web Lock;
 6. confirm the waiting object did not change while the state was committed;
-7. rely on the one lifetime `controllerchange` listener installed before
-   registration;
+7. observe the exact waiting worker's activation state in the tab that began
+   Apply;
 8. send `MATH_QUEST_SKIP_WAITING_V1` with the same challenge to that exact
    waiting object; and
-9. reload exactly once at Home or the Grown-ups corner, guarded by in-memory
-   pending/applying/reloaded flags.
+9. reload that initiating tab exactly once after the worker reaches
+   `activated`, guarded by in-memory pending/applying/reloaded flags. The
+   worker does not claim or navigate another open tab; those tabs require a
+   grown-up's deliberate reload or close/reopen.
 
 A missing, late, malformed, mismatched, or non-ready proof stops before the
 progress commit and before the activation request. Closing the dialog or an
@@ -124,9 +126,11 @@ The waiting worker records a challenge only after full exact-cache readiness.
 Any skip request consumes the stored challenge before comparison, so mismatch
 and replay cannot be retried. A matching request reruns full readiness and
 calls `skipWaiting()` only if every bound byte and MIME remains exact.
-The activation event repeats that exact proof, then awaits `clients.claim()`
-before deleting any explicitly known fallback cache. Failed proof or failed
-claim therefore preserves the prior worker's offline storage.
+The activation event repeats that exact proof and removes only the candidate's
+disposable staging cache. It does not call `clients.claim()` and does not
+delete a prior release cache, because either effect could take control from or
+remove offline bytes beneath another open tab. The browser may later evict old
+cache storage under its normal storage policy.
 
 If activation is not confirmed within the bounded wait, clear the applying
 state. Only a still-verified active shell permits copy that says the current
@@ -134,16 +138,18 @@ version remains usable; an uncontrolled or unready page instead says to stay
 online and retry offline setup. The dialog must allow another explicit Apply
 attempt with a fresh listener and timer.
 
-The first `controllerchange` on an initially uncontrolled page is first
-control acquisition from `clients.claim()`. It refreshes readiness in place,
-marks an exact-cache reload pending, and must not rerender, reload, or lose an
-unfinished first-use nickname. The reload occurs only after the grown-up
-finishes or skips the nickname gate and reaches Home (or reaches the Grown-ups
-corner). A later controller replacement, including one not initiated by the
-currently loaded page, uses the same pending boundary. During a child activity
-it leaves input intact; at the boundary it interlocks input, commits progress,
-and reloads exactly once. If that commit fails, the old client is not reloaded
-and the grown-up receives an explicit backup/retry warning.
+Any `controllerchange` that the browser produces independently refreshes
+readiness in place and marks a manual exact-cache reload pending. It must not
+rerender, reload, or lose an unfinished nickname or answer, including after
+the page later reaches Home or the Grown-ups corner. Only the tab whose
+grown-up explicitly selected Apply may use the exact waiting worker's
+`activated` state to interlock input, commit progress, and reload once. A
+current tab that independently observes a controller change shows a deliberate
+Reload control at a safe boundary. If the initiating tab's commit fails, it is
+not reloaded and the grown-up receives an explicit backup/retry warning. Other
+open tabs require their grown-up to use the browser's reload control or close
+and reopen them; an older release is not assumed to expose the current in-game
+Reload control.
 
 Public Beta 1 has no update or safe-boundary protocol and contains a known
 unusable answer renderer, but neither cache lineage nor client silence can
@@ -151,15 +157,15 @@ prove that a retained window is Beta 1. The worker therefore never probes,
 classifies, or navigates a retained client during activation. This rule also
 applies to suspended current clients, malformed replies, timeouts, evicted or
 unrecognized caches, and every post-Beta-1 client. After the incoming worker
-has re-proved the complete exact shell and claimed its scope, cleanup may still
-remove only the explicitly known obsolete caches; cache cleanup grants no
-authority over a window.
+has re-proved the complete exact shell, it retains prior release caches so an
+older open tab does not lose the offline bytes it may still use. Cache storage
+never grants authority over a window.
 
 A grown-up deliberately reloads an older tab, or closes and reopens it. That
 ordinary navigation is then served by the verified current worker. The page
-uses its existing safe-boundary controller-change path only for its own exact
-responsive lifecycle and tells the grown-up that other open tabs are never
-forced to reload. The worker never reads or writes `localStorage`; the existing
+shows a deliberate Reload control at a safe boundary and tells the grown-up
+that open tabs are never forced to reload. The worker never reads or writes
+`localStorage`; the existing
 validated, lease-protected Beta 1 migration remains the only progress-copy
 path. The one-use `legacy-recovery=beta1` parser remains solely as backward
 compatibility for URLs emitted by an already-installed older worker and is not
@@ -278,7 +284,7 @@ The adapter does not fall back to an unlocked read/compare/write when Web Locks
 are missing or fail. It pauses child play and shows a grown-up-only explanation,
 backup export for valid loaded state, and a supported-browser/reload path.
 Safari Lockdown Mode and managed configurations that disable Web Locks are
-outside the Beta 4 support claim; the explanation recommends another qualified
+outside the Beta 5 support claim; the explanation recommends another qualified
 configuration and does not ask a family to weaken a security setting. Physical
 Apple qualification still has to prove the supported release devices.
 

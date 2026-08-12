@@ -9,6 +9,7 @@ export const DEVELOPMENT_SUITE_IDS = Object.freeze([
   "pwa",
   "canary",
   "engine",
+  "playwright",
   "guard",
 ]);
 
@@ -25,6 +26,7 @@ const ROUTES = Object.freeze({
   pwa: [/^(?:index\.html|sw\.js|manifest\.webmanifest|release-shell-v1\.json)$/u, /^assets\//u, /^tools\/build-pwa-release-manifest\.mjs$/u, /^audit\/(?:lib\/browser-smoke|run-browser-smoke)\.mjs$/u, /^audit\/tests\/pwa-release\.test\.mjs$/u, /^\.github\/workflows\/(?:pages|audit)\.yml$/u],
   canary: [/^audit\/(?:run-trusted-https-canary\.(?:mjs|ps1)|validate-trusted-https-canary\.mjs)$/u, /^audit\/lib\/trusted-https-canary(?:-supply-chain)?\.mjs$/u, /^audit\/tests\/trusted-https-canary\.test\.mjs$/u, /^\.github\/workflows\/trusted-https-canary\.yml$/u, /^(?:package|package-lock)\.json$/u, /^licenses\/ci-toolchain\.md$/u],
   engine: [/^index\.html$/u, /^curriculum\//u, /^audit\/(?:extract-child-strings|mutation-runner|exhaustive-generator-audit|run-coverage)\.mjs$/u, /^audit\/fixtures\//u, /^audit\/lib\/(?:child-strings|engine-loader|curriculum-manifest|native-coverage|test-harness)\.mjs$/u, /^audit\/tests\/(?:engine-suite|manifest-semantic-suite|node-engine|strategy-build-oracle)\.mjs$/u, /^research\/(?:build-axioms|pedagogy-notes)\.md$/u],
+  playwright: [/^(?:index\.html|Serve-MathQuest\.ps1|playwright(?:\.deep-ux)?\.config\.mjs|package\.json|package-lock\.json)$/u, /^assets\//u, /^audit\/playwright\//u, /^audit\/run-playwright-(?:focused|deep-ux-census)\.mjs$/u, /^audit\/lib\/playwright-(?:focused-contract|deep-ux-census)\.mjs$/u, /^audit\/tests\/playwright-(?:focused-contract|deep-ux-census)\.test\.mjs$/u],
   governance: [/^(?:AGENTS|CHANGELOG|CONTRIBUTING|OPEN_SOURCE_POLICY|PRIVACY|PUBLICATION_CLEARANCE|README|SECURITY|THIRD_PARTY_NOTICES)\.md$/u, /^(?:LICENSE|VERSION)$/u, /^audit\/(?:agent-collaboration-policy-v1|certification-cadence-v1|finished-work-policy-v1|browser-runner-evidence-v1)\.json$/u, /^audit\/tests\/(?:agent-collaboration-policy|audit-orchestration|certification-cadence|development-suite-plan|finished-work-policy|publication-clearance)\.test\.mjs$/u, /^audit\/lib\/(?:browser-runner-evidence|development-suite-plan|publication-clearance|release-evidence-successor|rights-state|hosted-windows-observation)\.mjs$/u, /^audit\/(?:public-candidate-guard|validate-publication-clearance|validate-hosted-windows-observation)\.mjs$/u, /^audit\/(?:observe-hosted-windows|run-audit|on-change-audit)\.ps1$/u, /^audit\/run-audit\.mjs$/u, /^\.github\/workflows\//u, /^docs\//u, /^research\//u, /^licenses\//u, /^VERSION$/u],
 });
 
