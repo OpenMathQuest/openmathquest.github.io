@@ -33,6 +33,67 @@ export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   };
 }
 
+export async function observePromiseSettlement(promise, timeoutMs) {
+  if (!promise || typeof promise.then !== "function") throw new TypeError("Settlement observation requires a promise.");
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new TypeError("Settlement timeout must be positive.");
+  let timer = null;
+  try {
+    return await Promise.race([
+      Promise.resolve(promise).then(
+        (value) => Object.freeze({ settled: true, value, error: null }),
+        (error) => Object.freeze({ settled: true, value: undefined, error }),
+      ),
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(Object.freeze({ settled: false, value: undefined, error: null })), timeoutMs);
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export async function recoverAndDrainOperation(promise, {
+  timeoutMs,
+  drainTimeoutMs,
+  recover,
+  label,
+}) {
+  if (typeof recover !== "function") throw new TypeError("Operation recovery must be a function.");
+  const description = String(label || "Operation");
+  const initial = await observePromiseSettlement(promise, timeoutMs);
+  if (initial.settled) {
+    if (initial.error) throw initial.error;
+    return initial.value;
+  }
+
+  let recoveryError = null;
+  try {
+    await recover();
+  } catch (error) {
+    recoveryError = error;
+  }
+  const drained = await observePromiseSettlement(promise, drainTimeoutMs);
+  const recoveryDetail = recoveryError ? ` Recovery failed: ${String(recoveryError?.message || recoveryError)}` : "";
+  if (!drained.settled) {
+    throw new Error(`${description} timed out after ${timeoutMs} ms and did not settle after recovery.${recoveryDetail}`);
+  }
+  throw new Error(`${description} timed out after ${timeoutMs} ms and settled only after recovery.${recoveryDetail}`);
+}
+
+export async function captureCanaryObservation(promise, failures, label) {
+  if (!Array.isArray(failures)) throw new TypeError("Canary observation failures must be an array.");
+  try {
+    return Object.freeze({ ok: true, value: await promise });
+  } catch (error) {
+    failures.push(Object.freeze({
+      label: String(label || "observation"),
+      error: String(error?.message || error).slice(0, 180),
+    }));
+    return Object.freeze({ ok: false, value: null });
+  }
+}
+
 export async function waitForExactLoopbackListener({
   probe,
   expectedPid,

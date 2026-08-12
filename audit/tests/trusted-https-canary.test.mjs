@@ -24,10 +24,13 @@ import {
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   canaryBrowserArguments,
   canaryWorkspaceRemovalAllowed,
+  captureCanaryObservation,
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
+  observePromiseSettlement,
   parseTrustedHttpsCanaryEvidence,
   profileProcessSetSha256,
+  recoverAndDrainOperation,
   runCanaryTeardown,
   snapshotSha256,
   validateCanaryBrowserArguments,
@@ -397,6 +400,53 @@ test("teardown executes every cleanup in reverse order and preserves failures", 
     { id: "first", ok: true },
   ]);
   assert.match(result[1].error, /injected cleanup failure/u);
+
+});
+
+test("canary checks emit progress markers and bind open-ended waits", async () => {
+  assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
+  const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
+  assert.deepEqual(await observePromiseSettlement(delayed, 5), { settled: false, value: undefined, error: null });
+  assert.deepEqual(await observePromiseSettlement(delayed, 100), { settled: true, value: "later", error: null });
+  let resourceOpen = true;
+  let mutatedAfterTimeout = false;
+  let operationSettled = false;
+  const recoverable = new Promise((resolve) => setTimeout(() => {
+    if (resourceOpen) mutatedAfterTimeout = true;
+    operationSettled = true;
+    resolve("drained");
+  }, 30));
+  await assert.rejects(recoverAndDrainOperation(recoverable, {
+    timeoutMs: 5,
+    drainTimeoutMs: 100,
+    label: "delayed browser operation",
+    recover: async () => { resourceOpen = false; },
+  }), /settled only after recovery/u);
+  assert.equal(operationSettled, true);
+  assert.equal(mutatedAfterTimeout, false);
+  const observationFailures = [];
+  const failedHeaders = await captureCanaryObservation(Promise.reject(new Error("header observation failed")), observationFailures, "request headers");
+  assert.deepEqual(failedHeaders, { ok: false, value: null });
+  assert.deepEqual(observationFailures, [{ label: "request headers", error: "header observation failed" }]);
+  const runnerText = await read("audit/run-trusted-https-canary.mjs");
+  assert.match(runnerText, /\[canary\] START \$\{id\}/u);
+  assert.match(runnerText, /\[canary\] PASS \$\{id\}/u);
+  assert.match(runnerText, /\[canary\] FAIL \$\{id\}/u);
+  assert.match(runnerText, /Beta 1 service-worker readiness timed out/u);
+  assert.match(runnerText, /START ONLINE_TO_OFFLINE_SHUTDOWN/u);
+  assert.match(runnerText, /closePersistentContext\(context, profilePath\)/u);
+  assert.match(runnerText, /boundedPageEvaluate/u);
+  assert.match(runnerText, /boundedBrowserOperation/u);
+  assert.match(runnerText, /closeAuxiliaryContext/u);
+  assert.match(runnerText, /closeAllConnections/u);
+  assert.doesNotMatch(runnerText, /await\s+[A-Za-z_$][\w$]*\.evaluate\s*\(/u);
+  assert.doesNotMatch(runnerText, /networkBrowser/u);
+  assert.doesNotMatch(runnerText, /await\s+networkContext\.close\s*\(/u);
+  assert.doesNotMatch(runnerText, /await\s+context\.newPage\s*\(/u);
+  assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
+  assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
+  assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
+  assert.doesNotMatch(runnerText, /\$args\[0\]/u);
 });
 
 test("CI-only toolchain is closed, pinned, manual, private, fresh, and absent from the release shell", async () => {

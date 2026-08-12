@@ -26,9 +26,12 @@ import {
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   canonicalCanaryEvidence,
   canaryWorkspaceRemovalAllowed,
+  captureCanaryObservation,
   canaryBrowserArguments,
   loopbackListenerProbeInvocation,
+  observePromiseSettlement,
   profileProcessSetSha256,
+  recoverAndDrainOperation,
   runCanaryTeardown,
   safeRuntimePath,
   sha256Bytes,
@@ -119,6 +122,8 @@ async function run(command, args, options = {}) {
     maxBuffer: 16 * 1024 * 1024,
     windowsHide: true,
     env: options.env,
+    timeout: options.timeoutMs ?? 60_000,
+    killSignal: "SIGKILL",
   });
   return options.encoding === null ? result.stdout : String(result.stdout).trim();
 }
@@ -277,7 +282,14 @@ async function startBackend(state, requestedPort = 0) {
 
 async function stopServer(server) {
   if (!server?.listening) return true;
-  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  const closePromise = new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  let result = await observePromiseSettlement(closePromise, 1_000);
+  if (!result.settled) {
+    server.closeAllConnections?.();
+    result = await observePromiseSettlement(closePromise, 5_000);
+  }
+  if (!result.settled) throw new Error("Canary backend did not close after all connections were terminated.");
+  if (result.error) throw result.error;
   return !server.listening;
 }
 
@@ -381,14 +393,13 @@ async function stopChild(handle) {
   const child = handle?.child;
   if (!child || child.exitCode !== null) return true;
   child.kill();
-  const exited = await Promise.race([
-    new Promise((resolve) => child.once("exit", () => resolve(true))),
-    new Promise((resolve) => setTimeout(() => resolve(false), 5_000)),
-  ]);
-  if (!exited && child.pid) {
+  const exitPromise = new Promise((resolve) => child.once("exit", () => resolve(true)));
+  let result = await observePromiseSettlement(exitPromise, 5_000);
+  if (!result.settled && child.pid) {
     await run("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"]);
-    await new Promise((resolve) => child.once("exit", resolve));
+    result = await observePromiseSettlement(exitPromise, 5_000);
   }
+  if (!result.settled) throw new Error("Caddy did not exit after its process tree was terminated.");
   return child.exitCode !== null;
 }
 
@@ -421,7 +432,7 @@ async function assertLoopbackListener(port, pid) {
 async function inspectTrustedTls(port) {
   const script = [
     "$client=[Net.Sockets.TcpClient]::new()",
-    "$client.Connect('localhost',[int]$args[0])",
+    "$client.Connect('localhost',[int]$env:MQ_CANARY_TLS_PORT)",
     "$ssl=[Net.Security.SslStream]::new($client.GetStream(),$false)",
     "$ssl.AuthenticateAsClient('localhost')",
     "$cert=[Security.Cryptography.X509Certificates.X509Certificate2]::new($ssl.RemoteCertificate)",
@@ -430,7 +441,10 @@ async function inspectTrustedTls(port) {
     "$ssl.Dispose();$client.Dispose()",
     "$result|ConvertTo-Json -Compress",
   ].join(";");
-  return JSON.parse(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, String(port)]));
+  return JSON.parse(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+    env: { ...process.env, MQ_CANARY_TLS_PORT: String(port) },
+    timeoutMs: 30_000,
+  }));
 }
 
 async function persistCleanupIdentifiers(workRoot, { processIds = [], certificateThumbprint = null, originPort = null } = {}) {
@@ -463,7 +477,7 @@ async function findEdgeExecutable() {
 async function profileBoundEdgeProcesses(profilePath) {
   const script = [
     "$ErrorActionPreference='Stop'",
-    "$target=[IO.Path]::GetFullPath($args[0])",
+    "$target=[IO.Path]::GetFullPath($env:MQ_CANARY_PROFILE_PATH)",
     "$rows=@(Get-CimInstance Win32_Process -Filter \"Name = 'msedge.exe'\" -ErrorAction Stop | ForEach-Object {",
     "  $match=[regex]::Match([string]$_.CommandLine,'(?:^|\\s)--user-data-dir=(?:\"(?<quoted>[^\"]+)\"|(?<plain>\\S+))')",
     "  if($match.Success){",
@@ -474,7 +488,10 @@ async function profileBoundEdgeProcesses(profilePath) {
     "})",
     "ConvertTo-Json -InputObject @($rows) -Compress",
   ].join(";");
-  const raw = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, profilePath]);
+  const raw = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+    env: { ...process.env, MQ_CANARY_PROFILE_PATH: profilePath },
+    timeoutMs: 15_000,
+  });
   const value = JSON.parse(raw || "[]");
   return Array.isArray(value) ? value : [value];
 }
@@ -485,6 +502,59 @@ async function profileProcessIdentityRecords(rows) {
     executableSha256: await hashFile(path.resolve(String(row.executablePath))),
     commandLineSha256: hashFileBytes(Buffer.from(String(row.commandLine), "utf8")),
   })));
+}
+
+async function closePersistentContext(context, profilePath) {
+  if (!context) return true;
+  const closePromise = Promise.resolve().then(() => context.close());
+  let result = await observePromiseSettlement(closePromise, 10_000);
+  if (!result.settled || result.error) {
+    const rows = await profileBoundEdgeProcesses(profilePath);
+    for (const processId of [...new Set(rows.map((row) => Number(row.processId)).filter((value) => Number.isSafeInteger(value) && value > 0))]) {
+      await run("taskkill.exe", ["/PID", String(processId), "/T", "/F"], { timeoutMs: 15_000 }).catch(() => "");
+    }
+    result = await observePromiseSettlement(closePromise, 10_000);
+  }
+  if (!result.settled) throw new Error("Playwright context close did not settle after the exact disposable Edge process tree was terminated.");
+  const remaining = await waitFor(async () => {
+    const rows = await profileBoundEdgeProcesses(profilePath);
+    return rows.length === 0 ? [] : null;
+  }, "Edge retained the disposable profile after bounded context close", 10_000, 200);
+  assert.deepEqual(remaining, []);
+  return true;
+}
+
+async function boundedBrowserOperation(operation, persistentContext, profilePath, label, timeoutMs = 30_000) {
+  return recoverAndDrainOperation(operation, {
+    timeoutMs,
+    drainTimeoutMs: 10_000,
+    label,
+    recover: () => closePersistentContext(persistentContext, profilePath),
+  });
+}
+
+async function boundedPageEvaluate(page, persistentContext, profilePath, pageFunction, argument) {
+  return boundedBrowserOperation(
+    page.evaluate(pageFunction, argument),
+    persistentContext,
+    profilePath,
+    "Playwright page evaluation",
+  );
+}
+
+async function closeAuxiliaryContext(auxiliaryContext, persistentContext, profilePath) {
+  if (!auxiliaryContext) return true;
+  const closePromise = Promise.resolve().then(() => auxiliaryContext.close());
+  const initial = await observePromiseSettlement(closePromise, 10_000);
+  if (initial.settled && !initial.error) return true;
+
+  await closePersistentContext(persistentContext, profilePath);
+  if (!initial.settled) {
+    const drained = await observePromiseSettlement(closePromise, 10_000);
+    if (!drained.settled) throw new Error("Auxiliary Playwright context close did not settle after the exact disposable Edge process tree was terminated.");
+  }
+  if (initial.error) throw initial.error;
+  throw new Error("Auxiliary Playwright context close timed out and settled only after the exact disposable Edge process tree was terminated.");
 }
 
 function emptyChecks() {
@@ -510,21 +580,25 @@ function maybeInjectFailure(id) {
 async function checkedStep(checks, id, action, detail) {
   try {
     maybeInjectFailure(id);
+    process.stdout.write(`[canary] START ${id}\n`);
     await action();
     setCheck(checks, id, "PASS", detail);
+    process.stdout.write(`[canary] PASS ${id}\n`);
   } catch (error) {
     setCheck(checks, id, "FAIL", String(error?.message || error));
+    process.stdout.write(`[canary] FAIL ${id}: ${String(error?.message || error).replace(/[\r\n\t]+/gu, " ").slice(0, 240)}\n`);
     throw error;
   }
 }
 
-async function trackRequests(context, records) {
+async function trackRequests(context, records, persistentContext, profilePath) {
   const tasks = [];
+  const observationFailures = [];
   const channelCounts = { webSocket: 0, eventSource: 0, webTransport: 0, sendBeacon: 0 };
-  await context.exposeBinding("__mqCanaryReportChannel", (_source, channel) => {
+  await boundedBrowserOperation(context.exposeBinding("__mqCanaryReportChannel", (_source, channel) => {
     if (Object.hasOwn(channelCounts, channel)) channelCounts[channel] += 1;
-  });
-  await context.addInitScript(() => {
+  }), persistentContext, profilePath, "Playwright request-channel binding");
+  await boundedBrowserOperation(context.addInitScript(() => {
     const report = (channel) => { try { void globalThis.__mqCanaryReportChannel(channel); } catch {} };
     for (const [name, channel] of [["WebSocket", "webSocket"], ["EventSource", "eventSource"], ["WebTransport", "webTransport"]]) {
       const Original = globalThis[name];
@@ -536,7 +610,7 @@ async function trackRequests(context, records) {
       const original = navigator.sendBeacon.bind(navigator);
       try { Object.defineProperty(navigator, "sendBeacon", { configurable: true, value: (...args) => { report("sendBeacon"); return original(...args); } }); } catch {}
     }
-  });
+  }), persistentContext, profilePath, "Playwright request-channel initialization");
   const attachPage = (page) => page.on("websocket", () => { channelCounts.webSocket += 1; });
   context.pages().forEach(attachPage);
   context.on("page", attachPage);
@@ -555,7 +629,13 @@ async function trackRequests(context, records) {
     } catch {
       // Invalid request URLs remain explicit failures.
     }
-    const headers = await request.allHeaders().catch(() => ({}));
+    const headerObservation = await captureCanaryObservation(
+      boundedBrowserOperation(request.allHeaders(), persistentContext, profilePath, "Playwright request-header observation"),
+      observationFailures,
+      "request headers",
+    );
+    if (!headerObservation.ok) return;
+    const headers = headerObservation.value;
     const body = request.postDataBuffer();
     const resourceType = request.resourceType();
     if (resourceType === "eventsource") channelCounts.eventSource += 1;
@@ -575,7 +655,7 @@ async function trackRequests(context, records) {
     })();
     tasks.push(task);
   });
-  return Object.freeze({ tasks, channelCounts });
+  return Object.freeze({ tasks, channelCounts, observationFailures });
 }
 
 function recordSetSha256(records) {
@@ -593,7 +673,7 @@ function projectionFieldCount(value) {
   return 1;
 }
 
-async function inspectExactCandidateCache(page, snapshots, { allowBeta1 }) {
+async function inspectExactCandidateCache(page, snapshots, { allowBeta1, persistentContext, profilePath }) {
   const manifest = snapshots.manifest;
   const manifestSha256 = snapshots.identity.candidateReleaseManifestSha256;
   const physicalCacheName = `${manifest.cacheName}-${manifestSha256}`;
@@ -601,7 +681,7 @@ async function inspectExactCandidateCache(page, snapshots, { allowBeta1 }) {
     { path: "release-shell-v1.json", sha256: manifestSha256, bytes: snapshots.candidate.records.find((item) => item.path === "release-shell-v1.json").bytes, mime: "application/json", status: 200 },
     ...manifest.entries.map((entry) => ({ ...entry, path: entry.path.slice(2) })),
   ].sort((left, right) => left.path.localeCompare(right.path));
-  const observed = await page.evaluate(async ({ expectedCacheName, expectedRows }) => {
+  const observed = await boundedPageEvaluate(page, persistentContext, profilePath, async ({ expectedCacheName, expectedRows }) => {
     const names = await caches.keys();
     const cache = await caches.open(expectedCacheName);
     const requests = await cache.keys();
@@ -653,17 +733,17 @@ async function inspectExactCandidateCache(page, snapshots, { allowBeta1 }) {
   });
 }
 
-async function verifyDetachedHttpsResponses({ origin, context, snapshots }) {
+async function verifyDetachedHttpsResponses({ origin, context, snapshots, persistentContext, profilePath }) {
   const manifestRecord = snapshots.candidate.records.find((item) => item.path === "release-shell-v1.json");
   const expected = [
     { path: "", sha256: snapshots.identity.candidateIndexSha256, bytes: snapshots.candidate.records.find((item) => item.path === "index.html").bytes, mime: "text/html", status: 200 },
     ...snapshots.candidate.records.map((record) => ({ ...record, mime: contentType(record.path), status: 200 })),
   ].sort((left, right) => left.path.localeCompare(right.path));
   assert.equal(manifestRecord.sha256, snapshots.identity.candidateReleaseManifestSha256);
-  const page = await context.newPage();
+  const page = await boundedBrowserOperation(context.newPage(), persistentContext, profilePath, "Playwright detached-response page creation");
   const first = await page.goto(`${origin}release-shell-v1.json`, { waitUntil: "domcontentloaded", timeout: 30_000 });
   assert.equal(first?.fromServiceWorker(), false);
-  const observed = await page.evaluate(async (rows) => {
+  const observed = await boundedPageEvaluate(page, persistentContext, profilePath, async (rows) => {
     const results = [];
     for (const row of rows) {
       const response = await fetch(new URL(row.path, location.origin + "/"), { cache: "no-store", credentials: "omit", redirect: "error" });
@@ -674,7 +754,6 @@ async function verifyDetachedHttpsResponses({ origin, context, snapshots }) {
     }
     return results;
   }, expected);
-  await page.close();
   for (const row of observed) {
     const wanted = expected.find((item) => item.path === row.path);
     assert.ok(wanted, row.path);
@@ -719,8 +798,8 @@ async function openInstallHelp(page) {
   await dialog.waitFor({ state: "visible", timeout: 10_000 });
 }
 
-async function exactActiveReadiness(page, snapshots) {
-  const value = await page.evaluate(() => new Promise((resolve, reject) => {
+async function exactActiveReadiness(page, snapshots, persistentContext, profilePath) {
+  const value = await boundedPageEvaluate(page, persistentContext, profilePath, () => new Promise((resolve, reject) => {
     const worker = navigator.serviceWorker.controller;
     if (!worker) return reject(new Error("No active service-worker controller."));
     const channel = new MessageChannel();
@@ -771,7 +850,6 @@ async function main() {
   let backend = null;
   let caddy = null;
   let context = null;
-  let networkBrowser = null;
   let networkContext = null;
   let certificateThumbprint = null;
   let rootCertificate = null;
@@ -844,7 +922,10 @@ async function main() {
   cleanup.push({ id: "certificate", run: async () => {
     if (certificateThumbprint) {
       await run("certutil.exe", ["-user", "-delstore", "Root", certificateThumbprint]);
-      const count = Number(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$thumb=$args[0];@((Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb)).Count", certificateThumbprint]));
+      const count = Number(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT;@((Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb)).Count"], {
+        env: { ...process.env, MQ_CANARY_CERT_THUMBPRINT: certificateThumbprint },
+        timeoutMs: 30_000,
+      }));
       remainingMatchingCertificateCount = count;
       cleanupFlags.certificateRemoved = count === 0;
     } else {
@@ -865,11 +946,9 @@ async function main() {
     return cleanupFlags.caddyStopped && cleanupFlags.portClosed;
   } });
   cleanup.push({ id: "browser", run: async () => {
-    if (networkContext) await networkContext.close();
+    if (networkContext) await closeAuxiliaryContext(networkContext, context, profilePath);
     networkContext = null;
-    if (networkBrowser) await networkBrowser.close();
-    networkBrowser = null;
-    if (context) await context.close();
+    if (context) await closePersistentContext(context, profilePath);
     context = null;
     let lastRows = await profileBoundEdgeProcesses(profilePath);
     try {
@@ -936,7 +1015,10 @@ async function main() {
       args: browserArgs,
       serviceWorkers: "allow",
       viewport: { width: 1280, height: 800 },
+      timeout: 30_000,
     });
+    context.setDefaultTimeout(30_000);
+    context.setDefaultNavigationTimeout(30_000);
     const observedProfileProcesses = await waitFor(async () => {
       const rows = await profileBoundEdgeProcesses(profilePath);
       return rows.length ? rows : null;
@@ -945,15 +1027,15 @@ async function main() {
     assert.ok(observedProfileIdentities.every((record) => record.executableSha256 === edgeSha256));
     observedProfileProcessCount = observedProfileIdentities.length;
     observedProfileProcessSetSha256 = profileProcessSetSha256(observedProfileIdentities);
-    requestTrackers.push(await trackRequests(context, browserRequests));
+    requestTrackers.push(await trackRequests(context, browserRequests, context, profilePath));
     browserVersion = context.browser()?.version() || null;
     assert.match(String(browserVersion), /^\d+\.\d+\.\d+\.\d+$/u);
-    const beta1Page = context.pages()[0] || await context.newPage();
+    const beta1Page = context.pages()[0] || await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright Beta 1 page creation");
     const firstResponse = await beta1Page.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
     await checkedStep(checks, "HTTPS_TRUSTED_NO_BYPASS", async () => {
       assert.equal(firstResponse?.status(), 200);
-      const security = await firstResponse.securityDetails();
+      const security = await boundedBrowserOperation(firstResponse.securityDetails(), context, profilePath, "Playwright TLS security-details observation");
       assert.equal(security?.subjectName, "localhost");
       assert.match(String(security?.issuer || ""), /Caddy Local Authority/iu);
       assert.ok(["TLS 1.2", "TLS 1.3"].includes(security?.protocol));
@@ -961,9 +1043,15 @@ async function main() {
     }, "Edge trusted Caddy's disposable localhost certificate with no insecure browser flags.");
 
     await checkedStep(checks, "ROOT_SCOPE_EXACT", async () => {
-      const scope = await beta1Page.evaluate(async () => {
+      const scope = await boundedPageEvaluate(beta1Page, context, profilePath, async () => {
         const manifest = await fetch("./manifest.webmanifest", { cache: "no-store" }).then((response) => response.json());
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Beta 1 service-worker readiness timed out.")), 20_000);
+          navigator.serviceWorker.ready.then(
+            (value) => { clearTimeout(timer); resolve(value); },
+            (error) => { clearTimeout(timer); reject(error); },
+          );
+        });
         return { id: manifest.id, startUrl: manifest.start_url, manifestScope: manifest.scope, workerScope: registration.scope };
       });
       assert.deepEqual(scope, { id: "./", startUrl: "./", manifestScope: "./", workerScope: origin });
@@ -974,7 +1062,7 @@ async function main() {
         const names = await caches.keys();
         return Boolean(navigator.serviceWorker.controller) && names.includes(cacheName);
       }, BETA1_CACHE, { timeout: 30_000 });
-      const cached = await beta1Page.evaluate(async (cacheName) => {
+      const cached = await boundedPageEvaluate(beta1Page, context, profilePath, async (cacheName) => {
         const cache = await caches.open(cacheName);
         return (await cache.keys()).map((request) => new URL(request.url).pathname).sort();
       }, BETA1_CACHE);
@@ -983,7 +1071,7 @@ async function main() {
 
     await checkedStep(checks, "BETA1_SYNTHETIC_STATE_SEEDED", async () => {
       await beta1Page.locator('[data-action="name-skip"]').click();
-      const seeded = await beta1Page.evaluate(({ sourceKey, profileKey }) => {
+      const seeded = await boundedPageEvaluate(beta1Page, context, profilePath, ({ sourceKey, profileKey }) => {
         const E = MathQuestEngine;
         let state = E.createInitialState(30_000);
         state.earnedLevel = 2;
@@ -1024,32 +1112,31 @@ async function main() {
       assert.equal(source.sessionLog.length, 1);
       assert.equal(source.feedbackHistory.length, 1);
       assert.equal(Object.values(source.skills)[0]?.evidence?.length, 3);
-      const profile = JSON.parse(await beta1Page.evaluate((key) => localStorage.getItem(key), PROFILE_KEY));
+      const profile = JSON.parse(await boundedPageEvaluate(beta1Page, context, profilePath, (key) => localStorage.getItem(key), PROFILE_KEY));
       assert.deepEqual(profile, { schemaVersion: 1, mode: "anonymous", name: "" });
     }, "A valid anonymous Beta 1 save with distinctive settings, skill evidence, spacing, daily count, feedback, session log, cold window, latency, and seed fields was stored locally.");
 
     await checkedStep(checks, "BETA1_OFFLINE_RELOAD", async () => {
-      await context.setOffline(true);
+      await boundedBrowserOperation(context.setOffline(true), context, profilePath, "Playwright offline-mode activation");
       await beta1Page.reload({ waitUntil: "domcontentloaded", timeout: 20_000 });
-      assert.equal(await beta1Page.title(), "Math Quest");
-      assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
-      await context.setOffline(false);
+      assert.equal(await boundedBrowserOperation(beta1Page.title(), context, profilePath, "Playwright document-title observation"), "Math Quest");
+      assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
+      await boundedBrowserOperation(context.setOffline(false), context, profilePath, "Playwright offline-mode release");
     }, "Beta 1 reloaded from its installed cache while Playwright network emulation was offline.");
 
     await checkedStep(checks, "SAME_ORIGIN_RUNTIME_SWITCH", async () => {
       backendState.active = snapshots.candidate;
       assert.equal(beta1Page.url().startsWith(origin), true);
-      networkBrowser = await chromium.launch({ executablePath: edgePath, headless: true, args: browserArgs });
-      networkContext = await networkBrowser.newContext({ serviceWorkers: "block", viewport: { width: 1280, height: 800 } });
-      requestTrackers.push(await trackRequests(networkContext, browserRequests));
-      networkProof = await verifyDetachedHttpsResponses({ origin, context: networkContext, snapshots });
-      await networkContext.close();
+      networkContext = await boundedBrowserOperation(context.browser().newContext({ serviceWorkers: "block", viewport: { width: 1280, height: 800 } }), context, profilePath, "Playwright auxiliary context creation");
+      networkContext.setDefaultTimeout(30_000);
+      networkContext.setDefaultNavigationTimeout(30_000);
+      requestTrackers.push(await trackRequests(networkContext, browserRequests, context, profilePath));
+      networkProof = await verifyDetachedHttpsResponses({ origin, context: networkContext, snapshots, persistentContext: context, profilePath });
+      await closeAuxiliaryContext(networkContext, context, profilePath);
       networkContext = null;
-      await networkBrowser.close();
-      networkBrowser = null;
     }, "The backend atomically switched Beta 1 to Beta 5 without changing scheme, host, port, or scope.");
 
-    const candidatePage = await context.newPage();
+    const candidatePage = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright candidate page creation");
     await candidatePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await waitForCandidateHome(candidatePage);
 
@@ -1059,13 +1146,13 @@ async function main() {
         const names = await caches.keys();
         return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
       }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
-      waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true });
+      waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
     }, "The exact Beta 5 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache.");
 
     await checkedStep(checks, "CANDIDATE_REAL_UI_ACTIVATION", async () => {
       expectedCandidateReloadUrl = candidatePage.url();
       initialCandidateUrlSha256 = hashFileBytes(Buffer.from(expectedCandidateReloadUrl, "utf8"));
-      const initialDocumentIdentity = await candidatePage.evaluate(() => ({ timeOrigin: performance.timeOrigin, url: location.href }));
+      const initialDocumentIdentity = await boundedPageEvaluate(candidatePage, context, profilePath, () => ({ timeOrigin: performance.timeOrigin, url: location.href }));
       const recordCandidateNavigation = (frame) => {
         if (frame === candidatePage.mainFrame()) candidateMainFrameNavigations.push(frame.url());
       };
@@ -1091,47 +1178,48 @@ async function main() {
 
     await checkedStep(checks, "RETAINED_BETA1_EXPLICIT_RELOAD", async () => {
       assert.deepEqual(beta1MainFrameNavigations, []);
-      assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
+      assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
       await beta1Page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
       await beta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
-      assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
+      assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
       assert.deepEqual(beta1MainFrameNavigations, [origin]);
       beta1Page.removeAllListeners("framenavigated");
     }, "The retained Beta 1 tab remained untouched until an explicit user-equivalent reload, which then opened the verified current shell without a recovery query.");
 
     await checkedStep(checks, "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED", async () => {
       assert.equal(new URL(candidatePage.url()).searchParams.has("legacy-recovery"), false);
-      assert.equal(await candidatePage.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
     }, "The responsive Beta 5 tab remained on its safe-boundary current route.");
 
     await checkedStep(checks, "BETA1_SOURCE_BYTES_UNCHANGED", async () => {
-      assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
     }, "The original Beta 1 localStorage bytes remained byte-for-byte unchanged.");
 
     await checkedStep(checks, "SCHEMA3_MIGRATION_PRESERVED", async () => {
       await candidatePage.waitForFunction((key) => Boolean(localStorage.getItem(key)), PROTECTED_KEY, { timeout: 20_000 });
-      protectedBytes = await candidatePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY);
+      protectedBytes = await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY);
       const protectedState = JSON.parse(protectedBytes);
       assert.equal(protectedState.schemaVersion, 3);
       assert.equal(protectedState.earnedLevel, 2);
       assert.equal(protectedState.practiceCountByDay["30000"], 3);
       assert.deepEqual(projectApprovedShape(migrationProjection, protectedState), migrationProjection);
       protectedMigrationProjection = projectApprovedShape(migrationProjection, protectedState);
-      assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), `${PROTECTED_KEY}:beta1-migration-guard:v1`), null);
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), `${PROTECTED_KEY}:beta1-migration-guard:v1`), null);
     }, "Migration committed schema 3 while preserving the complete approved schema-2 projection, including distinctive settings, skill evidence/spacing, counts, logs, feedback, cold window, latency, and seed values.");
 
     await checkedStep(checks, "CANDIDATE_ACTIVE_CACHE_READY", async () => {
       await openInstallHelp(candidatePage);
       await candidatePage.locator('[data-action="pwa-retry"]').click();
       await candidatePage.locator('[data-pwa-status]').filter({ hasText: "Ready for an offline check" }).waitFor({ state: "visible", timeout: 20_000 });
-      const state = await candidatePage.evaluate(() => ({ controller: navigator.serviceWorker.controller?.scriptURL || null }));
+      const state = await boundedPageEvaluate(candidatePage, context, profilePath, () => ({ controller: navigator.serviceWorker.controller?.scriptURL || null }));
       assert.equal(state.controller, `${origin}sw.js`);
-      activeCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true });
-      assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
-      assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
+      activeCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
     }, "The activated Beta 5 worker independently matched the exact detached cache and controller identity, retained the Beta 1 cache for the still-open older tab, excluded staging or unrecognized caches, and left both progress records unchanged.");
 
-    await context.close();
+    process.stdout.write("[canary] START ONLINE_TO_OFFLINE_SHUTDOWN\n");
+    await closePersistentContext(context, profilePath);
     context = null;
     cleanupFlags.browserClosed = true;
     const stoppedBackendPort = backend.port;
@@ -1141,6 +1229,7 @@ async function main() {
     backend = null;
     assert.equal(await portAccepting(originPort), false);
     assert.equal(await portAccepting(stoppedBackendPort), false);
+    process.stdout.write("[canary] PASS ONLINE_TO_OFFLINE_SHUTDOWN\n");
     const requestsBeforeColdStart = backendState.requests.length;
 
     await checkedStep(checks, "CANDIDATE_OFFLINE_COLD_RELAUNCH", async () => {
@@ -1150,19 +1239,22 @@ async function main() {
         args: canaryBrowserArguments(profilePath),
         serviceWorkers: "allow",
         viewport: { width: 1280, height: 800 },
+        timeout: 30_000,
       });
-      requestTrackers.push(await trackRequests(context, browserRequests));
-      const offlinePage = context.pages()[0] || await context.newPage();
+      context.setDefaultTimeout(30_000);
+      context.setDefaultNavigationTimeout(30_000);
+      requestTrackers.push(await trackRequests(context, browserRequests, context, profilePath));
+      const offlinePage = context.pages()[0] || await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright offline page creation");
       assert.equal(await portAccepting(originPort), false);
       assert.equal(await portAccepting(stoppedBackendPort), false);
       const offlineResponse = await offlinePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 20_000 });
       assert.equal(offlineResponse?.fromServiceWorker(), true);
       await waitForCandidateHome(offlinePage);
-      assert.equal(await offlinePage.evaluate(() => navigator.serviceWorker.controller?.scriptURL || null), `${origin}sw.js`);
-      const offlineReadiness = await exactActiveReadiness(offlinePage, snapshots);
-      offlineCacheProof = await inspectExactCandidateCache(offlinePage, snapshots, { allowBeta1: true });
-      assert.equal(await offlinePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
-      assert.equal(await offlinePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
+      assert.equal(await boundedPageEvaluate(offlinePage, context, profilePath, () => navigator.serviceWorker.controller?.scriptURL || null), `${origin}sw.js`);
+      const offlineReadiness = await exactActiveReadiness(offlinePage, snapshots, context, profilePath);
+      offlineCacheProof = await inspectExactCandidateCache(offlinePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
+      assert.equal(await boundedPageEvaluate(offlinePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
+      assert.equal(await boundedPageEvaluate(offlinePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
       assert.equal(backendState.requests.length, requestsBeforeColdStart);
       assert.equal(await portAccepting(originPort), false);
       assert.equal(await portAccepting(stoppedBackendPort), false);
@@ -1186,7 +1278,7 @@ async function main() {
     const activePage = context.pages()[0];
 
     await checkedStep(checks, "CACHE_CORRUPTION_DETECTED", async () => {
-      const deleted = await activePage.evaluate(async (prefix) => {
+      const deleted = await boundedPageEvaluate(activePage, context, profilePath, async (prefix) => {
         const name = (await caches.keys()).find((item) => item.startsWith(prefix) && !item.endsWith("-staging"));
         if (!name) return false;
         return (await caches.open(name)).delete("./index.html", { ignoreSearch: true });
@@ -1199,13 +1291,13 @@ async function main() {
     }, "Deleting one required entry caused the shipped readiness UI to fail closed into Recovery.");
 
     await checkedStep(checks, "TRANSACTIONAL_REPAIR_SUCCEEDED", async () => {
-      const before = await activePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY);
+      const before = await boundedPageEvaluate(activePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY);
       await activePage.locator('[data-action="pwa-repair"]').click();
       await activePage.locator('[data-pwa-status]').filter({ hasText: "Ready for an offline check" }).waitFor({ state: "visible", timeout: 30_000 });
-      const after = await activePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY);
+      const after = await boundedPageEvaluate(activePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY);
       assert.equal(after, before);
       assert.equal(after, protectedBytes);
-      const cacheState = await activePage.evaluate(async (prefix) => {
+      const cacheState = await boundedPageEvaluate(activePage, context, profilePath, async (prefix) => {
         const names = await caches.keys();
         const active = names.filter((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
         const staging = names.filter((name) => name.endsWith("-staging"));
@@ -1215,14 +1307,15 @@ async function main() {
       assert.equal(cacheState.active.length, 1);
       assert.equal(cacheState.staging.length, 0);
       assert.equal(cacheState.hasIndex, true);
-      repairedCacheProof = await inspectExactCandidateCache(activePage, snapshots, { allowBeta1: true });
-      await exactActiveReadiness(activePage, snapshots);
-      assert.equal(await activePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
-      assert.equal(await activePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
+      repairedCacheProof = await inspectExactCandidateCache(activePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
+      await exactActiveReadiness(activePage, snapshots, context, profilePath);
+      assert.equal(await boundedPageEvaluate(activePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
+      assert.equal(await boundedPageEvaluate(activePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
     }, "The visible Repair control independently restored the exact detached cache transactionally without changing either source or protected progress.");
 
     await checkedStep(checks, "RUNTIME_REQUEST_ALLOWLIST", async () => {
       await Promise.all(requestTrackers.flatMap((tracker) => tracker.tasks));
+      assert.deepEqual(requestTrackers.flatMap((tracker) => tracker.observationFailures), []);
       const allowed = runtimeAllowlist(snapshots);
       const external = browserRequests.filter((item) => item.origin !== origin.slice(0, -1));
       const unexpected = browserRequests.filter((item) => item.origin === origin.slice(0, -1) && (
