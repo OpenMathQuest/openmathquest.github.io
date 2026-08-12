@@ -94,6 +94,16 @@ export async function captureCanaryObservation(promise, failures, label) {
   }
 }
 
+export function canaryChildExitSucceeded(result) {
+  return Boolean(result?.settled && result.error === null && result.value === true);
+}
+
+export function canonicalCertificateThumbprint(value) {
+  const source = String(value || "");
+  if (!/^[A-Fa-f0-9]{40}$/u.test(source)) throw new TypeError("Certificate thumbprint must be exactly 40 hexadecimal characters.");
+  return source.toLowerCase();
+}
+
 export async function waitForExactLoopbackListener({
   probe,
   expectedPid,

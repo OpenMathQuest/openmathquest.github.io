@@ -113,8 +113,26 @@ finally {
       $thumbprint = [string]$cleanupRecord.certificateThumbprint
       if (-not [string]::IsNullOrWhiteSpace($thumbprint)) {
         if ($thumbprint -cnotmatch '^[A-F0-9]{40}$') { throw 'Invalid canary cleanup certificate thumbprint.' }
-        & certutil.exe -user -delstore Root $thumbprint | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'Fallback certificate removal failed.' }
+        $certificateCleanupScript = @'
+$ErrorActionPreference = 'Stop'
+$thumb = $env:MQ_CANARY_CERT_THUMBPRINT
+@(Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumb) | Remove-Item -Force
+if (@(Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumb).Count -ne 0) { exit 1 }
+'@
+        $encodedCleanup = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($certificateCleanupScript))
+        $env:MQ_CANARY_CERT_THUMBPRINT = $thumbprint
+        try {
+          $certificateCleanup = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-NonInteractive', '-EncodedCommand', $encodedCleanup) -WindowStyle Hidden -PassThru
+          if (-not $certificateCleanup.WaitForExit(30000)) {
+            $certificateCleanup.Kill()
+            if (-not $certificateCleanup.WaitForExit(5000)) { throw 'Fallback certificate cleanup process did not terminate.' }
+            throw 'Fallback certificate removal timed out.'
+          }
+          if ($certificateCleanup.ExitCode -ne 0) { throw 'Fallback certificate removal failed.' }
+        }
+        finally {
+          Remove-Item Env:MQ_CANARY_CERT_THUMBPRINT -ErrorAction SilentlyContinue
+        }
         $remaining = @((Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumbprint)).Count
         if ($remaining -ne 0) { throw 'Fallback certificate removal did not remove the exact canary root.' }
       }

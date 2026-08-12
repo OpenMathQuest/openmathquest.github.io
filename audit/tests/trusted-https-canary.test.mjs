@@ -23,7 +23,9 @@ import {
   TRUSTED_HTTPS_CANARY_TAG,
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   canaryBrowserArguments,
+  canaryChildExitSucceeded,
   canaryWorkspaceRemovalAllowed,
+  canonicalCertificateThumbprint,
   captureCanaryObservation,
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
@@ -322,7 +324,10 @@ test("hosted Windows listener observation tolerates only transient no-match resu
     );
   }
 
-  const runnerText = await read("audit/run-trusted-https-canary.mjs");
+  const [runnerText, wrapperText] = await Promise.all([
+    read("audit/run-trusted-https-canary.mjs"),
+    read("audit/run-trusted-https-canary.ps1"),
+  ]);
   assert.match(LOOPBACK_LISTENER_QUERY_SCRIPT, /CmdletizationQuery_NotFound/u);
   assert.match(runnerText, /waitForExactLoopbackListener/u);
 
@@ -400,6 +405,11 @@ test("teardown executes every cleanup in reverse order and preserves failures", 
     { id: "first", ok: true },
   ]);
   assert.match(result[1].error, /injected cleanup failure/u);
+  assert.equal(canaryChildExitSucceeded({ settled: true, value: true, error: null }), true);
+  assert.equal(canaryChildExitSucceeded({ settled: true, value: false, error: null }), false);
+  assert.equal(canaryChildExitSucceeded({ settled: false, value: true, error: null }), false);
+  assert.equal(canonicalCertificateThumbprint("ABCDEF0123456789ABCDEF0123456789ABCDEF01"), "abcdef0123456789abcdef0123456789abcdef01");
+  assert.throws(() => canonicalCertificateThumbprint("not-a-thumbprint"));
 
 });
 
@@ -428,7 +438,10 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   const failedHeaders = await captureCanaryObservation(Promise.reject(new Error("header observation failed")), observationFailures, "request headers");
   assert.deepEqual(failedHeaders, { ok: false, value: null });
   assert.deepEqual(observationFailures, [{ label: "request headers", error: "header observation failed" }]);
-  const runnerText = await read("audit/run-trusted-https-canary.mjs");
+  const [runnerText, wrapperText] = await Promise.all([
+    read("audit/run-trusted-https-canary.mjs"),
+    read("audit/run-trusted-https-canary.ps1"),
+  ]);
   assert.match(runnerText, /\[canary\] START \$\{id\}/u);
   assert.match(runnerText, /\[canary\] PASS \$\{id\}/u);
   assert.match(runnerText, /\[canary\] FAIL \$\{id\}/u);
@@ -446,6 +459,13 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
+  assert.match(runnerText, /Import-Certificate -FilePath \$path -CertStoreLocation 'Cert:\\\\CurrentUser\\\\Root'/u);
+  assert.match(runnerText, /canonicalCertificateThumbprint\(certificateThumbprint\)/u);
+  assert.match(runnerText, /persistCleanupIdentifiers\(workRoot, \{ processIds: \[caddy\.child\.pid\], certificateThumbprint, originPort \}\);\s*assert\.equal\(Number\(await run\("powershell\.exe"/u);
+  assert.match(wrapperText, /certificateCleanup\.WaitForExit\(30000\)/u);
+  assert.match(wrapperText, /certificateCleanup\.Kill\(\)/u);
+  assert.match(wrapperText, /Fallback certificate removal did not remove the exact canary root/u);
+  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /certutil\.exe/u);
   assert.doesNotMatch(runnerText, /\$args\[0\]/u);
 });
 
