@@ -283,6 +283,28 @@ test("early FAILED evidence records unknown observations as null instead of inve
   };
   const parsed = parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence));
   assert.equal(parsed.valid, true, parsed.issues.join("; "));
+
+  evidence.teardown.status = "PASS";
+  evidence.checks.at(-1).status = "PASS";
+  assert.equal(parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence)).valid, false, "a claimed PASS cannot replace cleanup facts");
+
+  evidence.teardown = {
+    ...evidence.teardown,
+    status: "PASS",
+    browserClosed: true,
+    caddyStopped: true,
+    backendStopped: true,
+    certificateRemoved: true,
+    profileRemoved: true,
+    temporaryFilesRemoved: true,
+    portClosed: true,
+    certificateThumbprint: "1".repeat(40),
+    remainingMatchingCertificateCount: 0,
+    remainingProfileProcessCount: 0,
+    remainingProfileProcessSetSha256: EMPTY_PROFILE_PROCESS_SET_SHA256,
+  };
+  evidence.checks.at(-1).status = "PASS";
+  assert.equal(parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence)).valid, true, "successful early cleanup remains truthful without inventing a browser observation");
 });
 
 test("profile-process identity and workspace removal fail closed while any exact-profile process remains", () => {
@@ -459,7 +481,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
-  assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::CurrentUser\)/u);
+  assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
+  assert.match(runnerText, /WindowsBuiltInRole\]::Administrator/u);
   assert.match(runnerText, /\$store\.Add\(\$certificate\)/u);
   assert.match(runnerText, /\$store\.Remove\(\$certificate\)/u);
   assert.match(runnerText, /canonicalCertificateThumbprint\(certificateThumbprint\)/u);
@@ -467,7 +490,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(wrapperText, /certificateCleanup\.WaitForExit\(30000\)/u);
   assert.match(wrapperText, /certificateCleanup\.Kill\(\)/u);
   assert.match(wrapperText, /Fallback certificate removal did not remove the exact canary root/u);
-  assert.match(wrapperText, /X509Store\]::new\('Root', \[Security\.Cryptography\.X509Certificates\.StoreLocation\]::CurrentUser\)/u);
+  assert.match(wrapperText, /X509Store\]::new\('Root', \[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
+  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /StoreLocation\]::CurrentUser/u);
   assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /Import-Certificate/u);
   assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /certutil\.exe/u);
   assert.doesNotMatch(runnerText, /\$args\[0\]/u);
