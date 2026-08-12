@@ -14,6 +14,24 @@ export const CADDY_ARCHIVE_SHA512 = "cd5ccfd86a4b40732cf715890d0dca5bf3f63adefec
 export const PLAYWRIGHT_CORE_VERSION = "1.62.1";
 export const PLAYWRIGHT_CORE_SRI = "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==";
 export const EMPTY_PROFILE_PROCESS_SET_SHA256 = createHash("sha256").update("[]\n").digest("hex");
+export const LOOPBACK_LISTENER_QUERY_SCRIPT = [
+  "$port=[int]$env:MQ_CANARY_LISTENER_PORT",
+  "try { $rows=@(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction Stop) }",
+  "catch { if ($_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*') { $rows=@() } else { throw } }",
+  "$selected=@($rows | Select-Object LocalAddress,OwningProcess)",
+  "ConvertTo-Json -InputObject $selected -Compress",
+].join("\n");
+
+export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
+  if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
+    throw new TypeError("Canary listener port must be an unprivileged TCP port.");
+  }
+  return {
+    command: "powershell.exe",
+    args: ["-NoProfile", "-NonInteractive", "-Command", LOOPBACK_LISTENER_QUERY_SCRIPT],
+    options: { env: { ...baseEnv, MQ_CANARY_LISTENER_PORT: String(port) } },
+  };
+}
 
 export async function waitForExactLoopbackListener({
   probe,
