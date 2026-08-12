@@ -433,6 +433,47 @@ change warrants one, explaining the concern and likely value, but must obtain
 the owner's explicit approval before starting it. An early run is diagnostic
 and does not replace the final frozen-candidate run.
 
+### Alternating-beta Playwright Deep UX Census
+
+Beginning with `v1.0.0-beta.4`, every second semantic-version beta—Beta 4,
+Beta 6, Beta 8, and so on—must also pass the Playwright Deep UX Census on the
+exact frozen candidate. It runs as a separate GitHub-hosted Windows job in
+parallel with, not inside or instead of, the single complete certification
+gauntlet. A scheduled census failure blocks that beta.
+
+The census deterministically inventories all 72,576 governed combinations of
+126 skills, two difficulties, three representations, three worlds, and 32
+sample ordinals. Its versioned risk planner selects a closed representative
+set across structural signatures and required skill, method, representation,
+theme, and model witnesses. Each selected scenario is rendered in six
+governed Edge viewport/touch profiles and inspected in its initial, partial-
+response, expected-answer, and available teaching-model states. It uses native
+Playwright mouse, touch, keyboard, wheel, and form actions; zero retries; context-
+level request observation; browser actionability without forced interaction;
+16 px text and 44 px control floors; layout, overflow, accessible-name, save-
+isolation, console, page-error, and request checks. Screenshots, AI-readable
+ARIA snapshots with boxes, and geometry records are retained only for
+anomalies and contain synthetic test state only.
+
+Early learning and every ordinary portrait, tablet, and desktop question keep
+the first response on the first question view. Later-grade content on the
+governed 844 by 390 short-landscape profile may use intentional outer-page
+scrolling when a large mathematical model cannot fit; the census must perform
+that scroll explicitly and then prove the response is actionable with further
+automatic scrolling disabled. Unapproved nested scrolling and unreachable
+controls remain defects; only the governed large route-grid scroller is exempt.
+
+Routine development must not run the complete census. The local 100-cell
+balanced benchmark is a non-certifying implementation and performance check;
+it cannot satisfy the alternating-beta gate. The census supplements but never
+replaces the 72-result browser audit, direct Playwright journeys, independent
+mathematical checks, human play testing, accessibility review, trusted-PWA
+evidence, or any selected physical-device evidence. It cannot establish child
+comprehension, visual taste, screen-reader speech, real-finger operation,
+software-keyboard behaviour, Safari/iOS behaviour, or installed-PWA relaunch.
+The closed machine cadence is owned by
+`audit/certification-cadence-v1.json`.
+
 ### Defect regression policy
 
 Every confirmed defect must become a permanent, effect-sensitive regression
@@ -602,6 +643,55 @@ validator must prove the sole-parent relationship, the two-path exact diff,
 the two pending predecessor records, and the final evidence/clearance records.
 Any other change or relationship invalidates this exception and requires a
 new qualification commit and owner direction before proceeding.
+
+## Owner-authorized Beta 5 canary and runtime-equivalent evidence successor
+
+On 2026-08-12, the project owner authorized publication work for
+`v1.0.0-beta.5` and approved one narrow evidence boundary that preserves the
+single frozen-candidate gauntlet without weakening the canary. The trusted-
+HTTPS canary is mandatory for Beta 5 and must produce exact `RECONCILED`
+evidence. Beta 4's owner-skipped canary state is historical and can never
+authorize Beta 5.
+
+The **Beta 5 qualification commit** is a protected-main commit whose game,
+curriculum, PWA, service-worker, dependency, privacy, licence, deployment, and
+runtime bytes are final. It contains `Status: PENDING` in
+`PUBLICATION_CLEARANCE.md` and `status: PENDING` in
+`audit/browser-runner-evidence-v1.json`. The hosted-Windows observation and
+trusted-HTTPS canary must both name this exact qualification commit; the
+canary record must validate as `RECONCILED` before clearance is composed.
+
+The **Beta 5 runtime-equivalent evidence successor** has one closed meaning:
+
+- it is the next commit, has exactly one parent, and that sole parent is the
+  named Beta 5 qualification commit;
+- the parent-to-child Git diff changes exactly
+  `PUBLICATION_CLEARANCE.md` and
+  `audit/browser-runner-evidence-v1.json`, and no other path;
+- the reviewed canary artifact's `candidateSha` equals the qualification
+  commit and its exact SHA-256 is recorded in the successor's clearance;
+- the hosted-Windows artifact also names the qualification commit, and its
+  reviewed tuple is recorded in the browser-evidence file and clearance;
+- every game, curriculum, PWA, service-worker, dependency, privacy, licence,
+  deployment, and runtime byte is therefore byte-identical between the two
+  commits, while the repository-wide public-payload digest truthfully changes
+  because the two evidence records changed; and
+- the one complete certification gauntlet runs only on this successor. Only
+  that exact successor may be tagged, released, or deployed as Beta 5.
+
+The closed policy name is
+`RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. This is a Beta 5-only owner
+decision, not a reusable canary waiver or automatic rule for Beta 6 or stable
+release. Any different parentage, path set, runtime byte, canary result, or
+evidence binding invalidates the successor and requires a new qualification
+commit and owner direction.
+
+For Beta 5, the owner also declined the optional six-lane physical-device
+cycle and optional six-reviewer cycle. Both must appear as exact
+`OPTIONAL_NOT_RUN` / `NONE` / zero-count records and must never be described as
+passes, waivers, device qualification, or independent-review qualification.
+The ordinary bounded independent review required by this repository remains
+separate and does not impersonate the optional six-reviewer cycle.
 
 ## Certification framework entry points
 

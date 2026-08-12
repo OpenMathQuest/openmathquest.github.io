@@ -41,7 +41,7 @@ const SOURCE_KEY = "math-quest:v2";
 const PROTECTED_KEY = "math-quest:progress:v2";
 const PROFILE_KEY = "math-quest:child-name:v1";
 const BETA1_CACHE = "math-quest-static-v1.0.0-beta.1";
-const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.4-";
+const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.5-";
 const CANDIDATE_STAGING_SUFFIX = "-staging";
 const EXPECTED_RELEASE_ENTRIES = Object.freeze([
   ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
@@ -173,15 +173,15 @@ async function verifyAndMaterializeSnapshots(candidateSha, root) {
   assert.equal(await gitText(["rev-parse", `${TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT}^{}`]), TRUSTED_HTTPS_CANARY_BETA1_COMMIT);
   assert.equal(await gitText(["cat-file", "-t", candidateSha]), "commit");
   assert.equal(await gitText(["rev-parse", "HEAD"]), candidateSha);
-  assert.equal((await exactGitBlob(candidateSha, "VERSION")).toString("utf8").trim(), "1.0.0-beta.4");
+  assert.equal((await exactGitBlob(candidateSha, "VERSION")).toString("utf8").trim(), "1.0.0-beta.5");
 
   const manifestBytes = await exactGitBlob(candidateSha, "release-shell-v1.json");
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
   assert.deepEqual(Object.keys(manifest), ["schemaVersion", "release", "buildId", "cacheName", "entryPath", "excludedPaths", "entries"]);
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.release, "1.0.0-beta.4");
-  assert.equal(manifest.buildId, "math-quest-pwa-v1.0.0-beta.4");
-  assert.equal(manifest.cacheName, "math-quest-static-v1.0.0-beta.4");
+  assert.equal(manifest.release, "1.0.0-beta.5");
+  assert.equal(manifest.buildId, "math-quest-pwa-v1.0.0-beta.5");
+  assert.equal(manifest.cacheName, "math-quest-static-v1.0.0-beta.5");
   assert.equal(manifest.entryPath, "./index.html");
   assert.deepEqual(manifest.excludedPaths, ["./release-shell-v1.json", "./sw.js"]);
   assert.deepEqual(manifest.entries.map((entry) => [entry.path.slice(2), entry.mime]), EXPECTED_RELEASE_ENTRIES);
@@ -618,7 +618,7 @@ async function inspectExactCandidateCache(page, snapshots, { allowBeta1 }) {
     return { names, rows, origin: location.origin, expectedCount: expectedRows.length };
   }, { expectedCacheName: physicalCacheName, expectedRows: expected });
   const allowedNames = new Set([physicalCacheName, ...(allowBeta1 ? [BETA1_CACHE] : [])]);
-  if (allowBeta1) assert.equal(observed.names.includes(BETA1_CACHE), true, "waiting phase must retain the immutable Beta 1 cache");
+  if (allowBeta1) assert.equal(observed.names.includes(BETA1_CACHE), true, "the canary must retain the immutable Beta 1 cache for the older open tab");
   assert.deepEqual([...observed.names].sort(), [...allowedNames].filter((name) => observed.names.includes(name)).sort());
   assert.equal(observed.names.includes(physicalCacheName), true);
   assert.equal(observed.names.some((name) => name.endsWith(CANDIDATE_STAGING_SUFFIX)), false);
@@ -703,7 +703,7 @@ async function caddyAccessLogProof(logPath, backendRequests) {
 }
 
 async function waitForCandidateHome(page) {
-  await page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.4", null, { timeout: 30_000 });
+  await page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
   await page.locator('[data-action="install-help"]').first().waitFor({ state: "visible", timeout: 30_000 });
 }
 
@@ -1041,22 +1041,22 @@ async function main() {
       networkContext = null;
       await networkBrowser.close();
       networkBrowser = null;
-    }, "The backend atomically switched Beta 1 to Beta 4 without changing scheme, host, port, or scope.");
+    }, "The backend atomically switched Beta 1 to Beta 5 without changing scheme, host, port, or scope.");
 
     const candidatePage = await context.newPage();
     await candidatePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await waitForCandidateHome(candidatePage);
 
-    await checkedStep(checks, "BETA4_WAITING_CACHE_READY", async () => {
+    await checkedStep(checks, "CANDIDATE_WAITING_CACHE_READY", async () => {
       await candidatePage.waitForFunction(async (prefix) => {
         const registration = await navigator.serviceWorker.getRegistration("./");
         const names = await caches.keys();
         return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
       }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
       waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true });
-    }, "The exact Beta 4 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache.");
+    }, "The exact Beta 5 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache.");
 
-    await checkedStep(checks, "BETA4_REAL_UI_ACTIVATION", async () => {
+    await checkedStep(checks, "CANDIDATE_REAL_UI_ACTIVATION", async () => {
       expectedCandidateReloadUrl = candidatePage.url();
       initialCandidateUrlSha256 = hashFileBytes(Buffer.from(expectedCandidateReloadUrl, "utf8"));
       const initialDocumentIdentity = await candidatePage.evaluate(() => ({ timeOrigin: performance.timeOrigin, url: location.href }));
@@ -1087,16 +1087,16 @@ async function main() {
       assert.deepEqual(beta1MainFrameNavigations, []);
       assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
       await beta1Page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-      await beta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.4", null, { timeout: 30_000 });
-      assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.4");
+      await beta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
+      assert.equal(await beta1Page.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
       assert.deepEqual(beta1MainFrameNavigations, [origin]);
       beta1Page.removeAllListeners("framenavigated");
     }, "The retained Beta 1 tab remained untouched until an explicit user-equivalent reload, which then opened the verified current shell without a recovery query.");
 
-    await checkedStep(checks, "RESPONSIVE_BETA4_TAB_NOT_FORCED", async () => {
+    await checkedStep(checks, "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED", async () => {
       assert.equal(new URL(candidatePage.url()).searchParams.has("legacy-recovery"), false);
-      assert.equal(await candidatePage.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.4");
-    }, "The responsive Beta 4 tab remained on its safe-boundary current route.");
+      assert.equal(await candidatePage.evaluate(() => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
+    }, "The responsive Beta 5 tab remained on its safe-boundary current route.");
 
     await checkedStep(checks, "BETA1_SOURCE_BYTES_UNCHANGED", async () => {
       assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
@@ -1114,16 +1114,16 @@ async function main() {
       assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), `${PROTECTED_KEY}:beta1-migration-guard:v1`), null);
     }, "Migration committed schema 3 while preserving the complete approved schema-2 projection, including distinctive settings, skill evidence/spacing, counts, logs, feedback, cold window, latency, and seed values.");
 
-    await checkedStep(checks, "BETA4_ACTIVE_CACHE_READY", async () => {
+    await checkedStep(checks, "CANDIDATE_ACTIVE_CACHE_READY", async () => {
       await openInstallHelp(candidatePage);
       await candidatePage.locator('[data-action="pwa-retry"]').click();
       await candidatePage.locator('[data-pwa-status]').filter({ hasText: "Ready for an offline check" }).waitFor({ state: "visible", timeout: 20_000 });
       const state = await candidatePage.evaluate(() => ({ controller: navigator.serviceWorker.controller?.scriptURL || null }));
       assert.equal(state.controller, `${origin}sw.js`);
-      activeCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: false });
+      activeCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true });
       assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
       assert.equal(await candidatePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
-    }, "The activated Beta 4 worker independently matched the exact detached cache and controller identity, with Beta 1, obsolete, and staging caches absent and both progress records unchanged.");
+    }, "The activated Beta 5 worker independently matched the exact detached cache and controller identity, retained the Beta 1 cache for the still-open older tab, excluded staging or unrecognized caches, and left both progress records unchanged.");
 
     await context.close();
     context = null;
@@ -1137,7 +1137,7 @@ async function main() {
     assert.equal(await portAccepting(stoppedBackendPort), false);
     const requestsBeforeColdStart = backendState.requests.length;
 
-    await checkedStep(checks, "BETA4_OFFLINE_COLD_RELAUNCH", async () => {
+    await checkedStep(checks, "CANDIDATE_OFFLINE_COLD_RELAUNCH", async () => {
       context = await chromium.launchPersistentContext(profilePath, {
         executablePath: edgePath,
         headless: true,
@@ -1154,7 +1154,7 @@ async function main() {
       await waitForCandidateHome(offlinePage);
       assert.equal(await offlinePage.evaluate(() => navigator.serviceWorker.controller?.scriptURL || null), `${origin}sw.js`);
       const offlineReadiness = await exactActiveReadiness(offlinePage, snapshots);
-      offlineCacheProof = await inspectExactCandidateCache(offlinePage, snapshots, { allowBeta1: false });
+      offlineCacheProof = await inspectExactCandidateCache(offlinePage, snapshots, { allowBeta1: true });
       assert.equal(await offlinePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
       assert.equal(await offlinePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);
       assert.equal(backendState.requests.length, requestsBeforeColdStart);
@@ -1209,7 +1209,7 @@ async function main() {
       assert.equal(cacheState.active.length, 1);
       assert.equal(cacheState.staging.length, 0);
       assert.equal(cacheState.hasIndex, true);
-      repairedCacheProof = await inspectExactCandidateCache(activePage, snapshots, { allowBeta1: false });
+      repairedCacheProof = await inspectExactCandidateCache(activePage, snapshots, { allowBeta1: true });
       await exactActiveReadiness(activePage, snapshots);
       assert.equal(await activePage.evaluate((key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
       assert.equal(await activePage.evaluate((key) => localStorage.getItem(key), PROTECTED_KEY), protectedBytes);

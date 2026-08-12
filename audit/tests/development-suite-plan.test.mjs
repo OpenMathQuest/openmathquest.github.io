@@ -23,7 +23,7 @@ test("documentation-only work avoids product and engine execution", () => {
 
 test("single-file product changes select every affected independent layer", () => {
   const plan = planDevelopmentSuites(["index.html"]);
-  for (const id of ["governance", "metadata", "product", "pwa", "engine", "guard"]) {
+  for (const id of ["governance", "metadata", "product", "pwa", "engine", "playwright", "guard"]) {
     assert.equal(plan.suites.includes(id), true, id);
   }
   assert.equal(plan.suites.includes("canary"), false);
@@ -32,8 +32,24 @@ test("single-file product changes select every affected independent layer", () =
 
 test("launcher, canary, and engine routes remain distinct", () => {
   assert.equal(planDevelopmentSuites(["Serve-MathQuest.ps1"]).suites.includes("launcher"), true);
+  assert.equal(planDevelopmentSuites(["Serve-MathQuest.ps1"]).suites.includes("playwright"), true);
   assert.equal(planDevelopmentSuites(["audit/run-trusted-https-canary.mjs"]).suites.includes("canary"), true);
   assert.equal(planDevelopmentSuites(["curriculum/math-quest-manifest-v1.json"]).suites.includes("engine"), true);
+});
+
+test("Playwright Test changes select only the focused browser and shared policy layers", () => {
+  const config = planDevelopmentSuites(["playwright.config.mjs"]);
+  assert.deepEqual(config.suites, ["governance", "metadata", "playwright", "guard"]);
+  const dependency = planDevelopmentSuites(["package-lock.json"]);
+  assert.equal(dependency.suites.includes("canary"), true);
+  assert.equal(dependency.suites.includes("playwright"), true);
+  for (const file of [
+    "playwright.deep-ux.config.mjs",
+    "audit/lib/playwright-deep-ux-census.mjs",
+    "audit/playwright/deep-ux-census.spec.mjs",
+    "audit/run-playwright-deep-ux-census.mjs",
+    "audit/tests/playwright-deep-ux-census.test.mjs",
+  ]) assert.equal(planDevelopmentSuites([file]).suites.includes("playwright"), true, file);
 });
 
 test("unclassified files inside familiar directories fail safe to broad", () => {
@@ -52,6 +68,7 @@ test("every runtime asset change revalidates product and PWA shell bytes", () =>
   const plan = planDevelopmentSuites(["assets/sounds/confirm.wav"]);
   assert.equal(plan.suites.includes("product"), true);
   assert.equal(plan.suites.includes("pwa"), true);
+  assert.equal(plan.suites.includes("playwright"), true);
 });
 
 test("path normalization, deduplication, and ordering are deterministic", () => {

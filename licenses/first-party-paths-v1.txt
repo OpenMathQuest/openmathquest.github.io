@@ -34,6 +34,7 @@ audit/fixtures/coverage-calibration.test.mjs
 audit/fixtures/mq-coverage-calibration-aggregate.js
 audit/fixtures/mq-coverage-calibration-full.js
 audit/fixtures/mq-coverage-calibration-partial.js
+audit/install-reviewed-ci-dependencies.ps1
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
 audit/lib/child-strings.mjs
@@ -42,6 +43,8 @@ audit/lib/development-suite-plan.mjs
 audit/lib/engine-loader.mjs
 audit/lib/hosted-windows-observation.mjs
 audit/lib/native-coverage.mjs
+audit/lib/playwright-deep-ux-census.mjs
+audit/lib/playwright-focused-contract.mjs
 audit/lib/publication-clearance.mjs
 audit/lib/release-evidence-successor.mjs
 audit/lib/rights-state.mjs
@@ -51,11 +54,17 @@ audit/lib/trusted-https-canary.mjs
 audit/mutation-runner.mjs
 audit/observe-hosted-windows.ps1
 audit/on-change-audit.ps1
+audit/playwright/compact-reporter.mjs
+audit/playwright/critical-journeys.spec.mjs
+audit/playwright/deep-ux-census.spec.mjs
+audit/playwright/fixtures.mjs
 audit/public-candidate-guard.mjs
 audit/run-audit.mjs
 audit/run-audit.ps1
 audit/run-browser-smoke.mjs
 audit/run-coverage.mjs
+audit/run-playwright-deep-ux-census.mjs
+audit/run-playwright-focused.mjs
 audit/run-trusted-https-canary.mjs
 audit/run-trusted-https-canary.ps1
 audit/test-launcher-identity.ps1
@@ -72,6 +81,8 @@ audit/tests/manifest-semantic-suite.mjs
 audit/tests/node-engine.test.mjs
 audit/tests/page-adapter-effects.test.mjs
 audit/tests/placement-adapter-effects.test.mjs
+audit/tests/playwright-deep-ux-census.test.mjs
+audit/tests/playwright-focused-contract.test.mjs
 audit/tests/publication-clearance.test.mjs
 audit/tests/pwa-release.test.mjs
 audit/tests/qa-tour.test.mjs
@@ -109,6 +120,8 @@ licenses/first-party-paths-v1.txt
 manifest.webmanifest
 package-lock.json
 package.json
+playwright.config.mjs
+playwright.deep-ux.config.mjs
 release-shell-v1.json
 research/build-axioms.md
 research/clean-room-curriculum-log.md

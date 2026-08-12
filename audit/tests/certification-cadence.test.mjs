@@ -44,8 +44,8 @@ test("certification cadence has a closed machine-readable contract", async () =>
     timing: "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
     scope: "COMPLETE_CERTIFICATION_SYSTEM",
     qualificationEvidenceSuccessor: {
-      policy: "DIRECT_EVIDENCE_SUCCESSOR_V1",
-      releaseTag: "v1.0.0-beta.4",
+      policy: "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
+      releaseTag: "v1.0.0-beta.5",
       parentCount: 1,
       parentMustEqualQualificationCommit: true,
       exactChangedPaths: [
@@ -54,7 +54,35 @@ test("certification cadence has a closed machine-readable contract", async () =>
       ],
       qualificationClearanceStatus: "PENDING",
       qualificationBrowserEvidenceStatus: "PENDING",
-      finalCertificationTarget: "DIRECT_EVIDENCE_SUCCESSOR",
+      requiredQualificationEvidence: [
+        "RECONCILED_CANARY",
+        "REVIEWED_HOSTED_WINDOWS",
+      ],
+      finalCertificationTarget: "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR",
+    },
+    deepUxCensus: {
+      policy: "ALTERNATING_BETA_V1",
+      firstRequiredBetaOrdinal: 4,
+      interval: 2,
+      requiredVersionExamples: [
+        "1.0.0-beta.4",
+        "1.0.0-beta.6",
+        "1.0.0-beta.8",
+      ],
+      inventoryQuestions: 72576,
+      viewports: 6,
+      renderedStates: [
+        "INITIAL",
+        "PARTIAL_RESPONSE",
+        "EXPECTED_REVEALED",
+        "TEACHING_MODEL_WHEN_AVAILABLE",
+      ],
+      localBenchmarkCells: 100,
+      routineDevelopmentRunsCompleteCensus: false,
+      completeRunEnvironment: "GITHUB_HOSTED_WINDOWS",
+      failureEvidence: "ANOMALY_ONLY",
+      replacesExistingCertificationOrHumanEvidence: false,
+      publicationRequiresPassWhenScheduled: true,
     },
     postCertificationChange: "INVALIDATE_REFREEZE_RERUN_FULL",
     publicationRequiresPass: true,
@@ -107,6 +135,12 @@ test("ordinary automation cannot invoke complete certification", async () => {
   assert.match(watcher, /Invoke-DevelopmentChecks/iu);
   assert.match(watcher, /\$runner[^\r\n]*-DevelopmentOnly/iu);
   assert.doesNotMatch(watcher, /Invoke-FullAudit|-TechnicalOnly/iu);
+  assert.match(workflow, /^  deep-ux-census:\s*$/mu);
+  assert.match(workflow, /run-playwright-deep-ux-census\.mjs --full/u);
+  assert.match(workflow, /MQ_DEEP_UX_CANDIDATE_SHA:\s*\$\{\{ inputs\.candidate_sha \}\}/u);
+  assert.match(workflow, /timeout-minutes:\s*120/u);
+  assert.match(workflow, /NON_CERTIFYING|alternating-beta|alternating beta/iu);
+  assert.doesNotMatch(developmentJob, /run-playwright-deep-ux-census\.mjs/iu);
 });
 
 test("deployment requires exact-commit certification and does not repeat the gauntlet", async () => {
@@ -202,6 +236,9 @@ test("human-facing policy preserves focused development and formal incompletenes
   assert.match(agents, /change after the run invalidates the[\s\S]*rerun the complete gauntlet from the beginning/iu);
   assert.match(agents, /earlier complete run[\s\S]*must obtain[\s\S]*owner's explicit approval/iu);
   assert.match(agents, /OWNER_SKIPPED_BETA4[\s\S]*never `PASS`[\s\S]*expires after Beta 4/iu);
+  assert.match(agents, /Beta 5[\s\S]*trusted-[\s\S]*HTTPS canary is mandatory[\s\S]*RECONCILED/iu);
+  assert.match(agents, /RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1/iu);
+  assert.match(agents, /Beta 5[\s\S]*OPTIONAL_NOT_RUN[\s\S]*six-reviewer cycle/iu);
   assert.match(agents, /direct evidence successor[\s\S]*next commit[\s\S]*exactly[\s\S]*one parent/iu);
   assert.match(agents, /sole parent must be the named qualification commit/iu);
   assert.match(agents, /must change exactly `PUBLICATION_CLEARANCE\.md` and\s*`audit\/browser-runner-evidence-v1\.json`, and no other path/iu);

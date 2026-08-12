@@ -99,7 +99,7 @@ function validEvidence() {
       caddyAccessLogSha256: sha("8"),
     },
     cacheProof: {
-      physicalCacheName: `math-quest-static-v1.0.0-beta.4-${sha("c")}`,
+      physicalCacheName: `math-quest-static-v1.0.0-beta.5-${sha("c")}`,
       expectedEntryCount: 14,
       waitingEntryCount: 14,
       activeEntryCount: 14,
@@ -117,9 +117,9 @@ function validEvidence() {
       originPortClosed: true,
       backendPortClosed: true,
       controllerScriptUrlSha256: sha("a"),
-      readinessRelease: "1.0.0-beta.4",
-      readinessBuildId: "math-quest-pwa-v1.0.0-beta.4",
-      readinessCacheIdentity: "math-quest-static-v1.0.0-beta.4",
+      readinessRelease: "1.0.0-beta.5",
+      readinessBuildId: "math-quest-pwa-v1.0.0-beta.5",
+      readinessCacheIdentity: "math-quest-static-v1.0.0-beta.5",
     },
     navigationProof: {
       expectedReloadCount: 1,
@@ -183,6 +183,8 @@ function validEvidence() {
 
 test("canonical trusted-HTTPS evidence accepts only the exact reconciled candidate", () => {
   const evidence = validEvidence();
+  assert.equal(TRUSTED_HTTPS_CANARY_CHECK_IDS.some((id) => id.includes("BETA4")), false,
+    "current candidate evidence must not carry a stale Beta 4 check identity");
   const parsed = parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence), {
     candidateSha,
     runnerImageOS: "win25",
@@ -331,9 +333,10 @@ test("teardown executes every cleanup in reverse order and preserves failures", 
 });
 
 test("CI-only toolchain is closed, pinned, manual, private, fresh, and absent from the release shell", async () => {
-  const [packageJsonText, packageLockText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText] = await Promise.all([
+  const [packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText] = await Promise.all([
     read("package.json"),
     read("package-lock.json"),
+    read("audit/install-reviewed-ci-dependencies.ps1"),
     read("audit/run-trusted-https-canary.ps1"),
     read(".github/workflows/trusted-https-canary.yml"),
     read("audit/run-trusted-https-canary.mjs"),
@@ -342,7 +345,9 @@ test("CI-only toolchain is closed, pinned, manual, private, fresh, and absent fr
     read("release-shell-v1.json"),
     read("sw.js"),
   ]);
-  const input = { packageJsonText, packageLockText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText };
+  const input = { packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText };
   assert.deepEqual(trustedHttpsCanarySupplyChainFindings(input), []);
   assert.deepEqual(trustedHttpsCanarySupplyChainMutationFailures(input), []);
+  for (const id of TRUSTED_HTTPS_CANARY_CHECK_IDS) assert.match(runnerText, new RegExp(`"${id}"`, "u"), id);
+  assert.doesNotMatch(runnerText, /BETA4_(?:WAITING|REAL|ACTIVE|OFFLINE)|RESPONSIVE_BETA4/u);
 });

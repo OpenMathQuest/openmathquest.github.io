@@ -37,6 +37,10 @@ jobs:
           node-version: 24.14.0
           package-manager-cache: false
 
+      - name: Install reviewed browser-test dependencies
+        shell: powershell
+        run: .\audit\install-reviewed-ci-dependencies.ps1
+
       - name: Run focused development checks
         shell: powershell
         env:
@@ -81,7 +85,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-          # DIRECT_EVIDENCE_SUCCESSOR_V1 must inspect the named qualification
+          # RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1 must inspect the named qualification
           # parent and its exact two-path diff. A one-commit shallow checkout
           # cannot prove that relationship.
           fetch-depth: 0
@@ -112,6 +116,10 @@ jobs:
         with:
           node-version: 24.14.0
           package-manager-cache: false
+
+      - name: Install reviewed browser-test dependencies
+        shell: powershell
+        run: .\audit\install-reviewed-ci-dependencies.ps1
 
       - name: Run deterministic engine and browser audit
         shell: powershell
@@ -181,5 +189,81 @@ jobs:
         with:
           name: math-quest-candidate-audit-evidence-${{ github.sha }}
           path: audit/last-report.json
+          if-no-files-found: error
+          retention-days: 90
+
+  deep-ux-census:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      MQ_AUDIT_RUNNER_LABEL: windows-latest
+    steps:
+      - name: Check out exact frozen candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify candidate and alternating-beta census cadence
+        id: cadence
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:CANDIDATE_SHA -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_SHA -cne $env:GITHUB_SHA) {
+            throw 'The Deep UX Census requires the exact frozen protected-main candidate.'
+          }
+          $version = (Get-Content -LiteralPath 'VERSION' -Raw).Trim()
+          if ($env:RELEASE_TAG_INPUT -cne "v$version") {
+            throw 'release_tag does not match VERSION.'
+          }
+          $required = $false
+          if ($version -match '^\d+\.\d+\.\d+-beta\.(0|[1-9]\d*)$') {
+            $ordinal = [int]$Matches[1]
+            $required = $ordinal -ge 4 -and ($ordinal % 2) -eq 0
+          }
+          "required=$($required.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          if (-not $required) {
+            'Deep UX Census: not required by the alternating-beta cadence. This is not a pass or substitute.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          }
+
+      - name: Set up Node.js 24
+        if: steps.cadence.outputs.required == 'true'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Install reviewed browser-test dependencies
+        if: steps.cadence.outputs.required == 'true'
+        shell: powershell
+        run: .\audit\install-reviewed-ci-dependencies.ps1
+
+      - name: Run complete Playwright Deep UX Census
+        if: steps.cadence.outputs.required == 'true'
+        shell: powershell
+        env:
+          MQ_DEEP_UX_CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          if ($env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+              [string]::IsNullOrWhiteSpace($env:ImageOS) -or
+              [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'The complete Deep UX Census requires a GitHub-hosted Windows runner.'
+          }
+          node .\audit\run-playwright-deep-ux-census.mjs --full
+
+      - name: Upload compact census report and anomaly-only evidence
+        if: always() && steps.cadence.outputs.required == 'true' && hashFiles('audit/.tmp-playwright-deep-ux-report.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-deep-ux-census-${{ github.sha }}
+          path: |
+            audit/.tmp-playwright-deep-ux-report.json
+            audit/.tmp-playwright-deep-ux-artifacts
           if-no-files-found: error
           retention-days: 90

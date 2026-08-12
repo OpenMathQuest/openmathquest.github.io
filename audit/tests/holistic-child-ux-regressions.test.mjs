@@ -541,6 +541,7 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
       function markServed(){effects.served+=1;}
       function save(){effects.saved+=1;return true;}
       function render(){effects.rendered+=1;}
+      function focusColdStartTarget(){}
       function replayText(){return "practice-token guide speech";}
       function questionSpeechText(){return "question speech";}
       function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}

@@ -4,7 +4,7 @@ export const TRUSTED_HTTPS_CANARY_SCHEMA_VERSION = 1;
 export const TRUSTED_HTTPS_CANARY_KIND = "TRUSTED_HTTPS_CANARY_RECONCILIATION_V1";
 export const TRUSTED_HTTPS_CANARY_STATUS = "TECHNICAL_CANARY_NOT_RELEASE_CERTIFICATION";
 export const TRUSTED_HTTPS_CANARY_WORKFLOW = ".github/workflows/trusted-https-canary.yml";
-export const TRUSTED_HTTPS_CANARY_TAG = "v1.0.0-beta.4";
+export const TRUSTED_HTTPS_CANARY_TAG = "v1.0.0-beta.5";
 export const TRUSTED_HTTPS_CANARY_BETA1_TAG = "v1.0.0-beta.1";
 export const TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT = "140693bff04733ce890a0a8be2d7c9499dfa24cc";
 export const TRUSTED_HTTPS_CANARY_BETA1_COMMIT = "f989bf3bfe0c40824c4d2ab6f0ec2fb3450e314e";
@@ -23,14 +23,14 @@ export const TRUSTED_HTTPS_CANARY_CHECK_IDS = Object.freeze([
   "BETA1_SYNTHETIC_STATE_SEEDED",
   "BETA1_OFFLINE_RELOAD",
   "SAME_ORIGIN_RUNTIME_SWITCH",
-  "BETA4_WAITING_CACHE_READY",
-  "BETA4_REAL_UI_ACTIVATION",
+  "CANDIDATE_WAITING_CACHE_READY",
+  "CANDIDATE_REAL_UI_ACTIVATION",
   "RETAINED_BETA1_EXPLICIT_RELOAD",
-  "RESPONSIVE_BETA4_TAB_NOT_FORCED",
+  "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED",
   "BETA1_SOURCE_BYTES_UNCHANGED",
   "SCHEMA3_MIGRATION_PRESERVED",
-  "BETA4_ACTIVE_CACHE_READY",
-  "BETA4_OFFLINE_COLD_RELAUNCH",
+  "CANDIDATE_ACTIVE_CACHE_READY",
+  "CANDIDATE_OFFLINE_COLD_RELAUNCH",
   "CACHE_CORRUPTION_DETECTED",
   "TRANSACTIONAL_REPAIR_SUCCEEDED",
   "RUNTIME_REQUEST_ALLOWLIST",
@@ -340,7 +340,7 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
   issueIf(issues, value.repository !== "OpenMathQuest/openmathquest.github.io", "repository must be the public Math Quest repository");
   issueIf(issues, value.ref !== "refs/heads/main", "ref must be protected main");
   issueIf(issues, !SHA40.test(String(value.candidateSha || "")), "candidateSha must be 40 lowercase hexadecimal characters");
-  issueIf(issues, value.intendedReleaseTag !== TRUSTED_HTTPS_CANARY_TAG, "intendedReleaseTag must be the Beta 4 tag");
+  issueIf(issues, value.intendedReleaseTag !== TRUSTED_HTTPS_CANARY_TAG, "intendedReleaseTag must be the Beta 5 tag");
   issueIf(issues, value.workflowFile !== TRUSTED_HTTPS_CANARY_WORKFLOW, "workflowFile must identify the trusted-HTTPS canary workflow");
   issueIf(issues, !RUN_NUMBER.test(String(value.workflowRunId || "")), "workflowRunId must be a positive integer string");
   issueIf(issues, !RUN_NUMBER.test(String(value.workflowRunAttempt || "")), "workflowRunAttempt must be a positive integer string");
@@ -396,9 +396,9 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
   for (const key of ["responseSetSha256", "responseHeaderSetSha256", "caddyAccessLogSha256"]) issueIf(issues, !validSha64OrNull(value.networkProof?.[key], failed), `${key} is invalid`);
 
   issueIf(issues, !exactOrderedKeys(value.cacheProof, CACHE_PROOF_KEYS), "cacheProof must use the exact closed schema");
-  issueIf(issues, !/^math-quest-static-v1\.0\.0-beta\.4-[a-f0-9]{64}$/u.test(String(value.cacheProof?.physicalCacheName || "")) && !(failed && value.cacheProof?.physicalCacheName === null), "physical cache name must bind the logical name and detached manifest SHA-256");
+  issueIf(issues, !/^math-quest-static-v1\.0\.0-beta\.5-[a-f0-9]{64}$/u.test(String(value.cacheProof?.physicalCacheName || "")) && !(failed && value.cacheProof?.physicalCacheName === null), "physical cache name must bind the logical name and detached manifest SHA-256");
   issueIf(issues, value.reconciliationState === "RECONCILED"
-    && value.cacheProof?.physicalCacheName !== `math-quest-static-v1.0.0-beta.4-${value.runtimeIdentity?.candidateReleaseManifestSha256}`, "physical cache name must exactly bind the candidate release-manifest SHA-256");
+    && value.cacheProof?.physicalCacheName !== `math-quest-static-v1.0.0-beta.5-${value.runtimeIdentity?.candidateReleaseManifestSha256}`, "physical cache name must exactly bind the candidate release-manifest SHA-256");
   for (const key of ["expectedEntryCount", "waitingEntryCount", "activeEntryCount", "offlineEntryCount", "repairedEntryCount", "unexpectedCacheCount", "stagingCacheCount"]) {
     issueIf(issues, !validNonnegativeOrNull(value.cacheProof?.[key], failed), `${key} is invalid`);
   }
@@ -480,9 +480,9 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
     issueIf(issues, value.offlineProof?.responseFromServiceWorker !== true
       || value.offlineProof?.originPortClosed !== true
       || value.offlineProof?.backendPortClosed !== true
-      || value.offlineProof?.readinessRelease !== "1.0.0-beta.4"
-      || value.offlineProof?.readinessBuildId !== "math-quest-pwa-v1.0.0-beta.4"
-      || value.offlineProof?.readinessCacheIdentity !== "math-quest-static-v1.0.0-beta.4", "RECONCILED evidence requires a service-worker cold response with both server ports closed and exact readiness identity");
+      || value.offlineProof?.readinessRelease !== "1.0.0-beta.5"
+      || value.offlineProof?.readinessBuildId !== "math-quest-pwa-v1.0.0-beta.5"
+      || value.offlineProof?.readinessCacheIdentity !== "math-quest-static-v1.0.0-beta.5", "RECONCILED evidence requires a service-worker cold response with both server ports closed and exact readiness identity");
     issueIf(issues, value.progress?.approvedProjectionSha256 !== value.progress?.protectedProjectionSha256
       || value.progress?.approvedProjectionFieldCount !== value.progress?.protectedProjectionFieldCount
       || value.progress?.approvedProjectionFieldCount < 1, "RECONCILED evidence requires the complete approved migration projection to remain identical");

@@ -8,6 +8,14 @@ import {
 
 export const CADDY_ARCHIVE_URL = `https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_windows_amd64.zip`;
 export const PLAYWRIGHT_CORE_URL = `https://registry.npmjs.org/playwright-core/-/playwright-core-${PLAYWRIGHT_CORE_VERSION}.tgz`;
+export const PLAYWRIGHT_TEST_VERSION = "1.62.1";
+export const PLAYWRIGHT_TEST_URL = `https://registry.npmjs.org/@playwright/test/-/test-${PLAYWRIGHT_TEST_VERSION}.tgz`;
+export const PLAYWRIGHT_TEST_SRI = "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==";
+export const PLAYWRIGHT_PACKAGE_URL = `https://registry.npmjs.org/playwright/-/playwright-${PLAYWRIGHT_TEST_VERSION}.tgz`;
+export const PLAYWRIGHT_PACKAGE_SRI = "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==";
+export const FSEVENTS_VERSION = "2.3.2";
+export const FSEVENTS_URL = `https://registry.npmjs.org/fsevents/-/fsevents-${FSEVENTS_VERSION}.tgz`;
+export const FSEVENTS_SRI = "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==";
 
 const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "package.json",
@@ -15,6 +23,8 @@ const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "licenses/ci-toolchain.md",
   "trusted-https-canary",
   "caddy.exe",
+  "@playwright/test",
+  "node_modules/playwright",
   "playwright-core",
 ]);
 
@@ -55,8 +65,10 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     if (!exactKeys(packageJson.engines, ["node"]) || packageJson.engines?.node !== "24.14.0") {
       findings.push("package.json: Node must remain pinned to 24.14.0");
     }
-    if (!exactKeys(packageJson.devDependencies, ["playwright-core"]) || packageJson.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION) {
-      findings.push(`package.json: Playwright Core must be the sole exact dev dependency at ${PLAYWRIGHT_CORE_VERSION}`);
+    if (!exactKeys(packageJson.devDependencies, ["@playwright/test", "playwright-core"])
+        || packageJson.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
+        || packageJson.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION) {
+      findings.push(`package.json: Playwright Test and Playwright Core must remain the exact reviewed dev dependencies at ${PLAYWRIGHT_TEST_VERSION}`);
     }
   }
   if (packageLock) {
@@ -66,15 +78,16 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     if (packageLock.name !== "open-math-quest-ci-tools" || packageLock.version !== "0.0.0" || packageLock.lockfileVersion !== 3 || packageLock.requires !== true) {
       findings.push("package-lock.json: lockfile identity must remain exact");
     }
-    if (!exactKeys(packageLock.packages, ["", "node_modules/playwright-core"])) {
-      findings.push("package-lock.json: lockfile may contain only the root and Playwright Core package");
+    if (!exactKeys(packageLock.packages, ["", "node_modules/@playwright/test", "node_modules/fsevents", "node_modules/playwright", "node_modules/playwright-core"])) {
+      findings.push("package-lock.json: lockfile must contain only the reviewed Playwright Test dependency closure");
     }
     const root = packageLock.packages?.[""];
     if (!exactKeys(root, ["name", "version", "license", "devDependencies", "engines"])
         || root?.name !== packageJson?.name
         || root?.version !== packageJson?.version
         || root?.license !== "MIT"
-        || !exactKeys(root?.devDependencies, ["playwright-core"])
+        || !exactKeys(root?.devDependencies, ["@playwright/test", "playwright-core"])
+        || root?.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
         || root?.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
         || !exactKeys(root?.engines, ["node"])
         || root?.engines?.node !== "24.14.0") {
@@ -93,6 +106,66 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
         || playwright?.engines?.node !== ">=18") {
       findings.push("package-lock.json: Playwright Core artifact, integrity, licence, and package metadata must remain exact");
     }
+    const testRunner = packageLock.packages?.["node_modules/@playwright/test"];
+    if (!exactKeys(testRunner, ["version", "resolved", "integrity", "dev", "license", "dependencies", "bin", "engines"])
+        || testRunner?.version !== PLAYWRIGHT_TEST_VERSION
+        || testRunner?.resolved !== PLAYWRIGHT_TEST_URL
+        || testRunner?.integrity !== PLAYWRIGHT_TEST_SRI
+        || testRunner?.dev !== true
+        || testRunner?.license !== "Apache-2.0"
+        || !exactKeys(testRunner?.dependencies, ["playwright"])
+        || testRunner?.dependencies?.playwright !== PLAYWRIGHT_TEST_VERSION
+        || !exactKeys(testRunner?.bin, ["playwright"])
+        || testRunner?.bin?.playwright !== "cli.js"
+        || !exactKeys(testRunner?.engines, ["node"])
+        || testRunner?.engines?.node !== ">=20") {
+      findings.push("package-lock.json: Playwright Test artifact, integrity, licence, and package metadata must remain exact");
+    }
+    const runnerPackage = packageLock.packages?.["node_modules/playwright"];
+    if (!exactKeys(runnerPackage, ["version", "resolved", "integrity", "dev", "license", "dependencies", "bin", "engines", "optionalDependencies"])
+        || runnerPackage?.version !== PLAYWRIGHT_TEST_VERSION
+        || runnerPackage?.resolved !== PLAYWRIGHT_PACKAGE_URL
+        || runnerPackage?.integrity !== PLAYWRIGHT_PACKAGE_SRI
+        || runnerPackage?.dev !== true
+        || runnerPackage?.license !== "Apache-2.0"
+        || !exactKeys(runnerPackage?.dependencies, ["playwright-core"])
+        || runnerPackage?.dependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
+        || !exactKeys(runnerPackage?.bin, ["playwright"])
+        || runnerPackage?.bin?.playwright !== "cli.js"
+        || !exactKeys(runnerPackage?.engines, ["node"])
+        || runnerPackage?.engines?.node !== ">=20"
+        || !exactKeys(runnerPackage?.optionalDependencies, ["fsevents"])
+        || runnerPackage?.optionalDependencies?.fsevents !== FSEVENTS_VERSION) {
+      findings.push("package-lock.json: Playwright runner artifact, integrity, licence, and dependency metadata must remain exact");
+    }
+    const fsevents = packageLock.packages?.["node_modules/fsevents"];
+    if (!exactKeys(fsevents, ["version", "resolved", "integrity", "dev", "hasInstallScript", "license", "optional", "os", "engines"])
+        || fsevents?.version !== FSEVENTS_VERSION
+        || fsevents?.resolved !== FSEVENTS_URL
+        || fsevents?.integrity !== FSEVENTS_SRI
+        || fsevents?.dev !== true
+        || fsevents?.hasInstallScript !== true
+        || fsevents?.license !== "MIT"
+        || fsevents?.optional !== true
+        || !Array.isArray(fsevents?.os)
+        || fsevents.os.length !== 1
+        || fsevents.os[0] !== "darwin"
+        || !exactKeys(fsevents?.engines, ["node"])
+        || fsevents?.engines?.node !== "^8.16.0 || ^10.6.0 || >=11.0.0") {
+      findings.push("package-lock.json: optional fsevents artifact, integrity, licence, and macOS-only metadata must remain exact");
+    }
+  }
+
+  const dependencyInstaller = String(input.dependencyInstallerText);
+  if (count(dependencyInstaller, /\bnpm(?:\.cmd)?\s+ci\b/gu) !== 1
+      || !dependencyInstaller.includes("ci --ignore-scripts --omit=optional --no-audit --no-fund")
+      || !dependencyInstaller.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")
+      || !dependencyInstaller.includes("$manifest.name -cne '@playwright/test'")
+      || !dependencyInstaller.includes("$manifest.version -cne '1.62.1'")) {
+    findings.push("audit/install-reviewed-ci-dependencies.ps1: install must retain the exact lockfile, script, optional-dependency, browser-download, and installed-version controls");
+  }
+  if (/(?:\bnpx\b|\bnpm(?:\.cmd)?\s+install\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b|Invoke-WebRequest)/iu.test(dependencyInstaller)) {
+    findings.push("audit/install-reviewed-ci-dependencies.ps1: an unreviewed installer or downloader was introduced");
   }
 
   const wrapper = String(input.wrapperText);
@@ -197,9 +270,13 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
       failures.push(`trusted-HTTPS supply-chain mutation self-test did not reject ${label}`);
     }
   };
-  run("a changed Playwright version", "packageJsonText", (text) => text.replace(`\"${PLAYWRIGHT_CORE_VERSION}\"`, '"1.62.0"'), /sole exact dev dependency/u);
+  run("a changed Playwright version", "packageJsonText", (text) => text.replace(`\"@playwright\/test\": \"${PLAYWRIGHT_TEST_VERSION}\"`, '"@playwright/test": "1.62.0"'), /exact reviewed dev dependencies/u);
   run("a changed Playwright integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_CORE_SRI, "sha512-forged"), /artifact, integrity/u);
-  run("an added dependency", "packageJsonText", (text) => text.replace(`\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\"`, `\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\",\n    \"another-package\": \"1.0.0\"`), /sole exact dev dependency/u);
+  run("a changed Playwright Test integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_TEST_SRI, "sha512-forged"), /Playwright Test artifact, integrity/u);
+  run("a changed Playwright runner integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_PACKAGE_SRI, "sha512-forged"), /Playwright runner artifact, integrity/u);
+  run("a changed optional dependency integrity", "packageLockText", (text) => text.replace(FSEVENTS_SRI, "sha512-forged"), /optional fsevents artifact, integrity/u);
+  run("an added dependency", "packageJsonText", (text) => text.replace(`\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\"`, `\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\",\n    \"another-package\": \"1.0.0\"`), /exact reviewed dev dependencies/u);
+  run("relaxed focused dependency install", "dependencyInstallerText", (text) => text.replace("ci --ignore-scripts --omit=optional --no-audit --no-fund", "ci"), /install must retain/u);
   run("relaxed npm install flags", "wrapperText", (text) => text.replace("npm ci --ignore-scripts --omit=optional --no-audit --no-fund", "npm ci"), /retain every reviewed hardening flag/u);
   run("a changed Caddy URL", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_URL, "https://example.invalid/caddy.zip"), /Caddy version, archive URL/u);
   run("a changed Caddy checksum", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_SHA256, "0".repeat(64)), /Caddy version, archive URL/u);

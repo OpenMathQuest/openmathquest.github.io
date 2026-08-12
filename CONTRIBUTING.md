@@ -60,6 +60,28 @@ pass may be reported as **implemented**. It is **release-certified** only after
 the complete gauntlet passes against the exact frozen candidate, and
 **shipped** only when those certified bytes are actually published.
 
+## Playwright Deep UX Census
+
+Every second semantic-version beta beginning with `v1.0.0-beta.4` must pass the
+separate Playwright Deep UX Census on its exact frozen GitHub-hosted Windows
+candidate. This means Beta 4, Beta 6, Beta 8, and so on. The census is scheduled
+beside the one complete gauntlet; it is not part of routine development and
+does not replace human play testing, mathematical oracles, accessibility
+judgment, PWA evidence, or physical-device evidence.
+
+During census development, contributors may run the balanced 100-cell local
+benchmark:
+
+```powershell
+node .\audit\run-playwright-deep-ux-census.mjs --benchmark=100
+```
+
+That benchmark is always non-certifying. Do not run `--full` locally, submit a
+benchmark as release evidence, enable retries or forced interaction, retain
+passing screenshots or traces, or upload real child or family data. The hosted
+complete run uses only synthetic Parent Test state and retains visual, ARIA,
+and geometry evidence only for anomalies.
+
 ## Contribution license
 
 By submitting a contribution, you agree that it may be distributed under the

@@ -4,10 +4,12 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export const DIRECT_EVIDENCE_SUCCESSOR_POLICY = "DIRECT_EVIDENCE_SUCCESSOR_V1";
+export const RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY = "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1";
 export const DIRECT_EVIDENCE_SUCCESSOR_PATHS = Object.freeze([
   "PUBLICATION_CLEARANCE.md",
   "audit/browser-runner-evidence-v1.json",
 ]);
+export const RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_PATHS = DIRECT_EVIDENCE_SUCCESSOR_PATHS;
 
 const SHA40 = /^[a-f0-9]{40}$/u;
 
@@ -89,4 +91,20 @@ export async function observeDirectEvidenceSuccessor(root, qualificationCommitSh
       issues: Object.freeze([`direct evidence successor observation failed: ${error.message || error}`]),
     });
   }
+}
+
+export function evaluateRuntimeEquivalentEvidenceSuccessor(input) {
+  const observed = evaluateDirectEvidenceSuccessor(input);
+  return Object.freeze({
+    ...observed,
+    policy: RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY,
+  });
+}
+
+export async function observeRuntimeEquivalentEvidenceSuccessor(root, qualificationCommitSha) {
+  const observed = await observeDirectEvidenceSuccessor(root, qualificationCommitSha);
+  return Object.freeze({
+    ...observed,
+    policy: RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY,
+  });
 }

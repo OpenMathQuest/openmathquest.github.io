@@ -22,8 +22,19 @@ export const RIGHTS_STATE_PATHS = Object.freeze([
   "assets/sounds/tap.wav",
   "audit/lib/trusted-https-canary-supply-chain.mjs",
   "audit/lib/trusted-https-canary.mjs",
+  "audit/lib/playwright-focused-contract.mjs",
+  "audit/lib/playwright-deep-ux-census.mjs",
+  "audit/install-reviewed-ci-dependencies.ps1",
+  "audit/playwright/compact-reporter.mjs",
+  "audit/playwright/critical-journeys.spec.mjs",
+  "audit/playwright/fixtures.mjs",
+  "audit/playwright/deep-ux-census.spec.mjs",
+  "audit/run-playwright-deep-ux-census.mjs",
+  "audit/run-playwright-focused.mjs",
   "audit/run-trusted-https-canary.mjs",
   "audit/run-trusted-https-canary.ps1",
+  "audit/tests/playwright-focused-contract.test.mjs",
+  "audit/tests/playwright-deep-ux-census.test.mjs",
   "audit/validate-trusted-https-canary.mjs",
   "licenses/Inter-OFL.txt",
   "licenses/app-icons.md",
@@ -34,6 +45,8 @@ export const RIGHTS_STATE_PATHS = Object.freeze([
   "licenses/sound-effects.md",
   "package-lock.json",
   "package.json",
+  "playwright.config.mjs",
+  "playwright.deep-ux.config.mjs",
 ]);
 
 export async function rightsStateSha256(root) {

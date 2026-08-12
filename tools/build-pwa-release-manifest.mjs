@@ -6,12 +6,10 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(root, "release-shell-v1.json");
 const workerPath = path.join(root, "sw.js");
-const RELEASE = "1.0.0-beta.4";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.4";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.4";
+const RELEASE = "1.0.0-beta.5";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.5";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.5";
 const HASH_MARKER = /const RELEASE_MANIFEST_SHA256 = "[a-f0-9]{64}";/u;
-const OBSOLETE_CACHES_MARKER =
-  /const KNOWN_OBSOLETE_CACHES = Object\.freeze\(\[(?:\r?\n  "[a-z0-9.-]+",)+\r?\n\]\);/u;
 const ENTRIES = Object.freeze([
   ["./assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["./assets/icons/apple-touch-icon.png", "image/png"],
@@ -37,40 +35,10 @@ function bindWorkerToManifest(worker, manifestHash) {
   if (matches.length !== 1) {
     throw new Error(`sw.js must contain exactly one release-manifest hash marker; found ${matches.length}.`);
   }
-  const priorManifestHash = matches[0].match(/[a-f0-9]{64}/u)?.[0];
-  const obsoleteDeclarations =
-    worker.match(new RegExp(OBSOLETE_CACHES_MARKER.source, "gu")) || [];
-  if (obsoleteDeclarations.length !== 1) {
-    throw new Error(
-      `sw.js must contain exactly one canonical obsolete-cache declaration; found ${obsoleteDeclarations.length}.`,
-    );
-  }
-  const obsoleteCaches = [
-    CACHE_NAME,
-    ...[...obsoleteDeclarations[0].matchAll(/  "([a-z0-9.-]+)",/gu)]
-      .map((match) => match[1]),
-  ];
-  if (priorManifestHash !== manifestHash) {
-    const priorPhysicalCache = `${CACHE_NAME}-${priorManifestHash}`;
-    obsoleteCaches.push(priorPhysicalCache, `${priorPhysicalCache}-staging`);
-  }
-  const currentPhysicalCache = `${CACHE_NAME}-${manifestHash}`;
-  const uniqueObsoleteCaches = [
-    ...new Set(obsoleteCaches.filter(
-      (cacheName) =>
-        cacheName !== currentPhysicalCache
-        && cacheName !== `${currentPhysicalCache}-staging`,
-    )),
-  ];
-  const obsoleteDeclaration = [
-    "const KNOWN_OBSOLETE_CACHES = Object.freeze([",
-    ...uniqueObsoleteCaches.map((cacheName) => `  "${cacheName}",`),
-    "]);",
-  ].join("\n");
   return worker.replace(
     HASH_MARKER,
     `const RELEASE_MANIFEST_SHA256 = "${manifestHash}";`,
-  ).replace(OBSOLETE_CACHES_MARKER, obsoleteDeclaration);
+  );
 }
 
 async function canonicalManifest() {

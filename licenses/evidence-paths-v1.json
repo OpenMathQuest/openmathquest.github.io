@@ -54,8 +54,8 @@
       "kind": "attribution",
       "origin": "mixed-open",
       "licenceExpression": "MIT",
-      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only canary tools.",
-      "sha256": "e720526f6169014d8f237539d22df78a1a32754698b3e4f794d6aa0f318762e5"
+      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser-verification tools.",
+      "sha256": "e1b4b22936f6b36da0d8bccdc47172db9e6090911efd789460c339af6858d46c"
     },
     {
       "path": "licenses/sound-effects.md",

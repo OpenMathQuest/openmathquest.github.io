@@ -490,6 +490,7 @@ function canarySupplyChainInput(blobs) {
   return {
     packageJsonText: text("package.json"),
     packageLockText: text("package-lock.json"),
+    dependencyInstallerText: text("audit/install-reviewed-ci-dependencies.ps1"),
     wrapperText: text("audit/run-trusted-https-canary.ps1"),
     workflowText: text(".github/workflows/trusted-https-canary.yml"),
     runnerText: text("audit/run-trusted-https-canary.mjs"),
@@ -823,10 +824,10 @@ function registerFindings(register, entries, blobs, manifest) {
   const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
   const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
   const playwrightToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
-  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 3) {
-    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the reviewed Node.js, Caddy, and Playwright Core records`);
+  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 6) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the six reviewed Node.js, Caddy, and Playwright dependency records`);
   } else {
-    const [nodeTool, caddyTool, playwrightTool] = register.toolchain;
+    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fseventsTool] = register.toolchain;
     if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
       if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
       if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
@@ -860,9 +861,60 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "disposable GitHub-hosted Windows canary only",
+      scope: "trusted-HTTPS canary and focused browser tests",
     };
-    for (const [tool, keys, expected, index] of [[caddyTool, caddyToolKeys, exactCaddy, 1], [playwrightTool, playwrightToolKeys, exactPlaywright, 2]]) {
+    const exactPlaywrightTest = {
+      id: "playwright-test-1.62.1",
+      kind: "ci-only-browser-test-runner",
+      version: "1.62.1",
+      licence: "Apache-2.0",
+      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
+      packageName: "@playwright/test",
+      packageUrl: "https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz",
+      packageSri: "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "focused and frozen-candidate browser journeys only",
+    };
+    const exactPlaywrightRunner = {
+      id: "playwright-1.62.1",
+      kind: "ci-only-browser-automation-library",
+      version: "1.62.1",
+      licence: "Apache-2.0",
+      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
+      packageName: "playwright",
+      packageUrl: "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz",
+      packageSri: "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "focused and frozen-candidate browser journeys only",
+    };
+    const exactFsevents = {
+      id: "fsevents-2.3.2",
+      kind: "lockfile-only-optional-macos-dependency",
+      version: "2.3.2",
+      licence: "MIT",
+      sourceUrl: "https://github.com/fsevents/fsevents/tree/a7f5d00939b74e141a73131468c4ce48ee0f2197",
+      sourceCommit: "a7f5d00939b74e141a73131468c4ce48ee0f2197",
+      licenceEvidence: "https://github.com/fsevents/fsevents/blob/a7f5d00939b74e141a73131468c4ce48ee0f2197/LICENSE",
+      packageName: "fsevents",
+      packageUrl: "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
+      packageSri: "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "optional dependency omitted by the reviewed Windows npm ci",
+    };
+    for (const [tool, keys, expected, index] of [
+      [caddyTool, caddyToolKeys, exactCaddy, 1],
+      [playwrightCoreTool, playwrightToolKeys, exactPlaywright, 2],
+      [playwrightTestTool, playwrightToolKeys, exactPlaywrightTest, 3],
+      [playwrightRunnerTool, playwrightToolKeys, exactPlaywrightRunner, 4],
+      [fseventsTool, playwrightToolKeys, exactFsevents, 5],
+    ]) {
       const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
       if (exactKeys(tool, keys, label, findings)
           && Object.entries(expected).some(([key, value]) => tool[key] !== value)) {
