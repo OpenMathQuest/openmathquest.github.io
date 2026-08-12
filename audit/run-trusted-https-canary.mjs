@@ -26,6 +26,8 @@ import {
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   canonicalCanaryEvidence,
   canaryWorkspaceRemovalAllowed,
+  canaryChildExitSucceeded,
+  canonicalCertificateThumbprint,
   captureCanaryObservation,
   canaryBrowserArguments,
   loopbackListenerProbeInvocation,
@@ -391,7 +393,7 @@ async function startCaddy({ caddyPath, configPath, port }) {
 
 async function stopChild(handle) {
   const child = handle?.child;
-  if (!child || child.exitCode !== null) return true;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return true;
   child.kill();
   const exitPromise = new Promise((resolve) => child.once("exit", () => resolve(true)));
   let result = await observePromiseSettlement(exitPromise, 5_000);
@@ -400,8 +402,26 @@ async function stopChild(handle) {
     result = await observePromiseSettlement(exitPromise, 5_000);
   }
   if (!result.settled) throw new Error("Caddy did not exit after its process tree was terminated.");
-  return child.exitCode !== null;
+  return canaryChildExitSucceeded(result);
 }
+
+const IMPORT_DISPOSABLE_ROOT_SCRIPT = [
+  "$ErrorActionPreference='Stop'",
+  "$path=[IO.Path]::GetFullPath($env:MQ_CANARY_CERT_PATH)",
+  "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
+  "$imported=Import-Certificate -FilePath $path -CertStoreLocation 'Cert:\\CurrentUser\\Root'",
+  "if($imported.Thumbprint -cne $thumb){throw 'Imported root thumbprint did not match the reviewed Caddy root.'}",
+  "$count=@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb).Count",
+  "if($count -ne 1){throw 'Disposable Caddy root was not installed exactly once.'}",
+  "$count",
+].join("\n");
+
+const REMOVE_DISPOSABLE_ROOT_SCRIPT = [
+  "$ErrorActionPreference='Stop'",
+  "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
+  "@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb) | Remove-Item -Force",
+  "@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb).Count",
+].join("\n");
 
 async function portAccepting(port) {
   return new Promise((resolve) => {
@@ -921,8 +941,7 @@ async function main() {
   } });
   cleanup.push({ id: "certificate", run: async () => {
     if (certificateThumbprint) {
-      await run("certutil.exe", ["-user", "-delstore", "Root", certificateThumbprint]);
-      const count = Number(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT;@((Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb)).Count"], {
+      const count = Number(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", REMOVE_DISPOSABLE_ROOT_SCRIPT], {
         env: { ...process.env, MQ_CANARY_CERT_THUMBPRINT: certificateThumbprint },
         timeoutMs: 30_000,
       }));
@@ -997,8 +1016,11 @@ async function main() {
     const rootPath = await waitFor(() => findUniqueFile(caddyStorage, "root.crt").catch(() => null), "Caddy did not create one disposable local root certificate");
     rootCertificate = new X509Certificate(await readFile(rootPath));
     certificateThumbprint = rootCertificate.fingerprint.replaceAll(":", "");
-    await run("certutil.exe", ["-user", "-addstore", "-f", "Root", rootPath]);
     await persistCleanupIdentifiers(workRoot, { processIds: [caddy.child.pid], certificateThumbprint, originPort });
+    assert.equal(Number(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", IMPORT_DISPOSABLE_ROOT_SCRIPT], {
+      env: { ...process.env, MQ_CANARY_CERT_PATH: rootPath, MQ_CANARY_CERT_THUMBPRINT: certificateThumbprint },
+      timeoutMs: 30_000,
+    })), 1);
     tls = await inspectTrustedTls(originPort);
     assert.equal(tls.subjectName, "localhost");
     assert.match(tls.issuer, /Caddy Local Authority/iu);
@@ -1540,7 +1562,7 @@ async function main() {
     teardown: {
       status: teardownPass ? "PASS" : "FAIL",
       ...cleanupFlags,
-      certificateThumbprint: certificateThumbprint || null,
+      certificateThumbprint: certificateThumbprint ? canonicalCertificateThumbprint(certificateThumbprint) : null,
       remainingMatchingCertificateCount,
       observedProfileProcessCount,
       observedProfileProcessSetSha256,
