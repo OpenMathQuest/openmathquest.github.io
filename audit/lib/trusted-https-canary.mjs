@@ -15,6 +15,37 @@ export const PLAYWRIGHT_CORE_VERSION = "1.62.1";
 export const PLAYWRIGHT_CORE_SRI = "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==";
 export const EMPTY_PROFILE_PROCESS_SET_SHA256 = createHash("sha256").update("[]\n").digest("hex");
 
+export async function waitForExactLoopbackListener({
+  probe,
+  expectedPid,
+  timeoutMs = 10_000,
+  intervalMs = 100,
+}) {
+  if (typeof probe !== "function") throw new TypeError("Loopback listener probe must be a function.");
+  if (!Number.isSafeInteger(expectedPid) || expectedPid <= 0) throw new TypeError("Expected listener process id must be positive.");
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new TypeError("Listener timeout must be positive.");
+  if (!Number.isSafeInteger(intervalMs) || intervalMs < 0) throw new TypeError("Listener interval must be nonnegative.");
+
+  const deadline = Date.now() + timeoutMs;
+  do {
+    const rows = await probe();
+    if (!Array.isArray(rows)) throw new TypeError("Loopback listener probe must return an array.");
+    if (rows.length > 0) {
+      const normalized = rows.map((row) => ({
+        localAddress: String(row?.LocalAddress || ""),
+        owningProcess: Number(row?.OwningProcess),
+      }));
+      if (!normalized.every((row) => row.localAddress === "127.0.0.1" && row.owningProcess === expectedPid)) {
+        throw new Error("The canary HTTPS listener was not owned exclusively by Caddy on IPv4 loopback.");
+      }
+      return normalized;
+    }
+    if (intervalMs > 0) await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  } while (Date.now() < deadline);
+
+  throw new Error("Caddy's loopback listener did not become observable before the deadline.");
+}
+
 export const TRUSTED_HTTPS_CANARY_CHECK_IDS = Object.freeze([
   "HTTPS_TRUSTED_NO_BYPASS",
   "ROOT_SCOPE_EXACT",

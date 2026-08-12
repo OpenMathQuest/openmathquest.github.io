@@ -27,6 +27,7 @@ import {
   runCanaryTeardown,
   snapshotSha256,
   validateCanaryBrowserArguments,
+  waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
   trustedHttpsCanarySupplyChainFindings,
@@ -287,6 +288,35 @@ test("profile-process identity and workspace removal fail closed while any exact
   for (const remaining of [1, 2, null, undefined, -1]) assert.equal(canaryWorkspaceRemovalAllowed(remaining), false, String(remaining));
   assert.throws(() => profileProcessSetSha256([{ ...edge, processId: 0 }]));
   assert.throws(() => profileProcessSetSha256([edge, edge]));
+});
+
+test("hosted Windows listener observation tolerates only transient no-match results", async () => {
+  let attempts = 0;
+  const observed = await waitForExactLoopbackListener({
+    expectedPid: 4123,
+    timeoutMs: 100,
+    intervalMs: 0,
+    probe: async () => {
+      attempts += 1;
+      return attempts < 3 ? [] : [{ LocalAddress: "127.0.0.1", OwningProcess: 4123 }];
+    },
+  });
+  assert.equal(attempts, 3);
+  assert.deepEqual(observed, [{ localAddress: "127.0.0.1", owningProcess: 4123 }]);
+
+  for (const row of [
+    { LocalAddress: "0.0.0.0", OwningProcess: 4123 },
+    { LocalAddress: "127.0.0.1", OwningProcess: 9999 },
+  ]) {
+    await assert.rejects(
+      waitForExactLoopbackListener({ expectedPid: 4123, timeoutMs: 100, intervalMs: 0, probe: async () => [row] }),
+      /not owned exclusively by Caddy/u,
+    );
+  }
+
+  const runnerText = await read("audit/run-trusted-https-canary.mjs");
+  assert.match(runnerText, /CmdletizationQuery_NotFound/u);
+  assert.match(runnerText, /waitForExactLoopbackListener/u);
 });
 
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
