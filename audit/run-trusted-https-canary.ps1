@@ -116,8 +116,18 @@ finally {
         $certificateCleanupScript = @'
 $ErrorActionPreference = 'Stop'
 $thumb = $env:MQ_CANARY_CERT_THUMBPRINT
-@(Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumb) | Remove-Item -Force
-if (@(Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumb).Count -ne 0) { exit 1 }
+$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+try {
+  $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+  foreach ($certificate in @($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumb, $false))) { $store.Remove($certificate) }
+}
+finally { $store.Close() }
+$verify = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+try {
+  $verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+  if (@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumb, $false)).Count -ne 0) { exit 1 }
+}
+finally { $verify.Close() }
 '@
         $encodedCleanup = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($certificateCleanupScript))
         $env:MQ_CANARY_CERT_THUMBPRINT = $thumbprint
@@ -133,7 +143,12 @@ if (@(Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumb
         finally {
           Remove-Item Env:MQ_CANARY_CERT_THUMBPRINT -ErrorAction SilentlyContinue
         }
-        $remaining = @((Get-ChildItem Cert:\CurrentUser\Root | Where-Object Thumbprint -CEQ $thumbprint)).Count
+        $verificationStore = [Security.Cryptography.X509Certificates.X509Store]::new('Root', [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)
+        try {
+          $verificationStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+          $remaining = @($verificationStore.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint, $thumbprint, $false)).Count
+        }
+        finally { $verificationStore.Close() }
         if ($remaining -ne 0) { throw 'Fallback certificate removal did not remove the exact canary root.' }
       }
       if ($null -ne $cleanupRecord.originPort) {

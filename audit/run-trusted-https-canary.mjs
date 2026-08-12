@@ -409,18 +409,22 @@ const IMPORT_DISPOSABLE_ROOT_SCRIPT = [
   "$ErrorActionPreference='Stop'",
   "$path=[IO.Path]::GetFullPath($env:MQ_CANARY_CERT_PATH)",
   "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
-  "$imported=Import-Certificate -FilePath $path -CertStoreLocation 'Cert:\\CurrentUser\\Root'",
-  "if($imported.Thumbprint -cne $thumb){throw 'Imported root thumbprint did not match the reviewed Caddy root.'}",
-  "$count=@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb).Count",
-  "if($count -ne 1){throw 'Disposable Caddy root was not installed exactly once.'}",
-  "$count",
+  "$certificate=[Security.Cryptography.X509Certificates.X509Certificate2]::new($path)",
+  "if($certificate.Thumbprint -cne $thumb){throw 'Imported root thumbprint did not match the reviewed Caddy root.'}",
+  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "try{$store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);$store.Add($certificate)}finally{$store.Close();$certificate.Dispose()}",
+  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "try{$verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly);$count=@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false)).Count}finally{$verify.Close()}",
+  "if($count -ne 1){throw 'Disposable Caddy root was not installed exactly once.'};$count",
 ].join("\n");
 
 const REMOVE_DISPOSABLE_ROOT_SCRIPT = [
   "$ErrorActionPreference='Stop'",
   "$thumb=$env:MQ_CANARY_CERT_THUMBPRINT",
-  "@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb) | Remove-Item -Force",
-  "@(Get-ChildItem Cert:\\CurrentUser\\Root | Where-Object Thumbprint -CEQ $thumb).Count",
+  "$store=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "try{$store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite);$matches=@($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false));foreach($certificate in $matches){$store.Remove($certificate)}}finally{$store.Close()}",
+  "$verify=[Security.Cryptography.X509Certificates.X509Store]::new('Root',[Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser)",
+  "try{$verify.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly);@($verify.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$thumb,$false)).Count}finally{$verify.Close()}",
 ].join("\n");
 
 async function portAccepting(port) {
