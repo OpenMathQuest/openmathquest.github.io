@@ -237,7 +237,11 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "responseHeaderSetSha256",
     "offlineCacheProof",
     "candidateMainFrameNavigations",
-    "protectedMigrationProjection",
+    "freshProtectedProjection",
+    "RETIRED_BETA1_PRESERVED_FRESH_START",
+    "RETAINED_BETA1_COMPLETE_VALUE",
+    "observeCanaryRetainedFreshStartNotice(candidatePage)",
+    "RETAINED_BETA1_FRESH_START_NOTICE_SHA256",
     "remainingMatchingCertificateCount",
     "profileBoundEdgeProcesses(profilePath)",
     "Get-CimInstance Win32_Process -Filter \\\"Name = 'msedge.exe'\\\" -ErrorAction Stop",
@@ -258,6 +262,9 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "openCanaryInstallHelp",
     "reloadCanaryCandidateFromBeta1",
     "page.reload({ waitUntil: \"domcontentloaded\"",
+    "observeCanaryRetainedFreshStartNotice",
+    ".runtime-warning[role=\"alert\"]",
+    "Canary fresh-start notice did not match the exact approved grown-up message",
     "Canary candidate transition requires the existing Beta 1 page",
     "[data-action=\"grown\"]",
     "[data-action=\"install-help\"]",
@@ -303,6 +310,10 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
   run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
   run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")", "context.newPage()"), /missing required production-path canary control/u);
+  run("reintroduced retired-curriculum migration", "runnerText", (text) => text.replace("RETIRED_BETA1_PRESERVED_FRESH_START", "SCHEMA3_MIGRATION_PRESERVED"), /missing required production-path canary control/u);
+  run("removed retained-source terminal proof", "runnerText", (text) => text.replaceAll("RETAINED_BETA1_COMPLETE_VALUE", "null"), /missing required production-path canary control/u);
+  run("removed retained fresh-start notice observation", "runnerText", (text) => text.replace("observeCanaryRetainedFreshStartNotice(candidatePage)", "Promise.resolve(null)"), /missing required production-path canary control/u);
+  run("weakened retained fresh-start notice selector", "canaryLibraryText", (text) => text.replace('.runtime-warning[role=\"alert\"]', '.runtime-warning'), /missing required production-path canary control/u);
   run("removed Home update journey control", "canaryLibraryText", (text) => text.replaceAll('[data-action="pwa-check"]', '[data-action="obsolete-update"]'), /missing required production-path canary control/u);
   run("removed migrated-screen Home boundary", "canaryLibraryText", (text) => text.replaceAll('[data-action="home"]', '[data-action="obsolete-home"]'), /missing required production-path canary control/u);
   run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);

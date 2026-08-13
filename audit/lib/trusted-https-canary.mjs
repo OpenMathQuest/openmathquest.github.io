@@ -13,6 +13,10 @@ export const CADDY_ARCHIVE_SHA256 = "1708333f79e274c7697285afe6d592ab39314e0b131
 export const CADDY_ARCHIVE_SHA512 = "cd5ccfd86a4b40732cf715890d0dca5bf3f63adefec5a7914de85adf240c60ce7e5d2791631b88ef9758e46b23bb1730e020b9c5d696889740b284ffd4788e35";
 export const PLAYWRIGHT_CORE_VERSION = "1.62.1";
 export const PLAYWRIGHT_CORE_SRI = "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==";
+export const RETAINED_BETA1_COMPLETE_VALUE = "beta1-retained-current-curriculum-v1";
+export const RETAINED_BETA1_COMPLETE_SHA256 = createHash("sha256").update(RETAINED_BETA1_COMPLETE_VALUE, "utf8").digest("hex");
+export const RETAINED_BETA1_FRESH_START_NOTICE = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 5 starts fresh so old mastery is not applied to changed skills.";
+export const RETAINED_BETA1_FRESH_START_NOTICE_SHA256 = createHash("sha256").update(RETAINED_BETA1_FRESH_START_NOTICE, "utf8").digest("hex");
 export const EMPTY_PROFILE_PROCESS_SET_SHA256 = createHash("sha256").update("[]\n").digest("hex");
 export const LOOPBACK_LISTENER_QUERY_SCRIPT = [
   "$port=[int]$env:MQ_CANARY_LISTENER_PORT",
@@ -102,6 +106,15 @@ export async function waitForCanaryHomeUpdate(page, productVersion, timeoutMs = 
   await page.locator('[data-action="pwa-check"], [data-action="home"]').first().waitFor({ state: "visible", timeout: timeoutMs });
   if (!await check.isVisible()) await home.click();
   await check.waitFor({ state: "visible", timeout: timeoutMs });
+}
+
+export async function observeCanaryRetainedFreshStartNotice(page, timeoutMs = 30_000) {
+  if (!page || typeof page.locator !== "function") throw new TypeError("Canary fresh-start notice observation requires a Playwright page.");
+  const notice = page.locator('.runtime-warning[role="alert"]').first();
+  await notice.waitFor({ state: "visible", timeout: timeoutMs });
+  const text = String(await notice.innerText()).trim();
+  if (text !== RETAINED_BETA1_FRESH_START_NOTICE) throw new Error("Canary fresh-start notice did not match the exact approved grown-up message.");
+  return text;
 }
 
 export async function reloadCanaryCandidateFromBeta1(page, productVersion, timeoutMs = 30_000) {
@@ -263,7 +276,7 @@ export const TRUSTED_HTTPS_CANARY_CHECK_IDS = Object.freeze([
   "RETAINED_BETA1_EXPLICIT_RELOAD",
   "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED",
   "BETA1_SOURCE_BYTES_UNCHANGED",
-  "SCHEMA3_MIGRATION_PRESERVED",
+  "RETIRED_BETA1_PRESERVED_FRESH_START",
   "CANDIDATE_ACTIVE_CACHE_READY",
   "CANDIDATE_OFFLINE_COLD_RELAUNCH",
   "CACHE_CORRUPTION_DETECTED",
@@ -393,12 +406,17 @@ const PROGRESS_KEYS = Object.freeze([
   "protectedSha256",
   "sourceSchemaVersion",
   "targetSchemaVersion",
-  "earnedLevel",
-  "practiceCount",
-  "approvedProjectionSha256",
-  "protectedProjectionSha256",
-  "approvedProjectionFieldCount",
-  "protectedProjectionFieldCount",
+  "sourceEarnedLevel",
+  "sourcePracticeCount",
+  "protectedEarnedLevel",
+  "protectedPracticeCount",
+  "expectedFreshSha256",
+  "retiredProjectionSha256",
+  "freshProjectionSha256",
+  "retiredProjectionFieldCount",
+  "freshProjectionFieldCount",
+  "retainedMarkerSha256",
+  "retainedNoticeSha256",
 ]);
 const CHECK_KEYS = Object.freeze(["id", "status", "detail"]);
 const TEARDOWN_KEYS = Object.freeze([
@@ -663,10 +681,12 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
   issueIf(issues, !validSha64OrNull(value.progress?.protectedSha256, failed), "protected progress SHA-256 is invalid");
   issueIf(issues, value.progress?.sourceSchemaVersion !== 2 && !(failed && value.progress?.sourceSchemaVersion === null), "source progress schema must be 2");
   issueIf(issues, value.progress?.targetSchemaVersion !== 3 && !(failed && value.progress?.targetSchemaVersion === null), "protected progress schema must be 3");
-  issueIf(issues, value.progress?.earnedLevel !== 2 && !(failed && value.progress?.earnedLevel === null), "synthetic earned level must be 2");
-  issueIf(issues, value.progress?.practiceCount !== 3 && !(failed && value.progress?.practiceCount === null), "synthetic practice count must be 3");
-  for (const key of ["approvedProjectionSha256", "protectedProjectionSha256"]) issueIf(issues, !validSha64OrNull(value.progress?.[key], failed), `${key} is invalid`);
-  for (const key of ["approvedProjectionFieldCount", "protectedProjectionFieldCount"]) issueIf(issues, !validNonnegativeOrNull(value.progress?.[key], failed), `${key} is invalid`);
+  issueIf(issues, value.progress?.sourceEarnedLevel !== 2 && !(failed && value.progress?.sourceEarnedLevel === null), "synthetic Beta 1 earned level must be 2");
+  issueIf(issues, value.progress?.sourcePracticeCount !== 3 && !(failed && value.progress?.sourcePracticeCount === null), "synthetic Beta 1 practice count must be 3");
+  issueIf(issues, value.progress?.protectedEarnedLevel !== 1 && !(failed && value.progress?.protectedEarnedLevel === null), "fresh protected earned level must be 1");
+  issueIf(issues, value.progress?.protectedPracticeCount !== 0 && !(failed && value.progress?.protectedPracticeCount === null), "fresh protected practice count must be 0");
+  for (const key of ["expectedFreshSha256", "retiredProjectionSha256", "freshProjectionSha256", "retainedMarkerSha256", "retainedNoticeSha256"]) issueIf(issues, !validSha64OrNull(value.progress?.[key], failed), `${key} is invalid`);
+  for (const key of ["retiredProjectionFieldCount", "freshProjectionFieldCount"]) issueIf(issues, !validNonnegativeOrNull(value.progress?.[key], failed), `${key} is invalid`);
 
   issueIf(issues, !Array.isArray(value.checks) || value.checks.length !== TRUSTED_HTTPS_CANARY_CHECK_IDS.length, "checks must contain the exact ordered canary set");
   if (Array.isArray(value.checks)) {
@@ -720,9 +740,13 @@ export function parseTrustedHttpsCanaryEvidence(text, expected = {}) {
       || value.offlineProof?.readinessRelease !== "1.0.0-beta.5"
       || value.offlineProof?.readinessBuildId !== "math-quest-pwa-v1.0.0-beta.5"
       || value.offlineProof?.readinessCacheIdentity !== "math-quest-static-v1.0.0-beta.5", "RECONCILED evidence requires a service-worker cold response with both server ports closed and exact readiness identity");
-    issueIf(issues, value.progress?.approvedProjectionSha256 !== value.progress?.protectedProjectionSha256
-      || value.progress?.approvedProjectionFieldCount !== value.progress?.protectedProjectionFieldCount
-      || value.progress?.approvedProjectionFieldCount < 1, "RECONCILED evidence requires the complete approved migration projection to remain identical");
+    issueIf(issues, value.progress?.protectedSha256 !== value.progress?.expectedFreshSha256
+      || value.progress?.sourceSha256 === value.progress?.protectedSha256
+      || value.progress?.retiredProjectionSha256 === value.progress?.freshProjectionSha256
+      || value.progress?.retiredProjectionFieldCount < 1
+      || value.progress?.freshProjectionFieldCount < 1
+      || value.progress?.retainedMarkerSha256 !== RETAINED_BETA1_COMPLETE_SHA256
+      || value.progress?.retainedNoticeSha256 !== RETAINED_BETA1_FRESH_START_NOTICE_SHA256, "RECONCILED evidence requires byte-identical retired Beta 1 retention, an independently fresh protected Beta 5 state, and the exact visible grown-up notice");
     issueIf(issues, value.privacy?.unexpectedRequestCount !== 0
       || value.privacy?.externalRequestCount !== 0
       || value.privacy?.queryStringCount !== 0

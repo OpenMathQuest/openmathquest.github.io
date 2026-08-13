@@ -15,6 +15,9 @@ import {
   LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
   PLAYWRIGHT_CORE_VERSION,
+  RETAINED_BETA1_COMPLETE_SHA256,
+  RETAINED_BETA1_FRESH_START_NOTICE,
+  RETAINED_BETA1_FRESH_START_NOTICE_SHA256,
   TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
   TRUSTED_HTTPS_CANARY_BETA1_TAG,
   TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT,
@@ -33,6 +36,7 @@ import {
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
+  observeCanaryRetainedFreshStartNotice,
   openCanaryInstallHelp,
   parseTrustedHttpsCanaryEvidence,
   profileProcessSetSha256,
@@ -174,12 +178,17 @@ function validEvidence() {
       protectedSha256: sha("5"),
       sourceSchemaVersion: 2,
       targetSchemaVersion: 3,
-      earnedLevel: 2,
-      practiceCount: 3,
-      approvedProjectionSha256: sha("e"),
-      protectedProjectionSha256: sha("e"),
-      approvedProjectionFieldCount: 57,
-      protectedProjectionFieldCount: 57,
+      sourceEarnedLevel: 2,
+      sourcePracticeCount: 3,
+      protectedEarnedLevel: 1,
+      protectedPracticeCount: 0,
+      expectedFreshSha256: sha("5"),
+      retiredProjectionSha256: sha("e"),
+      freshProjectionSha256: sha("6"),
+      retiredProjectionFieldCount: 57,
+      freshProjectionFieldCount: 42,
+      retainedMarkerSha256: RETAINED_BETA1_COMPLETE_SHA256,
+      retainedNoticeSha256: RETAINED_BETA1_FRESH_START_NOTICE_SHA256,
     },
     checks: TRUSTED_HTTPS_CANARY_CHECK_IDS.map((id) => ({ id, status: "PASS", detail: `Effect-sensitive proof for ${id}.` })),
     teardown: {
@@ -224,11 +233,15 @@ test("canonical trusted-HTTPS evidence accepts only the exact reconciled candida
     ["exact cache set", (value) => { value.cacheProof.offlineSetSha256 = sha("0"); }],
     ["cold service-worker response", (value) => { value.offlineProof.responseFromServiceWorker = false; }],
     ["instrumented navigation", (value) => { value.navigationProof.observedReloadCount = 0; }],
-    ["migration projection", (value) => { value.progress.protectedProjectionSha256 = sha("0"); }],
+    ["fresh-state byte identity", (value) => { value.progress.expectedFreshSha256 = sha("0"); }],
+    ["fresh-state projection separation", (value) => { value.progress.freshProjectionSha256 = value.progress.retiredProjectionSha256; }],
+    ["retained marker", (value) => { value.progress.retainedMarkerSha256 = sha("0"); }],
+    ["retained fresh-start notice", (value) => { value.progress.retainedNoticeSha256 = sha("0"); }],
     ["certificate absence", (value) => { value.teardown.remainingMatchingCertificateCount = 1; }],
     ["lingering profile process", (value) => { value.teardown.remainingProfileProcessCount = 1; }],
     ["forged empty process set", (value) => { value.teardown.remainingProfileProcessSetSha256 = sha("0"); }],
-    ["progress preservation", (value) => { value.progress.practiceCount = 2; }],
+    ["retired progress witness", (value) => { value.progress.sourcePracticeCount = 2; }],
+    ["fresh progress witness", (value) => { value.progress.protectedEarnedLevel = 2; }],
     ["check order", (value) => { [value.checks[0], value.checks[1]] = [value.checks[1], value.checks[0]]; }],
     ["green check", (value) => { value.checks[5].status = "FAIL"; }],
     ["complete teardown", (value) => { value.teardown.profileRemoved = false; }],
@@ -608,6 +621,29 @@ test("canary deliberately reloads the existing Beta 1 page into the Home candida
   ]);
 });
 
+test("canary observes the exact visible retained-save fresh-start notice", async () => {
+  const state = { visible: true, text: RETAINED_BETA1_FRESH_START_NOTICE, observations: [] };
+  const page = {
+    locator(selector) {
+      assert.equal(selector, '.runtime-warning[role="alert"]');
+      return {
+        first() { return this; },
+        async waitFor(options) {
+          state.observations.push(["wait", options.state, options.timeout]);
+          if (!state.visible) throw new Error("notice is not visible");
+        },
+        async innerText() { return state.text; },
+      };
+    },
+  };
+  assert.equal(await observeCanaryRetainedFreshStartNotice(page, 75), RETAINED_BETA1_FRESH_START_NOTICE);
+  assert.deepEqual(state.observations, [["wait", "visible", 75]]);
+  state.text = `${RETAINED_BETA1_FRESH_START_NOTICE} Extra`;
+  await assert.rejects(observeCanaryRetainedFreshStartNotice(page, 75), /exact approved grown-up message/u);
+  state.visible = false;
+  await assert.rejects(observeCanaryRetainedFreshStartNotice(page, 75), /not visible/u);
+});
+
 test("canary checks emit progress markers and bind open-ended waits", async () => {
   assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
   const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
@@ -661,6 +697,13 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.5"\)/u);
   assert.match(runnerText, /activateCanaryHomeUpdate\(candidatePage\)/u);
   assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(beta1Page, "1\.0\.0-beta\.5"\)/u);
+  assert.match(runnerText, /RETIRED_BETA1_PRESERVED_FRESH_START/u);
+  assert.match(runnerText, /MathQuestEngine\.exportState\(MathQuestEngine\.createInitialState\(state\.maxSeenPlayDay\)\)/u);
+  assert.match(runnerText, /assert\.equal\(protectedBytes, expectedFreshBytes/u);
+  assert.match(runnerText, /assert\.equal\(fresh\.marker, RETAINED_BETA1_COMPLETE_VALUE\)/u);
+  assert.match(runnerText, /observeCanaryRetainedFreshStartNotice\(candidatePage\)/u);
+  assert.match(runnerText, /assert\.equal\(retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256\)/u);
+  assert.doesNotMatch(runnerText, /projectApprovedShape|SCHEMA3_MIGRATION_PRESERVED/u);
   assert.doesNotMatch(runnerText, /Playwright candidate page creation|waitForCanaryWriterBlocked|closeCanaryWriterPage/u);
   assert.match(runnerText, /openCanaryInstallHelp\(candidatePage\)/u);
   assert.doesNotMatch(runnerText, /candidatePage\.locator\('\[data-action="pwa-apply"\]'\)/u);
