@@ -35,6 +35,7 @@ import {
   captureCanaryObservation,
   canaryBrowserArguments,
   canaryWaitingCacheReady,
+  exactCandidateCacheObservation,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
   openCanaryInstallHelp,
@@ -702,29 +703,14 @@ async function inspectExactCandidateCache(page, snapshots, { allowBeta1, persist
     { path: "release-shell-v1.json", sha256: manifestSha256, bytes: snapshots.candidate.records.find((item) => item.path === "release-shell-v1.json").bytes, mime: "application/json", status: 200 },
     ...manifest.entries.map((entry) => ({ ...entry, path: entry.path.slice(2) })),
   ].sort((left, right) => left.path.localeCompare(right.path));
-  const observed = await boundedPageEvaluate(page, persistentContext, profilePath, async ({ expectedCacheName, expectedRows }) => {
-    const names = await caches.keys();
-    const cache = await caches.open(expectedCacheName);
-    const requests = await cache.keys();
-    const rows = [];
-    for (const request of requests) {
-      const response = await cache.match(request, { ignoreSearch: false });
-      const url = new URL(request.url);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (value) => value.toString(16).padStart(2, "0")).join("");
-      rows.push({
-        path: decodeURIComponent(url.pathname).replace(/^\//u, ""),
-        search: url.search,
-        origin: url.origin,
-        status: response.status,
-        mime: String(response.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase(),
-        bytes: bytes.byteLength,
-        sha256: digest,
-      });
-    }
-    return { names, rows, origin: location.origin, expectedCount: expectedRows.length };
-  }, { expectedCacheName: physicalCacheName, expectedRows: expected });
   const allowedNames = new Set([physicalCacheName, ...(allowBeta1 ? [BETA1_CACHE] : [])]);
+  const observed = await boundedPageEvaluate(page, persistentContext, profilePath, exactCandidateCacheObservation, {
+    expectedCacheName: physicalCacheName,
+    expectedRows: expected,
+    allowedCacheNames: [...allowedNames],
+    observationTimeoutMs: 15_000,
+    pollMs: 100,
+  });
   if (allowBeta1) assert.equal(observed.names.includes(BETA1_CACHE), true, "the canary must retain the immutable Beta 1 cache for the older open tab");
   assert.deepEqual([...observed.names].sort(), [...allowedNames].filter((name) => observed.names.includes(name)).sort());
   assert.equal(observed.names.includes(physicalCacheName), true);

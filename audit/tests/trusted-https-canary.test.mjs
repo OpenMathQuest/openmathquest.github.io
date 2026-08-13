@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
+import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -31,6 +32,7 @@ import {
   WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
   canaryBrowserArguments,
   canaryWaitingCacheReady,
+  exactCandidateCacheObservation,
   canaryChildExitSucceeded,
   canaryWorkspaceRemovalAllowed,
   canonicalCertificateThumbprint,
@@ -673,6 +675,52 @@ test("waiting-cache observation requires the exact settled cache set", async () 
   assert.equal(await predicate(input), false, "an exact cache without a waiting worker is not ready");
 });
 
+test("candidate cache observation retries a concurrent install and binds one atomic snapshot", async () => {
+  const expectedCacheName = "math-quest-static-v1.0.0-beta.5-digest";
+  const beta1CacheName = "math-quest-static-v1.0.0-beta.1";
+  const exactNames = [beta1CacheName, expectedCacheName];
+  let keysCall = 0;
+  let clock = 0;
+  const responseBytes = new TextEncoder().encode("candidate");
+  const request = { url: "https://localhost/index.html" };
+  const context = vm.createContext({
+    URL,
+    Uint8Array,
+    crypto: webcrypto,
+    decodeURIComponent,
+    location: { origin: "https://localhost" },
+    performance: { now: () => ++clock },
+    setTimeout: (resolve) => resolve(),
+    caches: {
+      keys: async () => {
+        keysCall += 1;
+        return keysCall === 2 ? [...exactNames, `${expectedCacheName}-nonce-staging`] : [...exactNames];
+      },
+      open: async () => ({
+        keys: async () => [request],
+        match: async () => ({
+          status: 200,
+          headers: { get: (name) => name === "content-type" ? "text/html; charset=utf-8" : null },
+          arrayBuffer: async () => responseBytes.buffer,
+        }),
+      }),
+    },
+  });
+  const observe = new vm.Script(`(${exactCandidateCacheObservation.toString()})`).runInContext(context);
+  const result = await observe({
+    expectedCacheName,
+    expectedRows: [{ path: "index.html" }],
+    allowedCacheNames: exactNames,
+    observationTimeoutMs: 20,
+    pollMs: 0,
+  });
+  assert.equal(keysCall, 4, "a cache-set change after byte reading must force a fresh observation");
+  assert.deepEqual([...result.names], exactNames);
+  assert.equal(result.rows[0].path, "index.html");
+  assert.equal(result.rows[0].bytes, responseBytes.byteLength);
+  assert.match(result.rows[0].sha256, /^[a-f0-9]{64}$/u);
+});
+
 test("canary checks emit progress markers and bind open-ended waits", async () => {
   assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
   const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
@@ -732,6 +780,7 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /assert\.equal\(fresh\.marker, RETAINED_BETA1_COMPLETE_VALUE\)/u);
   assert.match(runnerText, /observeCanaryRetainedFreshStartNotice\(candidatePage\)/u);
   assert.match(runnerText, /candidatePage\.waitForFunction\(canaryWaitingCacheReady/u);
+  assert.match(runnerText, /boundedPageEvaluate\([\s\S]*exactCandidateCacheObservation/u);
   assert.match(runnerText, /assert\.equal\(retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256\)/u);
   assert.doesNotMatch(runnerText, /projectApprovedShape|SCHEMA3_MIGRATION_PRESERVED/u);
   assert.doesNotMatch(runnerText, /Playwright candidate page creation|waitForCanaryWriterBlocked|closeCanaryWriterPage/u);

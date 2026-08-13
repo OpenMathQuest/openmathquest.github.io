@@ -138,6 +138,55 @@ export async function canaryWaitingCacheReady({ expectedCacheName, allowedCacheN
   return now - firstReady >= stableMs;
 }
 
+export async function exactCandidateCacheObservation({
+  expectedCacheName,
+  expectedRows,
+  allowedCacheNames,
+  observationTimeoutMs = 15_000,
+  pollMs = 100,
+}) {
+  const expectedNames = [...allowedCacheNames].sort();
+  const namesAreExact = (names) => names.length === expectedNames.length
+    && [...names].sort().every((name, index) => name === expectedNames[index]);
+  const deadline = performance.now() + observationTimeoutMs;
+  let lastNames = [];
+  while (performance.now() <= deadline) {
+    const names = await caches.keys();
+    lastNames = names;
+    if (namesAreExact(names)) {
+      try {
+        const cache = await caches.open(expectedCacheName);
+        const requests = await cache.keys();
+        const rows = [];
+        for (const request of requests) {
+          const response = await cache.match(request, { ignoreSearch: false });
+          if (!response) throw new Error("cache entry changed during observation");
+          const url = new URL(request.url);
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (value) => value.toString(16).padStart(2, "0")).join("");
+          rows.push({
+            path: decodeURIComponent(url.pathname).replace(/^\//u, ""),
+            search: url.search,
+            origin: url.origin,
+            status: response.status,
+            mime: String(response.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase(),
+            bytes: bytes.byteLength,
+            sha256: digest,
+          });
+        }
+        const namesAfter = await caches.keys();
+        if (namesAreExact(namesAfter)) return { names: namesAfter, rows, origin: location.origin, expectedCount: expectedRows.length };
+        lastNames = namesAfter;
+      } catch {
+        // A concurrent install changed Cache Storage. Retry until one exact
+        // before-and-after snapshot is observed or the bounded deadline wins.
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+  throw new Error(`exact candidate cache did not settle: ${JSON.stringify([...lastNames].sort())}`);
+}
+
 export async function reloadCanaryCandidateFromBeta1(page, productVersion, timeoutMs = 30_000) {
   if (!page || typeof page.reload !== "function") throw new TypeError("Canary candidate transition requires the existing Beta 1 page.");
   await page.reload({ waitUntil: "domcontentloaded", timeout: timeoutMs });
