@@ -89,6 +89,32 @@ export function canaryRequestHeaderFlags(headers) {
   });
 }
 
+export function canaryBackendRequestViolation(record, allowedPaths) {
+  if (!record || typeof record !== "object") throw new TypeError("Canary backend request record must be an object.");
+  const allowed = allowedPaths instanceof Set ? allowedPaths : new Set(allowedPaths);
+  const method = String(record.method || "");
+  const pathname = String(record.pathname || "INVALID");
+  const allowedPath = allowed.has(pathname);
+  const violationMask =
+    (!["GET", "HEAD"].includes(method) ? 1 : 0)
+    | (!allowedPath ? 2 : 0)
+    | (String(record.search || "") !== "" ? 4 : 0)
+    | (record.hasCredentials !== false ? 8 : 0)
+    | (!Number.isFinite(record.contentLength) || record.contentLength !== 0 ? 16 : 0)
+    | (record.cookieHeader === true ? 32 : 0)
+    | (record.authorizationHeader === true ? 64 : 0)
+    | (record.sensitiveHeader === true ? 128 : 0)
+    | (record.transferEncoding === true ? 256 : 0);
+  if (violationMask === 0) return null;
+  return Object.freeze({
+    violationMask,
+    methodClass: ["GET", "HEAD"].includes(method) ? method : "OTHER",
+    allowedPath: allowedPath ? pathname : null,
+    pathnameSha256: allowedPath ? null : createHash("sha256").update(pathname, "utf8").digest("hex"),
+    contentLengthClass: Number.isFinite(record.contentLength) ? (record.contentLength === 0 ? "ZERO" : "NONZERO") : "INVALID",
+  });
+}
+
 export function beta1GradedSelectionAnswer(question, gradeAnswer) {
   if (!question || question.inputClass !== "SELECTION" || !Array.isArray(question.options)) {
     throw new TypeError("Beta 1 selection-answer discovery requires one selection question.");
