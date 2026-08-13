@@ -960,6 +960,10 @@ function validateFacetCoverage(engine, skill, questions) {
     requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.frameNumber").every((question) => question.modelDescriptor.values.data?.stimulus === true
       && question.modelDescriptor.values.frames?.[0]?.capacity === 10
       && question.modelDescriptor.values.frames?.[0]?.value === answerNumber(question)), `${skill.id}: ten-frame/numeral connection drifts`);
+    requireCondition(questions.every((question) => question.options.length === 4
+      && new Set(question.options.map((option) => Number(option.value))).size === 4
+      && question.options.every((option) => Number.isInteger(Number(option.value)) && Number(option.value) >= 0 && Number(option.value) <= 10)), `${skill.id}: zero-to-ten choices are not four distinct bounded numerals`);
+    requireSet(values((question) => Number(question.answer.value)), [0, 10], "zero-to-ten boundary answer");
   } else if (skill.id === "MQ-023") {
     requireSet(ids, ["question.missingPart", "question.makeTenFrame", "question.hiddenPart"], "part-of-ten activity");
     requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.makeTenFrame").every((question) => Number(question.params.shown) + answerNumber(question) === 10
