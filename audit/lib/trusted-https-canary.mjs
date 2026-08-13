@@ -100,6 +100,42 @@ export async function waitForCanaryHomeUpdate(page, productVersion, timeoutMs = 
   await page.locator('[data-action="pwa-check"]').first().waitFor({ state: "visible", timeout: timeoutMs });
 }
 
+export async function waitForCanaryWriterBlocked(page, productVersion, timeoutMs = 30_000) {
+  if (!page || typeof page.waitForFunction !== "function" || typeof page.locator !== "function") {
+    throw new TypeError("Canary writer-contention observation requires a Playwright page.");
+  }
+  await page.waitForFunction(
+    (version) => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === version,
+    productVersion,
+    { timeout: timeoutMs },
+  );
+  await page.locator("[data-progress-protection]").waitFor({ state: "visible", timeout: timeoutMs });
+}
+
+export async function closeCanaryWriterPage(page) {
+  if (!page || typeof page.close !== "function" || typeof page.once !== "function" || typeof page.on !== "function" || typeof page.off !== "function" || typeof page.isClosed !== "function") {
+    throw new TypeError("Canary writer handoff requires one observable Playwright page.");
+  }
+  let observedDialog = null;
+  let resolveClosed;
+  const closed = new Promise((resolve) => { resolveClosed = resolve; });
+  const onClose = () => resolveClosed();
+  const onDialog = (dialog) => {
+    observedDialog = new Error("The Beta 1 writer tab raised a dialog while closing; writer handoff was not clean.");
+    void dialog.dismiss().catch(() => {});
+  };
+  page.once("close", onClose);
+  page.on("dialog", onDialog);
+  try {
+    await Promise.all([page.close(), closed]);
+    if (observedDialog) throw observedDialog;
+    if (!page.isClosed()) throw new Error("The Beta 1 writer tab did not reach the closed state.");
+  } finally {
+    page.off("close", onClose);
+    page.off("dialog", onDialog);
+  }
+}
+
 export async function activateCanaryHomeUpdate(page, timeoutMs = 30_000) {
   if (!page || typeof page.locator !== "function") throw new TypeError("Canary Home activation requires a Playwright page.");
   const dialog = page.locator("[data-pwa-dialog-backdrop]");

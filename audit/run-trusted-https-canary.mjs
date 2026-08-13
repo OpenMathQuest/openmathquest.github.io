@@ -32,6 +32,7 @@ import {
   canonicalCertificateThumbprint,
   captureCanaryObservation,
   canaryBrowserArguments,
+  closeCanaryWriterPage,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
   openCanaryInstallHelp,
@@ -46,6 +47,7 @@ import {
   validateCanaryBrowserTlsSecurity,
   validateCanaryRootScopeProof,
   waitForCanaryHomeUpdate,
+  waitForCanaryWriterBlocked,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
@@ -1043,6 +1045,7 @@ async function main() {
     browserVersion = context.browser()?.version() || null;
     assert.match(String(browserVersion), /^\d+\.\d+\.\d+\.\d+$/u);
     const beta1Page = context.pages()[0] || await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright Beta 1 page creation");
+    let retainedBeta1Page = null;
     const firstResponse = await beta1Page.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
     await checkedStep(checks, "HTTPS_TRUSTED_NO_BYPASS", async () => {
@@ -1135,6 +1138,9 @@ async function main() {
       assert.equal(await boundedBrowserOperation(beta1Page.title(), context, profilePath, "Playwright document-title observation"), "Math Quest");
       assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
       await boundedBrowserOperation(context.setOffline(false), context, profilePath, "Playwright offline-mode release");
+      retainedBeta1Page = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright retained Beta 1 page creation");
+      await retainedBeta1Page.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await waitForCanaryWriterBlocked(retainedBeta1Page, "1.0.0-beta.1");
     }, "Beta 1 reloaded from its installed cache while Playwright network emulation was offline.");
 
     await checkedStep(checks, "SAME_ORIGIN_RUNTIME_SWITCH", async () => {
@@ -1151,7 +1157,7 @@ async function main() {
 
     const candidatePage = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright candidate page creation");
     await candidatePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await waitForCanaryHomeUpdate(candidatePage, "1.0.0-beta.5");
+    await waitForCanaryWriterBlocked(candidatePage, "1.0.0-beta.5");
 
     await checkedStep(checks, "CANDIDATE_WAITING_CACHE_READY", async () => {
       await candidatePage.waitForFunction(async (prefix) => {
@@ -1160,7 +1166,10 @@ async function main() {
         return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
       }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
       waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
-    }, "The exact Beta 5 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache.");
+      await boundedBrowserOperation(closeCanaryWriterPage(beta1Page), context, profilePath, "Playwright deliberate Beta 1 writer-tab close");
+      await candidatePage.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+      await waitForCanaryHomeUpdate(candidatePage, "1.0.0-beta.5");
+    }, "The exact Beta 5 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache; the grown-up-equivalent close of the original writer tab then let the candidate acquire the writer lease and reach Home.");
 
     await checkedStep(checks, "CANDIDATE_REAL_UI_ACTIVATION", async () => {
       expectedCandidateReloadUrl = candidatePage.url();
@@ -1170,10 +1179,10 @@ async function main() {
         if (frame === candidatePage.mainFrame()) candidateMainFrameNavigations.push(frame.url());
       };
       const recordBeta1Navigation = (frame) => {
-        if (frame === beta1Page.mainFrame()) beta1MainFrameNavigations.push(frame.url());
+        if (frame === retainedBeta1Page.mainFrame()) beta1MainFrameNavigations.push(frame.url());
       };
       candidatePage.on("framenavigated", recordCandidateNavigation);
-      beta1Page.on("framenavigated", recordBeta1Navigation);
+      retainedBeta1Page.on("framenavigated", recordBeta1Navigation);
       await activateCanaryHomeUpdate(candidatePage);
       await candidatePage.waitForFunction(async () => {
         const registration = await navigator.serviceWorker.getRegistration("./");
@@ -1188,12 +1197,12 @@ async function main() {
 
     await checkedStep(checks, "RETAINED_BETA1_EXPLICIT_RELOAD", async () => {
       assert.deepEqual(beta1MainFrameNavigations, []);
-      assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
-      await beta1Page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-      await beta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
-      assert.equal(await boundedPageEvaluate(beta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
+      assert.equal(await boundedPageEvaluate(retainedBeta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
+      await retainedBeta1Page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+      await retainedBeta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
+      assert.equal(await boundedPageEvaluate(retainedBeta1Page, context, profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.5");
       assert.deepEqual(beta1MainFrameNavigations, [origin]);
-      beta1Page.removeAllListeners("framenavigated");
+      retainedBeta1Page.removeAllListeners("framenavigated");
     }, "The retained Beta 1 tab remained untouched until an explicit user-equivalent reload, which then opened the verified current shell without a recovery query.");
 
     await checkedStep(checks, "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED", async () => {

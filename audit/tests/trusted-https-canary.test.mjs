@@ -30,6 +30,7 @@ import {
   canaryWorkspaceRemovalAllowed,
   canonicalCertificateThumbprint,
   captureCanaryObservation,
+  closeCanaryWriterPage,
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
@@ -44,6 +45,7 @@ import {
   validateCanaryBrowserTlsSecurity,
   validateCanaryRootScopeProof,
   waitForCanaryHomeUpdate,
+  waitForCanaryWriterBlocked,
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
@@ -575,6 +577,63 @@ test("canary activates updates directly on Home and opens installation help only
   assert.equal(state.dialog, true);
 });
 
+test("canary observes writer contention before the deliberate writer-tab handoff", async () => {
+  const observations = [];
+  const page = {
+    async waitForFunction(_predicate, version, options) { observations.push(["version", version, options.timeout]); },
+    locator(selector) {
+      return {
+        async waitFor(options) { observations.push(["control", selector, options.state, options.timeout]); },
+      };
+    },
+  };
+  await waitForCanaryWriterBlocked(page, "1.0.0-beta.5", 75);
+  assert.deepEqual(observations, [
+    ["version", "1.0.0-beta.5", 75],
+    ["control", "[data-progress-protection]", "visible", 75],
+  ]);
+});
+
+test("writer handoff waits for the actual close event and rejects dialog-tainted closure", async () => {
+  const listeners = new Map();
+  let closed = false;
+  let closeOperationResolved = false;
+  const page = {
+    once(name, handler) { listeners.set(name, handler); },
+    on(name, handler) { listeners.set(name, handler); },
+    off(name, handler) { if (listeners.get(name) === handler) listeners.delete(name); },
+    isClosed() { return closed; },
+    async close() {
+      closeOperationResolved = true;
+      setTimeout(() => {
+        closed = true;
+        listeners.get("close")?.();
+      }, 20);
+    },
+  };
+  let handoffSettled = false;
+  const handoff = closeCanaryWriterPage(page).finally(() => { handoffSettled = true; });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(closeOperationResolved, true);
+  assert.equal(handoffSettled, false);
+  await handoff;
+  assert.equal(closed, true);
+  assert.equal(listeners.size, 0);
+
+  const dialogListeners = new Map();
+  const dialogPage = {
+    once(name, handler) { dialogListeners.set(name, handler); },
+    on(name, handler) { dialogListeners.set(name, handler); },
+    off(name, handler) { if (dialogListeners.get(name) === handler) dialogListeners.delete(name); },
+    isClosed() { return true; },
+    async close() {
+      dialogListeners.get("dialog")?.({ dismiss: async () => {} });
+      dialogListeners.get("close")?.();
+    },
+  };
+  await assert.rejects(closeCanaryWriterPage(dialogPage), /raised a dialog/u);
+});
+
 test("canary checks emit progress markers and bind open-ended waits", async () => {
   assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
   const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
@@ -627,6 +686,9 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
   assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.5"\)/u);
   assert.match(runnerText, /activateCanaryHomeUpdate\(candidatePage\)/u);
+  assert.match(runnerText, /waitForCanaryWriterBlocked\(candidatePage, "1\.0\.0-beta\.5"\)/u);
+  assert.match(runnerText, /closeCanaryWriterPage\(beta1Page\)/u);
+  assert.doesNotMatch(runnerText, /runBeforeUnload/u);
   assert.match(runnerText, /openCanaryInstallHelp\(candidatePage\)/u);
   assert.doesNotMatch(runnerText, /candidatePage\.locator\('\[data-action="pwa-apply"\]'\)/u);
   assert.doesNotMatch(runnerText, /async function waitForCandidateHome|async function openInstallHelp/u);
