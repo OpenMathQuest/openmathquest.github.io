@@ -494,6 +494,7 @@ function canarySupplyChainInput(blobs) {
     wrapperText: text("audit/run-trusted-https-canary.ps1"),
     workflowText: text(".github/workflows/trusted-https-canary.yml"),
     runnerText: text("audit/run-trusted-https-canary.mjs"),
+    canaryLibraryText: text("audit/lib/trusted-https-canary.mjs"),
     validatorText: text("audit/validate-trusted-https-canary.mjs"),
     builderText: text("tools/build-pwa-release-manifest.mjs"),
     releaseShellText: text("release-shell-v1.json"),
