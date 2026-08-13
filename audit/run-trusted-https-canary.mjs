@@ -31,6 +31,7 @@ import {
   canonicalCanaryEvidence,
   canaryWorkspaceRemovalAllowed,
   canaryChildExitSucceeded,
+  canaryBackendRequestViolation,
   canaryRequestHeaderFlags,
   canonicalCertificateThumbprint,
   captureCanaryObservation,
@@ -265,8 +266,9 @@ async function startBackend(state, requestedPort = 0) {
     }
     const contentLength = Number(request.headers["content-length"] || 0);
     const headerFlags = canaryRequestHeaderFlags(request.headers);
-    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, ...headerFlags }));
-    if (!["GET", "HEAD"].includes(request.method) || pathname === "INVALID" || search !== "" || hasCredentials || contentLength !== 0 || headerFlags.sensitiveHeader || request.headers["transfer-encoding"] !== undefined) {
+    const transferEncoding = request.headers["transfer-encoding"] !== undefined;
+    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, transferEncoding, ...headerFlags }));
+    if (!["GET", "HEAD"].includes(request.method) || pathname === "INVALID" || search !== "" || hasCredentials || contentLength !== 0 || headerFlags.sensitiveHeader || transferEncoding) {
       response.writeHead(405, { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       response.end();
       return;
@@ -1331,12 +1333,13 @@ async function main() {
       ));
       assert.deepEqual(external, []);
       assert.deepEqual(unexpected, []);
-      assert.ok(backendState.requests.every((item) => ["GET", "HEAD"].includes(item.method)
-        && allowed.has(item.pathname)
-        && item.search === ""
-        && !item.hasCredentials
-        && item.contentLength === 0
-        && !item.sensitiveHeader));
+      const backendViolations = backendState.requests.flatMap((item, requestIndex) => {
+        const finding = canaryBackendRequestViolation(item, allowed);
+        return finding ? [{ requestIndex, ...finding }] : [];
+      });
+      if (backendViolations.length > 0) {
+        throw new Error(`Backend request violation count=${backendViolations.length} first=${JSON.stringify(backendViolations[0])}`);
+      }
       const queryStringCount = browserRequests.filter((item) => item.search !== "").length;
       const allowedRecoveryQueryCount = 0;
       const channelCounts = requestTrackers.reduce((sum, tracker) => ({

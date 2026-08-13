@@ -645,6 +645,16 @@ Focused mutants cover ordinary, cookie, authorization, API-key, and malformed
 header observations; the runner guard forbids the former asynchronous
 `allHeaders()` path.
 
+When the backend rejects a runtime request, the failed canonical check records
+only a closed diagnostic projection: a documented predicate bitmask (method,
+path, query, credentials, body length, cookie, authorization, sensitive
+header, and transfer encoding), an allowed public path when applicable,
+otherwise a pathname digest, and classified method/body-length facts. Raw
+query strings, unexpected paths, header values, credentials, and body content
+never enter logs or evidence. An effect-sensitive mutant fills every unsafe
+field with private-looking text, proves none survives the projection, and
+proves the complete first finding fits the canonical check-detail bound.
+
 | Test branch | Protected effect |
 |---|---|
 | `EXT-HOST` | A stable release requires exact `APPROVED` host/privacy qualification with a valid digest. An eligible prerelease may instead carry exact digest-bound `DEFERRED_PRERELEASE`, reported as `DEFERRED`, never PASS, approved, waived, or privacy-cleared. Stable-tag deferral, missing disclosure, pending, malformed, stale, future-dated, or candidate-mismatched evidence blocks. |

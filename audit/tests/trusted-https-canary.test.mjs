@@ -31,6 +31,7 @@ import {
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
   canaryBrowserArguments,
+  canaryBackendRequestViolation,
   canaryRequestHeaderFlags,
   canaryWaitingCacheReady,
   exactCandidateCacheObservation,
@@ -531,6 +532,51 @@ test("request privacy flags use synchronous observed and server header objects",
   assert.throws(() => canaryRequestHeaderFlags(null), /headers must be an object/u);
 });
 
+test("backend request failures report only closed sanitized predicates", () => {
+  const allowed = new Set(["/", "/index.html"]);
+  const clean = {
+    method: "GET", pathname: "/index.html", search: "", hasCredentials: false,
+    contentLength: 0, cookieHeader: false, authorizationHeader: false,
+    sensitiveHeader: false, transferEncoding: false,
+  };
+  assert.equal(canaryBackendRequestViolation(clean, allowed), null);
+  const unsafe = {
+    ...clean,
+    method: "POST-WITH-PRIVATE-TEXT",
+    pathname: "/private-child-name",
+    search: "?progress=private-answer",
+    hasCredentials: true,
+    contentLength: 19,
+    cookieHeader: true,
+    authorizationHeader: true,
+    sensitiveHeader: true,
+    transferEncoding: true,
+  };
+  const finding = canaryBackendRequestViolation(unsafe, allowed);
+  assert.equal(finding.violationMask, 511, "bits 1..256 bind method, path, query, credentials, body, cookie, authorization, sensitive-header, and transfer-encoding failures");
+  assert.equal(finding.methodClass, "OTHER");
+  assert.equal(finding.allowedPath, null);
+  assert.match(finding.pathnameSha256, /^[a-f0-9]{64}$/u);
+  const serialized = JSON.stringify(finding);
+  assert.doesNotMatch(serialized, /PRIVATE|private|progress|answer|child-name/u);
+  assert.equal(finding.contentLengthClass, "NONZERO");
+  const allowedQuery = canaryBackendRequestViolation({ ...clean, search: "?sensitive=hidden" }, allowed);
+  assert.equal(allowedQuery.allowedPath, "/index.html");
+  assert.equal(allowedQuery.pathnameSha256, null);
+  assert.equal(allowedQuery.violationMask, 4);
+  assert.doesNotMatch(JSON.stringify(allowedQuery), /sensitive=hidden/u);
+  const logged = `Backend request violation count=1 first=${JSON.stringify({ requestIndex: 0, ...finding })}`;
+  assert.ok(logged.length <= 240, "the complete sanitized first finding must survive the canonical check-detail bound");
+  const longestAllowedPath = "/assets/icons/apple-touch-icon.png";
+  const allowedPathFinding = canaryBackendRequestViolation({ ...clean, pathname: longestAllowedPath, search: "?private=hidden" }, new Set([longestAllowedPath]));
+  const allowedPathLog = `Backend request violation count=1 first=${JSON.stringify({ requestIndex: 999_999, ...allowedPathFinding })}`;
+  assert.equal(allowedPathFinding.allowedPath, longestAllowedPath);
+  assert.equal(allowedPathFinding.pathnameSha256, null);
+  assert.ok(allowedPathLog.length <= 240, "the longest governed allowed path must also fit the canonical check-detail bound");
+  assert.doesNotMatch(allowedPathLog, /private=hidden/u);
+  assert.throws(() => canaryBackendRequestViolation(null, allowed), /record must be an object/u);
+});
+
 test("runtime snapshot identity binds path, bytes, and hash without traversal", () => {
   const records = [
     { path: "index.html", sha256: sha("a"), bytes: 10 },
@@ -788,6 +834,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.doesNotMatch(runnerText, /\.allHeaders\(\)|Playwright request-header observation/u);
   assert.match(runnerText, /canaryRequestHeaderFlags\(request\.headers\(\)\)/u);
+  assert.match(runnerText, /canaryBackendRequestViolation\(item, allowed\)/u);
+  assert.match(runnerText, /Backend request violation count=/u);
   assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
   assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
