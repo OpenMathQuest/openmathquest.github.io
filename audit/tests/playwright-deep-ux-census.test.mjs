@@ -14,6 +14,7 @@ import {
   deepUxCensusRequiredForVersion,
   deepUxFirstScreenResponseRequired,
   deepUxNativeScrollDelta,
+  deepUxPartialResponseControlPriority,
   sha256,
   validateDeepUxCensusPlan,
 } from "../lib/playwright-deep-ux-census.mjs";
@@ -90,6 +91,14 @@ test("only later-grade short-landscape questions may require deliberate outer sc
   assert.equal(deepUxNativeScrollDelta({ y: 10, height: 400 }, 390), null);
 });
 
+test("partial-response selection prefers a real unpressed choice and retains a pressed fallback", () => {
+  assert.equal(deepUxPartialResponseControlPriority({ disabled: true, ariaPressed: "false" }), -1);
+  assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: "false" }), 3);
+  assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: null }), 2);
+  assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: "true" }), 1);
+  assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: "mixed" }), -1);
+});
+
 test("planner inventories exactly 72,576 deterministic questions and creates a closed six-viewport risk plan", () => {
   const plan = buildDeepUxCensusPlan(fakeEngine(), { engineSha256: digest, executionMode: "FULL" });
   assert.equal(plan.sourceQuestionCount, 72_576);
@@ -133,11 +142,12 @@ test("compact report fails closed on missing cells, retries-by-proxy, forged ide
 });
 
 test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly capture, context network observation, and no pass artifacts", async () => {
-  const [config, spec, runner, index] = await Promise.all([
+  const [config, spec, runner, index, workflow] = await Promise.all([
     readFile(path.join(root, "playwright.deep-ux.config.mjs"), "utf8"),
     readFile(path.join(root, "audit", "playwright", "deep-ux-census.spec.mjs"), "utf8"),
     readFile(path.join(root, "audit", "run-playwright-deep-ux-census.mjs"), "utf8"),
     readFile(path.join(root, "index.html"), "utf8"),
+    readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8"),
   ]);
   assert.match(config, /retries:\s*0/u);
   assert.match(config, /workers:\s*process\.env\.MQ_DEEP_UX_HOSTED === "1" \? 2 : 1/u);
@@ -162,12 +172,16 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(spec, /UNAPPROVED_NESTED_SCROLL/u);
   assert.match(spec, /CONTROL_CLIPPED/u);
   assert.match(spec, /responseTransition\.available && responseTransition\.changed/u);
+  assert.match(spec, /deepUxPartialResponseControlPriority\(control\)/u);
+  assert.match(spec, /data-render-settled/u);
   assert.match(spec, /\[data-lab-expected\][\s\S]*toBeVisible/u);
   assert.match(spec, /\.model\[data-worked-result='true'\][\s\S]*toBeVisible/u);
   assert.doesNotMatch(spec, /screenshotFile:\s*null|ariaFile:\s*null|geometryFile:\s*null/u);
   assert.doesNotMatch(spec, /try\s*\{\s*await question\.screenshot[\s\S]*catch\s*\{\s*\}/u);
   assert.doesNotMatch(spec, /dispatchEvent|scrollIntoView\s*\(|waitForTimeout|\.focus\(/u);
   assert.doesNotMatch(spec, /\.(?:click|tap)\(\{[^}]*force:\s*true/su);
+  const uploadStep = workflow.split(/- name: Upload compact census report and anomaly-only evidence/u)[1] || "";
+  assert.match(uploadStep, /include-hidden-files:\s*true/u);
   assert.match(runner, /--benchmark=100/u);
   assert.doesNotMatch(runner, /--benchmark=\(\\d\+\)/u);
   assert.match(runner, /RUNNER_ENVIRONMENT !== "github-hosted"/u);

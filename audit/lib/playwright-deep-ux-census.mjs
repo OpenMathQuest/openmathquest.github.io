@@ -204,6 +204,14 @@ export function deepUxNativeScrollDelta(box, viewportHeight) {
   return 0;
 }
 
+export function deepUxPartialResponseControlPriority(control) {
+  if (!control || control.disabled === true) return -1;
+  if (control.ariaPressed === "false") return 3;
+  if (control.ariaPressed === null || control.ariaPressed === undefined || control.ariaPressed === "") return 2;
+  if (control.ariaPressed === "true") return 1;
+  return -1;
+}
+
 function balancedCellSample(cells, limit) {
   if (limit === null || limit === undefined || limit >= cells.length) return cells;
   const byViewport = new Map(DEEP_UX_CENSUS_VIEWPORTS.map((viewport) => [viewport.id, []]));
