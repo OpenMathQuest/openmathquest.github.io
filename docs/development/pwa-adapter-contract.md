@@ -97,6 +97,11 @@ already exists.
 The first-use nickname gate is also a safe update-check boundary. Ordinary
 boundary checks use a 60-second debounce; the grown-up's explicit **Retry**
 action bypasses that debounce while retaining the safe-boundary rule.
+If the registration already has an installing or waiting worker, the page
+observes that lifecycle instead of starting a competing
+`registration.update()`. This keeps the detached cache transaction
+single-writer and prevents one candidate installation from deleting or
+replacing another candidate's staging cache.
 
 To accept an update:
 
