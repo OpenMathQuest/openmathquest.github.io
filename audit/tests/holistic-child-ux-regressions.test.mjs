@@ -97,17 +97,19 @@ function matchingDelimiter(source, openIndex, open, close) {
   throw new Error(`unclosed ${open}${close} delimiter`);
 }
 
-function extractFunction(name) {
+function extractFunctionFrom(source, name) {
   const expression = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu");
-  const matches = [...adapter.matchAll(expression)];
+  const matches = [...source.matchAll(expression)];
   assert.equal(matches.length, 1, `${name} must have one shipped declaration`);
   const start = matches[0].index;
-  const parametersStart = adapter.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(start, bodyEnd + 1);
+  const parametersStart = source.indexOf("(", start);
+  const parametersEnd = matchingDelimiter(source, parametersStart, "(", ")");
+  const bodyStart = source.indexOf("{", parametersEnd);
+  const bodyEnd = matchingDelimiter(source, bodyStart, "{", "}");
+  return source.slice(start, bodyEnd + 1);
 }
+
+const extractFunction = (name) => extractFunctionFrom(adapter, name);
 
 function evaluateHarness({ prelude = "", functions = [], body = "", exposed, context = {} }) {
   const source = `(()=>{
@@ -684,7 +686,10 @@ test("QA-009: zero number-connection support works the answer and renders an exp
   let zeroQuestion = null;
   for (let ordinal = 0; ordinal < 256 && !zeroQuestion; ordinal += 1) {
     const question = makeQuestion("MQ-019", { ordinal });
-    if (Number(question.answer.value) === 0) zeroQuestion = question;
+    if (
+      question.semanticPromptStringId === "question.numberConnection"
+      && Number(question.answer.value) === 0
+    ) zeroQuestion = question;
   }
   assert.ok(zeroQuestion, "the deterministic number-connection generator must exercise zero");
   const sourceCard = zeroQuestion.modelDescriptor.values.items
@@ -1462,7 +1467,7 @@ test("QA-036: placement and feedback browser fixtures protect the current lifecy
     "the existing seven-second BR-21 bound must remain intact rather than becoming a retry mask");
 });
 
-test("QA-037: exact short-viewport packing keeps governed text and target floors intact", () => {
+test("QA-037: exact short-viewport packing keeps governed text and target floors intact", async () => {
   assert.match(styleSource, /\.playground-panel\{height:calc\(100dvh - 116px\);min-height:0/u);
   assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/u);
   assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/u);
@@ -1474,6 +1479,91 @@ test("QA-037: exact short-viewport packing keeps governed text and target floors
   assert.match(styleSource, /data-skill-id="MQ-097"\] \.strategy-build-task\{grid-template-columns:minmax\(0,2fr\) minmax\(140px,\.75fr\)/u);
   assert.match(styleSource, /\.playground-panel button,\.playground-shell \.topbar button\{min-width:65px;min-height:65px\}/u);
   assert.match(styleSource, /\.play-shell :is\(button,input,select,textarea\)[\s\S]*?min-height:45px/u);
+  assert.match(styleSource, /\.proportional-content\{display:grid;gap:8px;min-width:0\}/u);
+  assert.match(styleSource, /\.proportional-label-key\{display:flex;justify-content:center;flex-wrap:wrap/u);
+  assert.match(styleSource, /placement-panel\[data-skill-id="MQ-118"\] \.placement-question\{display:grid;grid-template-columns:/u);
+  assert.match(styleSource, /placement-panel\[data-skill-id="MQ-118"\]\{min-height:0;/u,
+    "the MQ-118 placement witness must not inherit the viewport-sized panel minimum that creates artificial overflow");
+  assert.match(styleSource, /placement-panel\[data-skill-id="MQ-118"\] \.proportional-track\{min-height:52px\}/u);
+  const screenActivityAudit = auditPage.match(
+    /const activitySpecs = Object\.freeze\(\[[\s\S]*?add\("BR-21"/u,
+  )?.[0];
+  assert.ok(screenActivityAudit,
+    "BR-21 must retain the rendered screen-native and placement money-label supplement");
+  assert.doesNotMatch(screenActivityAudit, /activeSession\.uiState\.question\s*=\s*question/u,
+    "screen-native fixtures must remain valid canonical sessions rather than overwriting the bound question");
+  assert.match(screenActivityAudit, /engine\.validateState\(state\)/u,
+    "every screen-native fixture must fail before browser setup if its saved session is invalid");
+  for (const activity of [
+    "pattern-next", "count-group", "frame-number", "make-ten", "hidden-part", "greatest", "least",
+  ]) {
+    assert.match(screenActivityAudit, new RegExp(`activity: "${activity}"`, "u"));
+  }
+  assert.match(screenActivityAudit, /const moneyWitness = traversal\.moneyCase/u);
+  assert.match(screenActivityAudit, /placementDraftBytes\(engine, moneyWitness\.run/u,
+    "the money-label regression must load a real placement draft");
+  assert.match(screenActivityAudit, /data-placement-screen\]\[data-placement-phase="question"\]\[data-skill-id="MQ-118"\]/u,
+    "the money-label regression must inspect the actual Find your level question route");
+  assert.match(screenActivityAudit, /\{ width: 1366, height: 706, name: "desktop-short" \}/u,
+    "the money-label regression must protect the exact short desktop play-testing viewport");
+  assert.doesNotMatch(screenActivityAudit, /1857/u,
+    "the money-label regression must not substitute a wider viewport for the reported 1366 px screen");
+  assert.match(screenActivityAudit, /expectedLabels = \["first cost", "second cost", "remaining"\]/u);
+  assert.match(screenActivityAudit, /everyControlReachable/u);
+  assert.match(screenActivityAudit, /const initialAnswerControls[\s\S]*?chosen\?\.click\(\);[\s\S]*?const answerControls = response\?\.querySelector/u,
+    "the activity census must requery the live response controls after the selection render");
+  assert.match(screenActivityAudit, /data-response-action="pattern-token"/u,
+    "the pattern activity must drive the shipped structured-response action rather than a selection-only control");
+  assert.match(screenActivityAudit, /\.manipulative-set,\.tally-set/u,
+    "the count-group oracle must follow the session's governed representation rather than assume picture tokens");
+  assert.match(screenActivityAudit, /countedMagnitude === Number\(question\.answer\.value\)/u,
+    "the rendered mark count must remain bound to the independently graded answer");
+  assert.match(screenActivityAudit, /countedMarks\.children\.length === countedMagnitude/u,
+    "every nonzero count-group witness must render exactly one visible mark per counted object");
+
+  const pairLinkActions = [];
+  let confirmClicks = 0;
+  const answerStructured = new vm.Script(`(()=>{
+    "use strict";
+    const pause = async () => {};
+    const activateResponse = async (_scenario, selector, keyboard) => {
+      pairLinkActions.push({ selector, keyboard });
+    };
+    ${extractFunctionFrom(auditPage, "pairLinkAuditRelation")}
+    ${extractFunctionFrom(auditPage, "answerStructured")}
+    return answerStructured;
+  })()`, { filename: "pair-link-browser-driver-effect.js" }).runInNewContext({
+    pairLinkActions,
+    CSS: { escape: (value) => String(value) },
+  });
+  const scenario = {
+    doc: {
+      querySelector(selector) {
+        if (selector === '[data-action="confirm"]:not([disabled])') {
+          return { click: () => { confirmClicks += 1; } };
+        }
+        return null;
+      },
+    },
+  };
+  await answerStructured(scenario, {
+    inputMethod: "PAIR_LINK",
+    semanticPromptStringId: "question.compare",
+    params: { leftCount: 3, rightCount: 2 },
+    answer: { value: "more" },
+  });
+  assert.deepEqual(
+    pairLinkActions.map((entry) => entry.selector),
+    [
+      '[data-response-action="pair-item"][data-item-id="a0"]',
+      '[data-response-action="pair-item"][data-item-id="b0"]',
+      '[data-response-action="pair-item"][data-item-id="a1"]',
+      '[data-response-action="pair-item"][data-item-id="b1"]',
+      '[data-response-action="pair-relation"][data-relation="more"]',
+    ],
+    "the browser driver must complete the governed comparison relation before Confirm",
+  );
+  assert.equal(confirmClicks, 1);
 });
 
 test("QA-038: strategy construction owns and renders its answer-free source model", () => {

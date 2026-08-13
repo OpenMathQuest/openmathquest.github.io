@@ -1,16 +1,38 @@
-# Child-string approval candidate — updated 2026-08-08
+# Child-string approval candidate — updated 2026-08-13
 
 Canonicalization: `child-strings-v1`
-Complete table: 397 records
-Current candidate SHA-256: `a79ec7cd26e2023073e352adad32c5c8ff854e36fe6ca2c0362fdedfbc8a7e9e`
-Current engine SHA-256: `38df4f2030df0d93250771d72e51e7ec4a1a0b13975b47431850fe283bfe64c4`
+Complete table: 407 records
+Current candidate SHA-256: `956dc30c2b8a58a5d15d6c1c5face5629e5e5cc038150447b849fcaa2dc09b4a`
+Current engine SHA-256: `df664ec5e7de0dc811640d8beab27ac76e950270fd1d4489402e396a6551e19b`
 Extraction validation errors: 0
 
-Owner decision: **Approved on 2026-08-08**
+Owner decision: **Approved on 2026-08-13**
 
-The owner approved the complete 397-record candidate and exact SHA-256 above.
-It adds the following 68 exact `INSTRUCTION` records for the observable
-strategy-construction correction to the previously approved 329-record table.
+The owner approved the complete 407-record candidate and exact SHA-256 above.
+It retains the previously approved strategy-construction and Free Play wording,
+adds ten exact screen-native activity records, and revises one existing counting
+prompt for the approved group-count activity.
+
+## Approved screen-native activity wording and accessible names
+
+| ID | Exact text |
+|---|---|
+| `aria.objectGroup` | Objects in the group: {items}. |
+| `aria.patternSequence` | Pattern, from left to right: {items}. |
+| `aria.tenFrameCells` | Ten-frame cells, from left to right: {cells}. |
+| `aria.hiddenFrame` | Ten-cell frame. Showing: {items}. The remaining cells are covered. |
+| `aria.numberCards` | Number cards: {items}. |
+| `question.frameNumber` | Which number matches the frame? |
+| `question.makeTenFrame` | The frame shows {counterText}. How many more make ten? |
+| `question.numberLeast` | Which number is least: {a}, {b}, or {c}? |
+| `question.hiddenPart` | A frame holds ten counters. You can see {counterText}. How many are hidden? |
+| `question.patternVisualNext` | What comes next in the pattern? |
+| `question.countSet` | How many {noun} are in this group? |
+
+The ten new records extend the prior 397-record table. `question.countSet`
+already existed and is the one revised record.
+
+The prior 68-record strategy-construction addition remains approved below.
 
 ## Approved strategy-construction instructions and accessible names
 
@@ -172,7 +194,7 @@ addition. Braced names are governed runtime slots, not unreviewed prose.
 | `speech.targetChoices` | The choices are {choices}. |
 | `aria.balanceUnchecked` | Not compared yet. |
 
-The prior approval bound only the complete revised 329-record canonical table
-and its approved digest, not merely the display order in this review document.
-The owner's 2026-08-08 decision extends that approval to the complete
-397-record table and exact candidate SHA-256 recorded at the top of this file.
+Each prior approval bound its complete canonical table and digest, not merely
+the display order in this review document. The owner's 2026-08-13 decision
+extends that approval to the complete 407-record table and exact candidate
+SHA-256 recorded at the top of this file.

@@ -2,6 +2,22 @@
 
 All notable public changes to Math Quest are recorded here.
 
+## 1.0.0-beta.6 — 2026-08-13
+
+- Added six screen-native early-mathematics activities: continue an AB pattern,
+  count a visible group, connect a structured frame to a numeral, make ten,
+  compare greatest or least, and find a hidden part.
+- Kept each activity answer-free before response, gave every visual an exact
+  accessible description, and retained native touch, mouse, keyboard, Replay,
+  Help, and Confirm paths.
+- Repaired narrow proportional money labels in Find Your Level so every label,
+  answer control, and confirmation control remains visible and reachable.
+- Advanced deterministic question generation to `question-generator-v6` while
+  preserving schema-3 progress and invalidating only incompatible paused or
+  placement-draft questions.
+- Scheduled the mandatory trusted-HTTPS canary and complete Playwright Deep UX
+  Census for the exact frozen Beta 6 candidate.
+
 ## 1.0.0-beta.5 — 2026-08-12
 
 - Added a small, direct Playwright Test journey suite that operates the shipped

@@ -64,7 +64,7 @@ export async function openFreshHome(page) {
   const health = await page.request.get("/__math_quest_health__");
   expect(health.status()).toBe(200);
   await expect(health.json()).resolves.toEqual({
-    schemaVersion: 1, identity: "math-quest-local-server:v2", release: "1.0.0-beta.5", port: 8771,
+    schemaVersion: 1, identity: "math-quest-local-server:v2", release: "1.0.0-beta.6", port: 8771,
     rootId: process.env.MQ_PLAYWRIGHT_ROOT_ID,
     servedPayloadSha256: process.env.MQ_PLAYWRIGHT_SERVED_PAYLOAD_SHA256,
   });

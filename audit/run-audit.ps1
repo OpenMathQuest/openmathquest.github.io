@@ -263,7 +263,7 @@ function Get-LauncherAuditExpectation {
     $canonicalPayload = ($records -join "`n") + "`n"
     $servedPayloadSha256 = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($canonicalPayload))
     $identity = 'math-quest-local-server:v2'
-    $release = '1.0.0-beta.5'
+    $release = '1.0.0-beta.6'
     $port = 8771
     $body = "{`"schemaVersion`":1,`"identity`":`"$identity`",`"release`":`"$release`",`"port`":$port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$servedPayloadSha256`"}"
 

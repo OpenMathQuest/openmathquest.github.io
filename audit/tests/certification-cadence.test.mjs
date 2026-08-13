@@ -45,7 +45,7 @@ test("certification cadence has a closed machine-readable contract", async () =>
     scope: "COMPLETE_CERTIFICATION_SYSTEM",
     qualificationEvidenceSuccessor: {
       policy: "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
-      releaseTag: "v1.0.0-beta.5",
+      releaseTag: "v1.0.0-beta.6",
       parentCount: 1,
       parentMustEqualQualificationCommit: true,
       exactChangedPaths: [
@@ -236,9 +236,9 @@ test("human-facing policy preserves focused development and formal incompletenes
   assert.match(agents, /change after the run invalidates the[\s\S]*rerun the complete gauntlet from the beginning/iu);
   assert.match(agents, /earlier complete run[\s\S]*must obtain[\s\S]*owner's explicit approval/iu);
   assert.match(agents, /OWNER_SKIPPED_BETA4[\s\S]*never `PASS`[\s\S]*expires after Beta 4/iu);
-  assert.match(agents, /Beta 5[\s\S]*trusted-[\s\S]*HTTPS canary is mandatory[\s\S]*RECONCILED/iu);
+  assert.match(agents, /Beta 6[\s\S]*trusted-[\s\S]*HTTPS canary is mandatory[\s\S]*RECONCILED/iu);
   assert.match(agents, /RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1/iu);
-  assert.match(agents, /Beta 5[\s\S]*OPTIONAL_NOT_RUN[\s\S]*six-reviewer cycle/iu);
+  assert.match(agents, /Beta 6[\s\S]*OPTIONAL_NOT_RUN[\s\S]*six-reviewer cycle/iu);
   assert.match(agents, /direct evidence successor[\s\S]*next commit[\s\S]*exactly[\s\S]*one parent/iu);
   assert.match(agents, /sole parent must be the named qualification commit/iu);
   assert.match(agents, /must change exactly `PUBLICATION_CLEARANCE\.md` and\s*`audit\/browser-runner-evidence-v1\.json`, and no other path/iu);

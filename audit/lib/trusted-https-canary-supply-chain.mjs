@@ -227,8 +227,8 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "bind 127.0.0.1",
     "server.listen(requestedPort, \"127.0.0.1\"",
     "activateCanaryHomeUpdate(candidatePage)",
-    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")",
-    "Playwright same-tab Beta 1 to Beta 5 candidate transition",
+    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.6\")",
+    "Playwright same-tab Beta 1 to Beta 6 candidate transition",
     "[data-action=\"pwa-retry\"]",
     "[data-action=\"pwa-repair\"]",
     "v1.0.0-beta.1",
@@ -312,7 +312,7 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
   run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
   run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
-  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")", "context.newPage()"), /missing required production-path canary control/u);
+  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.6\")", "context.newPage()"), /missing required production-path canary control/u);
   run("reintroduced retired-curriculum migration", "runnerText", (text) => text.replace("RETIRED_BETA1_PRESERVED_FRESH_START", "SCHEMA3_MIGRATION_PRESERVED"), /missing required production-path canary control/u);
   run("removed retained-source terminal proof", "runnerText", (text) => text.replaceAll("RETAINED_BETA1_COMPLETE_VALUE", "null"), /missing required production-path canary control/u);
   run("removed retained fresh-start notice observation", "runnerText", (text) => text.replace("observeCanaryRetainedFreshStartNotice(candidatePage)", "Promise.resolve(null)"), /missing required production-path canary control/u);

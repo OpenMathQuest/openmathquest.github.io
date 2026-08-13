@@ -570,7 +570,7 @@
 
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
-        logicalIdentity !== "math-quest-static-v1.0.0-beta.5"
+        logicalIdentity !== "math-quest-static-v1.0.0-beta.6"
         || !Array.isArray(cacheNames)
       ) return [];
       const prefix = `${logicalIdentity}-`;
@@ -860,6 +860,15 @@
       return String(matching[0].id);
     }
 
+    function pairLinkAuditRelation(question) {
+      if (question?.semanticPromptStringId !== "question.compare") return null;
+      const relation = String(question?.answer?.value || "");
+      if (!["more", "fewer", "same"].includes(relation)) {
+        throw new Error("Comparison PAIR_LINK has no valid governed relation.");
+      }
+      return relation;
+    }
+
     async function answerStructured(scenario, question, { keyboard = false } = {}) {
       const params = question.params || {};
       if (question.inputMethod === "PAIR_LINK") {
@@ -867,6 +876,14 @@
         for (let index = 0; index < pairs; index += 1) {
           await activateResponse(scenario, `[data-response-action="pair-item"][data-item-id="a${index}"]`, keyboard);
           await activateResponse(scenario, `[data-response-action="pair-item"][data-item-id="b${index}"]`, keyboard);
+        }
+        const relation = pairLinkAuditRelation(question);
+        if (relation !== null) {
+          await activateResponse(
+            scenario,
+            `[data-response-action="pair-relation"][data-relation="${CSS.escape(relation)}"]`,
+            keyboard,
+          );
         }
       } else if (question.inputMethod === "SORT_BINS") {
         const values = question.modelDescriptor?.values || {};
@@ -1033,6 +1050,7 @@
       const rows = [];
       let selectionCase = null;
       let appliedCase = null;
+      let moneyCase = null;
       for (let desiredLevel = engine.CONSTANTS.LEVEL_MIN; desiredLevel <= engine.CONSTANTS.LEVEL_MAX; desiredLevel += 1) {
         let run = engine.createPlacementRun({
           state,
@@ -1056,6 +1074,19 @@
           }
           if (!selectionCase && question.inputClass === "SELECTION") {
             selectionCase = { run, question, desiredLevel };
+          }
+          if (!moneyCase
+            && question.skillId === "MQ-118"
+            && question.semanticPromptStringId === "question.moneyBudget") {
+            const bar = question.modelDescriptor?.values?.bars?.[0];
+            const total = Number(bar?.total);
+            const hasNarrowKnownSegment = Number.isFinite(total) && total > 0
+              && (bar?.segments || []).some((segment) => (
+                !segment?.unknown
+                && Number.isFinite(Number(segment?.value))
+                && Number(segment.value) / total < 0.2
+              ));
+            if (hasNarrowKnownSegment) moneyCase = { run, question, desiredLevel };
           }
           const correct = question.level < desiredLevel;
           const submitted = correct
@@ -1082,6 +1113,38 @@
           appliedCase = { run, recommendation };
         }
       }
+      for (let seed = 0; !moneyCase && seed < 32; seed += 1) {
+        const desiredLevel = engine.CONSTANTS.LEVEL_MAX;
+        let run = engine.createPlacementRun({
+          state,
+          playDay: state.maxSeenPlayDay,
+          seed,
+          theme: "ocean",
+        });
+        for (let index = 0; index < engine.CONSTANTS.PLACEMENT_MAX_QUESTIONS; index += 1) {
+          const validation = engine.validatePlacementRun(run, state);
+          if (!validation.valid || validation.complete) break;
+          const question = engine.placementCurrentQuestion(run);
+          const bar = question.modelDescriptor?.values?.bars?.[0];
+          const total = Number(bar?.total);
+          const hasNarrowKnownSegment = question.skillId === "MQ-118"
+            && question.semanticPromptStringId === "question.moneyBudget"
+            && Number.isFinite(total)
+            && total > 0
+            && (bar?.segments || []).some((segment) => (
+              !segment?.unknown
+              && Number.isFinite(Number(segment?.value))
+              && Number(segment.value) / total < 0.2
+            ));
+          if (hasNarrowKnownSegment) {
+            moneyCase = { run, question, desiredLevel };
+            break;
+          }
+          run = question.level < desiredLevel
+            ? engine.submitPlacementAnswer(run, answerHelper(engine, question)).run
+            : engine.submitPlacementNotSure(run).run;
+        }
+      }
       return {
         rows,
         methods: [...methods.entries()].sort(([left], [right]) => left.localeCompare(right))
@@ -1090,6 +1153,7 @@
           .map(([inputMethod, witness]) => ({ inputMethod, ...witness })),
         selectionCase,
         appliedCase,
+        moneyCase,
       };
     }
 
@@ -4101,14 +4165,378 @@
             }
           }
         }
+        const activitySpecs = Object.freeze([
+          { activity: "pattern-next", skillId: "MQ-004", ordinal: 0, promptId: "question.patternVisualNext" },
+          { activity: "count-group", skillId: "MQ-008", ordinal: 0, promptId: "question.countSet" },
+          { activity: "frame-number", skillId: "MQ-019", ordinal: 1, promptId: "question.frameNumber" },
+          { activity: "make-ten", skillId: "MQ-023", ordinal: 1, promptId: "question.makeTenFrame" },
+          { activity: "hidden-part", skillId: "MQ-023", ordinal: 2, promptId: "question.hiddenPart" },
+          { activity: "greatest", skillId: "MQ-025", ordinal: 1, promptId: "question.numberOrder" },
+          { activity: "least", skillId: "MQ-025", ordinal: 2, promptId: "question.numberLeast" },
+        ]);
+        const activityViewports = Object.freeze([
+          { width: 1366, height: 768, name: "desktop" },
+          { width: 390, height: 844, name: "phone" },
+        ]);
+        const activityRows = [];
+        const patternTokenName = (token) => ({
+          "●": "circle",
+          "▲": "triangle",
+          "■": "square",
+          "◆": "diamond",
+        })[String(token)] || String(token);
+        const expectedStimulusOperand = (question) => {
+          const values = question.modelDescriptor?.values || {};
+          if (question.semanticPromptStringId === "question.patternVisualNext") {
+            const sequence = Array.isArray(values.items?.[0]?.sequence)
+              ? values.items[0].sequence.map(patternTokenName)
+              : [];
+            return sequence.length ? `Pattern, from left to right: ${sequence.join(", ")}.` : "";
+          }
+          if (question.semanticPromptStringId === "question.countSet") {
+            const item = values.items?.[0];
+            const count = Number(item?.magnitude);
+            const singular = ({ shells: "shell", acorns: "acorn", "moon rocks": "moon rock" })[
+              String(item?.label || question.params?.noun || "")
+            ];
+            return Number.isInteger(count) && singular
+              ? `Objects in the group: ${count ? Array.from({ length: count }, () => singular).join(", ") : "none"}.`
+              : "";
+          }
+          if (["question.frameNumber", "question.makeTenFrame"].includes(question.semanticPromptStringId)) {
+            const frame = values.frames?.[0];
+            const shown = Number(frame?.value);
+            return Number(frame?.capacity) === 10 && Number.isInteger(shown)
+              ? `Ten-frame cells, from left to right: ${Array.from({ length: 10 }, (_, index) => index < shown ? "filled" : "empty").join(", ")}.`
+              : "";
+          }
+          if (question.semanticPromptStringId === "question.hiddenPart") {
+            const shown = Number(values.frames?.[0]?.value);
+            return Number.isInteger(shown)
+              ? `Ten-cell frame. Showing: ${shown ? Array.from({ length: shown }, () => "counter").join(", ") : "none"}. The remaining cells are covered.`
+              : "";
+          }
+          if (["question.numberOrder", "question.numberLeast"].includes(question.semanticPromptStringId)) {
+            const shown = Array.isArray(values.data?.values) ? values.data.values.map(Number) : [];
+            return shown.length === 3 && shown.every(Number.isFinite)
+              ? `Number cards: ${shown.join(", ")}.`
+              : "";
+          }
+          return "";
+        };
+        for (const spec of activitySpecs) {
+          const skill = engine.SKILL_BY_ID[spec.skillId];
+          const requestedQuestion = skill && engine.makeQuestion(questionArgs(skill, {
+            tier: "EASY",
+            representation: "PICTORIAL",
+            ordinal: spec.ordinal,
+            eligibleQuestionOrdinal: spec.ordinal,
+            coldTest: false,
+            scaffolded: false,
+          }));
+          let activityFixture = null;
+          if (requestedQuestion) {
+            const maximumIndex = engine.CONSTANTS.SESSION_MAX_BY_STAGE[requestedQuestion.stage];
+            for (let canonicalIndex = 0; canonicalIndex < maximumIndex; canonicalIndex += 1) {
+              const state = activeStateFor(engine, playDay, requestedQuestion, { canonicalIndex });
+              const question = state.activeSession?.uiState?.question;
+              if (question?.semanticPromptStringId !== spec.promptId) continue;
+              const stateError = engine.validateState(state);
+              if (stateError) throw new Error(`${spec.activity} fixture is invalid: ${stateError}`);
+              activityFixture = { question, state };
+              break;
+            }
+          }
+          for (const viewport of activityViewports) {
+            let activityScenario = null;
+            try {
+              if (!requestedQuestion) throw new Error(`${spec.skillId} is unavailable.`);
+              if (!activityFixture) throw new Error(`${spec.promptId} has no canonical session fixture.`);
+              const { question, state } = activityFixture;
+              activityScenario = await scenarioFrame(
+                engine,
+                `screen-activity-${spec.activity}-${viewport.name}`,
+                state,
+                viewport.width,
+                viewport.height,
+              );
+              openFrames.push(activityScenario.frame);
+              await requireLayoutQuestionReady(
+                activityScenario,
+                spec.skillId,
+                `${spec.activity} ${viewport.name}`,
+              );
+              const doc = activityScenario.doc;
+              const model = doc.querySelector(
+                `.math-model[data-model-derived="true"][data-semantic-prompt="${CSS.escape(spec.promptId)}"]`,
+              );
+              const prompt = doc.querySelector(".question .prompt");
+              const expectedOperand = expectedStimulusOperand(question);
+              const expectedAria = expectedOperand ? `${question.prompt}. ${expectedOperand}` : "";
+              const visualValues = question.modelDescriptor?.values || {};
+              const visualFrame = model?.querySelector(".tenframe");
+              const coveredFrame = model?.querySelector(".covered-frame");
+              const countedSet = model?.querySelector(".themed-counter-set");
+              const countedMarks = countedSet
+                || model?.querySelector(".manipulative-set,.tally-set");
+              const countedMagnitude = Number(visualValues.items?.[0]?.magnitude);
+              const countedVisualExact = Number.isInteger(countedMagnitude)
+                && countedMagnitude === Number(question.answer.value)
+                && Boolean(countedMarks)
+                && (countedMagnitude === 0
+                  ? Boolean(countedSet?.classList.contains("empty-set") && countedSet.querySelector(".empty-set-mat"))
+                  : countedMarks.children.length === countedMagnitude
+                    && [...countedMarks.children].every((node) => node.matches(
+                      ".pair-glyph,.pair-glyph-icon,.mq-icon,.themed-object-token,.manipulative-set>i,.tally-set>i",
+                    )));
+              const patternSequence = visualValues.items?.[0]?.sequence;
+              const numberValues = visualValues.data?.values;
+              const exactVisual = spec.promptId === "question.patternVisualNext"
+                ? Array.isArray(patternSequence)
+                  && model?.querySelectorAll(".pattern-cue-row > [data-token-kind]").length === patternSequence.length
+                  && [...model.querySelectorAll(".pattern-cue-row > [data-token-kind]")]
+                    .every((node, index) => node.dataset.tokenKind === String(patternSequence[index]) && node.querySelector("[data-shape]"))
+                : spec.promptId === "question.countSet"
+                  ? countedVisualExact
+                  : spec.promptId === "question.hiddenPart"
+                    ? Number(coveredFrame?.dataset.visibleCount) === Number(visualValues.frames?.[0]?.value)
+                      && Number(coveredFrame?.dataset.coveredCount) === Number(question.answer.value)
+                      && Number(coveredFrame?.dataset.visibleCount) + Number(coveredFrame?.dataset.coveredCount) === 10
+                      && Boolean(coveredFrame?.querySelector(".covered-frame__cover"))
+                      && activityScenario.win.getComputedStyle(coveredFrame.querySelector(".covered-frame__cover")).backgroundImage !== "none"
+                      && Number(activityScenario.win.getComputedStyle(coveredFrame.querySelector(".covered-frame__cover")).opacity) === 1
+                    : ["question.frameNumber", "question.makeTenFrame"].includes(spec.promptId)
+                      ? Number(visualFrame?.dataset.capacity) === 10
+                        && Number(visualFrame?.dataset.filledCount) === Number(visualValues.frames?.[0]?.value)
+                        && visualFrame?.children.length === 10
+                      : Array.isArray(numberValues)
+                        && model?.querySelectorAll(".visual-number").length === 3
+                        && [...model.querySelectorAll(".visual-number")].map((node) => Number(normalized(node.textContent))).join("|") === numberValues.map(Number).join("|")
+                        && Number(question.answer.value) === (spec.promptId === "question.numberLeast" ? Math.min(...numberValues) : Math.max(...numberValues));
+              const modelText = normalized(model?.textContent);
+              const answerConcealed = !["question.makeTenFrame", "question.hiddenPart"].includes(spec.promptId)
+                || (!model?.querySelector(".math-model__caption")
+                  && !model?.querySelector(".model-label")
+                  && !modelText.split(/\s+/u).includes(String(question.answer.value)));
+              const modelAriaExact = model?.getAttribute("aria-label") === expectedAria;
+              const modelInitiallyVisible = actionVisibleInViewport(activityScenario, model);
+              const promptInitiallyVisible = actionVisibleInViewport(activityScenario, prompt);
+              const initialAnswerControls = doc.querySelector(".question-response .answer-controls");
+              const initialSelectionControls = [...(initialAnswerControls?.querySelectorAll('[data-action="select"]') || [])];
+              const initialPatternControls = [...(initialAnswerControls?.querySelectorAll('[data-response-action="pattern-token"]') || [])];
+              const option = question.options?.find((candidate) => String(candidate.value) === String(question.answer.value));
+              const chosen = question.inputMethod === "PATTERN_BUILD"
+                ? initialPatternControls.find((control) => control.dataset.token === String(question.answer.value))
+                : initialSelectionControls.find((control) => control.dataset.id === option?.optionId);
+              chosen?.click();
+              await pause();
+              // A response tap renders a fresh question subtree. Actionability
+              // and Confirm assertions inspect that live DOM; the source-model
+              // assertions above bind the answer-free screen the child saw.
+              const response = doc.querySelector(".question-response");
+              const answerControls = response?.querySelector(".answer-controls");
+              const confirm = response?.querySelector('.question-submit [data-action="confirm"]');
+              const selectionControls = [...(answerControls?.querySelectorAll('[data-action="select"]') || [])];
+              const patternControls = [...(answerControls?.querySelectorAll('[data-response-action="pattern-token"]') || [])];
+              const responseControls = selectionControls.length ? selectionControls : patternControls;
+              const metrics = visibleMetrics(activityScenario, ".play-shell");
+              const rootScrollHeight = Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight || 0);
+              const noHorizontalOverflow = doc.documentElement.scrollWidth <= doc.documentElement.clientWidth + 1
+                && (doc.body?.scrollWidth || 0) <= activityScenario.win.innerWidth + 1;
+              const everyControlVisible = responseControls.length > 0
+                && responseControls.every((control) => actionVisibleInViewport(activityScenario, control));
+              const pass = Boolean(
+                question.semanticPromptStringId === spec.promptId
+                && model
+                && modelAriaExact
+                && exactVisual
+                && answerConcealed
+                && promptInitiallyVisible
+                && modelInitiallyVisible
+                && actionVisibleInViewport(activityScenario, answerControls)
+                && everyControlVisible
+                && actionVisibleInViewport(activityScenario, confirm)
+                && chosen
+                && !confirm.disabled
+                && noHorizontalOverflow
+                && rootScrollHeight <= activityScenario.win.innerHeight + 1
+                && metrics.minFont >= 16
+                && metrics.minControl >= 44
+                && metrics.inter
+              );
+              activityRows.push({
+                activity: spec.activity,
+                skillId: spec.skillId,
+                promptId: spec.promptId,
+                viewport: viewport.name,
+                pass,
+                ariaExact: modelAriaExact,
+                exactVisual: Boolean(exactVisual),
+                countVisualKind: spec.promptId === "question.countSet"
+                  ? visualValues.items?.[0]?.kind || null
+                  : null,
+                countVisualMarks: spec.promptId === "question.countSet"
+                  ? countedMarks?.children.length ?? null
+                  : null,
+                answerConcealed,
+                responseControls: responseControls.length,
+                everyControlVisible,
+                confirmEnabled: Boolean(confirm && !confirm.disabled),
+                rootScrollHeight,
+                viewportHeight: activityScenario.win.innerHeight,
+                noHorizontalOverflow,
+                ...metrics,
+              });
+            } catch (error) {
+              activityRows.push({
+                activity: spec.activity,
+                skillId: spec.skillId,
+                promptId: spec.promptId,
+                viewport: viewport.name,
+                pass: false,
+                error: String(error?.message || error),
+              });
+            } finally {
+              if (activityScenario) {
+                activityScenario.frame.remove();
+                const index = openFrames.indexOf(activityScenario.frame);
+                if (index >= 0) openFrames.splice(index, 1);
+              }
+            }
+          }
+        }
+        const moneyRows = [];
+        let moneyScenario = null;
+        try {
+          const moneyWitness = traversal.moneyCase;
+          if (!moneyWitness) throw new Error("The placement traversal did not reach a narrow-label MQ-118 money-budget question.");
+          localStorage.setItem(TEST_PLACEMENT_DRAFT_KEY, placementDraftBytes(engine, moneyWitness.run, {
+            question: moneyWitness.question,
+            state: placementState,
+          }));
+          moneyScenario = await scenarioFrame(
+            engine,
+            "placement-money-model-readable-labels",
+            placementState,
+            1366,
+            706,
+          );
+          openFrames.push(moneyScenario.frame);
+          for (const viewport of [
+            { width: 1366, height: 706, name: "desktop-short" },
+            { width: 390, height: 844, name: "phone" },
+          ]) {
+            await resizeScenario(moneyScenario, viewport.width, viewport.height);
+            const ready = await waitUntil(() => Boolean(
+              scenarioAppReady(moneyScenario.frame)
+              && moneyScenario.doc?.querySelector(
+                '[data-placement-screen][data-placement-phase="question"][data-skill-id="MQ-118"]',
+              )
+              && moneyScenario.doc?.querySelector('.question-response .answer-controls[data-input-method]')
+              && moneyScenario.doc?.querySelector('.question-submit [data-action="confirm"]')
+              && moneyScenario.doc?.querySelector('[data-action="placement-not-sure"]'),
+            ), 350, 20);
+            if (!ready) throw new Error(`The MQ-118 placement money question did not become ready at ${viewport.name}.`);
+            const screen = moneyScenario.doc.querySelector(
+              '[data-placement-screen][data-placement-phase="question"][data-skill-id="MQ-118"]',
+            );
+            const prompt = screen?.querySelector(".prompt");
+            const model = screen?.querySelector('.math-model[data-model-family="proportionalBar"]');
+            const track = model?.querySelector('.proportional-track[data-label-layout="key"]');
+            const key = model?.querySelector(".proportional-label-key");
+            const labels = [...(key?.querySelectorAll("span") || [])];
+            const expectedLabels = ["first cost", "second cost", "remaining"];
+            const segments = [...(track?.querySelectorAll(".proportional-segment") || [])];
+            const answerControls = screen?.querySelector(".question-response .answer-controls");
+            const responseControls = [...(answerControls?.querySelectorAll("button, input, select") || [])];
+            const confirm = screen?.querySelector('.question-submit [data-action="confirm"]');
+            const notSure = screen?.querySelector('[data-action="placement-not-sure"]');
+            const labelsExact = labels.map((node) => normalized(node.textContent)).join("|") === expectedLabels.join("|");
+            const labelsReadable = labels.length === expectedLabels.length && labels.every((node) => {
+              const rect = node.getBoundingClientRect();
+              const style = moneyScenario.win.getComputedStyle(node);
+              return rect.width > 0 && rect.height > 0
+                && rect.left >= -1 && rect.right <= moneyScenario.win.innerWidth + 1
+                && style.display !== "none" && style.visibility !== "hidden"
+                && node.scrollWidth <= node.clientWidth + 1
+                && node.scrollHeight <= node.clientHeight + 1;
+            });
+            const labelsOutsideSegments = segments.length === expectedLabels.length
+              && segments.every((node) => normalized(node.textContent) === "");
+            const noHorizontalOverflow = moneyScenario.doc.documentElement.scrollWidth
+              <= moneyScenario.doc.documentElement.clientWidth + 1
+              && (moneyScenario.doc.body?.scrollWidth || 0) <= moneyScenario.win.innerWidth + 1;
+            const everyControlReachable = responseControls.length > 0
+              && responseControls.every((control) => actionVisibleInViewport(moneyScenario, control));
+            const rootScrollHeight = Math.max(
+              moneyScenario.doc.documentElement.scrollHeight,
+              moneyScenario.doc.body?.scrollHeight || 0,
+            );
+            const metrics = visibleMetrics(moneyScenario, "[data-placement-screen]");
+            moneyRows.push({
+              viewport: viewport.name,
+              pass: Boolean(
+                screen
+                && prompt
+                && model
+                && track
+                && key
+                && labelsExact
+                && labelsReadable
+                && labelsOutsideSegments
+                && actionVisibleInViewport(moneyScenario, prompt)
+                && actionVisibleInViewport(moneyScenario, model)
+                && actionVisibleInViewport(moneyScenario, key)
+                && actionVisibleInViewport(moneyScenario, answerControls)
+                && everyControlReachable
+                && actionVisibleInViewport(moneyScenario, confirm)
+                && actionVisibleInViewport(moneyScenario, notSure)
+                && noHorizontalOverflow
+                && rootScrollHeight <= moneyScenario.win.innerHeight + 1
+                && metrics.minFont >= 16
+                && metrics.minControl >= 44
+                && metrics.inter
+              ),
+              labels: labels.map((node) => normalized(node.textContent)),
+              labelsExact,
+              labelsReadable,
+              labelsOutsideSegments,
+              keyVisible: actionVisibleInViewport(moneyScenario, key),
+              promptVisible: actionVisibleInViewport(moneyScenario, prompt),
+              modelVisible: actionVisibleInViewport(moneyScenario, model),
+              everyControlReachable,
+              confirmVisible: actionVisibleInViewport(moneyScenario, confirm),
+              notSureVisible: actionVisibleInViewport(moneyScenario, notSure),
+              rootScrollHeight,
+              viewportHeight: moneyScenario.win.innerHeight,
+              noHorizontalOverflow,
+              ...metrics,
+            });
+          }
+        } catch (error) {
+          for (const viewport of ["wide-short", "phone"]) {
+            moneyRows.push({ viewport, pass: false, error: String(error?.message || error) });
+          }
+        } finally {
+          if (moneyScenario) {
+            moneyScenario.frame.remove();
+            const index = openFrames.indexOf(moneyScenario.frame);
+            if (index >= 0) openFrames.splice(index, 1);
+          }
+          localStorage.removeItem(TEST_PLACEMENT_DRAFT_KEY);
+        }
         const expectedLayoutRows = layoutCases.length
           * layoutPhases.length
           * layoutViewports.length;
-        add("BR-21", "Dense witnesses for all 18 early response families and seven critical boundary variants keep question, Help, and re-teach visible and keyboard-focusable across desktop, tablet, iPad-landscape, and phone screens", discoveryComplete
+        add("BR-21", "Dense response-family layouts, seven screen-native early activities, and money labels stay readable and actionable across supported screens", discoveryComplete
           && requiredWitnessesComplete
           && layoutCases.length === 25
           && layoutRows.length === expectedLayoutRows
-          && layoutRows.every((row) => row.pass), {
+          && layoutRows.every((row) => row.pass)
+          && activityRows.length === activitySpecs.length * activityViewports.length
+          && activityRows.every((row) => row.pass)
+          && moneyRows.length === 2
+          && moneyRows.every((row) => row.pass), {
           inspected: layoutRows.length,
           expected: expectedLayoutRows,
           baseCases: expectedEarlyLayoutFamilies.length,
@@ -4134,7 +4562,13 @@
               score: entry.reteach.density.score,
             },
           })),
-          failures: layoutRows.filter((row) => !row.pass),
+          activityRows,
+          moneyRows,
+          failures: [
+            ...layoutRows.filter((row) => !row.pass),
+            ...activityRows.filter((row) => !row.pass),
+            ...moneyRows.filter((row) => !row.pass),
+          ],
         });
 
         const pairCase = findQuestion(engine, (question) => question.inputMethod === "PAIR_LINK");
@@ -7414,16 +7848,16 @@
           const expectedPaths = [shellManifestRelative, ...expectedShellEntryPaths];
           const readinessValid = Boolean(
             readiness?.type === "MATH_QUEST_READINESS_V1"
-            && readiness?.release === "1.0.0-beta.5"
-            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.5"
-            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.5"
+            && readiness?.release === "1.0.0-beta.6"
+            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.6"
+            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.6"
             && readiness?.ready === true
             && requiredPaths.length === expectedPaths.length
             && requiredPaths.every((entry) => entry?.ready === true)
             && JSON.stringify(requiredPaths.map((entry) => entry.path).sort()) === JSON.stringify([...expectedPaths].sort())
           );
           const shellManifestValid = Boolean(shellManifest?.schemaVersion === 1
-            && shellManifest?.release === "1.0.0-beta.5"
+            && shellManifest?.release === "1.0.0-beta.6"
             && shellManifest?.buildId === readiness?.buildId
             && shellManifest?.cacheName === readiness?.cacheIdentity
             && shellManifest?.entryPath === "./index.html"

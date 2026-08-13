@@ -1,10 +1,10 @@
 "use strict";
 
-const RELEASE = "1.0.0-beta.5";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.5";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.5";
+const RELEASE = "1.0.0-beta.6";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.6";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.6";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "e3c202e11fdcc24da1b609c23aaf70dc88a375d7f3b0f9a76be84786d7fbdd90";
+const RELEASE_MANIFEST_SHA256 = "f56fa8073e2b49eb0c2bafffe1788752993c7928ef7cbf543e64e08b7b6c0e0d";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 function freshStagingCacheName() {
   const nonce = new Uint8Array(16);
