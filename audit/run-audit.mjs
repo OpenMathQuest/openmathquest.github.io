@@ -223,6 +223,8 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
       : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
     expected.qualificationCommitSha = parsed.qualificationCommitSha;
     expected.evidenceSuccessorValid = evidenceSuccessor.valid;
+    expected.qualificationPayloadSha256 = evidenceSuccessor.qualificationPayloadSha256;
+    expected.qualificationPayloadTreeOid = evidenceSuccessor.qualificationPayloadTreeOid;
     const browserEvidenceMatches = liveBrowserEvidence.validForPublication === true
       && reviewedBrowserEvidence.valid === true
       && reviewedBrowserEvidence.status === "REVIEWED"

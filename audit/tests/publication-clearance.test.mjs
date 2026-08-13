@@ -32,6 +32,7 @@ import {
 } from "../lib/publication-clearance.mjs";
 import {
   evaluateRuntimeEquivalentEvidenceSuccessor,
+  observeCommitPublicPayloadIdentity,
   observeRuntimeEquivalentEvidenceSuccessor,
   RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY,
   RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_PATHS,
@@ -45,6 +46,8 @@ const expected = Object.freeze({
   rightsSha256: "3".repeat(64),
   payloadSha256: "4".repeat(64),
   payloadTreeOid: "5".repeat(40),
+  qualificationPayloadSha256: "4".repeat(64),
+  qualificationPayloadTreeOid: "5".repeat(40),
   qualificationCommitSha: "0".repeat(40),
   evidenceSuccessorValid: true,
   browserProductName: "Microsoft Edge",
@@ -288,6 +291,25 @@ test("an approved clearance matches only the exact complete browser/runner tuple
   }
 });
 
+test("a valid Beta 5 evidence successor binds clearance to the qualification payload rather than its changed evidence payload", () => {
+  const parsed = parsePublicationClearance(approvedClearance());
+  const successorExpected = {
+    ...expected,
+    payloadSha256: "a".repeat(64),
+    payloadTreeOid: "b".repeat(40),
+  };
+  assert.equal(clearanceMatches(parsed, successorExpected), true);
+  assert.equal(evaluateExternalReleaseEvidence(parsed, successorExpected, expected.now).status, "PASS");
+  for (const [key, value] of [
+    ["qualificationPayloadSha256", "0".repeat(64)],
+    ["qualificationPayloadTreeOid", "0".repeat(40)],
+  ]) {
+    const mutant = { ...successorExpected, [key]: value };
+    assert.equal(clearanceMatches(parsed, mutant), false, `${key} drift must block the successor`);
+    assert.equal(evaluateExternalReleaseEvidence(parsed, mutant, expected.now).status, "BLOCKED");
+  }
+});
+
 test("the Beta 5 runtime-equivalent evidence successor is one exact non-merge commit changing only the two governed records", () => {
   const candidateCommitSha = "1".repeat(40);
   const qualificationCommitSha = expected.qualificationCommitSha;
@@ -345,6 +367,11 @@ test("the Git observer proves an actual immediate Beta 5 runtime-equivalent evid
     assert.equal(observed.policy, RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY);
     assert.equal(observed.qualificationCommitSha, qualificationCommitSha);
     assert.deepEqual(observed.changedPaths, RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_PATHS);
+    assert.match(observed.qualificationPayloadSha256, /^[a-f0-9]{64}$/u);
+    assert.match(observed.qualificationPayloadTreeOid, /^[a-f0-9]{40}$/u);
+    const successorPayload = await observeCommitPublicPayloadIdentity(repository, observed.candidateCommitSha);
+    assert.notEqual(observed.qualificationPayloadSha256, successorPayload.sha256);
+    assert.notEqual(observed.qualificationPayloadTreeOid, successorPayload.treeOid);
   } finally {
     await rm(repository, { recursive: true, force: true });
   }
@@ -573,8 +600,8 @@ test("external evidence rejects missing, stale, future, and mismatched records",
     ["engineSha256", "0".repeat(64)],
     ["manifestSha256", "0".repeat(64)],
     ["rightsSha256", "0".repeat(64)],
-    ["payloadSha256", "0".repeat(64)],
-    ["payloadTreeOid", "0".repeat(40)],
+    ["qualificationPayloadSha256", "0".repeat(64)],
+    ["qualificationPayloadTreeOid", "0".repeat(40)],
   ]) {
     const mismatch = evaluateExternalReleaseEvidence(baseline, { ...expected, [key]: value }, expected.now);
     assert.equal(mismatch.status, "BLOCKED", `${key} candidate mismatch must block`);

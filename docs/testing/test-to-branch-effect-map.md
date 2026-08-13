@@ -633,6 +633,11 @@ changing any one of browser product, full product version, executable SHA-256,
 missing, reordered, extra, or noncanonical records fail; the live executable
 hash and requested hosted-runner label are bound; and a local run remains
 explicitly local rather than claiming GitHub-hosted evidence.
+For Beta 5's exact two-file runtime-equivalent successor, it also independently
+recomputes the qualification commit's public-payload SHA-256 and tree OID,
+requires the clearance to bind those values, rejects either qualification
+identity when mutated, and permits the successor's evidence-only payload
+identity to differ as the governing policy requires.
 
 The same suite now protects the eight first-class external release
 branches:
