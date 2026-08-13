@@ -97,7 +97,11 @@ export async function waitForCanaryHomeUpdate(page, productVersion, timeoutMs = 
     productVersion,
     { timeout: timeoutMs },
   );
-  await page.locator('[data-action="pwa-check"]').first().waitFor({ state: "visible", timeout: timeoutMs });
+  const check = page.locator('[data-action="pwa-check"]').first();
+  const home = page.locator('[data-action="home"]').first();
+  await page.locator('[data-action="pwa-check"], [data-action="home"]').first().waitFor({ state: "visible", timeout: timeoutMs });
+  if (!await check.isVisible()) await home.click();
+  await check.waitFor({ state: "visible", timeout: timeoutMs });
 }
 
 export async function reloadCanaryCandidateFromBeta1(page, productVersion, timeoutMs = 30_000) {

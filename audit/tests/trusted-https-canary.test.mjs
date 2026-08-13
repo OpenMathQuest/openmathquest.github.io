@@ -531,8 +531,12 @@ test("teardown executes every cleanup in reverse order and preserves failures", 
 
 test("canary activates updates directly on Home and opens installation help only through the grown-up path", async () => {
   const state = { screen: "home", dialog: false, requestedVersion: null, actions: [] };
-  const visible = (selector) => selector === '[data-action="pwa-check"]'
+  const visible = (selector) => selector === '[data-action="pwa-check"], [data-action="home"]'
+    ? ["home", "session"].includes(state.screen)
+    : selector === '[data-action="pwa-check"]'
     ? state.screen === "home"
+    : selector === '[data-action="home"]'
+      ? state.screen === "session"
     : selector === '[data-action="pwa-apply"]'
       ? state.screen === "home"
     : selector === '[data-action="grown"]'
@@ -554,6 +558,7 @@ test("canary activates updates directly on Home and opens installation help only
         async click() {
           if (!visible(selector)) throw new Error(`fixture control cannot be activated: ${selector}`);
           state.actions.push(selector);
+          if (selector === '[data-action="home"]') state.screen = "home";
           if (selector === '[data-action="grown"]') state.screen = "grown";
           if (selector === '[data-action="install-help"]') state.dialog = true;
         },
@@ -564,6 +569,10 @@ test("canary activates updates directly on Home and opens installation help only
   await waitForCanaryHomeUpdate(page, "1.0.0-beta.5", 25);
   assert.equal(state.requestedVersion, "1.0.0-beta.5");
   assert.deepEqual(state.actions, []);
+  state.screen = "session";
+  await waitForCanaryHomeUpdate(page, "1.0.0-beta.5", 25);
+  assert.deepEqual(state.actions, ['[data-action="home"]']);
+  state.actions.length = 0;
   state.dialog = true;
   await assert.rejects(activateCanaryHomeUpdate(page, 25), /directly on Home/u);
   assert.deepEqual(state.actions, []);
@@ -584,6 +593,7 @@ test("canary deliberately reloads the existing Beta 1 page into the Home candida
     locator(selector) {
       return {
         first() { return this; },
+        async isVisible() { return selector === '[data-action="pwa-check"]'; },
         async waitFor(options) { observations.push(["control", selector, options.state, options.timeout]); },
       };
     },
@@ -593,6 +603,7 @@ test("canary deliberately reloads the existing Beta 1 page into the Home candida
   assert.deepEqual(observations, [
     ["reload", "domcontentloaded", 75],
     ["version", "1.0.0-beta.5", 75],
+    ["control", '[data-action="pwa-check"], [data-action="home"]', "visible", 75],
     ["control", '[data-action="pwa-check"]', "visible", 75],
   ]);
 });
