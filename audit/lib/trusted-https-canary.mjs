@@ -75,6 +75,19 @@ export function validateCanaryRootScopeProof({ manifest, manifestHref, workerSco
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
 }
 
+export function beta1GradedSelectionAnswer(question, gradeAnswer) {
+  if (!question || question.inputClass !== "SELECTION" || !Array.isArray(question.options)) {
+    throw new TypeError("Beta 1 selection-answer discovery requires one selection question.");
+  }
+  if (typeof gradeAnswer !== "function") throw new TypeError("Beta 1 selection-answer discovery requires the historical grader.");
+  const matches = question.options.filter((option) => {
+    if (!option || typeof option.optionId !== "string" || option.optionId.length < 1 || Object.hasOwn(option, "id")) return false;
+    return gradeAnswer(question, { optionId: option.optionId })?.correct === true;
+  });
+  if (matches.length !== 1) throw new Error(`Synthetic Beta 1 fixture expected one independently graded correct option, found ${matches.length}.`);
+  return Object.freeze({ optionId: matches[0].optionId });
+}
+
 export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
     throw new TypeError("Canary listener port must be an unprivileged TCP port.");

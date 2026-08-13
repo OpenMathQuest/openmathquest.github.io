@@ -9,6 +9,7 @@ import {
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
+  beta1GradedSelectionAnswer,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
   LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
@@ -452,6 +453,29 @@ test("root scope uses exact Git manifest bytes and rendered registration state w
   ]) assert.equal(validateCanaryRootScopeProof({ ...proof, ...mutant }).valid, false);
 });
 
+test("Beta 1 selection evidence submits the exact uniquely graded optionId", () => {
+  const question = {
+    inputClass: "SELECTION",
+    options: [
+      { optionId: "o0", label: "one", value: "1" },
+      { optionId: "o1", label: "two", value: "2" },
+      { optionId: "o2", label: "three", value: "3" },
+    ],
+  };
+  const observed = [];
+  const answer = beta1GradedSelectionAnswer(question, (gradedQuestion, response) => {
+    observed.push({ gradedQuestion, response });
+    return { correct: response.optionId === "o1" };
+  });
+  assert.deepEqual(answer, { optionId: "o1" });
+  assert.equal(Object.isFrozen(answer), true);
+  assert.deepEqual(observed.map((row) => row.response), [{ optionId: "o0" }, { optionId: "o1" }, { optionId: "o2" }]);
+  assert.equal(observed.every((row) => row.gradedQuestion === question), true);
+  assert.throws(() => beta1GradedSelectionAnswer(question, () => ({ correct: false })), /expected one independently graded correct option, found 0/u);
+  assert.throws(() => beta1GradedSelectionAnswer(question, () => ({ correct: true })), /expected one independently graded correct option, found 3/u);
+  assert.throws(() => beta1GradedSelectionAnswer({ ...question, options: [{ id: "o1", label: "legacy wrong field", value: "2" }] }, () => ({ correct: true })), /found 0/u);
+});
+
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
   const args = canaryBrowserArguments("C:\\runner-temp\\mq-profile");
   assert.equal(validateCanaryBrowserArguments(args).valid, true);
@@ -550,6 +574,9 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
   assert.doesNotMatch(runnerText, /fetch\("\.\/manifest\.webmanifest"/u);
+  assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
+  assert.match(runnerText, /const answer = question\.inputClass === "SELECTION"\s*\? gradedSelectionAnswer\(question, E\.gradeAnswer\)\s*:\s*String\(question\.answer\.value\)/u);
+  assert.match(runnerText, /E\.submitAnswer\(question, answer,/u);
   assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
   assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
