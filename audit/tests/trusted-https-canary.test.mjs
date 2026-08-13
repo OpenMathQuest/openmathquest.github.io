@@ -31,6 +31,7 @@ import {
   TRUSTED_HTTPS_CANARY_WORKFLOW,
   WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
   canaryBrowserArguments,
+  canaryRequestHeaderFlags,
   canaryWaitingCacheReady,
   exactCandidateCacheObservation,
   canaryChildExitSucceeded,
@@ -511,6 +512,25 @@ test("browser launch arguments block external resolution and forbid TLS bypass",
   assert.equal(validateCanaryBrowserArguments(args.filter((item) => !item.startsWith("--host-resolver-rules="))).valid, false);
 });
 
+test("request privacy flags use synchronous observed and server header objects", () => {
+  assert.deepEqual(canaryRequestHeaderFlags({ accept: "text/html" }), {
+    cookieHeader: false,
+    authorizationHeader: false,
+    sensitiveHeader: false,
+  });
+  assert.deepEqual(canaryRequestHeaderFlags({ Cookie: "synthetic", "X-API-Key": "synthetic" }), {
+    cookieHeader: true,
+    authorizationHeader: false,
+    sensitiveHeader: true,
+  });
+  assert.deepEqual(canaryRequestHeaderFlags({ Authorization: "synthetic" }), {
+    cookieHeader: false,
+    authorizationHeader: true,
+    sensitiveHeader: true,
+  });
+  assert.throws(() => canaryRequestHeaderFlags(null), /headers must be an object/u);
+});
+
 test("runtime snapshot identity binds path, bytes, and hash without traversal", () => {
   const records = [
     { path: "index.html", sha256: sha("a"), bytes: 10 },
@@ -766,6 +786,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.newPage\s*\(/u);
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
+  assert.doesNotMatch(runnerText, /\.allHeaders\(\)|Playwright request-header observation/u);
+  assert.match(runnerText, /canaryRequestHeaderFlags\(request\.headers\(\)\)/u);
   assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
   assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
