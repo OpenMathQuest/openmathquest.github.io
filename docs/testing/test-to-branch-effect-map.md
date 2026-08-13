@@ -636,6 +636,15 @@ explicitly local rather than claiming GitHub-hosted evidence.
 The same suite now protects the eight first-class external release
 branches:
 
+For `EXT-CANARY`, browser request metadata is captured synchronously from the
+Playwright request object so a delayed header observation cannot close the
+shared browser during the update journey. The same header classifier runs on
+the backend's raw received headers, which rejects cookies, authorization, API
+keys, request bodies, credentials, and unsafe methods before serving bytes.
+Focused mutants cover ordinary, cookie, authorization, API-key, and malformed
+header observations; the runner guard forbids the former asynchronous
+`allHeaders()` path.
+
 | Test branch | Protected effect |
 |---|---|
 | `EXT-HOST` | A stable release requires exact `APPROVED` host/privacy qualification with a valid digest. An eligible prerelease may instead carry exact digest-bound `DEFERRED_PRERELEASE`, reported as `DEFERRED`, never PASS, approved, waived, or privacy-cleared. Stable-tag deferral, missing disclosure, pending, malformed, stale, future-dated, or candidate-mismatched evidence blocks. |

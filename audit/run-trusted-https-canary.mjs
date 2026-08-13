@@ -31,6 +31,7 @@ import {
   canonicalCanaryEvidence,
   canaryWorkspaceRemovalAllowed,
   canaryChildExitSucceeded,
+  canaryRequestHeaderFlags,
   canonicalCertificateThumbprint,
   captureCanaryObservation,
   canaryBrowserArguments,
@@ -263,9 +264,9 @@ async function startBackend(state, requestedPort = 0) {
       // Invalid requests fail closed below.
     }
     const contentLength = Number(request.headers["content-length"] || 0);
-    const sensitiveHeader = Object.keys(request.headers).some((name) => /^(?:cookie|authorization|proxy-authorization|x-api-key|x-auth-token)$/iu.test(name));
-    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, sensitiveHeader }));
-    if (!["GET", "HEAD"].includes(request.method) || pathname === "INVALID" || search !== "" || hasCredentials || contentLength !== 0 || sensitiveHeader || request.headers["transfer-encoding"] !== undefined) {
+    const headerFlags = canaryRequestHeaderFlags(request.headers);
+    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, ...headerFlags }));
+    if (!["GET", "HEAD"].includes(request.method) || pathname === "INVALID" || search !== "" || hasCredentials || contentLength !== 0 || headerFlags.sensitiveHeader || request.headers["transfer-encoding"] !== undefined) {
       response.writeHead(405, { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       response.end();
       return;
@@ -642,45 +643,26 @@ async function trackRequests(context, records, persistentContext, profilePath) {
   context.pages().forEach(attachPage);
   context.on("page", attachPage);
   context.on("request", (request) => {
-    const task = (async () => {
-    let origin = "INVALID";
-    let pathname = "INVALID";
-    let search = "INVALID";
-    let hasCredentials = true;
     try {
       const parsed = new URL(request.url());
-      origin = parsed.origin;
-      pathname = decodeURIComponent(parsed.pathname);
-      search = parsed.search;
-      hasCredentials = Boolean(parsed.username || parsed.password);
-    } catch {
-      // Invalid request URLs remain explicit failures.
+      const body = request.postDataBuffer();
+      const resourceType = request.resourceType();
+      const headerFlags = canaryRequestHeaderFlags(request.headers());
+      if (resourceType === "eventsource") channelCounts.eventSource += 1;
+      records.push(Object.freeze({
+        method: request.method(),
+        origin: parsed.origin,
+        pathname: decodeURIComponent(parsed.pathname),
+        search: parsed.search,
+        hasCredentials: Boolean(parsed.username || parsed.password),
+        resourceType,
+        bodyBytes: body?.byteLength || 0,
+        bodySha256: body?.byteLength ? hashFileBytes(body) : null,
+        ...headerFlags,
+      }));
+    } catch (error) {
+      observationFailures.push(Object.freeze({ label: "request metadata", error: String(error?.message || error) }));
     }
-    const headerObservation = await captureCanaryObservation(
-      boundedBrowserOperation(request.allHeaders(), persistentContext, profilePath, "Playwright request-header observation"),
-      observationFailures,
-      "request headers",
-    );
-    if (!headerObservation.ok) return;
-    const headers = headerObservation.value;
-    const body = request.postDataBuffer();
-    const resourceType = request.resourceType();
-    if (resourceType === "eventsource") channelCounts.eventSource += 1;
-    records.push(Object.freeze({
-      method: request.method(),
-      origin,
-      pathname,
-      search,
-      hasCredentials,
-      resourceType,
-      bodyBytes: body?.byteLength || 0,
-      bodySha256: body?.byteLength ? hashFileBytes(body) : null,
-      cookieHeader: Object.hasOwn(headers, "cookie"),
-      authorizationHeader: Object.hasOwn(headers, "authorization") || Object.hasOwn(headers, "proxy-authorization"),
-      sensitiveHeader: Object.keys(headers).some((name) => /^(?:cookie|authorization|proxy-authorization|x-api-key|x-auth-token)$/iu.test(name)),
-    }));
-    })();
-    tasks.push(task);
   });
   return Object.freeze({ tasks, channelCounts, observationFailures });
 }

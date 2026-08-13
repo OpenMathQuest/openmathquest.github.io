@@ -79,6 +79,16 @@ export function validateCanaryRootScopeProof({ manifest, manifestHref, workerSco
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
 }
 
+export function canaryRequestHeaderFlags(headers) {
+  if (!headers || typeof headers !== "object") throw new TypeError("Canary request headers must be an object.");
+  const names = Object.keys(headers).map((name) => name.toLowerCase());
+  return Object.freeze({
+    cookieHeader: names.includes("cookie"),
+    authorizationHeader: names.includes("authorization") || names.includes("proxy-authorization"),
+    sensitiveHeader: names.some((name) => /^(?:cookie|authorization|proxy-authorization|x-api-key|x-auth-token)$/u.test(name)),
+  });
+}
+
 export function beta1GradedSelectionAnswer(question, gradeAnswer) {
   if (!question || question.inputClass !== "SELECTION" || !Array.isArray(question.options)) {
     throw new TypeError("Beta 1 selection-answer discovery requires one selection question.");
