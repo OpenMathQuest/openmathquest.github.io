@@ -251,6 +251,7 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
   for (const required of [
     "waitForCanaryHomeUpdate",
     "[data-action=\"pwa-check\"]",
+    "[data-action=\"home\"]",
     "activateCanaryHomeUpdate",
     "[data-action=\"pwa-apply\"]",
     "Canary update activation must begin directly on Home",
@@ -303,6 +304,7 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
   run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")", "context.newPage()"), /missing required production-path canary control/u);
   run("removed Home update journey control", "canaryLibraryText", (text) => text.replaceAll('[data-action="pwa-check"]', '[data-action="obsolete-update"]'), /missing required production-path canary control/u);
+  run("removed migrated-screen Home boundary", "canaryLibraryText", (text) => text.replaceAll('[data-action="home"]', '[data-action="obsolete-home"]'), /missing required production-path canary control/u);
   run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);
   return failures;
 }
