@@ -40,6 +40,7 @@ import {
   snapshotSha256,
   trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
+  validateCanaryBrowserTlsSecurity,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
@@ -1053,9 +1054,8 @@ async function main() {
     await checkedStep(checks, "HTTPS_TRUSTED_NO_BYPASS", async () => {
       assert.equal(firstResponse?.status(), 200);
       const security = await boundedBrowserOperation(firstResponse.securityDetails(), context, profilePath, "Playwright TLS security-details observation");
-      assert.equal(security?.subjectName, "localhost");
-      assert.match(String(security?.issuer || ""), /Caddy Local Authority/iu);
-      assert.ok(["TLS 1.2", "TLS 1.3"].includes(security?.protocol));
+      const tlsSecurity = validateCanaryBrowserTlsSecurity(security, tls);
+      assert.equal(tlsSecurity.valid, true, tlsSecurity.issues.join("; "));
       assert.equal(validateCanaryBrowserArguments(browserArgs).valid, true);
     }, "Edge trusted Caddy's disposable localhost certificate with no insecure browser flags.");
 
