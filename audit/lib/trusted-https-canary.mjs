@@ -117,6 +117,27 @@ export async function observeCanaryRetainedFreshStartNotice(page, timeoutMs = 30
   return text;
 }
 
+export async function canaryWaitingCacheReady({ expectedCacheName, allowedCacheNames, stableMs }) {
+  const registration = await navigator.serviceWorker.getRegistration("./");
+  const observedNames = [...await caches.keys()].sort();
+  const expectedNames = [...allowedCacheNames].sort();
+  const ready = Boolean(registration?.waiting)
+    && expectedNames.includes(expectedCacheName)
+    && observedNames.length === expectedNames.length
+    && observedNames.every((name, index) => name === expectedNames[index]);
+  if (!ready) {
+    globalThis.__mathQuestCanaryWaitingCacheStableSince = null;
+    return false;
+  }
+  const now = performance.now();
+  const firstReady = globalThis.__mathQuestCanaryWaitingCacheStableSince;
+  if (!Number.isFinite(firstReady) || firstReady > now) {
+    globalThis.__mathQuestCanaryWaitingCacheStableSince = now;
+    return stableMs === 0;
+  }
+  return now - firstReady >= stableMs;
+}
+
 export async function reloadCanaryCandidateFromBeta1(page, productVersion, timeoutMs = 30_000) {
   if (!page || typeof page.reload !== "function") throw new TypeError("Canary candidate transition requires the existing Beta 1 page.");
   await page.reload({ waitUntil: "domcontentloaded", timeout: timeoutMs });
