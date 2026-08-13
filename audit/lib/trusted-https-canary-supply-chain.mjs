@@ -227,9 +227,8 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "bind 127.0.0.1",
     "server.listen(requestedPort, \"127.0.0.1\"",
     "activateCanaryHomeUpdate(candidatePage)",
-    "waitForCanaryWriterBlocked(candidatePage, \"1.0.0-beta.5\")",
-    "closeCanaryWriterPage(beta1Page)",
-    "Playwright deliberate Beta 1 writer-tab close",
+    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")",
+    "Playwright same-tab Beta 1 to Beta 5 candidate transition",
     "[data-action=\"pwa-retry\"]",
     "[data-action=\"pwa-repair\"]",
     "v1.0.0-beta.1",
@@ -256,11 +255,9 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "[data-action=\"pwa-apply\"]",
     "Canary update activation must begin directly on Home",
     "openCanaryInstallHelp",
-    "waitForCanaryWriterBlocked",
-    "[data-progress-protection]",
-    "closeCanaryWriterPage",
-    "Promise.all([page.close(), closed])",
-    "The Beta 1 writer tab did not reach the closed state",
+    "reloadCanaryCandidateFromBeta1",
+    "page.reload({ waitUntil: \"domcontentloaded\"",
+    "Canary candidate transition requires the existing Beta 1 page",
     "[data-action=\"grown\"]",
     "[data-action=\"install-help\"]",
   ]) {
@@ -304,8 +301,7 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
   run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
   run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
-  run("removed writer-lease handoff", "runnerText", (text) => text.replace("Playwright deliberate Beta 1 writer-tab close", "Playwright assumed writer-tab close"), /missing required production-path canary control/u);
-  run("removed observed writer close", "runnerText", (text) => text.replace("closeCanaryWriterPage(beta1Page)", "beta1Page.close()"), /missing required production-path canary control/u);
+  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.5\")", "context.newPage()"), /missing required production-path canary control/u);
   run("removed Home update journey control", "canaryLibraryText", (text) => text.replaceAll('[data-action="pwa-check"]', '[data-action="obsolete-update"]'), /missing required production-path canary control/u);
   run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);
   return failures;

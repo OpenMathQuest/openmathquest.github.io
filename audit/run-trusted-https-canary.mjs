@@ -32,10 +32,10 @@ import {
   canonicalCertificateThumbprint,
   captureCanaryObservation,
   canaryBrowserArguments,
-  closeCanaryWriterPage,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
   openCanaryInstallHelp,
+  reloadCanaryCandidateFromBeta1,
   profileProcessSetSha256,
   recoverAndDrainOperation,
   runCanaryTeardown,
@@ -47,7 +47,6 @@ import {
   validateCanaryBrowserTlsSecurity,
   validateCanaryRootScopeProof,
   waitForCanaryHomeUpdate,
-  waitForCanaryWriterBlocked,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
@@ -1140,7 +1139,7 @@ async function main() {
       await boundedBrowserOperation(context.setOffline(false), context, profilePath, "Playwright offline-mode release");
       retainedBeta1Page = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright retained Beta 1 page creation");
       await retainedBeta1Page.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await waitForCanaryWriterBlocked(retainedBeta1Page, "1.0.0-beta.1");
+      await retainedBeta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.1", null, { timeout: 30_000 });
     }, "Beta 1 reloaded from its installed cache while Playwright network emulation was offline.");
 
     await checkedStep(checks, "SAME_ORIGIN_RUNTIME_SWITCH", async () => {
@@ -1155,9 +1154,12 @@ async function main() {
       networkContext = null;
     }, "The backend atomically switched Beta 1 to Beta 5 without changing scheme, host, port, or scope.");
 
-    const candidatePage = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright candidate page creation");
-    await candidatePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await waitForCanaryWriterBlocked(candidatePage, "1.0.0-beta.5");
+    const candidatePage = await boundedBrowserOperation(
+      reloadCanaryCandidateFromBeta1(beta1Page, "1.0.0-beta.5"),
+      context,
+      profilePath,
+      "Playwright same-tab Beta 1 to Beta 5 candidate transition",
+    );
 
     await checkedStep(checks, "CANDIDATE_WAITING_CACHE_READY", async () => {
       await candidatePage.waitForFunction(async (prefix) => {
@@ -1166,10 +1168,7 @@ async function main() {
         return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
       }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
       waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
-      await boundedBrowserOperation(closeCanaryWriterPage(beta1Page), context, profilePath, "Playwright deliberate Beta 1 writer-tab close");
-      await candidatePage.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-      await waitForCanaryHomeUpdate(candidatePage, "1.0.0-beta.5");
-    }, "The exact Beta 5 worker reached waiting only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 in the exact physical cache with no staging or extra candidate cache; the grown-up-equivalent close of the original writer tab then let the candidate acquire the writer lease and reach Home.");
+    }, "The original Beta 1 page deliberately reloaded into the exact Beta 5 candidate at the same origin, acquired the modern writer lease, reached Home, and observed a waiting worker only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 with no staging or extra candidate cache.");
 
     await checkedStep(checks, "CANDIDATE_REAL_UI_ACTIVATION", async () => {
       expectedCandidateReloadUrl = candidatePage.url();
