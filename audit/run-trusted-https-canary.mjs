@@ -34,6 +34,7 @@ import {
   canonicalCertificateThumbprint,
   captureCanaryObservation,
   canaryBrowserArguments,
+  canaryWaitingCacheReady,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
   openCanaryInstallHelp,
@@ -1163,11 +1164,12 @@ async function main() {
     );
 
     await checkedStep(checks, "CANDIDATE_WAITING_CACHE_READY", async () => {
-      await candidatePage.waitForFunction(async (prefix) => {
-        const registration = await navigator.serviceWorker.getRegistration("./");
-        const names = await caches.keys();
-        return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
-      }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
+      const expectedCacheName = `${snapshots.manifest.cacheName}-${snapshots.identity.candidateReleaseManifestSha256}`;
+      await candidatePage.waitForFunction(canaryWaitingCacheReady, {
+        expectedCacheName,
+        allowedCacheNames: [BETA1_CACHE, expectedCacheName],
+        stableMs: 750,
+      }, { timeout: 40_000, polling: 100 });
       waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
       const retainedNotice = await observeCanaryRetainedFreshStartNotice(candidatePage);
       retainedFreshStartNoticeSha256 = sha256Bytes(retainedNotice);
