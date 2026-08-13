@@ -654,6 +654,10 @@ query strings, unexpected paths, header values, credentials, and body content
 never enter logs or evidence. An effect-sensitive mutant fills every unsafe
 field with private-looking text, proves none survives the projection, and
 proves the complete first finding fits the canonical check-detail bound.
+The browser's exact automatic `/favicon.ico` probe is the only permitted
+non-file path and remains a real 404; the Caddy/backend oracle compares each
+request's observed status instead of assuming every allowed request returned
+200. Near-name and all other unlisted paths remain violations.
 
 | Test branch | Protected effect |
 |---|---|
