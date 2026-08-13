@@ -1217,6 +1217,28 @@ test("service worker is fail-closed, waits on update, and reports only local she
   assert.doesNotMatch(readinessFunction, /scriptURL|self\.registration\.(?:active|waiting)/u);
 });
 
+test("each service-worker installation owns a distinct nonce-bound staging cache", async () => {
+  const worker = await readFile(path.join(root, "sw.js"), "utf8");
+  let generation = 0;
+  const freshName = new vm.Script(`(()=>{
+    const CACHE_STORAGE_NAME="math-quest-static-v1.0.0-beta.5-${"a".repeat(64)}";
+    ${adapterFunction(worker, "freshStagingCacheName")}
+    return freshStagingCacheName;
+  })()`).runInNewContext({
+    crypto: { getRandomValues(bytes) { generation += 1; bytes.fill(generation); return bytes; } },
+    Uint8Array,
+  });
+  const first = freshName();
+  const second = freshName();
+  assert.notEqual(first, second);
+  assert.match(first, /^math-quest-static-v1\.0\.0-beta\.5-[a-f0-9]{64}-[a-f0-9]{32}-staging$/u);
+  assert.match(second, /^math-quest-static-v1\.0\.0-beta\.5-[a-f0-9]{64}-[a-f0-9]{32}-staging$/u);
+  assert.match(worker, /const stagingCacheName = freshStagingCacheName\(\);/u);
+  assert.match(worker, /caches\.open\(stagingCacheName\)/u);
+  assert.match(worker, /caches\.delete\(stagingCacheName\)/u);
+  assert.doesNotMatch(worker, /const STAGING_CACHE_NAME/u);
+});
+
 test("caregiver update copy distinguishes a verified active shell from fresh setup", async () => {
   const page = await readFile(path.join(root, "index.html"), "utf8");
   const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
@@ -1957,7 +1979,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   );
   const logicalBeta5Name = "math-quest-static-v1.0.0-beta.5";
   const beta5Name = `${logicalBeta5Name}-${expectedManifestHash}`;
-  const beta5StagingName = `${beta5Name}-staging`;
+  const stagingNames = () => [...cacheStores.keys()].filter((name) => name.startsWith(`${beta5Name}-`) && name.endsWith("-staging"));
   const publicBeta3PhysicalName =
     "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7";
   const handlers = new Map();
@@ -2161,7 +2183,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   );
   assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
   assert.equal(cacheStores.has(logicalBeta5Name), true);
-  assert.equal(cacheStores.has(beta5StagingName), false);
+  assert.deepEqual(stagingNames(), []);
 
   let installPromise;
   handlers.get("install")({ waitUntil(promise) { installPromise = promise; } });
