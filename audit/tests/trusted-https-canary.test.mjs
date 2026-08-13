@@ -574,6 +574,9 @@ test("backend request failures report only closed sanitized predicates", () => {
   assert.equal(allowedPathFinding.pathnameSha256, null);
   assert.ok(allowedPathLog.length <= 240, "the longest governed allowed path must also fit the canonical check-detail bound");
   assert.doesNotMatch(allowedPathLog, /private=hidden/u);
+  assert.equal(canaryBackendRequestViolation({ ...clean, pathname: "/favicon.ico" }, new Set(["/favicon.ico"])), null,
+    "the browser's exact harmless favicon probe is allowed while every other unlisted path remains rejected");
+  assert.equal(canaryBackendRequestViolation({ ...clean, pathname: "/favicon.ico-extra" }, new Set(["/favicon.ico"]))?.violationMask, 2);
   assert.throws(() => canaryBackendRequestViolation(null, allowed), /record must be an object/u);
 });
 
@@ -836,6 +839,9 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /canaryRequestHeaderFlags\(request\.headers\(\)\)/u);
   assert.match(runnerText, /canaryBackendRequestViolation\(item, allowed\)/u);
   assert.match(runnerText, /Backend request violation count=/u);
+  assert.match(runnerText, /EXPECTED_BROWSER_PROBE_PATHS = Object\.freeze\(\["\/favicon\.ico"\]\)/u);
+  assert.match(runnerText, /responseStatus: 404/u);
+  assert.match(runnerText, /status: row\.responseStatus/u);
   assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
   assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);

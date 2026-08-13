@@ -67,6 +67,7 @@ const PROFILE_KEY = "math-quest:child-name:v1";
 const BETA1_CACHE = "math-quest-static-v1.0.0-beta.1";
 const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.5-";
 const CANDIDATE_STAGING_SUFFIX = "-staging";
+const EXPECTED_BROWSER_PROBE_PATHS = Object.freeze(["/favicon.ico"]);
 const EXPECTED_RELEASE_ENTRIES = Object.freeze([
   ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["assets/icons/apple-touch-icon.png", "image/png"],
@@ -267,8 +268,8 @@ async function startBackend(state, requestedPort = 0) {
     const contentLength = Number(request.headers["content-length"] || 0);
     const headerFlags = canaryRequestHeaderFlags(request.headers);
     const transferEncoding = request.headers["transfer-encoding"] !== undefined;
-    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, transferEncoding, ...headerFlags }));
     if (!["GET", "HEAD"].includes(request.method) || pathname === "INVALID" || search !== "" || hasCredentials || contentLength !== 0 || headerFlags.sensitiveHeader || transferEncoding) {
+      state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, transferEncoding, responseStatus: 405, ...headerFlags }));
       response.writeHead(405, { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       response.end();
       return;
@@ -276,10 +277,12 @@ async function startBackend(state, requestedPort = 0) {
     const key = pathname === "/" ? "/index.html" : pathname;
     const file = state.active.files.get(key);
     if (!file) {
+      state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, transferEncoding, responseStatus: 404, ...headerFlags }));
       response.writeHead(404, { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       response.end();
       return;
     }
+    state.requests.push(Object.freeze({ method: String(request.method || ""), pathname, search, hasCredentials, contentLength, transferEncoding, responseStatus: 200, ...headerFlags }));
     response.writeHead(200, {
       "Cache-Control": "no-store",
       "Content-Length": file.bytes.byteLength,
@@ -772,7 +775,7 @@ async function caddyAccessLogProof(logPath, backendRequests) {
     status: Number(row.status),
     size: Number(row.size),
   })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
-  const backendRows = backendRequests.map((row) => ({ method: row.method, uri: `${row.pathname}${row.search}`, status: 200 })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  const backendRows = backendRequests.map((row) => ({ method: row.method, uri: `${row.pathname}${row.search}`, status: row.responseStatus })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
   assert.deepEqual(caddyRows.map(({ method, uri, status }) => ({ method, uri, status })), backendRows);
   assert.ok(caddyRows.every((row) => Number.isSafeInteger(row.size) && row.size >= 0));
   return hashFileBytes(Buffer.from(`${JSON.stringify(caddyRows)}\n`, "utf8"));
@@ -803,6 +806,7 @@ async function exactActiveReadiness(page, snapshots, persistentContext, profileP
 function runtimeAllowlist(snapshots) {
   return new Set([
     "/",
+    ...EXPECTED_BROWSER_PROBE_PATHS,
     ...[...snapshots.beta1.files.keys(), ...snapshots.candidate.files.keys()],
   ]);
 }
