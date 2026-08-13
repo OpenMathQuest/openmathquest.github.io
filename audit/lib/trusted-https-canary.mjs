@@ -21,6 +21,26 @@ export const LOOPBACK_LISTENER_QUERY_SCRIPT = [
   "$selected=@($rows | Select-Object LocalAddress,OwningProcess)",
   "ConvertTo-Json -InputObject $selected -Compress",
 ].join("\n");
+export const WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT = Object.freeze([
+  "$hasher=[Security.Cryptography.SHA256]::Create()",
+  "try{$hash=$hasher.ComputeHash($cert.RawData)}finally{$hasher.Dispose()}",
+  "$sha=[BitConverter]::ToString($hash).Replace('-','').ToLowerInvariant()",
+]);
+
+export function trustedTlsInspectionScript() {
+  return [
+    "$ErrorActionPreference='Stop'",
+    "$client=[Net.Sockets.TcpClient]::new()",
+    "$client.Connect('localhost',[int]$env:MQ_CANARY_TLS_PORT)",
+    "$ssl=[Net.Security.SslStream]::new($client.GetStream(),$false)",
+    "$ssl.AuthenticateAsClient('localhost')",
+    "$cert=[Security.Cryptography.X509Certificates.X509Certificate2]::new($ssl.RemoteCertificate)",
+    ...WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
+    "$result=[ordered]@{sha256=$sha;subjectName=$cert.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::DnsName,$false);issuer=$cert.Issuer;validFrom=[DateTimeOffset]::new($cert.NotBefore.ToUniversalTime()).ToUnixTimeSeconds();validTo=[DateTimeOffset]::new($cert.NotAfter.ToUniversalTime()).ToUnixTimeSeconds();protocol=$ssl.SslProtocol.ToString()}",
+    "$ssl.Dispose();$client.Dispose()",
+    "$result|ConvertTo-Json -Compress",
+  ].join(";");
+}
 
 export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {

@@ -38,6 +38,7 @@ import {
   safeRuntimePath,
   sha256Bytes,
   snapshotSha256,
+  trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
@@ -454,18 +455,7 @@ async function assertLoopbackListener(port, pid) {
 }
 
 async function inspectTrustedTls(port) {
-  const script = [
-    "$client=[Net.Sockets.TcpClient]::new()",
-    "$client.Connect('localhost',[int]$env:MQ_CANARY_TLS_PORT)",
-    "$ssl=[Net.Security.SslStream]::new($client.GetStream(),$false)",
-    "$ssl.AuthenticateAsClient('localhost')",
-    "$cert=[Security.Cryptography.X509Certificates.X509Certificate2]::new($ssl.RemoteCertificate)",
-    "$sha=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($cert.RawData)).ToLowerInvariant()",
-    "$result=[ordered]@{sha256=$sha;subjectName=$cert.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::DnsName,$false);issuer=$cert.Issuer;validFrom=[DateTimeOffset]::new($cert.NotBefore.ToUniversalTime()).ToUnixTimeSeconds();validTo=[DateTimeOffset]::new($cert.NotAfter.ToUniversalTime()).ToUnixTimeSeconds();protocol=$ssl.SslProtocol.ToString()}",
-    "$ssl.Dispose();$client.Dispose()",
-    "$result|ConvertTo-Json -Compress",
-  ].join(";");
-  return JSON.parse(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+  return JSON.parse(await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", trustedTlsInspectionScript()], {
     env: { ...process.env, MQ_CANARY_TLS_PORT: String(port) },
     timeoutMs: 30_000,
   }));

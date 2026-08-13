@@ -22,6 +22,7 @@ import {
   TRUSTED_HTTPS_CANARY_STATUS,
   TRUSTED_HTTPS_CANARY_TAG,
   TRUSTED_HTTPS_CANARY_WORKFLOW,
+  WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
   canaryBrowserArguments,
   canaryChildExitSucceeded,
   canaryWorkspaceRemovalAllowed,
@@ -35,6 +36,7 @@ import {
   recoverAndDrainOperation,
   runCanaryTeardown,
   snapshotSha256,
+  trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
@@ -386,6 +388,20 @@ test("hosted Windows listener observation tolerates only transient no-match resu
   assert.deepEqual(JSON.parse(stdout), [{ LocalAddress: "127.0.0.1", OwningProcess: 52_409 }]);
 });
 
+test("Windows PowerShell computes the observed leaf certificate SHA-256 without newer runtime-only APIs", async () => {
+  const script = [
+    "$ErrorActionPreference='Stop'",
+    "$cert=[pscustomobject]@{RawData=[Text.Encoding]::UTF8.GetBytes('abc')}",
+    ...WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
+    "$sha",
+  ].join(";");
+  const { stdout } = await execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { windowsHide: true, timeout: 15_000 });
+  assert.equal(stdout.trim(), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  assert.doesNotMatch(WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT.join("\n"), /HashData|ToHexString/u);
+  assert.deepEqual(WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT.every((statement) => trustedTlsInspectionScript().includes(statement)), true, "the production TLS inspector uses every effect-tested hash statement");
+  assert.doesNotMatch(trustedTlsInspectionScript(), /HashData|ToHexString/u);
+});
+
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
   const args = canaryBrowserArguments("C:\\runner-temp\\mq-profile");
   assert.equal(validateCanaryBrowserArguments(args).valid, true);
@@ -480,6 +496,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.newPage\s*\(/u);
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
+  assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
+  assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
   assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
   assert.match(runnerText, /WindowsBuiltInRole\]::Administrator/u);
