@@ -684,7 +684,7 @@ test("browser scenarios await settled Home and release the writer lease before i
   );
 });
 
-test("browser audit waits through safe-boundary navigation and opens only the bound physical cache", async () => {
+test("browser audit rejects safe-boundary navigation and opens only the bound physical cache", async () => {
   const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
   const waitForNavigation = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "waitForScenarioNavigation")})`,
@@ -708,6 +708,34 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
     ),
     "restored",
   );
+  const observeNavigationQuiet = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "observeScenarioNavigationQuiet")})`,
+    { setTimeout },
+  );
+  const listeners = new Set();
+  const stableDocument = {};
+  const quietScenario = {
+    doc: stableDocument,
+    frame: {
+      addEventListener(type, listener) {
+        assert.equal(type, "load");
+        listeners.add(listener);
+      },
+      removeEventListener(type, listener) {
+        assert.equal(type, "load");
+        listeners.delete(listener);
+      },
+    },
+  };
+  assert.equal(await observeNavigationQuiet(quietScenario, stableDocument, () => {}, 5), false);
+  assert.equal(listeners.size, 0, "the bounded quiet observation must remove its listener");
+  assert.equal(await observeNavigationQuiet(quietScenario, stableDocument, () => {
+    setTimeout(() => {
+      quietScenario.doc = {};
+      for (const listener of listeners) listener();
+    }, 1);
+  }, 10), true);
+  assert.equal(listeners.size, 0, "navigation observation must also remove its listener");
 
   const readinessReply = { type: "MATH_QUEST_READINESS_V1", ready: true };
   class FakeMessageChannel {
@@ -723,7 +751,6 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
       };
     }
   }
-  const registration = { active: true };
   const controller = {
     postMessage(message, ports) {
       assert.equal(message.type, "MATH_QUEST_GET_READINESS_V1");
@@ -732,6 +759,7 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
       ports[0].reply(readinessReply);
     },
   };
+  const registration = { active: controller };
   const queryReadiness = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "queryBrowserPwaReadiness")})`,
   );
@@ -750,6 +778,7 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
   });
   assert.equal(queried.registration, registration);
   assert.equal(queried.controller, controller);
+  assert.equal(queried.readinessWorker, controller);
   assert.equal(queried.readiness, readinessReply);
 
   await assert.rejects(
@@ -776,31 +805,22 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
     },
   );
 
-  let controllerListenerRemoved = false;
-  await assert.rejects(
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: Promise.resolve(registration),
-          controller: null,
-          addEventListener() {},
-          removeEventListener() { controllerListenerRemoved = true; },
-        },
+  const activeWorkerWithoutController = await queryReadiness({
+    navigator: {
+      serviceWorker: {
+        ready: Promise.resolve(registration),
+        controller: null,
+        addEventListener() { throw new Error("controllerchange must not be required"); },
+        removeEventListener() { throw new Error("controllerchange must not be required"); },
       },
-      MessageChannel: FakeMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 5),
-    (error) => {
-      assert.match(error.message, /service worker controller readiness timed out after 5 ms/u);
-      assert.equal(error.code, "PWA_READINESS_STAGE_TIMEOUT");
-      assert.equal(error.stage, "controllerchange");
-      assert.equal(error.timedOut, true);
-      assert.equal(error.timeoutMs, 5);
-      return true;
     },
-  );
-  assert.equal(controllerListenerRemoved, true, "a timed-out controller listener must be removed");
+    MessageChannel: FakeMessageChannel,
+    setTimeout,
+    clearTimeout,
+  }, 25);
+  assert.equal(activeWorkerWithoutController.controller, null);
+  assert.equal(activeWorkerWithoutController.readinessWorker, controller);
+  assert.equal(activeWorkerWithoutController.readiness, readinessReply);
 
   let readinessPortClosed = false;
   class SilentMessageChannel {
@@ -861,17 +881,27 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
     },
   );
 
+  class ThrowingCloseMessageChannel {
+    constructor() {
+      this.port1 = {
+        onmessage: null,
+        onmessageerror: null,
+        close() { throw new Error("readiness channel cleanup failed"); },
+      };
+      this.port2 = {};
+    }
+  }
   const cleanupDoesNotHang = Promise.race([
     queryReadiness({
       navigator: {
         serviceWorker: {
           ready: Promise.resolve(registration),
-          controller: null,
+          controller: { postMessage() {} },
           addEventListener() {},
-          removeEventListener() { throw new Error("listener cleanup failed"); },
+          removeEventListener() {},
         },
       },
-      MessageChannel: FakeMessageChannel,
+      MessageChannel: ThrowingCloseMessageChannel,
       setTimeout,
       clearTimeout,
     }, 5),
@@ -879,10 +909,71 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
   ]);
   await assert.rejects(cleanupDoesNotHang, (error) => {
     assert.equal(error.code, "PWA_READINESS_STAGE_TIMEOUT");
-    assert.equal(error.stage, "controllerchange");
-    assert.match(error.message, /listener cleanup failed/u);
+    assert.equal(error.stage, "readiness-message");
+    assert.match(error.message, /readiness channel cleanup failed/u);
     return true;
   });
+
+  await assert.rejects(
+    queryReadiness({
+      navigator: {
+        serviceWorker: {
+          ready: Promise.resolve({ active: null }),
+          controller: null,
+        },
+      },
+      MessageChannel: FakeMessageChannel,
+      setTimeout,
+      clearTimeout,
+    }, 25),
+    (error) => {
+      assert.equal(error.code, "PWA_READINESS_STAGE_FAILED");
+      assert.equal(error.stage, "readiness-worker");
+      assert.equal(error.timedOut, false);
+      assert.match(error.message, /no active service worker can answer readiness/u);
+      return true;
+    },
+  );
+
+  const dispatchKey = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "dispatchKey")})`,
+  );
+  let dispatchedTarget = null;
+  const fakeDocument = {
+    activeElement: null,
+    documentElement: {},
+    body: {
+      dispatchEvent() { throw new Error("body must not receive the shortcut"); },
+    },
+    getElementById(id) { return id === "app" ? app : null; },
+  };
+  const app = {
+    focus() { fakeDocument.activeElement = app; },
+    dispatchEvent(event) {
+      dispatchedTarget = app;
+      assert.equal(event.key, "Enter");
+      return true;
+    },
+  };
+  const nativeButton = {
+    dispatchEvent() { throw new Error("the focused native button must not receive a synthetic default action"); },
+  };
+  fakeDocument.activeElement = nativeButton;
+  class FakeKeyboardEvent {
+    constructor(type, options) {
+      this.type = type;
+      this.defaultPrevented = false;
+      Object.assign(this, options);
+    }
+  }
+  const shortcut = dispatchKey(
+    { doc: fakeDocument, win: { KeyboardEvent: FakeKeyboardEvent } },
+    "Enter",
+    { shortcutTarget: true },
+  );
+  assert.equal(shortcut.target, app);
+  assert.equal(dispatchedTarget, app);
+  assert.equal(fakeDocument.activeElement, app);
 
   const physicalCacheNames = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "pwaPhysicalCacheNames")})`,
@@ -910,19 +1001,19 @@ test("browser audit waits through safe-boundary navigation and opens only the bo
     [...physicalCacheNames("math-quest-static-v1.0.0-beta.1", [physicalName])],
     [],
   );
-  assert.match(
+  assert.doesNotMatch(
     browserAudit,
     /await waitForScenarioNavigation\(\s*placementScenario,\s*boundaryDocumentBeforePause,/u,
   );
+  assert.match(browserAudit, /boundaryNavigationObserved = await observeScenarioNavigationQuiet\(/u);
+  assert.match(browserAudit, /explicitResumeButton\s*&&\s*!boundaryNavigationObserved\s*&&\s*boundaryDraftRestored/u);
+  assert.match(browserAudit, /placementScenario\.doc === boundaryDocumentBeforePause[\s\S]{0,500}\[data-question-id="\$\{boundaryQuestionId\}"\][\s\S]{0,500}=== boundaryQuestionId[\s\S]{0,500}=== boundaryDraftBeforePause/u);
+  assert.match(browserAudit, /dispatchKey\(childFlow, "Enter", \{ shortcutTarget: true \}\)/u);
   assert.match(
     browserAudit,
     /const pwaReadinessPromise = queryBrowserPwaReadiness\(win\)\.then\(/u,
   );
   assert.match(browserAudit, /const pwaReadiness = await pwaReadinessPromise;/u);
-  assert.doesNotMatch(
-    browserAudit,
-    /boundary-pause[\s\S]{0,800}setTimeout\(resolve,\s*80\)/u,
-  );
   assert.match(
     browserAudit,
     /matchingCacheStorageNames\.length === 1\s*\?\s*matchingCacheStorageNames\[0\]/u,

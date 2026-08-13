@@ -553,6 +553,21 @@
       ), 350, 20);
     }
 
+    async function observeScenarioNavigationQuiet(scenario, previousDocument, action, quietMs = 500) {
+      let loadObserved = false;
+      const onLoad = () => {
+        if (scenario.doc !== previousDocument) loadObserved = true;
+      };
+      scenario.frame.addEventListener("load", onLoad);
+      try {
+        action();
+        await new Promise((resolve) => setTimeout(resolve, quietMs));
+        return Boolean(loadObserved || scenario.doc !== previousDocument);
+      } finally {
+        scenario.frame.removeEventListener("load", onLoad);
+      }
+    }
+
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
         logicalIdentity !== "math-quest-static-v1.0.0-beta.5"
@@ -570,11 +585,18 @@
       const serviceWorkers = hostWindow && "serviceWorker" in hostWindow.navigator
         ? hostWindow.navigator.serviceWorker
         : null;
-      if (!serviceWorkers) return { registration: null, controller: null, readiness: null };
+      if (!serviceWorkers) {
+        return {
+          registration: null,
+          controller: null,
+          readinessWorker: null,
+          readiness: null,
+        };
+      }
       const stageFailure = (stage, timedOut, cause = null) => {
         const label = {
           "service-worker-ready": "registration readiness",
-          controllerchange: "controller readiness",
+          "readiness-worker": "active worker readiness",
           "readiness-message": "readiness response",
         }[stage] || stage;
         const causeMessage = String(cause?.message || cause || "").trim();
@@ -617,20 +639,13 @@
         );
       });
       const registration = await bounded(serviceWorkers.ready, "service-worker-ready");
-      let removeControllerListener = () => {};
-      const controller = serviceWorkers.controller || await bounded(new Promise((resolve) => {
-        const onControllerChange = () => {
-          const current = serviceWorkers.controller;
-          if (!current) return;
-          serviceWorkers.removeEventListener("controllerchange", onControllerChange);
-          resolve(current);
-        };
-        removeControllerListener = () => serviceWorkers.removeEventListener("controllerchange", onControllerChange);
-        serviceWorkers.addEventListener("controllerchange", onControllerChange);
-        onControllerChange();
-      }), "controllerchange", () => removeControllerListener());
+      const controller = serviceWorkers.controller || null;
+      const readinessWorker = controller || registration?.active || null;
+      if (!readinessWorker || typeof readinessWorker.postMessage !== "function") {
+        throw stageFailure("readiness-worker", false, new Error("no active service worker can answer readiness"));
+      }
       let closeReadinessPort = () => {};
-      const readiness = controller ? await bounded(new Promise((resolve, reject) => {
+      const readiness = await bounded(new Promise((resolve, reject) => {
         const channel = new hostWindow.MessageChannel();
         closeReadinessPort = () => channel.port1.close();
         channel.port1.onmessage = (event) => {
@@ -640,12 +655,12 @@
           reject(new Error("service worker readiness message could not be read"));
         };
         try {
-          controller.postMessage({ type: "MATH_QUEST_GET_READINESS_V1" }, [channel.port2]);
+          readinessWorker.postMessage({ type: "MATH_QUEST_GET_READINESS_V1" }, [channel.port2]);
         } catch (error) {
           reject(error);
         }
-      }), "readiness-message", () => closeReadinessPort()) : null;
-      return { registration, controller, readiness };
+      }), "readiness-message", () => closeReadinessPort());
+      return { registration, controller, readinessWorker, readiness };
     }
 
     let shippedIndexSourcePromise;
@@ -742,9 +757,15 @@
     }
 
     function dispatchKey(scenario, key, options = {}) {
-      const target = scenario.doc.activeElement && scenario.doc.activeElement !== scenario.doc.documentElement
-        ? scenario.doc.activeElement
-        : scenario.doc.body;
+      const shortcutTarget = options.shortcutTarget
+        ? scenario.doc.getElementById("app") || scenario.doc.body
+        : null;
+      shortcutTarget?.focus?.({ preventScroll: true });
+      const target = shortcutTarget || (
+        scenario.doc.activeElement && scenario.doc.activeElement !== scenario.doc.documentElement
+          ? scenario.doc.activeElement
+          : scenario.doc.body
+      );
       const event = new scenario.win.KeyboardEvent("keydown", {
         key,
         code: /^[0-9]$/u.test(key) ? `Digit${key}` : key === " " ? "Space" : key,
@@ -1815,7 +1836,7 @@
         }
         const pickedPhysical = childFlow.doc.querySelector('[data-action="physical-done"]');
         if (pickedPhysical) {
-          dispatchKey(childFlow, "Enter");
+          dispatchKey(childFlow, "Enter", { shortcutTarget: true });
           await waitUntil(() => !pickedPhysical.isConnected, 100, 10);
         }
         const pickedSave = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
@@ -2942,40 +2963,40 @@
         await new Promise((resolve) => setTimeout(resolve, 40));
         const controllerSignalStayedAtQuestion = Boolean(
           boundaryQuestionId
-          && placementScenario.doc.querySelector('[data-placement-screen][data-placement-phase="question"]')
+          && placementScenario.doc.querySelector(
+            `[data-placement-screen][data-placement-phase="question"][data-question-id="${boundaryQuestionId}"]`,
+          )
           && JSON.parse(localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) || "null")?.ui?.questionId
             === boundaryQuestionId
           && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes
         );
         const boundaryDocumentBeforePause = placementScenario.doc;
         const boundaryDraftBeforePause = localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY);
-        let boundaryNavigationObserved = false;
-        let boundaryDraftRestored = false;
-        placementScenario.doc.querySelector('[data-action="placement-pause"]')?.click();
-        const boundaryRestored = await waitForScenarioNavigation(
+        const boundaryNavigationObserved = await observeScenarioNavigationQuiet(
           placementScenario,
           boundaryDocumentBeforePause,
-          (scenario) => {
-            boundaryNavigationObserved = true;
-            boundaryDraftRestored = localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) === boundaryDraftBeforePause
-              && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes;
-            return boundaryDraftRestored
-              && scenario.doc.querySelector('[data-placement-screen][data-placement-phase="question"]');
-          },
+          () => placementScenario.doc.querySelector('[data-action="placement-pause"]')?.click(),
         );
-        const boundaryAfterPause = Boolean(boundaryRestored);
-        if (placementScenario.doc.querySelector('[data-placement-screen]')) {
-          placementScenario.doc.querySelector('[data-action="placement-pause"]')?.click();
-          await waitUntil(() => (
-            placementScenario.doc.querySelector('[data-action="placement-resume"]')
-          ));
-        }
         const explicitResumeButton = await waitUntil(() => (
           placementScenario.doc.querySelector('[data-action="placement-resume"]')
         ));
+        const boundaryDraftRestored = localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) === boundaryDraftBeforePause
+          && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes;
+        const boundaryAfterPause = Boolean(
+          explicitResumeButton
+          && !boundaryNavigationObserved
+          && boundaryDraftRestored
+        );
         explicitResumeButton?.click();
         const explicitResume = Boolean(await waitUntil(() => (
-          placementScenario.doc.querySelector('[data-placement-screen][data-placement-phase="question"]')
+          placementScenario.doc === boundaryDocumentBeforePause
+          && placementScenario.doc.querySelector(
+            `[data-placement-screen][data-placement-phase="question"][data-question-id="${boundaryQuestionId}"]`,
+          )
+          && JSON.parse(localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) || "null")?.ui?.questionId
+            === boundaryQuestionId
+          && localStorage.getItem(TEST_PLACEMENT_DRAFT_KEY) === boundaryDraftBeforePause
+          && localStorage.getItem(TEST_SAVE_KEY) === startedMainBytes
         )));
         placementScenario.doc.querySelector('[data-action="placement-pause"]')?.click();
         await pause();
@@ -7323,7 +7344,12 @@
         try {
           const pwaReadiness = await pwaReadinessPromise;
           if (!pwaReadiness.ok) throw pwaReadiness.error;
-          const { registration, controller, readiness } = pwaReadiness.value;
+          const {
+            registration,
+            controller,
+            readinessWorker,
+            readiness,
+          } = pwaReadiness.value;
           const shellManifestRelative = "./release-shell-v1.json";
           const expectedShellEntryPaths = Object.freeze([
             "./assets/fonts/Inter-Variable.ttf",
@@ -7462,7 +7488,7 @@
           }
           offlineReady = Boolean(
             manifestLink && new URL(manifestLink.href).pathname.endsWith("/manifest.webmanifest")
-            && registration?.active && controller && cache
+            && registration?.active && readinessWorker && cache
             && cacheNames.includes(cacheStorageName) && readinessValid && shellManifestValid
             && core.every((entry) => entry.identityMatches) && manifestValid
             && cachedIndexText.includes("ENGINE-START") && cachedIndexText.includes("ENGINE-END")
@@ -7473,6 +7499,7 @@
             registrationScope: registration?.scope || null,
             active: Boolean(registration?.active),
             controlled: Boolean(controller),
+            readinessWorkerActive: readinessWorker === registration?.active || readinessWorker === controller,
             cacheIdentity,
             cacheStorageName,
             matchingCacheStorageNames,
@@ -7500,7 +7527,7 @@
             };
           }
         }
-        add("BR-24", "The install manifest and controlled service worker cache the complete first-load shell for offline reopen", offlineReady, offlineDetails);
+        add("BR-24", "The install manifest and active service worker cache the complete first-load shell for offline reopen", offlineReady, offlineDetails);
         }
 
         if (AUDIT_SHARD !== "core") {
