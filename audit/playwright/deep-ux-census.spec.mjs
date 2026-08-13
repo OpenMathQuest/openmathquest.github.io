@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
-import { deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta } from "../lib/playwright-deep-ux-census.mjs";
+import { deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta, deepUxPartialResponseControlPriority } from "../lib/playwright-deep-ux-census.mjs";
 
 const planPath = process.env.MQ_DEEP_UX_PLAN_PATH;
 const shardDirectory = process.env.MQ_DEEP_UX_SHARD_DIRECTORY;
@@ -79,6 +79,10 @@ async function selectIfChanged(locator, value) {
   if (await locator.inputValue() !== String(value)) await locator.selectOption(String(value));
 }
 
+async function waitForLabRender(page) {
+  await expect(page.locator(".lab-workspace")).toHaveAttribute("data-render-settled", "true");
+}
+
 async function renderScenario(page, scenario) {
   await selectIfChanged(page.locator("[data-lab-level]"), scenario.level);
   await selectIfChanged(page.locator("[data-lab-skill]"), scenario.skillId);
@@ -98,6 +102,7 @@ async function renderScenario(page, scenario) {
   await expect(question).toHaveAttribute("data-theme", scenario.theme);
   await expect(question).toHaveAttribute("data-input-method", scenario.inputMethod);
   await expect(question).toHaveAttribute("data-sample-key", scenario.sampleKey);
+  await waitForLabRender(page);
   // Parent Test controls are intentionally outside the census cell. Position the
   // rendered question once during fixture setup, then require every measured
   // response action to remain actionable without any further scrolling.
@@ -212,9 +217,19 @@ async function makePartialResponse(question, page) {
   }));
   const before = await responseFingerprint();
   let available = false;
-  const clickable = question.locator('[data-lab-action="select"]:not([disabled]),[data-lab-action="response"]:not([disabled]),[data-lab-action="model-cell"]:not([disabled]),[data-lab-action="line-mark"]:not([disabled]),[data-lab-action="key"]:not([disabled])').first();
-  if (await clickable.count()) {
-    await activate(clickable, page);
+  const candidates = question.locator('[data-lab-action="select"],[data-lab-action="response"],[data-lab-action="model-cell"],[data-lab-action="line-mark"],[data-lab-action="key"]');
+  const controls = await candidates.evaluateAll((elements) => elements.map((element, index) => ({
+    index,
+    disabled: Boolean(element.disabled),
+    ariaPressed: element.getAttribute("aria-pressed"),
+  })));
+  const preferred = controls
+    .map((control) => ({ ...control, priority: deepUxPartialResponseControlPriority(control) }))
+    .filter((control) => control.priority >= 0)
+    .sort((left, right) => right.priority - left.priority || left.index - right.index)[0];
+  if (preferred) {
+    await activate(candidates.nth(preferred.index), page);
+    await waitForLabRender(page);
     available = true;
   } else if (await question.locator("input[data-fraction-part]:not([disabled])").first().count()) {
     const fraction = question.locator("input[data-fraction-part]:not([disabled])").first();
@@ -330,6 +345,7 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
       }
       const expected = question.getByRole("button", { name: "Show expected", exact: true });
       await activate(expected, page);
+      await waitForLabRender(page);
       question = page.locator("article.lab-question");
       await expect(question.locator("[data-lab-expected]")).toBeVisible();
       await expect(question.getByRole("button", { name: "Hide expected", exact: true })).toBeVisible();
@@ -338,6 +354,7 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
       const model = page.locator('[data-lab-action="model"]');
       if (await model.isEnabled()) {
         await activate(model, page);
+        await waitForLabRender(page);
         question = page.locator("article.lab-question");
         await expect(question.locator(".model[data-worked-result='true']")).toBeVisible();
         await expect(page.getByRole("button", { name: "Hide teaching model", exact: true })).toBeVisible();

@@ -265,5 +265,6 @@ jobs:
           path: |
             audit/.tmp-playwright-deep-ux-report.json
             audit/.tmp-playwright-deep-ux-artifacts
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
