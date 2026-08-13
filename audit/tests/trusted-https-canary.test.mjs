@@ -38,6 +38,7 @@ import {
   snapshotSha256,
   trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
+  validateCanaryBrowserTlsSecurity,
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
@@ -402,6 +403,31 @@ test("Windows PowerShell computes the observed leaf certificate SHA-256 without 
   assert.doesNotMatch(trustedTlsInspectionScript(), /HashData|ToHexString/u);
 });
 
+test("SAN-only Caddy certificates retain independent localhost proof when Playwright has no informational common name", () => {
+  const trustedTls = { subjectName: "localhost", issuer: "CN=Caddy Local Authority - ECC Intermediate", sha256: sha("a"), protocol: "Tls13" };
+  const browserTls = { subjectName: "", issuer: "Caddy Local Authority", protocol: "TLS 1.3" };
+  assert.equal(validateCanaryBrowserTlsSecurity(browserTls, trustedTls).valid, true);
+  assert.equal(validateCanaryBrowserTlsSecurity({ ...browserTls, subjectName: "localhost", protocol: "TLS 1.2" }, { ...trustedTls, protocol: "Tls12" }).valid, true);
+  const rejectedMutants = [
+    [{ ...browserTls, subjectName: "example.invalid" }, trustedTls, "wrong browser common name"],
+    [{ ...browserTls, issuer: "Example Authority" }, trustedTls, "wrong browser issuer"],
+    [{ ...browserTls, issuer: "" }, trustedTls, "missing browser issuer"],
+    [{ ...browserTls, protocol: "TLS 1.1" }, trustedTls, "wrong browser protocol"],
+    [{ ...browserTls, protocol: undefined }, trustedTls, "missing browser protocol"],
+    [browserTls, { ...trustedTls, subjectName: "" }, "missing independent localhost identity"],
+    [browserTls, { ...trustedTls, issuer: "Example Authority" }, "wrong independent issuer"],
+    [browserTls, { ...trustedTls, issuer: "" }, "missing independent issuer"],
+    [browserTls, { ...trustedTls, sha256: "not-a-sha" }, "wrong independent leaf hash"],
+    [browserTls, { ...trustedTls, sha256: "" }, "missing independent leaf hash"],
+    [browserTls, { ...trustedTls, protocol: "Tls11" }, "wrong independent protocol"],
+    [browserTls, { ...trustedTls, protocol: undefined }, "missing independent protocol"],
+  ];
+  for (const [browser, os, label] of rejectedMutants) {
+    assert.equal(validateCanaryBrowserTlsSecurity(browser, os).valid, false, label);
+  }
+  assert.equal(validateCanaryBrowserTlsSecurity(null, trustedTls).valid, false);
+});
+
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
   const args = canaryBrowserArguments("C:\\runner-temp\\mq-profile");
   assert.equal(validateCanaryBrowserArguments(args).valid, true);
@@ -497,6 +523,7 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
+  assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
   assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
   assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);

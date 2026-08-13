@@ -42,6 +42,20 @@ export function trustedTlsInspectionScript() {
   ].join(";");
 }
 
+export function validateCanaryBrowserTlsSecurity(security, trustedTls) {
+  const issues = [];
+  if (!security || typeof security !== "object") issues.push("Playwright returned no HTTPS security details");
+  const browserSubject = String(security?.subjectName || "");
+  if (browserSubject !== "" && browserSubject !== "localhost") issues.push("Playwright reported an unexpected certificate common name");
+  if (!/Caddy Local Authority/iu.test(String(security?.issuer || ""))) issues.push("Playwright did not report the disposable Caddy issuer");
+  if (!["TLS 1.2", "TLS 1.3"].includes(security?.protocol)) issues.push("Playwright did not report TLS 1.2 or 1.3");
+  if (trustedTls?.subjectName !== "localhost") issues.push("The independent OS TLS probe did not validate the localhost DNS identity");
+  if (!/Caddy Local Authority/iu.test(String(trustedTls?.issuer || ""))) issues.push("The independent OS TLS probe did not report the disposable Caddy issuer");
+  if (!/^[a-f0-9]{64}$/u.test(String(trustedTls?.sha256 || ""))) issues.push("The independent OS TLS probe did not hash the leaf certificate");
+  if (!["Tls12", "Tls13"].includes(trustedTls?.protocol)) issues.push("The independent OS TLS probe did not negotiate TLS 1.2 or 1.3");
+  return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
+}
+
 export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
     throw new TypeError("Canary listener port must be an unprivileged TCP port.");
