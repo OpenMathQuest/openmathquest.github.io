@@ -6,7 +6,11 @@ const CACHE_NAME = "math-quest-static-v1.0.0-beta.5";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
 const RELEASE_MANIFEST_SHA256 = "43352232bb5a06711f107f956fb311f6ff1f45e37147fb1e38f6663a41d7ec94";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
-const STAGING_CACHE_NAME = `${CACHE_STORAGE_NAME}-staging`;
+function freshStagingCacheName() {
+  const nonce = new Uint8Array(16);
+  crypto.getRandomValues(nonce);
+  return `${CACHE_STORAGE_NAME}-${Array.from(nonce, (value) => value.toString(16).padStart(2, "0")).join("")}-staging`;
+}
 const APP_ENTRY_PATHS = new Set([
   new URL("./", self.registration.scope).pathname,
   new URL("./index.html", self.registration.scope).pathname,
@@ -205,8 +209,8 @@ async function cacheContainsExactShell(cache, manifest) {
 
 async function populateExactCacheOnce() {
   const { manifest, response: manifestResponse } = await fetchManifestFromNetwork();
-  await caches.delete(STAGING_CACHE_NAME);
-  const staging = await caches.open(STAGING_CACHE_NAME);
+  const stagingCacheName = freshStagingCacheName();
+  const staging = await caches.open(stagingCacheName);
   let targetKnownInvalid = false;
   try {
     await staging.put(RELEASE_MANIFEST_URL, manifestResponse.clone());
@@ -250,7 +254,7 @@ async function populateExactCacheOnce() {
     throw error;
   } finally {
     try {
-      await caches.delete(STAGING_CACHE_NAME);
+      await caches.delete(stagingCacheName);
     } catch {
       // A leftover staging cache is inert and can be cleaned on activation.
     }
@@ -401,14 +405,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     await requireExactInstalledShell();
-    try {
-      const names = await caches.keys();
-      if (names.includes(STAGING_CACHE_NAME)) await caches.delete(STAGING_CACHE_NAME);
-    } catch {
-      // Staging cleanup is best effort and never touches localStorage progress.
-      // Prior release caches remain available to older open tabs until those
-      // tabs are deliberately reloaded or closed by their grown-up.
-    }
+    // Each install owns and removes its nonce-bound staging cache. Prior
+    // release caches remain available to older open tabs until their grown-up
+    // deliberately reloads or closes them.
   })());
 });
 

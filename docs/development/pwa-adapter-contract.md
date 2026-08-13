@@ -102,6 +102,10 @@ observes that lifecycle instead of starting a competing
 `registration.update()`. This keeps the detached cache transaction
 single-writer and prevents one candidate installation from deleting or
 replacing another candidate's staging cache.
+Each worker installation also uses a fresh, private nonce-bound staging-cache
+name and removes only that cache in its own `finally` path. Two browser worker
+instances can therefore install identical candidate bytes without deleting or
+reading one another's incomplete staging transaction.
 
 To accept an update:
 
