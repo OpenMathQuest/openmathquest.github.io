@@ -41,6 +41,7 @@ import {
   trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
   validateCanaryBrowserTlsSecurity,
+  validateCanaryRootScopeProof,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
@@ -1060,8 +1061,11 @@ async function main() {
     }, "Edge trusted Caddy's disposable localhost certificate with no insecure browser flags.");
 
     await checkedStep(checks, "ROOT_SCOPE_EXACT", async () => {
+      const manifestRecord = snapshots.beta1.files.get("/manifest.webmanifest");
+      assert.ok(manifestRecord);
+      const manifest = JSON.parse(manifestRecord.bytes.toString("utf8"));
       const scope = await boundedPageEvaluate(beta1Page, context, profilePath, async () => {
-        const manifest = await fetch("./manifest.webmanifest", { cache: "no-store" }).then((response) => response.json());
+        const manifestLink = document.querySelector('link[rel="manifest"]');
         const registration = await new Promise((resolve, reject) => {
           const timer = setTimeout(() => reject(new Error("Beta 1 service-worker readiness timed out.")), 20_000);
           navigator.serviceWorker.ready.then(
@@ -1069,9 +1073,10 @@ async function main() {
             (error) => { clearTimeout(timer); reject(error); },
           );
         });
-        return { id: manifest.id, startUrl: manifest.start_url, manifestScope: manifest.scope, workerScope: registration.scope };
+        return { manifestHref: manifestLink?.href || "", workerScope: registration.scope };
       });
-      assert.deepEqual(scope, { id: "./", startUrl: "./", manifestScope: "./", workerScope: origin });
+      const scopeProof = validateCanaryRootScopeProof({ manifest, ...scope, origin });
+      assert.equal(scopeProof.valid, true, scopeProof.issues.join("; "));
     }, "Manifest and service-worker scope remained the exact same-origin root scope.");
 
     await checkedStep(checks, "BETA1_INSTALL_CACHE_COMPLETE", async () => {
