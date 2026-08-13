@@ -56,6 +56,25 @@ export function validateCanaryBrowserTlsSecurity(security, trustedTls) {
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
 }
 
+export function validateCanaryRootScopeProof({ manifest, manifestHref, workerScope, origin }) {
+  const issues = [];
+  let root = null;
+  try {
+    root = new URL(origin);
+  } catch {
+    issues.push("The canary origin is invalid");
+  }
+  if (root && (root.protocol !== "https:" || root.hostname !== "localhost" || root.pathname !== "/" || root.search !== "" || root.hash !== "")) {
+    issues.push("The canary origin is not the exact trusted localhost HTTPS root");
+  }
+  if (manifest?.id !== "./" || manifest?.start_url !== "./" || manifest?.scope !== "./") {
+    issues.push("The exact Git manifest bytes do not declare root-relative id, start URL, and scope");
+  }
+  if (root && manifestHref !== new URL("manifest.webmanifest", root).href) issues.push("The rendered manifest link does not target the same-origin root manifest");
+  if (root && workerScope !== root.href) issues.push("The live service-worker registration does not control the exact origin root");
+  return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
+}
+
 export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
     throw new TypeError("Canary listener port must be an unprivileged TCP port.");

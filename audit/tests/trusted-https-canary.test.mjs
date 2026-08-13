@@ -39,6 +39,7 @@ import {
   trustedTlsInspectionScript,
   validateCanaryBrowserArguments,
   validateCanaryBrowserTlsSecurity,
+  validateCanaryRootScopeProof,
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
@@ -428,6 +429,29 @@ test("SAN-only Caddy certificates retain independent localhost proof when Playwr
   assert.equal(validateCanaryBrowserTlsSecurity(null, trustedTls).valid, false);
 });
 
+test("root scope uses exact Git manifest bytes and rendered registration state without a CSP-blocked page fetch", () => {
+  const proof = {
+    manifest: { id: "./", start_url: "./", scope: "./" },
+    manifestHref: "https://localhost:49152/manifest.webmanifest",
+    workerScope: "https://localhost:49152/",
+    origin: "https://localhost:49152/",
+  };
+  assert.equal(validateCanaryRootScopeProof(proof).valid, true);
+  for (const mutant of [
+    { manifest: { ...proof.manifest, id: "/other" } },
+    { manifest: { ...proof.manifest, start_url: "/other" } },
+    { manifest: { ...proof.manifest, scope: "/other" } },
+    { manifestHref: "https://localhost:49152/other.webmanifest" },
+    { workerScope: "https://localhost:49152/sub/" },
+    { origin: "http://localhost:49152/", manifestHref: "http://localhost:49152/manifest.webmanifest", workerScope: "http://localhost:49152/" },
+    { origin: "https://example.invalid:49152/", manifestHref: "https://example.invalid:49152/manifest.webmanifest", workerScope: "https://example.invalid:49152/" },
+    { origin: "https://localhost:49152/sub/", manifestHref: "https://localhost:49152/sub/manifest.webmanifest", workerScope: "https://localhost:49152/sub/" },
+    { origin: "https://localhost:49152/?query=1", manifestHref: "https://localhost:49152/manifest.webmanifest", workerScope: "https://localhost:49152/?query=1" },
+    { origin: "https://localhost:49152/#fragment", manifestHref: "https://localhost:49152/manifest.webmanifest", workerScope: "https://localhost:49152/#fragment" },
+    { origin: "not a URL", manifestHref: "", workerScope: "" },
+  ]) assert.equal(validateCanaryRootScopeProof({ ...proof, ...mutant }).valid, false);
+});
+
 test("browser launch arguments block external resolution and forbid TLS bypass", () => {
   const args = canaryBrowserArguments("C:\\runner-temp\\mq-profile");
   assert.equal(validateCanaryBrowserArguments(args).valid, true);
@@ -524,6 +548,8 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
   assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
   assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
+  assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
+  assert.doesNotMatch(runnerText, /fetch\("\.\/manifest\.webmanifest"/u);
   assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
   assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
   assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
