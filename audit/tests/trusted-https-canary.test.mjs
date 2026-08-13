@@ -6,6 +6,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import {
+  activateCanaryHomeUpdate,
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
@@ -32,6 +33,7 @@ import {
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
+  openCanaryInstallHelp,
   parseTrustedHttpsCanaryEvidence,
   profileProcessSetSha256,
   recoverAndDrainOperation,
@@ -41,6 +43,7 @@ import {
   validateCanaryBrowserArguments,
   validateCanaryBrowserTlsSecurity,
   validateCanaryRootScopeProof,
+  waitForCanaryHomeUpdate,
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
@@ -525,6 +528,53 @@ test("teardown executes every cleanup in reverse order and preserves failures", 
 
 });
 
+test("canary activates updates directly on Home and opens installation help only through the grown-up path", async () => {
+  const state = { screen: "home", dialog: false, requestedVersion: null, actions: [] };
+  const visible = (selector) => selector === '[data-action="pwa-check"]'
+    ? state.screen === "home"
+    : selector === '[data-action="pwa-apply"]'
+      ? state.screen === "home"
+    : selector === '[data-action="grown"]'
+      ? state.screen === "home"
+      : selector === '[data-action="install-help"]'
+        ? state.screen === "grown"
+        : selector === "[data-pwa-dialog-backdrop]"
+          ? state.dialog
+          : false;
+  const page = {
+    async waitForFunction(_predicate, version) { state.requestedVersion = version; },
+    locator(selector) {
+      return {
+        first() { return this; },
+        async isVisible() { return visible(selector); },
+        async waitFor() {
+          if (!visible(selector)) throw new Error(`fixture control is not visible: ${selector}`);
+        },
+        async click() {
+          if (!visible(selector)) throw new Error(`fixture control cannot be activated: ${selector}`);
+          state.actions.push(selector);
+          if (selector === '[data-action="grown"]') state.screen = "grown";
+          if (selector === '[data-action="install-help"]') state.dialog = true;
+        },
+      };
+    },
+  };
+
+  await waitForCanaryHomeUpdate(page, "1.0.0-beta.5", 25);
+  assert.equal(state.requestedVersion, "1.0.0-beta.5");
+  assert.deepEqual(state.actions, []);
+  state.dialog = true;
+  await assert.rejects(activateCanaryHomeUpdate(page, 25), /directly on Home/u);
+  assert.deepEqual(state.actions, []);
+  state.dialog = false;
+  await activateCanaryHomeUpdate(page, 25);
+  assert.deepEqual(state.actions, ['[data-action="pwa-apply"]']);
+  state.actions.length = 0;
+  await openCanaryInstallHelp(page, 25);
+  assert.deepEqual(state.actions, ['[data-action="grown"]', '[data-action="install-help"]']);
+  assert.equal(state.dialog, true);
+});
+
 test("canary checks emit progress markers and bind open-ended waits", async () => {
   assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
   const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
@@ -575,6 +625,11 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
   assert.doesNotMatch(runnerText, /fetch\("\.\/manifest\.webmanifest"/u);
   assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
+  assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.5"\)/u);
+  assert.match(runnerText, /activateCanaryHomeUpdate\(candidatePage\)/u);
+  assert.match(runnerText, /openCanaryInstallHelp\(candidatePage\)/u);
+  assert.doesNotMatch(runnerText, /candidatePage\.locator\('\[data-action="pwa-apply"\]'\)/u);
+  assert.doesNotMatch(runnerText, /async function waitForCandidateHome|async function openInstallHelp/u);
   assert.match(runnerText, /const answer = question\.inputClass === "SELECTION"\s*\? gradedSelectionAnswer\(question, E\.gradeAnswer\)\s*:\s*String\(question\.answer\.value\)/u);
   assert.match(runnerText, /E\.submitAnswer\(question, answer,/u);
   assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
@@ -596,19 +651,20 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
 });
 
 test("CI-only toolchain is closed, pinned, manual, private, fresh, and absent from the release shell", async () => {
-  const [packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText] = await Promise.all([
+  const [packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, canaryLibraryText, validatorText, builderText, releaseShellText, serviceWorkerText] = await Promise.all([
     read("package.json"),
     read("package-lock.json"),
     read("audit/install-reviewed-ci-dependencies.ps1"),
     read("audit/run-trusted-https-canary.ps1"),
     read(".github/workflows/trusted-https-canary.yml"),
     read("audit/run-trusted-https-canary.mjs"),
+    read("audit/lib/trusted-https-canary.mjs"),
     read("audit/validate-trusted-https-canary.mjs"),
     read("tools/build-pwa-release-manifest.mjs"),
     read("release-shell-v1.json"),
     read("sw.js"),
   ]);
-  const input = { packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, validatorText, builderText, releaseShellText, serviceWorkerText };
+  const input = { packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, canaryLibraryText, validatorText, builderText, releaseShellText, serviceWorkerText };
   assert.deepEqual(trustedHttpsCanarySupplyChainFindings(input), []);
   assert.deepEqual(trustedHttpsCanarySupplyChainMutationFailures(input), []);
   for (const id of TRUSTED_HTTPS_CANARY_CHECK_IDS) assert.match(runnerText, new RegExp(`"${id}"`, "u"), id);

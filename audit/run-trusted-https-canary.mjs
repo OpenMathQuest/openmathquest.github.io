@@ -11,6 +11,7 @@ import {
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
+  activateCanaryHomeUpdate,
   beta1GradedSelectionAnswer,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
   LOOPBACK_LISTENER_QUERY_SCRIPT,
@@ -33,6 +34,7 @@ import {
   canaryBrowserArguments,
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
+  openCanaryInstallHelp,
   profileProcessSetSha256,
   recoverAndDrainOperation,
   runCanaryTeardown,
@@ -43,6 +45,7 @@ import {
   validateCanaryBrowserArguments,
   validateCanaryBrowserTlsSecurity,
   validateCanaryRootScopeProof,
+  waitForCanaryHomeUpdate,
   waitForExactLoopbackListener,
 } from "./lib/trusted-https-canary.mjs";
 
@@ -804,17 +807,6 @@ async function caddyAccessLogProof(logPath, backendRequests) {
   return hashFileBytes(Buffer.from(`${JSON.stringify(caddyRows)}\n`, "utf8"));
 }
 
-async function waitForCandidateHome(page) {
-  await page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.5", null, { timeout: 30_000 });
-  await page.locator('[data-action="install-help"]').first().waitFor({ state: "visible", timeout: 30_000 });
-}
-
-async function openInstallHelp(page) {
-  const dialog = page.locator('[data-pwa-dialog-backdrop]');
-  if (!await dialog.isVisible().catch(() => false)) await page.locator('[data-action="install-help"]').first().click();
-  await dialog.waitFor({ state: "visible", timeout: 10_000 });
-}
-
 async function exactActiveReadiness(page, snapshots, persistentContext, profilePath) {
   const value = await boundedPageEvaluate(page, persistentContext, profilePath, () => new Promise((resolve, reject) => {
     const worker = navigator.serviceWorker.controller;
@@ -1159,7 +1151,7 @@ async function main() {
 
     const candidatePage = await boundedBrowserOperation(context.newPage(), context, profilePath, "Playwright candidate page creation");
     await candidatePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await waitForCandidateHome(candidatePage);
+    await waitForCanaryHomeUpdate(candidatePage, "1.0.0-beta.5");
 
     await checkedStep(checks, "CANDIDATE_WAITING_CACHE_READY", async () => {
       await candidatePage.waitForFunction(async (prefix) => {
@@ -1182,15 +1174,12 @@ async function main() {
       };
       candidatePage.on("framenavigated", recordCandidateNavigation);
       beta1Page.on("framenavigated", recordBeta1Navigation);
-      await openInstallHelp(candidatePage);
-      const apply = candidatePage.locator('[data-action="pwa-apply"]');
-      await apply.waitFor({ state: "visible", timeout: 30_000 });
-      await apply.click();
+      await activateCanaryHomeUpdate(candidatePage);
       await candidatePage.waitForFunction(async () => {
         const registration = await navigator.serviceWorker.getRegistration("./");
         return Boolean(navigator.serviceWorker.controller) && registration?.waiting === null;
       }, null, { timeout: 30_000 });
-      await waitForCandidateHome(candidatePage);
+      await waitForCanaryHomeUpdate(candidatePage, "1.0.0-beta.5");
       await candidatePage.waitForFunction((priorTimeOrigin) => performance.timeOrigin !== priorTimeOrigin, initialDocumentIdentity.timeOrigin, { timeout: 30_000 });
       candidatePage.off("framenavigated", recordCandidateNavigation);
       assert.deepEqual(candidateMainFrameNavigations, [expectedCandidateReloadUrl]);
@@ -1229,7 +1218,7 @@ async function main() {
     }, "Migration committed schema 3 while preserving the complete approved schema-2 projection, including distinctive settings, skill evidence/spacing, counts, logs, feedback, cold window, latency, and seed values.");
 
     await checkedStep(checks, "CANDIDATE_ACTIVE_CACHE_READY", async () => {
-      await openInstallHelp(candidatePage);
+      await openCanaryInstallHelp(candidatePage);
       await candidatePage.locator('[data-action="pwa-retry"]').click();
       await candidatePage.locator('[data-pwa-status]').filter({ hasText: "Ready for an offline check" }).waitFor({ state: "visible", timeout: 20_000 });
       const state = await boundedPageEvaluate(candidatePage, context, profilePath, () => ({ controller: navigator.serviceWorker.controller?.scriptURL || null }));
@@ -1270,7 +1259,7 @@ async function main() {
       assert.equal(await portAccepting(stoppedBackendPort), false);
       const offlineResponse = await offlinePage.goto(origin, { waitUntil: "domcontentloaded", timeout: 20_000 });
       assert.equal(offlineResponse?.fromServiceWorker(), true);
-      await waitForCandidateHome(offlinePage);
+      await waitForCanaryHomeUpdate(offlinePage, "1.0.0-beta.5");
       assert.equal(await boundedPageEvaluate(offlinePage, context, profilePath, () => navigator.serviceWorker.controller?.scriptURL || null), `${origin}sw.js`);
       const offlineReadiness = await exactActiveReadiness(offlinePage, snapshots, context, profilePath);
       offlineCacheProof = await inspectExactCandidateCache(offlinePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
@@ -1305,7 +1294,7 @@ async function main() {
         return (await caches.open(name)).delete("./index.html", { ignoreSearch: true });
       }, CANDIDATE_CACHE_PREFIX);
       assert.equal(deleted, true);
-      await openInstallHelp(activePage);
+      await openCanaryInstallHelp(activePage);
       await activePage.locator('[data-action="pwa-retry"]').click();
       await activePage.locator('[data-pwa-status]').filter({ hasText: "Recovery needed" }).waitFor({ state: "visible", timeout: 20_000 });
       await activePage.locator('[data-action="pwa-repair"]').waitFor({ state: "visible", timeout: 10_000 });

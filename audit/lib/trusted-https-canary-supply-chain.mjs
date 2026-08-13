@@ -226,8 +226,7 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "strict_sni_host on",
     "bind 127.0.0.1",
     "server.listen(requestedPort, \"127.0.0.1\"",
-    "[data-action=\"install-help\"]",
-    "[data-action=\"pwa-apply\"]",
+    "activateCanaryHomeUpdate(candidatePage)",
     "[data-action=\"pwa-retry\"]",
     "[data-action=\"pwa-repair\"]",
     "v1.0.0-beta.1",
@@ -245,6 +244,19 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "await beta1Page.reload",
   ]) {
     if (!runner.includes(required)) findings.push(`audit/run-trusted-https-canary.mjs: missing required production-path canary control: ${required}`);
+  }
+  const canaryLibrary = String(input.canaryLibraryText);
+  for (const required of [
+    "waitForCanaryHomeUpdate",
+    "[data-action=\"pwa-check\"]",
+    "activateCanaryHomeUpdate",
+    "[data-action=\"pwa-apply\"]",
+    "Canary update activation must begin directly on Home",
+    "openCanaryInstallHelp",
+    "[data-action=\"grown\"]",
+    "[data-action=\"install-help\"]",
+  ]) {
+    if (!canaryLibrary.includes(required)) findings.push(`audit/lib/trusted-https-canary.mjs: missing required production-path canary control: ${required}`);
   }
   if (/(?:--ignore-certificate-errors|--allow-insecure-localhost|--unsafely-treat-insecure-origin-as-secure|--no-sandbox)/u.test(runner)) {
     findings.push("audit/run-trusted-https-canary.mjs: insecure browser flags are forbidden");
@@ -283,6 +295,8 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed certificate absence proof", "wrapperText", (text) => text.replace("Fallback certificate removal did not remove the exact canary root.", "Certificate cleanup assumed."), /missing crash-safe cleanup control/u);
   run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
   run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
+  run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
+  run("removed Home update journey control", "canaryLibraryText", (text) => text.replaceAll('[data-action="pwa-check"]', '[data-action="obsolete-update"]'), /missing required production-path canary control/u);
   run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);
   return failures;
 }

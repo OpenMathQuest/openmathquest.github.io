@@ -88,6 +88,44 @@ export function beta1GradedSelectionAnswer(question, gradeAnswer) {
   return Object.freeze({ optionId: matches[0].optionId });
 }
 
+export async function waitForCanaryHomeUpdate(page, productVersion, timeoutMs = 30_000) {
+  if (!page || typeof page.waitForFunction !== "function" || typeof page.locator !== "function") {
+    throw new TypeError("Canary Home observation requires a Playwright page.");
+  }
+  await page.waitForFunction(
+    (version) => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === version,
+    productVersion,
+    { timeout: timeoutMs },
+  );
+  await page.locator('[data-action="pwa-check"]').first().waitFor({ state: "visible", timeout: timeoutMs });
+}
+
+export async function activateCanaryHomeUpdate(page, timeoutMs = 30_000) {
+  if (!page || typeof page.locator !== "function") throw new TypeError("Canary Home activation requires a Playwright page.");
+  const dialog = page.locator("[data-pwa-dialog-backdrop]");
+  if (await dialog.isVisible().catch(() => false)) throw new Error("Canary update activation must begin directly on Home, not inside installation help.");
+  await page.locator('[data-action="pwa-check"]').first().waitFor({ state: "visible", timeout: timeoutMs });
+  const apply = page.locator('[data-action="pwa-apply"]').first();
+  await apply.waitFor({ state: "visible", timeout: timeoutMs });
+  await apply.click();
+}
+
+export async function openCanaryInstallHelp(page, timeoutMs = 10_000) {
+  if (!page || typeof page.locator !== "function") throw new TypeError("Canary installation-help observation requires a Playwright page.");
+  const dialog = page.locator("[data-pwa-dialog-backdrop]");
+  if (!await dialog.isVisible().catch(() => false)) {
+    const installHelp = page.locator('[data-action="install-help"]').first();
+    if (!await installHelp.isVisible().catch(() => false)) {
+      const grownUpCorner = page.locator('[data-action="grown"]').first();
+      await grownUpCorner.waitFor({ state: "visible", timeout: timeoutMs });
+      await grownUpCorner.click();
+      await installHelp.waitFor({ state: "visible", timeout: timeoutMs });
+    }
+    await installHelp.click();
+  }
+  await dialog.waitFor({ state: "visible", timeout: timeoutMs });
+}
+
 export function loopbackListenerProbeInvocation(port, baseEnv = process.env) {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65_535) {
     throw new TypeError("Canary listener port must be an unprivileged TCP port.");
