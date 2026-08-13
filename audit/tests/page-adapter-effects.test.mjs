@@ -534,8 +534,8 @@ test("only a fully valid exact immutable retired Beta 1 envelope is eligible for
   assert.equal(harness.isRetainedRetiredBeta1Save(null), false);
 });
 
-test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 5 save commits transactionally", async () => {
-  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 5 starts fresh so old mastery is not applied to changed skills.";
+test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 6 save commits transactionally", async () => {
+  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 6 starts fresh so old mastery is not applied to changed skills.";
   const successful = createBeta1MigrationHarness("retained-success");
   assert.equal(successful.harness.status().selectedSource, "BETA1-A");
   assert.equal(successful.harness.status().beta1RetainedCutoverPending, true);
@@ -1195,9 +1195,9 @@ test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mi
   const effects = { requests: [], replyMode: "valid" };
   const harness = evaluateHarness({
     prelude: `
-      const PWA_RELEASE="1.0.0-beta.5";
-      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.5";
-      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.5";
+      const PWA_RELEASE="1.0.0-beta.6";
+      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.6";
+      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.6";
       const PWA_REQUIRED_PATHS=Object.freeze(["./index.html","./PRIVACY.md"]);
       const PWA_ACTIVATION_CHALLENGE_PATTERN=/^[a-f0-9]{64}$/;
       const waiting={

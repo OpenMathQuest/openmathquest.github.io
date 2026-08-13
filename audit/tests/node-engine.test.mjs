@@ -403,6 +403,73 @@ test("MQ-002 keeps exact quantities while each world uses its own countable obje
   assert.equal(engine.gradeAnswer(zero, { touched: [], count: "0" }).correct, true);
 });
 
+test("screen-native early activities expose exact visible sources without revealing their answers", async () => {
+  const { engine } = await sharedEngineSuite();
+  assert.equal(engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION, "question-generator-v6");
+  const seen = new Set();
+  for (let seed = 1; seed <= 12; seed += 1) {
+    for (const [skillId, ordinals] of Object.entries({
+      "MQ-002": [0],
+      "MQ-004": [0, 1, 2],
+      "MQ-008": [0],
+      "MQ-019": [0, 1],
+      "MQ-023": [0, 1, 2],
+      "MQ-025": [0, 1, 2],
+    })) {
+      for (const ordinal of ordinals) {
+        const question = engine.makeQuestion({ skillId, seed, ordinal, eligibleQuestionOrdinal: ordinal, theme: "ocean", representation: "PICTORIAL" });
+        seen.add(question.semanticPromptStringId);
+        const values = question.modelDescriptor.values;
+        if (question.semanticPromptStringId === "question.countSet") {
+          const count = Number(values.items[0].magnitude);
+          assert.equal(values.data.stimulus, true);
+          assert.equal(count, Number(question.answer.value));
+          const response = question.inputMethod === "COUNT_TOUCH"
+            ? { touched: Array.from({ length: count }, (_, index) => `i${index}`), count: String(count) }
+            : { optionId: question.options.find((option) => String(option.value) === String(count))?.optionId };
+          assert.equal(engine.gradeAnswer(question, response).correct, true);
+        } else if (question.semanticPromptStringId === "question.patternVisualNext") {
+          const sequence = String(question.params.pattern).split(/\s+/u).filter(Boolean);
+          const unit = String(question.params.unit).split(/\s+/u).filter(Boolean);
+          assert.deepEqual(sequence, Array.from({ length: sequence.length / unit.length }, () => unit).flat());
+          assert.equal(question.answer.value, unit[sequence.length % unit.length]);
+          assert.equal(values.data.stimulus, true);
+          assert.equal(Object.hasOwn(values, "strategy"), false);
+          assert.equal(engine.gradeAnswer(question, { tokens: [question.answer.value] }).correct, true);
+        } else if (question.semanticPromptStringId === "question.frameNumber") {
+          const frame = values.frames[0];
+          assert.equal(frame.capacity, 10);
+          assert.equal(frame.value, Number(question.answer.value));
+        } else if (question.semanticPromptStringId === "question.makeTenFrame") {
+          const frame = values.frames[0];
+          assert.equal(frame.value + Number(question.answer.value), 10);
+          assert.equal(frame.capacity, 10);
+          assert.equal(Object.hasOwn(values, "strategy"), false, "cold stimulus must not expose the missing addend");
+          assert.equal(Object.hasOwn(frame, "label"), false, "visible labels must come only from registered child strings");
+        } else if (question.semanticPromptStringId === "question.hiddenPart") {
+          const frame = values.frames[0];
+          assert.equal(frame.value + frame.coveredCount, 10);
+          assert.equal(frame.coveredCount, Number(question.answer.value));
+          assert.equal(Object.hasOwn(values, "strategy"), false, "covered frame must not expose the hidden count as an equation");
+          assert.equal(Object.hasOwn(frame, "label"), false, "visible labels must come only from registered child strings");
+        } else if (question.semanticPromptStringId === "question.numberOrder" || question.semanticPromptStringId === "question.numberLeast") {
+          const shown = [question.params.a, question.params.b, question.params.c].map(Number);
+          const expected = question.semanticPromptStringId === "question.numberLeast" ? Math.min(...shown) : Math.max(...shown);
+          assert.equal(Number(question.answer.value), expected);
+          assert.equal(new Set(shown).size, 3);
+        }
+        if (question.inputClass === "SELECTION") {
+          const correct = question.options.filter((option) => engine.gradeAnswer(question, { optionId: option.optionId }).correct);
+          assert.equal(correct.length, 1, `${question.questionId}: activity must have exactly one correct choice`);
+        }
+      }
+    }
+  }
+  for (const id of ["question.countSet", "question.patternVisualNext", "question.frameNumber", "question.makeTenFrame", "question.hiddenPart", "question.numberOrder", "question.numberLeast"]) {
+    assert.equal(seen.has(id), true, `deterministic activity cycle omitted ${id}`);
+  }
+});
+
 test("MQ-006 uses two varied pictorial activities with a large truthful duration contrast", async () => {
   const { engine } = await sharedEngineSuite();
   const positions = new Set();
@@ -835,26 +902,26 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   assert.deepEqual(clone(migratedActive.state.sessionLog), preservedSessionHistory);
   assert.deepEqual(clone(migratedActive.state.feedbackHistory), preservedFeedbackHistory);
 
-  const priorV4Active = clone(populatedRoot);
-  const priorV4Questions = [
-    priorV4Active.activeSession.uiState.question,
-    ...(priorV4Active.activeSession.uiState.choiceCandidates || []),
+  const priorV5Active = clone(populatedRoot);
+  const priorV5Questions = [
+    priorV5Active.activeSession.uiState.question,
+    ...(priorV5Active.activeSession.uiState.choiceCandidates || []),
   ].filter(Boolean);
-  assert.ok(priorV4Questions.length > 0);
-  for (const question of priorV4Questions) {
-    question.generatorContractVersion = "question-generator-v4";
+  assert.ok(priorV5Questions.length > 0);
+  for (const question of priorV5Questions) {
+    question.generatorContractVersion = "question-generator-v5";
   }
-  const priorV4Progress = clone(priorV4Active.skills);
-  const priorV4SessionHistory = clone(priorV4Active.sessionLog);
-  const priorV4FeedbackHistory = clone(priorV4Active.feedbackHistory);
-  const migratedPriorV4 = engine.loadState(JSON.stringify(priorV4Active), 22_001);
-  assert.equal(migratedPriorV4.ok, true, migratedPriorV4.error);
-  assert.equal(migratedPriorV4.migrated, true);
-  assert.equal(migratedPriorV4.state.activeSession, null);
-  assert.equal(migratedPriorV4.state.previewLevel, null);
-  assert.deepEqual(clone(migratedPriorV4.state.skills), priorV4Progress);
-  assert.deepEqual(clone(migratedPriorV4.state.sessionLog), priorV4SessionHistory);
-  assert.deepEqual(clone(migratedPriorV4.state.feedbackHistory), priorV4FeedbackHistory);
+  const priorV5Progress = clone(priorV5Active.skills);
+  const priorV5SessionHistory = clone(priorV5Active.sessionLog);
+  const priorV5FeedbackHistory = clone(priorV5Active.feedbackHistory);
+  const migratedPriorV5 = engine.loadState(JSON.stringify(priorV5Active), 22_001);
+  assert.equal(migratedPriorV5.ok, true, migratedPriorV5.error);
+  assert.equal(migratedPriorV5.migrated, true);
+  assert.equal(migratedPriorV5.state.activeSession, null);
+  assert.equal(migratedPriorV5.state.previewLevel, null);
+  assert.deepEqual(clone(migratedPriorV5.state.skills), priorV5Progress);
+  assert.deepEqual(clone(migratedPriorV5.state.sessionLog), priorV5SessionHistory);
+  assert.deepEqual(clone(migratedPriorV5.state.feedbackHistory), priorV5FeedbackHistory);
 
   const malformedCurrentActive = clone(populatedRoot);
   malformedCurrentActive.activeSession.uiState.question.inputClass = "BROKEN";

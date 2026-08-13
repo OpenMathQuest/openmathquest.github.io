@@ -22,7 +22,7 @@ const EXPECTED_SIGNATURE_TEXT = `
 MQ-001 pair-each-object=question.pairObjects/visualPrompt
 MQ-002 count-a-set-to-three=question.countSet/visualPrompt
 MQ-003 compare-tiny-sets=question.compare/comparison
-MQ-004 continue-an-ab-repeat=question.patternNext/visualPrompt
+MQ-004 continue-an-ab-repeat=question.patternNext/visualPrompt+question.patternVisualNext/visualPrompt
 MQ-005 match-familiar-shapes=question.shape/visualPrompt
 MQ-006 direct-compare=question.eventDuration/visualPrompt
 MQ-007 sort=question.sortRule/attributeSet
@@ -37,13 +37,13 @@ MQ-015 share-small-sets-fairly=question.fairShare/array
 MQ-016 copy-a-three-part-repeat=question.copyPatternAction/visualPrompt
 MQ-017 place-it-by-a-landmark=question.landmarkPosition/visualPrompt
 MQ-018 record-a-two-group-sort=question.sortRecord/visualPrompt
-MQ-019 connect-numbers-zero-to-ten=question.numberConnection/visualPrompt
+MQ-019 connect-numbers-zero-to-ten=question.frameNumber/tenFrame+question.numberConnection/visualPrompt
 MQ-020 recognize-structured-set-to-five=question.structuredQuantity/visualPrompt
 MQ-021 compare-collections-to-ten=question.compare/comparison
 MQ-022 recall-parts-of-five=question.missingPart/numberBond
-MQ-023 build-and-break-ten=question.missingPart/numberBond
+MQ-023 build-and-break-ten=question.hiddenPart/tenFrame+question.makeTenFrame/tenFrame+question.missingPart/numberBond
 MQ-024 classify-flat-shape=question.shapeProperty/attributeSet,classify-solid=question.shapeProperty/attributeSet
-MQ-025 order-numbers-zero-to-twenty=question.numberBetween/numberLine
+MQ-025 order-numbers-zero-to-twenty=question.numberBetween/numberLine+question.numberLeast/visualPrompt+question.numberOrder/visualPrompt
 MQ-026 see-ten-inside-teen-numbers=question.teenBuild/tenFrame
 MQ-027 find-one-more-or-less=question.oneMoreLess/numberLine
 MQ-028 write-joining-equations-to-ten=question.addition/visualPrompt+question.appliedAddition/visualPrompt
@@ -582,7 +582,18 @@ function validateSemanticMath(question) {
     requireCondition(question.answer.value === `${p.quotient} R ${p.remainder}`, `${question.skillId}: quotient/remainder answer text is inconsistent`);
   }
   else if (id === "question.pairObjects") expect(Math.min(Number(p.leftCount ?? p.count), Number(p.rightCount ?? p.count)));
-  else if (id === "question.countSet") expect(String(p.marks || "").split(/\s+/u).filter(Boolean).length);
+  else if (id === "question.countSet") {
+    const shown = question.modelDescriptor.values.items?.[0];
+    requireCondition(shown?.kind === "counterSet" && Number.isInteger(Number(shown.magnitude)), `${question.skillId}: count-the-group source is not a visible object set`);
+    expect(Number(shown.magnitude));
+  }
+  else if (id === "question.patternVisualNext") {
+    const sequence = String(p.pattern || "").split(/\s+/u).filter(Boolean);
+    const unit = String(p.unit || "").split(/\s+/u).filter(Boolean);
+    requireCondition(unit.length === 2 && unit[0] !== unit[1], `${question.skillId}: visual AB unit is not two distinct shapes`);
+    requireCondition(sequence.length >= 4 && sequence.every((value, index) => value === unit[index % unit.length]), `${question.skillId}: visual AB sequence does not repeat its unit`);
+    requireCondition(String(question.answer.value) === unit[sequence.length % unit.length], `${question.skillId}: visual pattern answer is not independently derived from the repeat`);
+  }
   else if (id === "question.structuredQuantity") {
     const pattern = String(p.pattern);
     const filled = (pattern.match(/●/gu) || []).length;
@@ -594,10 +605,24 @@ function validateSemanticMath(question) {
     expect(filled);
   }
   else if (id === "question.orderSetConnection" || id === "question.numberConnection") expect(String(p.marks || "").split(/\s+/u).filter(Boolean).length);
+  else if (id === "question.frameNumber") {
+    const frame = question.modelDescriptor.values.frames?.[0];
+    requireCondition(Number(frame?.capacity) === 10, `${question.skillId}: number frame does not have ten cells`);
+    expect(Number(frame?.value));
+  }
   else if (id === "question.numberBetween") expect((Number(p.before) + Number(p.after)) / 2);
   else if (id === "question.oneMoreLess") expect(Number(p.number) + (p.direction === "more" ? 1 : -1));
   else if (id === "question.secondPartition") expect(Number(p.whole) - Number(p.secondA));
   else if (id === "question.missingPart") expect(Number(p.whole) - Number(p.part));
+  else if (id === "question.makeTenFrame" || id === "question.hiddenPart") {
+    expect(10 - Number(p.shown));
+    const values = question.modelDescriptor.values;
+    const frame = values.frames?.[0];
+    requireCondition(Number(frame?.capacity) === 10 && Number(frame?.value) === Number(p.shown), `${question.skillId}: ten-frame stimulus does not match the shown part`);
+    requireCondition(!Object.hasOwn(values, "strategy"), `${question.skillId}: cold ten-frame stimulus exposes the missing answer`);
+    requireCondition(!Object.hasOwn(frame || {}, "label"), `${question.skillId}: ten-frame stimulus bypasses the child-string authority`);
+    if (id === "question.hiddenPart") requireCondition(Number(frame?.coveredCount) === 10 - Number(p.shown), `${question.skillId}: opaque cover does not bind the hidden part`);
+  }
   else if (id === "question.missingSubtrahend") expect(Number(p.whole) - Number(p.result));
   else if (id === "question.factFamily") {
     requireCondition(Number(p.a) + Number(p.b) === Number(p.whole), `${question.skillId}: fact family parts do not make whole`);
@@ -621,6 +646,7 @@ function validateSemanticMath(question) {
   }
   else if (id === "question.scaledSurveyVariation") expect(Math.abs(Number(p.first) - Number(p.second)));
   else if (id === "question.numberOrder") expect(Math.max(Number(p.a), Number(p.b), Number(p.c)));
+  else if (id === "question.numberLeast") expect(Math.min(Number(p.a), Number(p.b), Number(p.c)));
   else if (id === "question.scalePlace") expect(Number(p.number) * Number(p.factor));
   else if (id === "question.coinEquivalent") {
     const cents = Number(String(p.secondCoin).replace(/[^\d]/gu, "")) * (String(p.secondCoin).startsWith("$") ? 100 : 1);
@@ -863,7 +889,20 @@ function validateFacetCoverage(engine, skill, questions) {
       return canonical([...question.params.shownLineIds, ...question.params.requiredLineIds]) === canonical(expected);
     }), `${skill.id}: symmetry axes do not match the shown shape`);
   }
-  if (skill.id === "MQ-005") {
+  if (skill.id === "MQ-002" || skill.id === "MQ-008") {
+    requireCondition(ids.size === 1 && ids.has("question.countSet"), `${skill.id}: count-the-group prompt drifted`);
+    requireCondition(questions.every((question) => question.modelDescriptor.values.data?.stimulus === true
+      && question.modelDescriptor.values.data?.count === answerNumber(question)
+      && question.modelDescriptor.values.items?.[0]?.magnitude === answerNumber(question)), `${skill.id}: visible object group does not independently match its answer`);
+  } else if (skill.id === "MQ-004") {
+    requireSet(ids, ["question.patternNext", "question.patternVisualNext"], "screen-native pattern prompt");
+    const visualQuestions = questions.filter((question) => question.semanticPromptStringId === "question.patternVisualNext");
+    requireCondition(visualQuestions.length > 0 && visualQuestions.every((question) => question.params.situationId === "shape-cards"
+      && question.modelDescriptor.values.data?.stimulus === true
+      && question.modelDescriptor.values.items?.[0]?.sequence?.length >= 4
+      && question.inputMethod === "PATTERN_BUILD"
+      && new Set(question.params.tokenChoices).size === 4), `${skill.id}: visual pattern stimulus or choices are incomplete`);
+  } else if (skill.id === "MQ-005") {
     requireSet(values((question) => question.params.shape), skill.constraints.shapes, "shape");
     requireCondition(values((question) => question.params.color).size >= 4, `${skill.id}: colour variation is not exercised`);
     requireSet(values((question) => question.params.size), ["small", "large"], "size");
@@ -916,11 +955,29 @@ function validateFacetCoverage(engine, skill, questions) {
     requireCondition(ids.size === 1 && ids.has("question.sortRecord"), `${skill.id}: sort and one-mark record are not a composite task`);
     requireCondition(questions.every((question) => question.modelDescriptor.values.data?.responses?.length === Number(question.params.circles) + Number(question.params.triangles)), `${skill.id}: displayed collection is not preserved in the record model`);
   } else if (skill.id === "MQ-019") {
-    requireCondition(ids.size === 1 && ids.has("question.numberConnection"), `${skill.id}: name/numeral/position/collection connection is incomplete`);
-    requireCondition(questions.every((question) => question.params.numberWord && question.params.beforeWord && question.modelDescriptor.values.data?.count === answerNumber(question)), `${skill.id}: number-connection facets drift`);
+    requireSet(ids, ["question.numberConnection", "question.frameNumber"], "number/structured-frame prompt");
+    requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.numberConnection").every((question) => question.params.numberWord && question.params.beforeWord && question.modelDescriptor.values.data?.count === answerNumber(question)), `${skill.id}: number-connection facets drift`);
+    requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.frameNumber").every((question) => question.modelDescriptor.values.data?.stimulus === true
+      && question.modelDescriptor.values.frames?.[0]?.capacity === 10
+      && question.modelDescriptor.values.frames?.[0]?.value === answerNumber(question)), `${skill.id}: ten-frame/numeral connection drifts`);
+  } else if (skill.id === "MQ-023") {
+    requireSet(ids, ["question.missingPart", "question.makeTenFrame", "question.hiddenPart"], "part-of-ten activity");
+    requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.makeTenFrame").every((question) => Number(question.params.shown) + answerNumber(question) === 10
+      && question.inputMethod === "PICTURE_CHOICE"
+      && question.modelDescriptor.values.data?.stimulus === true), `${skill.id}: make-ten activity does not complete ten`);
+    requireCondition(questions.filter((question) => question.semanticPromptStringId === "question.hiddenPart").every((question) => Number(question.params.shown) + answerNumber(question) === 10
+      && question.inputMethod === "PICTURE_CHOICE"
+      && question.modelDescriptor.values.frames?.[0]?.coveredCount === answerNumber(question)), `${skill.id}: hidden-part activity does not preserve the ten-cell whole`);
   } else if (skill.id === "MQ-024") {
     requireSet(taskTypes, ["classify-flat-shape", "classify-solid"], "dimension task type");
     requireSet(values((question) => question.params.property), ["3 sides", "4 equal sides", "6 flat faces", "one curved surface and no flat faces"], "visible property");
+  } else if (skill.id === "MQ-025") {
+    requireSet(ids, ["question.numberBetween", "question.numberOrder", "question.numberLeast"], "number-order activity");
+    for (const question of questions.filter((candidate) => candidate.semanticPromptStringId === "question.numberOrder" || candidate.semanticPromptStringId === "question.numberLeast")) {
+      const shown = [Number(question.params.a), Number(question.params.b), Number(question.params.c)];
+      requireCondition(new Set(shown).size === 3 && shown.every((value) => value >= 0 && value <= 20), `${skill.id}: extrema choices are not three distinct in-range numerals`);
+      requireCondition(question.options.length === 3 && question.modelDescriptor.values.data?.stimulus === true, `${skill.id}: extrema activity is not a visible three-choice comparison`);
+    }
   } else if (skill.id === "MQ-033") {
     requireCondition(questions.every((question) => question.params.unitMarked === true
       && question.modelDescriptor.values.data?.unitMarked === true

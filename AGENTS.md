@@ -701,6 +701,45 @@ passes, waivers, device qualification, or independent-review qualification.
 The ordinary bounded independent review required by this repository remains
 separate and does not impersonate the optional six-reviewer cycle.
 
+## Owner-authorized Beta 6 canary and runtime-equivalent evidence successor
+
+On 2026-08-13, the project owner authorized end-to-end publication of
+`v1.0.0-beta.6` and approved the same closed evidence boundary for this release
+line. The trusted-HTTPS canary is mandatory and must produce exact
+`RECONCILED` evidence. The Playwright Deep UX Census is also mandatory because
+Beta 6 is selected by `ALTERNATING_BETA_V1`.
+
+The **Beta 6 qualification commit** is a protected-main commit whose game,
+curriculum, PWA, service-worker, dependency, privacy, licence, deployment, and
+runtime bytes are final. It contains `Status: PENDING` in
+`PUBLICATION_CLEARANCE.md` and `status: PENDING` in
+`audit/browser-runner-evidence-v1.json`. The hosted-Windows observation and
+trusted-HTTPS canary both name this exact qualification commit. The canary must
+validate as `RECONCILED` before clearance is composed.
+
+The **Beta 6 runtime-equivalent evidence successor** is the immediate,
+non-merge, sole child of that qualification commit. Its exact parent-to-child
+Git diff changes only `PUBLICATION_CLEARANCE.md` and
+`audit/browser-runner-evidence-v1.json`. The reviewed canary and hosted-Windows
+artifacts bind the qualification commit; every game, curriculum, PWA,
+service-worker, dependency, privacy, licence, deployment, and runtime byte is
+byte-identical in the successor. The repository-wide public-payload digest
+truthfully changes because the two public evidence records change.
+
+The closed policy name remains
+`RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. The single complete certification
+gauntlet and required Deep UX Census run only on the exact successor. Only that
+successor may be tagged, released, or deployed as Beta 6. A merge, rebase,
+cherry-pick, skipped ancestor, additional changed path, changed runtime byte,
+or mismatched evidence artifact invalidates the boundary and requires a new
+qualification commit.
+
+For Beta 6, the owner declined the optional six-lane physical-device cycle and
+optional six-reviewer cycle. Both remain visible as exact
+`OPTIONAL_NOT_RUN` / `NONE` / zero-count records and make no pass, waiver,
+device-qualification, or independent-review claim. The ordinary bounded
+independent review remains required and separate.
+
 ## Certification framework entry points
 
 Treat the following as one modular certification system and keep their

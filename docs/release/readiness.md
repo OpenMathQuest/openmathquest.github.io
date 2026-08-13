@@ -1,4 +1,4 @@
-# Public Beta 5 release readiness
+# Public Beta 6 release readiness
 
 This document describes the release boundary; it is not publication approval.
 
@@ -16,7 +16,7 @@ When publication is the next intended action, create the qualification commit
 on protected `main` with final game/runtime/PWA bytes and pending clearance
 records. Run the trusted-HTTPS canary and hosted-Windows observation against
 that commit, then create its exact two-file runtime-equivalent evidence
-successor under PB-046. Freeze that successor as the candidate. Run the
+successor under PB-048. Freeze that successor as the candidate. Run the
 complete certification system once against that immutable commit and public
 payload. A clear owner publication instruction
 authorizes the run. If it passes, tag and deploy the same bytes. If it fails or
@@ -92,7 +92,7 @@ generated
   `ImageVersion`; and
 - a `REVIEWED` `audit/browser-runner-evidence-v1.json` tuple that matches both
   that live audit and the exact fields in `PUBLICATION_CLEARANCE.md`.
-- exactly eight reported external release-evidence records: for Beta 5, five
+- exactly eight reported external release-evidence records: for Beta 6, five
   mandatory PASS gates for reconciled trusted-HTTPS canary evidence,
   independent adjudication, complete finding disposition, reviewed
   hosted-Windows evidence, and exact project-owner `PR_PUSH_AUTHORIZED`
@@ -103,7 +103,7 @@ generated
 - a current (already reviewed and not expired) external-evidence window, exact
   evidence digest for every mandatory gate and every completed optional
   cycle, zero open Critical/High findings, zero
-  unaccepted Medium findings, zero unrecorded Low findings, the Beta 5 tag and
+  unaccepted Medium findings, zero unrecorded Low findings, the Beta 6 tag and
   protected-main binding, and the canonical review-bundle digest.
 
 The generated report is intentionally ignored because it contains a run
@@ -128,7 +128,7 @@ binds the qualification commit and its runtime snapshot, while the successor
 validator proves that exact runtime equivalence. The single final certification
 run binds the successor's exact commit and final payload.
 
-The mandatory Beta 5 canary reconciliation, adjudication, finding,
+The mandatory Beta 6 canary reconciliation, adjudication, finding,
 hosted-Windows, and owner-authorization requirements; the visible prerelease
 host deferral; and the separately offered optional physical-device and
 six-reviewer cycles are listed in
@@ -136,16 +136,15 @@ six-reviewer cycles are listed in
 `docs/release/publication-gates.md`. The manual Pages workflow must not be run
 until all mandatory gates are independently completed.
 
-Beta 5 is odd-numbered, so its full Playwright Deep UX Census status is exact
-`NOT_REQUIRED_BY_CADENCE` under `ALTERNATING_BETA_V1`; no complete hosted census
-is a Beta 5 release gate. The local 100-cell mode may run only as a
-non-certifying development benchmark and cannot satisfy or strengthen any
-release claim. Historically, Beta 4 was the first scheduled census release;
-Beta 6 is the next scheduled beta. Neither mode makes a physical-device,
+Beta 6 is even-numbered, so its full Playwright Deep UX Census is mandatory
+under `ALTERNATING_BETA_V1` and must pass on the exact frozen successor. The
+local 100-cell mode remains a non-certifying development benchmark and cannot
+satisfy or strengthen the release claim. Beta 4 was the first scheduled census
+release and Beta 6 is the next. Neither mode makes a physical-device,
 Safari, screen-reader, pronunciation, child-comprehension, or visual-taste
 claim.
 
-For `v1.0.0-beta.5`, the owner declined both optional cycles on 2026-08-12.
+For `v1.0.0-beta.6`, the owner declined both optional cycles on 2026-08-13.
 The clearance consequently retains exact `OPTIONAL_NOT_RUN` fields for the
 six-device and six-reviewer records, and this release will make neither a
 physical-device qualification claim nor an independent-review claim.
@@ -153,7 +152,7 @@ physical-device qualification claim nor an independent-review claim.
 These requirements are now machine-enforced through the closed ordered
 `PUBLICATION_CLEARANCE.md` schema. The ordinary audit predicts and observes
 eight external records (283 total counted results, including 16 direct
-Playwright browser journeys). For Beta 5, five are mandatory PASS gates,
+Playwright browser journeys). For Beta 6, five are mandatory PASS gates,
 including `EXT-CANARY` backed by exact `RECONCILED` evidence; `EXT-HOST` is a
 separately visible `DEFERRED_PRERELEASE`/`DEFERRED` record, and two records are
 optional. A stable release requires affirmative host approval and all six
@@ -170,7 +169,7 @@ does not alter those fields.
 
 Historical Beta 4 evidence remains governed by its one-release
 `OWNER_SKIPPED_BETA4` canary state and `DIRECT_EVIDENCE_SUCCESSOR_V1`. Neither
-may be copied into Beta 5: the skip expired, and PB-046 instead requires
+may be copied into Beta 6: the skip expired, and PB-048 instead requires
 `RECONCILED` canary evidence plus `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`.
 
 The prerelease host deferral is never reported as a pass, waiver, or privacy

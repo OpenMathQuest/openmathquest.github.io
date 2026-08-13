@@ -764,10 +764,16 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
     const roleLabel=value=>String(value??"").replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]+/g," ").trim();
     const s=(id,slots={})=>({
       "aria.mathModel":"Math model",
+      "aria.objectGroup":"Objects in the group: "+slots.items+".",
+      "aria.patternSequence":"Pattern, from left to right: "+slots.items+".",
+      "aria.numberCards":"Number cards: "+slots.items+".",
+      "aria.hiddenFrame":"Ten-cell frame. Showing: "+slots.items+". The remaining cells are covered.",
+      "aria.tenFrameCells":"Ten-frame cells, from left to right: "+slots.cells+".",
       "instruction.physical":"Grown-up: make this with real objects, then choose We made it.",
       "instruction.physicalModel":"Try "+slots.representation+" with large objects.",
       "ui.physicalDone":"We made it"
     })[id]||id;
+    function patternTokenName(value){return ({"●":"circle","▲":"triangle","■":"square","◆":"diamond"})[String(value)]||String(value);}
     const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8},makeTeachingSupport(question){return question.support;}};
     const displayPrompt=q=>escape(q.prompt);
     let ui={screen:"session",phase:"physical",question:{prompt:"Pair every shell with one shell."}};
@@ -1082,6 +1088,7 @@ test("QA-030 early pattern choices always contain a visible and spoken token", (
     const shapeVisualHtml=value=>"<i data-shape=\\""+escape(value)+"\\"></i>";
     const responseAction=()=>\"\";
     const questionModelHtml=()=>\"\";
+    ${extractFunction("patternTokenName")}
     ${extractFunction("patternTokenVisualHtml")}
     ${extractFunction("patternBuildConstructionHtml")}
     return patternBuildConstructionHtml;

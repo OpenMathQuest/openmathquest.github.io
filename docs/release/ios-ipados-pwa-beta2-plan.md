@@ -83,9 +83,9 @@ canary remains mandatory, uses synthetic data, and proves only
 candidate/PWA/offline behavior—not host privacy qualification. Beta 4 records
 `OWNER_SKIPPED_BETA4`/`NONE`; no canary effect is claimed.
 
-### 1.3 Beta 5 release-scoped gate decisions
+### 1.3 Beta 6 release-scoped gate decisions
 
-On 2026-08-12, the project owner selected the following exact Beta 5 states:
+On 2026-08-13, the project owner selected the following exact Beta 6 states:
 
 - `EXT-HOST` remains digest-bound `DEFERRED_PRERELEASE`, reported as
   `DEFERRED`, never PASS or privacy-cleared;
@@ -95,12 +95,12 @@ On 2026-08-12, the project owner selected the following exact Beta 5 states:
   `NOT_RUN`, and the six-reviewer cycle is `OPTIONAL_NOT_RUN` / `NONE` / `0` /
   `0`; neither creates a platform or independent-review claim;
 - owner authorization is exact `PR_PUSH_AUTHORIZED` for
-  `v1.0.0-beta.5` on `refs/heads/main`; and
-- the full Playwright Deep UX Census is exact `NOT_REQUIRED_BY_CADENCE` for
-  this odd-numbered beta. Its local balanced 100-cell benchmark may run only as
-  non-certifying development evidence.
+  `v1.0.0-beta.6` on `refs/heads/main`; and
+- the full Playwright Deep UX Census is mandatory for this even-numbered beta
+  and must pass on the exact frozen successor. Its local balanced 100-cell
+  benchmark remains non-certifying development evidence.
 
-Beta 5 uses `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. First commit the
+Beta 6 uses `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`. First commit the
 protected-main qualification revision with final game/runtime/PWA bytes and
 pending clearance/browser evidence. Run the canary and hosted-Windows
 observation against that exact commit. The final candidate must then be its
@@ -111,7 +111,7 @@ validator proves every runtime/PWA byte is exactly identical. Reviewed browser
 evidence changes the repository-wide public-payload digest, so whole-payload
 identity must not be claimed. Run the complete certification system once on
 the successor, and tag and deploy only that successor. Beta 4's canary skip and
-`DIRECT_EVIDENCE_SUCCESSOR_V1` remain historical and cannot authorize Beta 5.
+`DIRECT_EVIDENCE_SUCCESSOR_V1` remain historical and cannot authorize Beta 6.
 
 ## 2. Release objective
 
@@ -1165,7 +1165,7 @@ frozen review bundle.
 4. if the device cycle is selected, the primary-iPad journey and every lane
    pass;
 5. mandatory automated install, standalone, offline, update, and deterministic
-   removal/recovery tests pass; Beta 5 records the hosted trusted-HTTPS canary
+   removal/recovery tests pass; Beta 6 records the hosted trusted-HTTPS canary
    as exact `RECONCILED` evidence and `EXT-CANARY: PASS`;
 6. privacy review confirms no application-level child learning/content
    transmission or new third-party runtime request, and the child-facing host
@@ -1235,7 +1235,7 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
    one sealed cycle. Collect any proposed owner medium acceptances one at a
    time, then run the bounded adjudicator under section 16.
 10. Correct defects with focused checks and repeat from step 8 until the exact
-    Beta 5 qualification commit is ready with final game/runtime/PWA bytes and
+    Beta 6 qualification commit is ready with final game/runtime/PWA bytes and
     pending clearance/browser evidence.
 11. Push that qualification commit to protected `main`. Run the mandatory
     trusted-HTTPS canary and hosted-Windows identity observation against its
@@ -1262,7 +1262,7 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
     `PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`.
     Validate exact game/runtime/PWA byte identity while retaining the changed
     public-payload digest caused by reviewed evidence. Bind the owner's exact
-    **PR_PUSH_AUTHORIZED** decision for `v1.0.0-beta.5` on
+    **PR_PUSH_AUTHORIZED** decision for `v1.0.0-beta.6` on
     `refs/heads/main` to that successor.
 18. Push only that authorized runtime-equivalent successor to the named
     protected branch and wait for exact focused remote checks. Any other
@@ -1271,12 +1271,12 @@ That decision must not retroactively weaken the Beta 2 privacy boundary.
 19. Freeze that exact protected-main successor and run the complete
     certification system once. A failure or any change returns to focused
     correction and a new qualification/successor sequence. After a pass, issue
-    **MERGE_TAG_AUTHORIZED**, create and protect `v1.0.0-beta.5`, and verify
+    **MERGE_TAG_AUTHORIZED**, create and protect `v1.0.0-beta.6`, and verify
     commit/tag identity.
 20. Issue **DEPLOY_AUTHORIZED** and publish only the exact certified tagged
     artifact without rerunning the gauntlet.
 21. Reconcile the live site, headers, offline relaunch, tag, release page, and
-    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 5.
+    deployed bytes; then issue **LIVE_RELEASE_VERIFIED** and announce Beta 6.
 
 ## 20. Source register
 

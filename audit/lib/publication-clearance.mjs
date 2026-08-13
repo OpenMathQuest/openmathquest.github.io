@@ -1,7 +1,7 @@
 import { RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY } from "./release-evidence-successor.mjs";
 
 export const PUBLICATION_CLEARANCE_PATH = "PUBLICATION_CLEARANCE.md";
-export const CURRENT_RELEASE_TAG = "v1.0.0-beta.5";
+export const CURRENT_RELEASE_TAG = "v1.0.0-beta.6";
 export const BETA4_RELEASE_TAG = "v1.0.0-beta.4";
 export const CURRENT_EVIDENCE_SUCCESSOR_POLICY = RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY;
 export const EMERGENCY_BETA3_RELEASE_TAG = "v1.0.0-beta.3";

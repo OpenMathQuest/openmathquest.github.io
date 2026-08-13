@@ -228,7 +228,25 @@
       const semanticEvidence = (Array.isArray(candidates) && candidates.length >= 2)
         || (Array.isArray(frames) && frames.length >= 2)
         || (object(strategy) && ["start", "change", "result"].every((key) => own(strategy, key)));
-      return { pass: Boolean(semanticEvidence), reason: { candidates: candidates?.length || 0, frames: frames?.length || 0, strategy: Boolean(strategy) } };
+      const promptId = normalized(question.semanticPromptStringId);
+      const frame = frames?.[0];
+      const activity = values.data?.activityKind;
+      let activityExact = false;
+      if (promptId === "question.frameNumber") activityExact = Boolean(activity === "frame-to-number"
+        && values.data?.stimulus === true && Number(frame?.capacity) === 10
+        && Number(frame?.value) === exactNumber(question.answer?.value));
+      else if (promptId === "question.makeTenFrame") activityExact = Boolean(activity === "make-ten"
+        && values.data?.stimulus === true && Number(frame?.capacity) === 10
+        && Number(frame?.value) === Number(question.params?.shown)
+        && Number(frame?.value) + exactNumber(question.answer?.value) === 10
+        && !own(values, "strategy") && !own(frame || {}, "label"));
+      else if (promptId === "question.hiddenPart") activityExact = Boolean(activity === "hidden-part"
+        && values.data?.stimulus === true && Number(frame?.capacity) === 10
+        && Number(frame?.value) === Number(question.params?.shown)
+        && Number(frame?.coveredCount) === 10 - Number(frame?.value)
+        && exactNumber(question.answer?.value) === Number(frame?.coveredCount)
+        && !own(values, "strategy") && !own(frame || {}, "label"));
+      return { pass: Boolean(activityExact || semanticEvidence), reason: { candidates: candidates?.length || 0, frames: frames?.length || 0, strategy: Boolean(strategy), activityExact } };
     }
 
     if (model.type === "array") {
@@ -626,7 +644,19 @@
         truthful &&= object(series) && Object.values(series).every(finite);
       } else if (kind === "numberOrder") {
         const shown = items.map((item) => Number(item.value));
-        truthful &&= shown.length >= 3 && shown.every(Number.isFinite) && new Set(shown).size === shown.length;
+        const goal = data.goal;
+        const expected = goal === "least" ? Math.min(...shown) : Math.max(...shown);
+        truthful &&= shown.length >= 3 && shown.every(Number.isFinite) && new Set(shown).size === shown.length
+          && data.stimulus === true && ["least", "greatest"].includes(goal) && exactNumber(question.answer?.value) === expected;
+      } else if (kind === "objectSet" && question.semanticPromptStringId === "question.countSet") {
+        truthful &&= data.stimulus === true && items.length === 1 && Number(items[0]?.magnitude) === Number(data.count)
+          && exactNumber(question.answer?.value) === Number(data.count);
+      } else if (kind === "pattern" && question.semanticPromptStringId === "question.patternVisualNext") {
+        const sequence = items[0]?.sequence;
+        const unit = String(question.params?.unit || "").split(/\s+/u).filter(Boolean);
+        truthful &&= data.stimulus === true && Array.isArray(sequence) && sequence.length >= 4 && unit.length === 2
+          && sequence.every((value, index) => value === unit[index % unit.length])
+          && normalized(question.answer?.value) === normalized(unit[sequence.length % unit.length]);
       } else if (kind === "number" && question.semanticPromptStringId === "question.numeralForm") {
         const numberWords = [
           "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
@@ -1762,6 +1792,12 @@
 
       const placementLayoutSnapshot = (profile, inputMethod) => {
         const screen = labDocument.querySelector('[data-placement-screen][data-placement-phase="question"]');
+        const missingScreenDiagnostic = screen ? null : {
+          draftPresent: Boolean(labWindow.localStorage.getItem(placementDraftKey)),
+          warning: normalized(labDocument.querySelector(".runtime-warning:not([hidden])")?.textContent),
+          visibleHeading: normalized(labDocument.querySelector("h1,h2")?.textContent),
+          bodyText: normalized(labDocument.body?.textContent).slice(0, 320),
+        };
         const shell = screen?.closest(".placement-shell");
         const question = screen?.querySelector(".placement-question");
         let noticeProbe = null;
@@ -1924,6 +1960,7 @@
           noticeBeforeContent,
           confirmBottom: confirmRect ? Math.round(confirmRect.bottom) : null,
           documentScrollHeight: labDocument.documentElement.scrollHeight,
+          missingScreenDiagnostic,
           pass,
         };
         noticeProbe?.remove();
