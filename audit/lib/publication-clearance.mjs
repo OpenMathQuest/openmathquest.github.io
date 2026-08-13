@@ -441,13 +441,19 @@ export function parsePublicationClearance(text) {
 }
 
 function artifactIdentityMatches(parsed, expected = {}) {
+  const reviewedPayloadSha256 = expected.evidenceSuccessorValid === true
+    ? expected.qualificationPayloadSha256
+    : expected.payloadSha256;
+  const reviewedPayloadTreeOid = expected.evidenceSuccessorValid === true
+    ? expected.qualificationPayloadTreeOid
+    : expected.payloadTreeOid;
   return Boolean(
     parsed?.reviewedEngineSha256 === expected.engineSha256
     && parsed.reviewedManifestVersion === expected.manifestVersion
     && parsed.reviewedManifestSha256 === expected.manifestSha256
     && parsed.reviewedRightsSha256 === expected.rightsSha256
-    && parsed.reviewedPayloadSha256 === expected.payloadSha256
-    && parsed.reviewedPayloadTreeOid === expected.payloadTreeOid
+    && parsed.reviewedPayloadSha256 === reviewedPayloadSha256
+    && parsed.reviewedPayloadTreeOid === reviewedPayloadTreeOid
     && parsed.reviewedBrowserProductName === expected.browserProductName
     && parsed.reviewedBrowserFullVersion === expected.browserFullVersion
     && parsed.reviewedBrowserExecutableSha256 === expected.browserExecutableSha256

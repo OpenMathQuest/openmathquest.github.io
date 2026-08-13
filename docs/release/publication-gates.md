@@ -265,6 +265,14 @@ gauntlet, tag, and deployment bind the successor. The repository-wide public
 payload digest changes because reviewed browser evidence is public, so it is
 incorrect to claim whole-payload identity.
 
+For that Beta 5 successor, the two `Reviewed public payload` fields bind the
+qualification commit inspected by the canary and hosted-Windows observation.
+The validator independently recomputes those identities from the named
+qualification commit, proves the current candidate is its exact two-file
+successor, and separately requires the current successor's public-candidate
+guard to pass. Comparing those fields to the successor's necessarily changed
+evidence payload would create a circular and impossible gate.
+
 ### Historical Beta 4 canary and successor exception
 
 On 2026-08-09, the owner also directed that the Beta 4 trusted-HTTPS canary be
