@@ -7,12 +7,20 @@ them.
 
 ## Dependency and implementation policy
 
-Prefer the standard library and existing project dependencies; when those fall
-short, prefer established, well-maintained open-source libraries over
-substantial custom implementations.
+Before designing bespoke code, first inventory the capabilities already
+available: the language standard library, installed Python and other-language
+libraries, existing project dependencies, repository utilities, and
+established open-source tools. Prefer these proven capabilities when they fit
+the requirement. When the existing environment falls short, reasonably search
+for an established, well-maintained open-source library or utility before
+proposing a substantial custom implementation.
 
-Always ask before adding a new dependency or building a substantial custom
-solution, and include a brief justification.
+Before adopting or executing a new third-party library or utility, identify
+its licence and maintenance or provenance status, then ask the project owner
+for approval with a brief justification and the licence named explicitly.
+Always ask before adding a dependency or building a substantial custom
+solution. Do not treat familiarity with a tool, its installation on the
+machine, or an open-source label as approval to use it.
 
 Custom code is allowed for small local glue when a library would be
 disproportionate, or when the user or project conventions require it. If no

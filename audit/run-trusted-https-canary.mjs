@@ -17,6 +17,8 @@ import {
   LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
   PLAYWRIGHT_CORE_VERSION,
+  RETAINED_BETA1_COMPLETE_VALUE,
+  RETAINED_BETA1_FRESH_START_NOTICE_SHA256,
   TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
   TRUSTED_HTTPS_CANARY_BETA1_TAG,
   TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT,
@@ -35,6 +37,7 @@ import {
   loopbackListenerProbeInvocation,
   observePromiseSettlement,
   openCanaryInstallHelp,
+  observeCanaryRetainedFreshStartNotice,
   reloadCanaryCandidateFromBeta1,
   profileProcessSetSha256,
   recoverAndDrainOperation,
@@ -55,6 +58,7 @@ const SHA40 = /^[a-f0-9]{40}$/u;
 const SHA64 = /^[a-f0-9]{64}$/u;
 const SOURCE_KEY = "math-quest:v2";
 const PROTECTED_KEY = "math-quest:progress:v2";
+const RETAINED_GUARD_KEY = `${PROTECTED_KEY}:beta1-migration-guard:v1`;
 const PROFILE_KEY = "math-quest:child-name:v1";
 const BETA1_CACHE = "math-quest-static-v1.0.0-beta.1";
 const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.5-";
@@ -683,11 +687,6 @@ function recordSetSha256(records) {
   return hashFileBytes(Buffer.from(`${JSON.stringify([...records].sort((left, right) => left.path.localeCompare(right.path)))}\n`, "utf8"));
 }
 
-function projectApprovedShape(shape, value) {
-  if (Array.isArray(shape) || shape === null || typeof shape !== "object") return value;
-  return Object.fromEntries(Object.keys(shape).map((key) => [key, projectApprovedShape(shape[key], value?.[key])]));
-}
-
 function projectionFieldCount(value) {
   if (Array.isArray(value)) return value.reduce((total, item) => total + projectionFieldCount(item), 0);
   if (value && typeof value === "object") return Object.values(value).reduce((total, item) => total + projectionFieldCount(item), 0);
@@ -878,8 +877,10 @@ async function main() {
   let activeCacheProof = null;
   let offlineCacheProof = null;
   let repairedCacheProof = null;
-  let migrationProjection = null;
-  let protectedMigrationProjection = null;
+  let retiredSourceProjection = null;
+  let freshProtectedProjection = null;
+  let retainedFreshStartNoticeSha256 = null;
+  let expectedFreshBytes = null;
   let privacySummary = null;
   let offlineProof = null;
   const candidateMainFrameNavigations = [];
@@ -1119,7 +1120,7 @@ async function main() {
         return { bytes, projection: projection(JSON.parse(bytes)) };
       }, { sourceKey: SOURCE_KEY, profileKey: PROFILE_KEY, selectionAnswerSource: beta1GradedSelectionAnswer.toString() });
       sourceBytes = seeded.bytes;
-      migrationProjection = seeded.projection;
+      retiredSourceProjection = seeded.projection;
       const source = JSON.parse(sourceBytes);
       assert.equal(source.schemaVersion, 2);
       assert.equal(source.earnedLevel, 2);
@@ -1168,7 +1169,10 @@ async function main() {
         return Boolean(registration?.waiting) && names.some((name) => name.startsWith(prefix) && !name.endsWith("-staging"));
       }, CANDIDATE_CACHE_PREFIX, { timeout: 40_000 });
       waitingCacheProof = await inspectExactCandidateCache(candidatePage, snapshots, { allowBeta1: true, persistentContext: context, profilePath });
-    }, "The original Beta 1 page deliberately reloaded into the exact Beta 5 candidate at the same origin, acquired the modern writer lease, reached Home, and observed a waiting worker only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 with no staging or extra candidate cache.");
+      const retainedNotice = await observeCanaryRetainedFreshStartNotice(candidatePage);
+      retainedFreshStartNoticeSha256 = sha256Bytes(retainedNotice);
+      assert.equal(retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256);
+    }, "The original Beta 1 page deliberately reloaded into the exact Beta 5 candidate, visibly explained the fresh start to the grown-up, acquired the modern writer lease, reached Home, and observed a waiting worker only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 with no staging or extra candidate cache.");
 
     await checkedStep(checks, "CANDIDATE_REAL_UI_ACTIVATION", async () => {
       expectedCandidateReloadUrl = candidatePage.url();
@@ -1213,17 +1217,26 @@ async function main() {
       assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
     }, "The original Beta 1 localStorage bytes remained byte-for-byte unchanged.");
 
-    await checkedStep(checks, "SCHEMA3_MIGRATION_PRESERVED", async () => {
+    await checkedStep(checks, "RETIRED_BETA1_PRESERVED_FRESH_START", async () => {
       await candidatePage.waitForFunction((key) => Boolean(localStorage.getItem(key)), PROTECTED_KEY, { timeout: 20_000 });
-      protectedBytes = await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY);
-      const protectedState = JSON.parse(protectedBytes);
-      assert.equal(protectedState.schemaVersion, 3);
-      assert.equal(protectedState.earnedLevel, 2);
-      assert.equal(protectedState.practiceCountByDay["30000"], 3);
-      assert.deepEqual(projectApprovedShape(migrationProjection, protectedState), migrationProjection);
-      protectedMigrationProjection = projectApprovedShape(migrationProjection, protectedState);
-      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), `${PROTECTED_KEY}:beta1-migration-guard:v1`), null);
-    }, "Migration committed schema 3 while preserving the complete approved schema-2 projection, including distinctive settings, skill evidence/spacing, counts, logs, feedback, cold window, latency, and seed values.");
+      const fresh = await boundedPageEvaluate(candidatePage, context, profilePath, ({ protectedKey, guardKey }) => {
+        const bytes = localStorage.getItem(protectedKey);
+        const state = JSON.parse(bytes);
+        const expectedBytes = MathQuestEngine.exportState(MathQuestEngine.createInitialState(state.maxSeenPlayDay));
+        const { schemaVersion: _schemaVersion, ...projection } = state;
+        return { bytes, state, expectedBytes, projection, marker: localStorage.getItem(guardKey) };
+      }, { protectedKey: PROTECTED_KEY, guardKey: RETAINED_GUARD_KEY });
+      protectedBytes = fresh.bytes;
+      expectedFreshBytes = fresh.expectedBytes;
+      freshProtectedProjection = fresh.projection;
+      assert.equal(protectedBytes, expectedFreshBytes, "protected Beta 5 progress must be the exact canonical initial state");
+      assert.equal(fresh.state.schemaVersion, 3);
+      assert.equal(fresh.state.earnedLevel, 1);
+      assert.equal(Object.values(fresh.state.practiceCountByDay).reduce((sum, count) => sum + count, 0), 0);
+      assert.equal(fresh.marker, RETAINED_BETA1_COMPLETE_VALUE);
+      assert.equal(retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256);
+      assert.equal(await boundedPageEvaluate(candidatePage, context, profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), sourceBytes);
+    }, "The incompatible Beta 1 save remained byte-identical, while Beta 5 committed its exact canonical fresh state, displayed the exact grown-up notice, and wrote a durable retained-source marker without transferring mastery, evidence, settings, logs, or counts.");
 
     await checkedStep(checks, "CANDIDATE_ACTIVE_CACHE_READY", async () => {
       await openCanaryInstallHelp(candidatePage);
@@ -1547,12 +1560,17 @@ async function main() {
       protectedSha256: protectedBytes ? sha256Bytes(protectedBytes) : null,
       sourceSchemaVersion: sourceState?.schemaVersion ?? null,
       targetSchemaVersion: protectedState?.schemaVersion ?? null,
-      earnedLevel: sourceState?.earnedLevel ?? null,
-      practiceCount: sourceState?.practiceCountByDay?.["30000"] ?? null,
-      approvedProjectionSha256: migrationProjection ? hashFileBytes(Buffer.from(`${JSON.stringify(migrationProjection)}\n`, "utf8")) : null,
-      protectedProjectionSha256: protectedMigrationProjection ? hashFileBytes(Buffer.from(`${JSON.stringify(protectedMigrationProjection)}\n`, "utf8")) : null,
-      approvedProjectionFieldCount: migrationProjection ? projectionFieldCount(migrationProjection) : null,
-      protectedProjectionFieldCount: protectedMigrationProjection ? projectionFieldCount(protectedMigrationProjection) : null,
+      sourceEarnedLevel: sourceState?.earnedLevel ?? null,
+      sourcePracticeCount: sourceState?.practiceCountByDay?.["30000"] ?? null,
+      protectedEarnedLevel: protectedState?.earnedLevel ?? null,
+      protectedPracticeCount: protectedState ? Object.values(protectedState.practiceCountByDay || {}).reduce((sum, count) => sum + count, 0) : null,
+      expectedFreshSha256: expectedFreshBytes ? sha256Bytes(expectedFreshBytes) : null,
+      retiredProjectionSha256: retiredSourceProjection ? hashFileBytes(Buffer.from(`${JSON.stringify(retiredSourceProjection)}\n`, "utf8")) : null,
+      freshProjectionSha256: freshProtectedProjection ? hashFileBytes(Buffer.from(`${JSON.stringify(freshProtectedProjection)}\n`, "utf8")) : null,
+      retiredProjectionFieldCount: retiredSourceProjection ? projectionFieldCount(retiredSourceProjection) : null,
+      freshProjectionFieldCount: freshProtectedProjection ? projectionFieldCount(freshProtectedProjection) : null,
+      retainedMarkerSha256: protectedBytes ? sha256Bytes(RETAINED_BETA1_COMPLETE_VALUE) : null,
+      retainedNoticeSha256: retainedFreshStartNoticeSha256,
     },
     checks,
     teardown: {

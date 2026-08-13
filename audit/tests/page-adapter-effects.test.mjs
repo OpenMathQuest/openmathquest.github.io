@@ -298,6 +298,7 @@ function createBeta1MigrationHarness(mode, values = new Map([
     writes: [],
     warnings: [],
     protectionScreens: 0,
+    storageOperations: [],
     handlers: {},
     pendingStorageEvent: null,
   };
@@ -309,6 +310,8 @@ function createBeta1MigrationHarness(mode, values = new Map([
       const BETA1_MIGRATION_GUARD_KEY=\`\${KEY}:beta1-migration-guard:v1\`;
       const BETA1_MIGRATION_GUARD_VALUE="beta1-to-protected-v1";
       const BETA1_EMPTY_CUTOVER_GUARD_VALUE="empty-to-protected-v1";
+      const BETA1_RETAINED_CUTOVER_GUARD_VALUE="beta1-retained-to-protected-v1";
+      const BETA1_RETAINED_COMPLETE_VALUE="beta1-retained-current-curriculum-v1";
       const PLACEMENT_DRAFT_KEY="math-quest:placement-draft:v1";
       const currentRead={ok:true,value:effects.values.get(KEY)??null};
       const guardRead={ok:true,value:effects.values.get(BETA1_MIGRATION_GUARD_KEY)??null};
@@ -317,8 +320,10 @@ function createBeta1MigrationHarness(mode, values = new Map([
       const beta1Save=selected.beta1Save;
       const progressSourceReadOk=selected.prerequisitesOk;
       const progressSourceFailureText="Beta 1 source unavailable.";
-      let beta1MigrationPending=selected.beta1Selected;
+      const retainedMode=effects.mode.startsWith("retained");
+      let beta1MigrationPending=selected.beta1Selected&&!retainedMode;
       let beta1EmptyCutoverPending=selected.emptyCutoverSelected&&selected.prerequisitesOk;
+      let beta1RetainedCutoverPending=selected.beta1Selected&&retainedMode;
       let persistedSaveBytes=currentRead.value;
       let persistedBeta1MigrationGuardBytes=guardRead.value;
       let progressConflict=false;
@@ -340,11 +345,17 @@ function createBeta1MigrationHarness(mode, values = new Map([
       };
       const window={addEventListener(name,handler){effects.handlers[name]=handler;}};
       const localStorage={
-        getItem(key){if(effects.storageReadLost)throw new Error("storage access lost");return effects.values.get(key)??null;},
-        setItem(key,value){effects.writes.push({key,value});effects.values.set(key,value);},
+        getItem(key){effects.storageOperations.push({type:"read",key});if(effects.storageReadLost)throw new Error("storage access lost");return effects.values.get(key)??null;},
+        setItem(key,value){
+          effects.storageOperations.push({type:"write",key,value});
+          effects.writes.push({key,value});
+          if(effects.mode==="retained-complete-write-fail"&&key===BETA1_MIGRATION_GUARD_KEY&&value===BETA1_RETAINED_COMPLETE_VALUE)throw new Error("terminal marker denied");
+          effects.values.set(key,value);
+          if(effects.mode==="retained-post-commit-read-loss"&&key===BETA1_MIGRATION_GUARD_KEY&&value===BETA1_RETAINED_COMPLETE_VALUE)effects.storageReadLost=true;
+        },
         removeItem(key){
           effects.removals.push(key);
-          if(["across-remove-fail","empty-after-beta1-remove-fail"].includes(effects.mode)&&key===KEY)throw new Error("protected remove denied");
+          if(["across-remove-fail","empty-after-beta1-remove-fail","retained-across-remove-fail"].includes(effects.mode)&&key===KEY)throw new Error("protected remove denied");
           if(effects.mode==="guard-clear-fail"&&key===BETA1_MIGRATION_GUARD_KEY)throw new Error("guard remove denied");
           if(effects.mode==="empty-clear-read-loss"&&key===BETA1_MIGRATION_GUARD_KEY){
             effects.values.set(key,null);
@@ -372,6 +383,7 @@ function createBeta1MigrationHarness(mode, values = new Map([
         effects.acquireCalls+=1;
         progressLeaseStatus="HELD";
         if(effects.mode==="before")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
+        if(effects.mode==="retained-before")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
         if(effects.mode==="late-beta1"){
           await Promise.resolve();
           effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
@@ -388,18 +400,20 @@ function createBeta1MigrationHarness(mode, values = new Map([
         effects.saveCalls+=1;
         if(effects.mode==="empty-entry-beta1")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
         if(effects.mode==="empty-entry-guard")effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
-        persistedSaveBytes=beta1Save===null?"PROTECTED-BLANK":\`MIGRATED-\${String(beta1Save).at(-1)}\`;
+        persistedSaveBytes=beta1Save===null||beta1RetainedCutoverPending?"PROTECTED-BLANK":\`MIGRATED-\${String(beta1Save).at(-1)}\`;
         effects.values.set(KEY,persistedSaveBytes);
         effects.protectedWrites+=1;
         if(["empty-after-beta1","empty-after-beta1-remove-fail"].includes(effects.mode))effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
         if(effects.mode==="empty-after-guard")effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
         if(["across","across-remove-fail"].includes(effects.mode))effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
+        if(effects.mode==="retained-across")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
         return true;
       }
       function status(){return {
         selectedSource:selected.sourceSave,
         beta1MigrationPending,
         beta1EmptyCutoverPending,
+        beta1RetainedCutoverPending,
         persistedSaveBytes,
         persistedBeta1MigrationGuardBytes,
         guardBytes:effects.values.get(BETA1_MIGRATION_GUARD_KEY)??null,
@@ -418,15 +432,18 @@ function createBeta1MigrationHarness(mode, values = new Map([
       "abortBeta1MigrationCutover",
       "ensureBeta1MigrationGuard",
       "ensureBeta1EmptyCutoverGuard",
+      "ensureBeta1RetainedCutoverGuard",
       "clearBeta1MigrationGuard",
       "verifyBeta1MigrationSourceUnchanged",
       "verifyNoLateBeta1MigrationInput",
       "verifyBeta1EmptyCutoverUnchanged",
       "finalizeBeta1EmptyCutover",
+      "verifyBeta1RetainedCutoverUnchanged",
+      "finalizeBeta1RetainedCutover",
       "initializeProgressPersistence",
     ],
     body: storageListener,
-    exposed: "initializeProgressPersistence,status,dispatchPendingStorageEvent",
+    exposed: "initializeProgressPersistence,verifyNoLateBeta1MigrationInput,status,dispatchPendingStorageEvent",
     context: { effects: Object.assign(effects, { mode }) },
   });
   return { effects, harness };
@@ -464,6 +481,103 @@ test("only an exact validated virgin protected state can trigger guard-independe
   assert.equal(harness.isVirginProtectedSave("{"), false);
   assert.equal(harness.isVirginProtectedSave(""), false);
   assert.equal(harness.isVirginProtectedSave(null), false);
+});
+
+test("only a fully valid exact immutable retired Beta 1 envelope is eligible for retained fresh-start cutover", async () => {
+  const { engine } = await loadShippedEngine(new URL("../../index.html", import.meta.url));
+  const retiredKeys = ["schemaVersion","productVersion","curriculumManifestId","curriculumVersion","curriculumSha256","earnedLevel","previewLevel","maxSeenPlayDay","practiceCountByDay","skills","settings","activeSession","sessionLog","feedbackHistory","reteachQueue","currentLevelColdWindow","levelReteachActive","levelReteachTargets","levelReteachTargetSince","guessingLikeStreak","latencyHistory","seed"].sort();
+  const retiredSha = "49e5265eed2fe6d17d660d8136de1b55b05398e6b86b2b8761571480580e1048";
+  const harness = evaluateHarness({
+    prelude: `const E=effects.engine;const BETA1_RETIRED_STATE_KEYS=Object.freeze(effects.keys);const BETA1_RETIRED_CURRICULUM_SHA256=effects.sha;`,
+    functions: ["isRetainedRetiredBeta1Save"],
+    exposed: "isRetainedRetiredBeta1Save",
+    context: { effects: { engine, keys: retiredKeys, sha: retiredSha } },
+  });
+  const exact = structuredClone(engine.createInitialState(30_000));
+  delete exact.placement;
+  delete exact.placementDraftGeneration;
+  Object.assign(exact, {
+    schemaVersion: 2,
+    productVersion: "1.0.0-beta.1",
+    curriculumManifestId: "math-quest-curriculum",
+    curriculumVersion: "1.0.0",
+    curriculumSha256: retiredSha,
+  });
+  const adapted = structuredClone(exact);
+  adapted.productVersion = engine.CONSTANTS.PRODUCT_VERSION;
+  adapted.curriculumManifestId = engine.CURRICULUM_MANIFEST.manifestId;
+  adapted.curriculumVersion = engine.CURRICULUM_MANIFEST.version;
+  adapted.curriculumSha256 = engine.CURRICULUM_MANIFEST_SHA256;
+  const adaptedLoad = engine.loadState(JSON.stringify(adapted), 0);
+  assert.equal(harness.isRetainedRetiredBeta1Save(JSON.stringify(exact)), true, adaptedLoad.error);
+  for (const mutation of [
+    (value) => { value.schemaVersion = 3; },
+    (value) => { value.productVersion = "1.0.0-beta.2"; },
+    (value) => { value.curriculumManifestId = "other"; },
+    (value) => { value.curriculumVersion = "2.0.0"; },
+    (value) => { value.curriculumSha256 = "0".repeat(64); },
+    (value) => { value.earnedLevel = null; },
+    (value) => { value.maxSeenPlayDay = -1; },
+    (value) => { value.practiceCountByDay = null; },
+    (value) => { value.skills = null; },
+    (value) => { value.settings = null; },
+    (value) => { value.sessionLog = null; },
+    (value) => { value.seed = -1; },
+    (value) => { value.unrecognized = true; },
+    (value) => { delete value.seed; },
+  ]) {
+    const changed = structuredClone(exact);
+    mutation(changed);
+    assert.equal(harness.isRetainedRetiredBeta1Save(JSON.stringify(changed)), false);
+  }
+  assert.equal(harness.isRetainedRetiredBeta1Save("{"), false);
+  assert.equal(harness.isRetainedRetiredBeta1Save(null), false);
+});
+
+test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 5 save commits transactionally", async () => {
+  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 5 starts fresh so old mastery is not applied to changed skills.";
+  const successful = createBeta1MigrationHarness("retained-success");
+  assert.equal(successful.harness.status().selectedSource, "BETA1-A");
+  assert.equal(successful.harness.status().beta1RetainedCutoverPending, true);
+  assert.equal(await successful.harness.initializeProgressPersistence(), true);
+  assert.equal(successful.effects.values.get("math-quest:v2"), "BETA1-A");
+  assert.equal(successful.effects.values.get("math-quest:progress:v2"), "PROTECTED-BLANK");
+  assert.equal(successful.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), "beta1-retained-current-curriculum-v1");
+  assert.equal(successful.harness.status().beta1MigrationPending, false);
+  assert.equal(successful.harness.status().beta1EmptyCutoverPending, false);
+  assert.equal(successful.harness.status().beta1RetainedCutoverPending, false);
+  assert.equal(successful.effects.warnings.at(-1), retainedNotice, "the completed cutover must visibly explain the fresh start to the grown-up");
+  assert.equal(JSON.stringify(successful.effects.storageOperations.at(-1)), JSON.stringify({ type: "write", key: "math-quest:progress:v2:beta1-migration-guard:v1", value: "beta1-retained-current-curriculum-v1" }), "the terminal marker must be the last synchronous cutover operation");
+
+  const reload = createBeta1MigrationHarness("success", successful.effects.values);
+  assert.equal(reload.harness.status().selectedSource, "PROTECTED-BLANK", "the terminal marker must stop the retained source from replacing a virgin current save on reload");
+  assert.equal(reload.harness.status().beta1MigrationPending, false);
+  assert.equal(reload.harness.verifyNoLateBeta1MigrationInput(), true, "a protected save with the terminal retained marker is not an interrupted empty cutover");
+  assert.equal(await reload.harness.initializeProgressPersistence(), true);
+  assert.equal(reload.effects.values.get("math-quest:v2"), "BETA1-A");
+  assert.equal(reload.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), "beta1-retained-current-curriculum-v1");
+
+  const postCommitReadLoss = createBeta1MigrationHarness("retained-post-commit-read-loss");
+  assert.equal(await postCommitReadLoss.harness.initializeProgressPersistence(), true, "no unverified read may remain after the terminal commit");
+  assert.equal(JSON.stringify(postCommitReadLoss.effects.storageOperations.at(-1)), JSON.stringify({ type: "write", key: "math-quest:progress:v2:beta1-migration-guard:v1", value: "beta1-retained-current-curriculum-v1" }));
+
+  for (const mode of ["retained-before", "retained-across", "retained-complete-write-fail"]) {
+    const run = createBeta1MigrationHarness(mode);
+    assert.equal(await run.harness.initializeProgressPersistence(), false, `${mode} must fail closed`);
+    assert.equal(run.effects.values.get("math-quest:progress:v2"), null, `${mode} must not leave a trusted fresh save`);
+    assert.equal(run.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), "beta1-retained-to-protected-v1", `${mode} must remain retryable under the retained guard`);
+    assert.equal(run.harness.status().progressConflict, true);
+  }
+
+  const missingProtected = createBeta1MigrationHarness("success", new Map([
+    ["math-quest:progress:v2", null],
+    ["math-quest:v2", "BETA1-A"],
+    ["math-quest:progress:v2:beta1-migration-guard:v1", "beta1-retained-current-curriculum-v1"],
+  ]));
+  assert.equal(await missingProtected.harness.initializeProgressPersistence(), false, "a terminal marker without its protected save must fail closed");
+  assert.equal(missingProtected.effects.acquireCalls, 0);
+  assert.equal(missingProtected.effects.protectedWrites, 0);
+  assert.equal(missingProtected.effects.values.get("math-quest:v2"), "BETA1-A");
 });
 
 test("Beta 1 migration never copies a source that changed before or across the protected cutover", async () => {
@@ -638,17 +752,17 @@ test("migration remains fail-closed when the durable guard cannot be cleared", a
   assert.match(failed.effects.warnings.at(-1), /migration guard could not be completed/iu);
 });
 
-test("storage events observe both the Beta 1 source and durable migration guard", () => {
+test("storage events observe the Beta 1 source and every active cutover guard", () => {
   const storageListener = extractListenerStatement("window", "storage", "BETA1_MIGRATION_GUARD_KEY");
-  const createHarness = ({ pending = true, emptyPending = false } = {}) => {
+  const createHarness = ({ pending = true, emptyPending = false, retainedPending = false } = {}) => {
     const effects = { handlers: {}, aborts: [], conflicts: 0, draftConflicts: 0 };
     const localStorage = {};
     const harness = new vm.Script(`(()=>{"use strict";
       const KEY="math-quest:progress:v2",BETA1_PROGRESS_KEY="math-quest:v2",BETA1_MIGRATION_GUARD_KEY=\`\${KEY}:beta1-migration-guard:v1\`,PLACEMENT_DRAFT_KEY="math-quest:placement-draft:v1";
       const window={addEventListener(name,handler){effects.handlers[name]=handler;}};
       const beta1LateArrivalText="Late Beta 1 cutover input.";
-      let beta1MigrationPending=${pending},beta1EmptyCutoverPending=${emptyPending},beta1ProtectedWriteAttempted=true,beta1Save=${emptyPending ? "null" : '"BETA1-A"'},persistedBeta1MigrationGuardBytes=${emptyPending ? '"empty-to-protected-v1"' : '"beta1-to-protected-v1"'},persistedSaveBytes="PROTECTED",persistedPlacementDraftBytes=null;
-      function abortBeta1MigrationCutover(options){effects.aborts.push(options);beta1MigrationPending=false;beta1EmptyCutoverPending=false;return false;}
+      let beta1MigrationPending=${pending},beta1EmptyCutoverPending=${emptyPending},beta1RetainedCutoverPending=${retainedPending},beta1ProtectedWriteAttempted=true,beta1Save=${emptyPending ? "null" : '"BETA1-A"'},persistedBeta1MigrationGuardBytes=${retainedPending ? '"beta1-retained-to-protected-v1"' : emptyPending ? '"empty-to-protected-v1"' : '"beta1-to-protected-v1"'},persistedSaveBytes="PROTECTED",persistedPlacementDraftBytes=null;
+      function abortBeta1MigrationCutover(options){effects.aborts.push(options);beta1MigrationPending=false;beta1EmptyCutoverPending=false;beta1RetainedCutoverPending=false;return false;}
       function markProgressConflict(){effects.conflicts+=1;}
       function markPlacementDraftConflict(){effects.draftConflicts+=1;}
       ${storageListener}
@@ -677,6 +791,16 @@ test("storage events observe both the Beta 1 source and durable migration guard"
   emptyGuard.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "beta1-to-protected-v1" });
   assert.equal(emptyGuard.effects.aborts.length, 1);
   assert.equal(emptyGuard.effects.aborts[0].rollbackProtected, true);
+
+  const retainedSource = createHarness({ pending: false, retainedPending: true });
+  retainedSource.dispatch({ key: "math-quest:v2", newValue: "BETA1-B" });
+  assert.equal(retainedSource.effects.aborts.length, 1);
+  assert.equal(retainedSource.effects.aborts[0].rollbackProtected, true);
+
+  const retainedGuard = createHarness({ pending: false, retainedPending: true });
+  retainedGuard.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "beta1-retained-current-curriculum-v1" });
+  assert.equal(retainedGuard.effects.aborts.length, 1);
+  assert.equal(retainedGuard.effects.aborts[0].rollbackProtected, true);
 
   const postMigration = createHarness({ pending: false });
   postMigration.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "unexpected" });

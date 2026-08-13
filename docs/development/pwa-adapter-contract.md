@@ -198,6 +198,21 @@ writer lease before copying those bytes into `math-quest:progress:v2` and never
 writes or removes the Beta 1 record. A stale Beta 1 client therefore has no
 write path to the protected Beta 2 record.
 
+The exact immutable Public Beta 1 envelope is now curriculum-incompatible with
+Beta 5. Its full state must also pass the existing engine validator after only
+the reviewed identity substitution; identity fields alone never admit a
+malformed save. For that one closed identity, the current adapter must preserve the
+Beta 1 bytes verbatim and start from the canonical fresh Beta 5 state; it must
+not copy old mastery, evidence, settings, counts, logs, or sessions. The
+transaction uses `beta1-retained-to-protected-v1` while pending and commits the
+terminal `beta1-retained-current-curriculum-v1` marker only after the unchanged
+source, exact fresh protected bytes, and marker re-verify under the writer
+lease. That terminal marker suppresses repeated legacy discovery when the
+current save is still virgin. A terminal marker with no protected save, an
+interrupted or racing transition, or any legacy envelope outside the exact
+reviewed Beta 1 identity fails closed. The Home notice tells the grown-up that
+the old save remains separate and the changed curriculum starts fresh.
+
 If both protected progress and the Beta 1 source were absent at the initial
 read, the acquired-lease path must synchronously re-read the Beta 1 source and
 migration guard before creating protected progress. A source or guard that

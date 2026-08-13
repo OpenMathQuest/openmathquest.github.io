@@ -123,6 +123,22 @@ leaves the marker in place and fails closed. A later launch with the marker
 must ignore any unproven protected bytes and retry from the newest valid Beta
 1 source behind the same lease.
 
+The immutable Public Beta 1 release used a different curriculum digest, so
+its mastery and evidence must not be translated into the current curriculum.
+The adapter recognizes only the exact closed Beta 1 envelope (schema, product,
+manifest identity, curriculum digest, and top-level key set) after the existing
+engine validator accepts its complete state values under the current identity.
+It leaves those
+source bytes untouched, writes `beta1-retained-to-protected-v1` around an exact
+fresh protected-state write, and replaces that pending marker with
+`beta1-retained-current-curriculum-v1` only after the source, protected bytes,
+and marker all re-verify. The terminal marker prevents a virgin current save
+from rediscovering and replacing itself from the retained source on later
+boots. A missing protected save behind that marker, any source or guard race,
+or any unrecognized invalid legacy envelope fails closed. The grown-up notice
+must say plainly that the old save remains stored separately and that Beta 5
+starts fresh because the curriculum changed.
+
 Do not translate pre-beta mastery or evidence into the new curriculum: the
 meaning and order of skills changed. Leave earlier browser data untouched,
 begin the independent journey with clean evidence, and explain this boundary
