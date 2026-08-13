@@ -706,6 +706,9 @@ successor. Wrong-parent, merge, skipped-ancestor, missing/extra path,
 runtime-byte, PWA-byte, snapshot, or qualification-commit mutants fail closed.
 The public-payload digest must differ because reviewed browser evidence is
 public; a forged whole-payload-equality claim also fails.
+The standalone Pages validator must pass the observer's exact qualification
+payload SHA-256 and tree OID into the same clearance matcher; omitting either
+identity is an effect-tested failure rather than a late deployment surprise.
 
 `audit/run-audit.mjs` predicts and observes all eight records separately. The
 16 direct Playwright journeys raise the closed technical-plus-external total

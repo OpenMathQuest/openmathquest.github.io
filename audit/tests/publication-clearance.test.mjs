@@ -377,6 +377,32 @@ test("the Git observer proves an actual immediate Beta 6 runtime-equivalent evid
   }
 });
 
+test("the standalone Pages validator binds clearance to the observed qualification payload", async () => {
+  const validatorText = await readFile(path.join(root, "audit", "validate-publication-clearance.mjs"), "utf8");
+  assert.match(
+    validatorText,
+    /qualificationPayloadSha256:\s*evidenceSuccessor\.qualificationPayloadSha256/u,
+  );
+  assert.match(
+    validatorText,
+    /qualificationPayloadTreeOid:\s*evidenceSuccessor\.qualificationPayloadTreeOid/u,
+  );
+
+  const parsed = parsePublicationClearance(approvedClearance());
+  const validatorExpected = {
+    ...expected,
+    evidenceSuccessorValid: true,
+    qualificationPayloadSha256: expected.qualificationPayloadSha256,
+    qualificationPayloadTreeOid: expected.qualificationPayloadTreeOid,
+  };
+  assert.equal(clearanceMatches(parsed, validatorExpected), true);
+  assert.equal(clearanceMatches(parsed, {
+    ...validatorExpected,
+    qualificationPayloadSha256: undefined,
+    qualificationPayloadTreeOid: undefined,
+  }), false);
+});
+
 test("five mandatory Beta 6 gates, the deferred host, and both optional cycles remain visible", () => {
   const parsed = parsePublicationClearance(approvedClearance());
   const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);

@@ -61,6 +61,8 @@ try {
     browserRunnerEvidenceReviewed: true,
     qualificationCommitSha: parsed.qualificationCommitSha,
     evidenceSuccessorValid: evidenceSuccessor.valid,
+    qualificationPayloadSha256: evidenceSuccessor.qualificationPayloadSha256,
+    qualificationPayloadTreeOid: evidenceSuccessor.qualificationPayloadTreeOid,
     releaseTag: CURRENT_RELEASE_TAG,
     now: new Date(),
   };
