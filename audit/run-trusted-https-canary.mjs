@@ -11,6 +11,7 @@ import {
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
+  beta1GradedSelectionAnswer,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
   LOOPBACK_LISTENER_QUERY_SCRIPT,
   PLAYWRIGHT_CORE_SRI,
@@ -1093,8 +1094,9 @@ async function main() {
 
     await checkedStep(checks, "BETA1_SYNTHETIC_STATE_SEEDED", async () => {
       await beta1Page.locator('[data-action="name-skip"]').click();
-      const seeded = await boundedPageEvaluate(beta1Page, context, profilePath, ({ sourceKey, profileKey }) => {
+      const seeded = await boundedPageEvaluate(beta1Page, context, profilePath, ({ sourceKey, profileKey, selectionAnswerSource }) => {
         const E = MathQuestEngine;
+        const gradedSelectionAnswer = (0, eval)(`(${selectionAnswerSource})`);
         let state = E.createInitialState(30_000);
         state.earnedLevel = 2;
         state.settings.grownUpPracticeCap = 17;
@@ -1106,12 +1108,9 @@ async function main() {
         let lastAttempt = null;
         for (let index = 0; index < 3; index += 1) {
           const question = E.makeQuestion({ skillId: skill.skillId, tier: index === 2 ? "HARD/TARGET" : "EASY", representation: "PICTORIAL", seed: 314159, ordinal: 2 + index, scheduledReview: index > 0, coldTest: true, theme: "forest" });
-          let answer = String(question.answer.value);
-          if (question.inputClass === "SELECTION") {
-            const option = question.options.find((item) => E.gradeAnswer(question, { optionId: item.id }).correct);
-            if (!option) throw new Error("Synthetic Beta 1 fixture could not find its independently graded correct option.");
-            answer = { optionId: option.id };
-          }
+          const answer = question.inputClass === "SELECTION"
+            ? gradedSelectionAnswer(question, E.gradeAnswer)
+            : String(question.answer.value);
           const attempt = E.submitAnswer(question, answer, { promptFinishedAt: 1_000, submittedAt: 5_000 + index * 100, manipulationMs: 250, replayMs: 100, idleMs: 50 + index, hintUsed: false, selectionEvents: [], modelUsed: true, sessionId: "synthetic-beta1-session", playDay: 30_000 });
           if (!attempt.firstAnswerCorrect || !attempt.validTelemetry) throw new Error("Synthetic Beta 1 attempt was not a valid clean witness.");
           state = E.applyAttempt(state, attempt).state;
@@ -1124,7 +1123,7 @@ async function main() {
         localStorage.setItem(sourceKey, bytes);
         localStorage.setItem(profileKey, JSON.stringify({ schemaVersion: 1, mode: "anonymous", name: "" }));
         return { bytes, projection: projection(JSON.parse(bytes)) };
-      }, { sourceKey: SOURCE_KEY, profileKey: PROFILE_KEY });
+      }, { sourceKey: SOURCE_KEY, profileKey: PROFILE_KEY, selectionAnswerSource: beta1GradedSelectionAnswer.toString() });
       sourceBytes = seeded.bytes;
       migrationProjection = seeded.projection;
       const source = JSON.parse(sourceBytes);
