@@ -1577,7 +1577,7 @@ test("active readiness survives candidate failures and controller changes requir
       phase:"READY",details:{ready:true},error:null,
       updatePhase:"IDLE",updateReady:false,updateError:null,
       registration:{waiting:null},controllerSeen:false,pendingControllerReload:false,
-      applying:false,applyAcknowledged:false,reloadSuggested:false,reloaded:false
+      applying:false,applyAcknowledged:false,reloadSuggested:false,reloaded:false,applyWorker:null
     };
     const app={
       inert:false,
@@ -1605,8 +1605,11 @@ test("active readiness survives candidate failures and controller changes requir
         pwa.reloaded=false;
         pwaControllerChangeBusy=false;
         pwa.pendingControllerReload=false;
+        pwa.applying=false;
+        pwa.applyWorker=null;
         app.inert=false;
       },
+      beginApplying(){pwa.applying=true;pwa.applyWorker={state:"activated"};},
       input(){return effects.inputValue;}
     };
   })()`, { filename: "pwa-controller-boundary-effect.js" }).runInNewContext({ controllerEffects });
@@ -1644,6 +1647,15 @@ test("active readiness survives candidate failures and controller changes requir
   await controllerHarness.reload();
   assert.equal(controllerEffects.saves, 1);
   assert.equal(controllerEffects.reloads, 1);
+  assert.equal(controllerHarness.pwa.reloaded, true);
+
+  controllerHarness.resetForControlledPage();
+  controllerEffects.saves = 0;
+  controllerEffects.reloads = 0;
+  controllerHarness.beginApplying();
+  await controllerHarness.route();
+  assert.equal(controllerEffects.saves, 1, "the tab that chose Apply must commit before its controller-change reload");
+  assert.equal(controllerEffects.reloads, 1, "the tab that chose Apply must reload exactly once through the real controller-change route");
   assert.equal(controllerHarness.pwa.reloaded, true);
 
   const initiatingEffects = { reloads: 0 };
