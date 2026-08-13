@@ -1,8 +1,8 @@
 # Math Quest — Public Beta Decision Register
 
-- **Register revision:** `AR-PUBLIC-17`
+- **Register revision:** `AR-PUBLIC-18`
 - **Contract:** `docs/development/build-spec.md` version `3.5`
-- **Contract SHA-256:** `9e204987c7102896efb946e8a336670ecac60b993c0a0957cbc945fbc4249b8d`
+- **Contract SHA-256:** `e3a990812c0fb1598a9eb39e8272dfb0b0d5e88e490dc40e3f57f3ce80fe649f`
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `14ef82f104a113f07f98c7593b3b8d3dc35a5d16bf75b7c307fc6bb6303355ad`
 - **Engine SHA-256:** `b973fa43c0d9facb33f1d517d6fcd94886023fdad8bb124a3746d0a96f99a93b`

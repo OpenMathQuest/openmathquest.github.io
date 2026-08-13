@@ -626,6 +626,12 @@ Both `audit/run-audit.ps1 -DevelopmentOnly` and the final release entry point
 execute this focused module; only the separate manual hosted workflow can
 produce a `RECONCILED` runtime observation.
 
+`audit/tests/audit-orchestration.test.mjs` also recomputes the current
+`docs/development/build-spec.md` SHA-256 and requires the public decision
+register to bind that exact digest before complete certification. This moves a
+stale-contract failure into the focused preflight instead of discovering it
+only after the expensive browser and generator stages.
+
 `audit/tests/publication-clearance.test.mjs` effect-tests the closed publication
 schema and the candidate-only browser/runner review record. It proves that
 changing any one of browser product, full product version, executable SHA-256,
