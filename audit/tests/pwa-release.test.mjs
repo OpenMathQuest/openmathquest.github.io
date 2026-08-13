@@ -1424,7 +1424,7 @@ test("fresh candidate failures render retry guidance without claiming an offline
       registration,
       watch:watchPwaRegistration,
       triggerUpdateFound(){updateFound();},
-      rejectCandidate(){worker.state="redundant";workerStateChange();},
+      rejectCandidate(){worker.state="redundant";workerStateChange();registration.installing=null;},
       check:checkPwaUpdateAtBoundary,
       render:installDialogHtml
     };
@@ -1504,7 +1504,7 @@ test("active readiness survives candidate failures and controller changes requir
       status:pwaStatusText,
       watch:watchPwaRegistration,
       triggerUpdateFound(){updateFound();},
-      rejectCandidate(){worker.state="redundant";workerStateChange();},
+      rejectCandidate(){worker.state="redundant";workerStateChange();registration.installing=null;},
       check:checkPwaUpdateAtBoundary
     };
   })()`, { filename: "pwa-candidate-lifecycle-effect.js" }).runInNewContext({ candidateEffects });

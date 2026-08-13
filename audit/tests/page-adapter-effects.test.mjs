@@ -931,6 +931,7 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Home
       const pwa={
         registration:{
           waiting:null,
+          installing:null,
           async update(){effects.updateCalls+=1;}
         },
         lastUpdateCheck:0,
@@ -959,6 +960,18 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Home
       Date: { now: () => effects.now },
     },
   });
+
+  harness.setScreen("home");
+  harness.pwa.registration.installing = {};
+  assert.equal(await harness.checkPwaUpdateAtBoundary(true), true);
+  assert.equal(effects.updateCalls, 0, "an in-progress install must not start a competing registration update");
+  assert.equal(harness.pwa.updatePhase, "CACHING");
+  harness.pwa.registration.installing = null;
+  harness.pwa.registration.waiting = {};
+  assert.equal(await harness.checkPwaUpdateAtBoundary(true), true);
+  assert.equal(effects.updateCalls, 0, "an already waiting update must not be installed a second time");
+  assert.equal(harness.pwa.updatePhase, "READY");
+  harness.pwa.registration.waiting = null;
 
   for (const screen of ["nameGate", "home", "grown"]) {
     harness.setScreen(screen);
