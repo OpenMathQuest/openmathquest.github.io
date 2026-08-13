@@ -23,6 +23,19 @@ const shardReport = (shard) => ({
   requests: [], unexpectedRequests: [], parseError: null, dumpTail: "",
 });
 
+test("the current build contract digest is bound before complete certification", async () => {
+  const [contractBytes, register, auditRunner] = await Promise.all([
+    readFile(path.join(root, "docs/development/build-spec.md")),
+    read("research/build-axioms.md"),
+    read("audit/run-audit.mjs"),
+  ]);
+  const recorded = register.match(/Contract SHA-256:\*\*\s*`([a-f0-9]{64})`/u)?.[1];
+  const actual = createHash("sha256").update(contractBytes).digest("hex");
+  assert.equal(recorded, actual);
+  assert.match(auditRunner, /promptDigestMatchesRegister/u);
+  assert.match(auditRunner, /meta\.promptDigestMatchesRegister/u);
+});
+
 const structuredAudit = () => ({
   schemaVersion: 1,
   artifactKind: "MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1",
