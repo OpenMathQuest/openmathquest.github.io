@@ -295,6 +295,15 @@ the exact 72,576 inventory, balanced 100-cell non-certifying mode, closed plan
 and report schemas, missing/duplicate/identity/privacy mutants, native-action
 rules, context-level network observation, and anomaly-only artifact policy.
 
+The exact Beta 6 census later exposed one touch-only harness false negative for
+MQ-001 on tablet landscape: the real tap visibly changed `Show expected` to
+`Hide expected`, but Playwright timed out because that successful rerender
+replaced the tapped locator before the action promise settled. Rerendering
+expected-answer and teaching-model controls now require an exact false-to-true
+rendered postcondition. Only a Playwright `TimeoutError` accompanied by that
+proved transition may be classified as a completed effect; a pre-existing or
+missing effect, or any unrelated error, still fails closed.
+
 The Beta 6 frozen-candidate census classified its 27
 `PRIMARY_RESPONSE_REQUIRES_SCROLL` records before correction. Nine were product
 layout defects: MQ-028, MQ-029, MQ-034, and MQ-040 on the short-landscape phone,
