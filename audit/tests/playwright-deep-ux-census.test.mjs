@@ -9,7 +9,9 @@ import {
   DEEP_UX_CENSUS_REPORT_SCHEMA_VERSION,
   DEEP_UX_CENSUS_STATES,
   DEEP_UX_CENSUS_VIEWPORTS,
+  DEEP_UX_NATIVE_ACTION_TIMEOUT_MS,
   buildDeepUxCensusPlan,
+  deepUxActivateNativeControl,
   deepUxCensusReportFindings,
   deepUxCensusRequiredForVersion,
   deepUxEffectBoundRerenderAction,
@@ -100,6 +102,22 @@ test("partial-response selection prefers a real unpressed choice and retains a p
   assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: "mixed" }), -1);
 });
 
+test("native census actions retain real touch or mouse input with a host-tolerant bounded deadline", async () => {
+  assert.equal(DEEP_UX_NATIVE_ACTION_TIMEOUT_MS, 10_000);
+  const calls = [];
+  const locator = {
+    tap: async (options) => calls.push(["tap", options]),
+    click: async (options) => calls.push(["click", options]),
+  };
+  await deepUxActivateNativeControl(locator, { evaluate: async () => true }, { preserveScroll: true, trial: true });
+  await deepUxActivateNativeControl(locator, { evaluate: async () => false });
+  assert.deepEqual(calls, [
+    ["tap", { scroll: "none", trial: true, timeout: 10_000 }],
+    ["click", { trial: false, timeout: 10_000 }],
+  ]);
+  await assert.rejects(deepUxActivateNativeControl({}, { evaluate: async () => true }), /locator and page/u);
+});
+
 test("rerendering native actions require an exact false-to-true effect and fail closed on unrelated errors", async () => {
   let effect = false;
   assert.deepEqual(await deepUxEffectBoundRerenderAction(
@@ -177,9 +195,10 @@ test("compact report fails closed on missing cells, retries-by-proxy, forged ide
 });
 
 test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly capture, context network observation, and no pass artifacts", async () => {
-  const [config, spec, runner, index, workflow] = await Promise.all([
+  const [config, spec, censusLibrary, runner, index, workflow] = await Promise.all([
     readFile(path.join(root, "playwright.deep-ux.config.mjs"), "utf8"),
     readFile(path.join(root, "audit", "playwright", "deep-ux-census.spec.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "lib", "playwright-deep-ux-census.mjs"), "utf8"),
     readFile(path.join(root, "audit", "run-playwright-deep-ux-census.mjs"), "utf8"),
     readFile(path.join(root, "index.html"), "utf8"),
     readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8"),
@@ -190,14 +209,18 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(config, /actionTimeout:\s*2_500/u);
   assert.match(config, /trace:\s*"off"/u);
   assert.match(config, /screenshot:\s*"off"/u);
-  assert.match(spec, /scroll:\s*"none"/u);
+  assert.match(censusLibrary, /scroll:\s*"none"/u);
+  assert.match(censusLibrary, /locator\.tap\(options\)/u);
+  assert.match(censusLibrary, /locator\.click\(options\)/u);
   assert.match(spec, /deepUxFirstScreenResponseRequired\(scenario, viewportId\)/u);
-  assert.match(spec, /deepUxNativeScrollDelta\(await primary\.boundingBox\(\), viewportHeight\)/u);
+  assert.match(spec, /deepUxNativeScrollDelta\(await locator\.boundingBox\(\), viewportHeight\)/u);
   assert.match(spec, /outer !== document\.documentElement/u);
   assert.match(spec, /outer\.scrollBy\(\{ top: amount, left: 0, behavior: "instant" \}\)/u);
   assert.match(spec, /outer\.scrollTop !== before/u);
-  assert.match(spec, /locator\.tap\(options\)/u);
-  assert.match(spec, /locator\.click\(options\)/u);
+  assert.match(spec, /deepUxActivateNativeControl as activate/u);
+  assert.match(spec, /positionOuterDocumentControl\(model, page\)/u);
+  assert.match(spec, /activate\(model, page, \{ preserveScroll: true \}\)/u);
+  assert.doesNotMatch(spec, /locator\.(?:tap|click)\(/u);
   assert.match(spec, /ariaSnapshot\(\{ mode: "ai", boxes: true/u);
   assert.match(spec, /type: "webp"/u);
   assert.match(spec, /page\.context\(\)\.on\("request"/u);

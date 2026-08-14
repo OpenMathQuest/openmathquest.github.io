@@ -290,6 +290,16 @@ candidate and must pass before publication.
 | Cadence and identity | Complete mode requires the exact frozen protected-main candidate on GitHub-hosted Windows, reviewed Edge 1.62.1 toolchain identity, exact server-root and served-payload digests, all six project shards, no retries/skips/unknowns/duplicates, and a matching executed-cell digest. |
 | Claim boundary | The census does not replace the 72-result browser audit, mathematics or grading oracles, human play testing, physical devices, Safari/iOS, assistive-technology speech, pronunciation, or installed-PWA evidence. |
 
+Native census clicks and taps use a bounded 10-second automation deadline so a
+temporarily contended hosted runner cannot turn an otherwise visible, stable,
+enabled control into a false layout finding. This is runner tolerance, not a
+claim that a ten-second product response is acceptable: the action remains a
+real Playwright click or tap, retries remain zero, and the required rendered
+postcondition must still appear. Parent Test controls outside the measured
+question cell are brought into view only through the document's outer scrolling
+element, then activated with Playwright auto-scroll disabled; nested scrolling
+remains forbidden and early learning responses remain first-screen strict.
+
 `audit/tests/playwright-deep-ux-census.test.mjs` effect-tests cadence mutants,
 the exact 72,576 inventory, balanced 100-cell non-certifying mode, closed plan
 and report schemas, missing/duplicate/identity/privacy mutants, native-action
