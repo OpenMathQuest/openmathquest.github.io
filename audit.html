@@ -2088,6 +2088,13 @@
             || pausedNormalScenario.doc.querySelector('[data-action="resume-session"]')));
         const afterPausedReload = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
         const pausedReloadBytesExact = engine.canonical(afterPausedReload.activeSession) === pausedActiveBytes;
+        const pausedReloadChangedKeys = [...new Set([
+          ...Object.keys(JSON.parse(pausedActiveBytes) || {}),
+          ...Object.keys(afterPausedReload.activeSession || {}),
+        ])].filter((key) => (
+          engine.canonical(afterPausedReload.activeSession?.[key])
+            !== engine.canonical(JSON.parse(pausedActiveBytes)?.[key])
+        ));
         const pausedReloadResumeVisible = Boolean(pausedNormalScenario.doc.querySelector('[data-action="resume-session"]'));
         const pausedReloadQuestionHidden = !pausedNormalScenario.doc.querySelector(".question");
         const pausedReloadPreserved = afterPausedReload.previewLevel === null
@@ -2125,16 +2132,32 @@
         openFrames.push(previewScenario.frame);
         await answerCorrect(previewScenario, activePreviewQuestion);
         const afterPreviewState = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
-        previewScenario.doc.querySelector('[data-action="home"]')?.click();
-        await pause();
+        const previewHomeControl = previewScenario.doc.querySelector('[data-action="home"]');
+        previewHomeControl?.click();
+        const previewLeaveSettled = Boolean(previewHomeControl && await waitUntil(() => {
+          const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+          return saved.activeSession === null
+            && saved.previewLevel === null
+            && previewScenario.doc.querySelector('[data-action="start"]');
+        }));
         const afterPreviewLeave = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
-        const previewDiscarded = afterPreviewLeave.activeSession === null
+        const previewDiscarded = previewLeaveSettled
+          && afterPreviewLeave.activeSession === null
           && afterPreviewLeave.previewLevel === null
           && progressProjection(engine, afterPreviewLeave) === beforePreview;
-        previewScenario.doc.querySelector('[data-action="start"]')?.click();
-        await pause();
+        const ordinaryStartControl = previewScenario.doc.querySelector('[data-action="start"]');
+        ordinaryStartControl?.click();
+        const ordinaryStartSettled = Boolean(ordinaryStartControl && await waitUntil(() => {
+          const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+          return saved.previewLevel === null
+            && saved.activeSession
+            && saved.activeSession.queue.every((slot) => slot.preview === false)
+            && saved.activeSession.uiState?.question?.preview === false
+            && previewScenario.doc.querySelector(".question");
+        }));
         const ordinaryAfterPreview = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
-        const ordinaryStartIsRegular = ordinaryAfterPreview.previewLevel === null
+        const ordinaryStartIsRegular = ordinaryStartSettled
+          && ordinaryAfterPreview.previewLevel === null
           && Boolean(ordinaryAfterPreview.activeSession)
           && ordinaryAfterPreview.activeSession.queue.every((slot) => slot.preview === false)
           && ordinaryAfterPreview.activeSession.uiState?.question?.preview === false;
@@ -2160,9 +2183,19 @@
         const zeroCapPreviewReload = waitFrame(zeroCapPreviewScenario.frame);
         zeroCapPreviewScenario.frame.src = `index.html?browser-audit=zero-cap-preview-reload-${Date.now()}`;
         await zeroCapPreviewReload;
-        await waitUntil(() => zeroCapPreviewScenario.doc.getElementById("app")?.inert === false);
+        const zeroCapPreviewReloadSettled = Boolean(await waitUntil(() => {
+          const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+          return zeroCapPreviewScenario.doc.getElementById("app")?.inert === false
+            && saved.previewLevel === previewLevel
+            && saved.activeSession?.sessionId === zeroCapPreviewSessionId
+            && saved.activeSession?.queue.length === 0
+            && saved.activeSession?.uiState?.screen === "capstone"
+            && saved.activeSession?.uiState?.question?.questionId === zeroCapPreviewQuestionId
+            && zeroCapPreviewScenario.doc.querySelector('section.done [data-action="confirm"]');
+        }));
         const zeroCapPreviewAfterReload = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
-        const zeroCapPreviewResumed = zeroCapPreviewAfterReload.previewLevel === previewLevel
+        const zeroCapPreviewResumed = zeroCapPreviewReloadSettled
+          && zeroCapPreviewAfterReload.previewLevel === previewLevel
           && zeroCapPreviewAfterReload.activeSession?.sessionId === zeroCapPreviewSessionId
           && zeroCapPreviewAfterReload.activeSession?.queue.length === 0
           && zeroCapPreviewAfterReload.activeSession?.uiState?.screen === "capstone"
@@ -2189,9 +2222,19 @@
         const zeroCapRegularReload = waitFrame(zeroCapRegularScenario.frame);
         zeroCapRegularScenario.frame.src = `index.html?browser-audit=zero-cap-regular-reload-${Date.now()}`;
         await zeroCapRegularReload;
-        await waitUntil(() => zeroCapRegularScenario.doc.getElementById("app")?.inert === false);
+        const zeroCapRegularReloadSettled = Boolean(await waitUntil(() => {
+          const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+          return zeroCapRegularScenario.doc.getElementById("app")?.inert === false
+            && saved.previewLevel === null
+            && saved.activeSession?.sessionId === zeroCapRegularSessionId
+            && saved.activeSession?.queue.length === 0
+            && saved.activeSession?.uiState?.screen === "capstone"
+            && saved.activeSession?.uiState?.question?.questionId === zeroCapRegularQuestionId
+            && zeroCapRegularScenario.doc.querySelector('section.done [data-action="confirm"]');
+        }));
         const zeroCapRegularAfterReload = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
-        const zeroCapRegularResumed = zeroCapRegularAfterReload.previewLevel === null
+        const zeroCapRegularResumed = zeroCapRegularReloadSettled
+          && zeroCapRegularAfterReload.previewLevel === null
           && zeroCapRegularAfterReload.activeSession?.sessionId === zeroCapRegularSessionId
           && zeroCapRegularAfterReload.activeSession?.queue.length === 0
           && zeroCapRegularAfterReload.activeSession?.uiState?.screen === "capstone"
@@ -2223,16 +2266,21 @@
           pausedActualQuestionId: pausedAfterBlockedPreview.activeSession?.uiState?.question?.questionId,
           pausedQuestionPreview: pausedAfterBlockedPreview.activeSession?.uiState?.question?.preview,
           pausedReloadBytesExact,
+          pausedReloadChangedKeys,
           pausedReloadPreviewLevel: afterPausedReload.previewLevel,
           pausedReloadResumeVisible,
           pausedReloadQuestionHidden,
           pausedReloadPreserved,
           resumedSameNormal,
+          previewLeaveSettled,
           previewDiscarded,
+          ordinaryStartSettled,
           ordinaryStartIsRegular,
           zeroCapPreviewStarted,
+          zeroCapPreviewReloadSettled,
           zeroCapPreviewResumed,
           zeroCapRegularStarted,
+          zeroCapRegularReloadSettled,
           zeroCapRegularResumed,
           zeroCapRegularPreserved,
           phase: afterPreviewState.activeSession?.uiState?.phase,
