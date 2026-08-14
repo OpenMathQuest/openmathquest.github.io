@@ -734,6 +734,17 @@ cherry-pick, skipped ancestor, additional changed path, changed runtime byte,
 or mismatched evidence artifact invalidates the boundary and requires a new
 qualification commit.
 
+The qualification observation and final certification are separate
+GitHub-hosted jobs. Each must independently record and validate its own exact
+browser product, full version, executable SHA-256, `ImageOS`, and
+`ImageVersion`. Because `windows-latest` is a floating selector, those two
+exact tuples are not required to be equal. Clearance binds the tuple from the
+reviewed qualification artifact; the final certification report binds its own
+live tuple. A missing, malformed, local, or unreviewed tuple still fails
+closed, as does any mismatch between clearance and the reviewed qualification
+record. Drift between two otherwise valid hosted tuples is evidence to retain,
+not a reason to restart the release cycle.
+
 For Beta 6, the owner declined the optional six-lane physical-device cycle and
 optional six-reviewer cycle. Both remain visible as exact
 `OPTIONAL_NOT_RUN` / `NONE` / zero-count records and make no pass, waiver,

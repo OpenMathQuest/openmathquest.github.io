@@ -158,7 +158,7 @@ jobs:
           }
           $clearanceStatus = (Get-Content -LiteralPath 'PUBLICATION_CLEARANCE.md' -TotalCount 2)[1]
           if ($clearanceStatus -ceq 'Status: APPROVED' -and $report.publication.status -cne 'APPROVED') {
-            throw 'Approved publication clearance does not match this exact browser/runner audit tuple.'
+            throw 'Approved publication clearance or its independently required hosted evidence is invalid.'
           }
           $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
           [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "product_name=$($evidence.browserProductName)`n", $utf8NoBom)

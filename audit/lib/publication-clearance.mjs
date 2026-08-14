@@ -521,7 +521,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   if (!["APPROVED", "EMERGENCY_APPROVED"].includes(parsed?.status)) {
     commonReasons.push(`clearance status is ${parsed?.status || "UNKNOWN"}`);
   }
-  if (!artifactIdentityMatches(parsed, expected)) commonReasons.push("candidate or hosted-Windows tuple does not match the current audit");
+  if (!artifactIdentityMatches(parsed, expected)) commonReasons.push("candidate or reviewed qualification hosted-Windows record does not match");
   if (!Number.isFinite(currentTime)) commonReasons.push("audit time is invalid");
   if (!Number.isFinite(reviewedTime) || reviewedTime > currentTime) commonReasons.push("external evidence review timestamp is missing or in the future");
   if (!Number.isFinite(expiresTime) || expiresTime <= currentTime) commonReasons.push("external evidence is missing an expiry or is stale");
@@ -626,7 +626,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.hostedWindowsEvidenceState === "REVIEWED" ? null : `hosted-Windows evidence is ${parsed?.hostedWindowsEvidenceState || "UNKNOWN"}`,
       sha256(parsed?.hostedWindowsEvidenceSha256) ? null : "hosted-Windows evidence digest is missing or malformed",
       parsed?.hostedWindowsEvidenceSha256 === expected.browserRunnerEvidenceSha256 ? null : "hosted-Windows evidence digest does not match the reviewed browser/runner record",
-      expected.browserRunnerEvidenceReviewed === true ? null : "browser/runner evidence is not a valid REVIEWED record matching the live hosted tuple",
+      expected.browserRunnerEvidenceReviewed === true ? null : "the reviewed qualification record or final hosted browser observation is invalid",
     ],
     [
       "EXT-OWNER",

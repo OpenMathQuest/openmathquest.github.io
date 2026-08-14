@@ -57,6 +57,28 @@ export function browserRunnerTuplesMatch(left, right) {
   );
 }
 
+export function publicationBrowserEvidenceState(live, reviewed) {
+  const liveValid = live?.status === "OBSERVED_GITHUB_HOSTED"
+    && live?.validForPublication === true
+    && live?.browserIdentityValid === true
+    && live?.runnerKind === "GITHUB_HOSTED"
+    && live?.requestedRunnerLabel === "windows-latest"
+    && browserRunnerTupleIssues(live).length === 0;
+  const reviewedValid = reviewed?.valid === true
+    && reviewed?.status === "REVIEWED"
+    && browserRunnerTupleIssues(reviewed).length === 0;
+  const reviewedTuple = reviewedValid
+    ? Object.freeze(Object.fromEntries(TUPLE_KEYS.map((key) => [key, reviewed[key]])))
+    : null;
+  return Object.freeze({
+    valid: liveValid && reviewedValid,
+    liveValid,
+    reviewedValid,
+    tuplesMatch: liveValid && reviewedValid && browserRunnerTuplesMatch(live, reviewed),
+    reviewedTuple,
+  });
+}
+
 export function parseReviewedBrowserRunnerEvidence(text) {
   const issues = [];
   const source = String(text);

@@ -171,7 +171,9 @@ effects earlier, but do not constitute another complete cycle.
   `PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`; prove
   every game/runtime/PWA byte remains identical before the single final audit.
 - [x] Record `windows-latest` as a Medium floating-runner residual; do not
-  accept the label itself as reproducible evidence.
+  accept the label itself as reproducible evidence. Require the qualification
+  artifact and final certification to validate and retain their own exact
+  tuples without requiring two separately allocated hosted jobs to match.
 - [ ] Within the final cycle, run desktop, phone, and tablet
   visual/accessibility reviews after the current remediation and bind their
   evidence to the frozen candidate.
