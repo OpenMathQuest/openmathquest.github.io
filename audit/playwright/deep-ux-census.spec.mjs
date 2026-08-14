@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
-import { deepUxEffectBoundRerenderAction, deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta, deepUxPartialResponseControlPriority } from "../lib/playwright-deep-ux-census.mjs";
+import { deepUxActivateNativeControl as activate, deepUxEffectBoundRerenderAction, deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta, deepUxPartialResponseControlPriority } from "../lib/playwright-deep-ux-census.mjs";
 
 const planPath = process.env.MQ_DEEP_UX_PLAN_PATH;
 const shardDirectory = process.env.MQ_DEEP_UX_SHARD_DIRECTORY;
@@ -22,10 +22,23 @@ const truncate = (value, length = 2_000) => String(value ?? "")
   .slice(0, length);
 const relativeArtifact = (absolute) => path.relative(process.cwd(), absolute).replaceAll("\\", "/");
 
-async function activate(locator, page, { preserveScroll = false, trial = false } = {}) {
-  const options = preserveScroll ? { scroll: "none", trial, timeout: 2_500 } : { trial, timeout: 2_500 };
-  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await locator.tap(options);
-  else await locator.click(options);
+async function positionOuterDocumentControl(locator, page) {
+  const viewportHeight = page.viewportSize()?.height || 390;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const delta = deepUxNativeScrollDelta(await locator.boundingBox(), viewportHeight);
+    if (delta === 0) return;
+    if (delta === null) throw new Error("The control cannot fit within the outer document viewport.");
+    const moved = await page.evaluate((amount) => {
+      const outer = document.scrollingElement;
+      if (!outer || outer !== document.documentElement) return false;
+      const before = outer.scrollTop;
+      outer.scrollBy({ top: amount, left: 0, behavior: "instant" });
+      return outer.scrollTop !== before;
+    }, delta);
+    if (!moved) throw new Error("The outer document could not bring the control into view.");
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }
+  throw new Error("The outer document did not settle with the control in view.");
 }
 
 async function provePrimaryResponseActionability(primary, page, scenario, viewportId) {
@@ -40,25 +53,12 @@ async function provePrimaryResponseActionability(primary, page, scenario, viewpo
     // Playwright exposes tap but no touch-swipe API, and wheel input is ignored
     // by Chromium's mobile emulation.
     if (deepUxFirstScreenResponseRequired(scenario, viewportId)) throw initialError;
-    const viewportHeight = page.viewportSize()?.height || 390;
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const delta = deepUxNativeScrollDelta(await primary.boundingBox(), viewportHeight);
-      if (delta === null || delta === 0) break;
-      const moved = await page.evaluate((amount) => {
-        const outer = document.scrollingElement;
-        if (!outer || outer !== document.documentElement) return false;
-        const before = outer.scrollTop;
-        outer.scrollBy({ top: amount, left: 0, behavior: "instant" });
-        return outer.scrollTop !== before;
-      }, delta);
-      if (!moved) break;
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      try {
-        await activate(primary, page, { preserveScroll: true, trial: true });
-        return;
-      } catch {}
+    try {
+      await positionOuterDocumentControl(primary, page);
+      await activate(primary, page, { preserveScroll: true, trial: true });
+    } catch {
+      throw initialError;
     }
-    throw initialError;
   }
 }
 
@@ -367,8 +367,9 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
       await progress("EXPECTED_INSPECTED");
       const model = page.locator('[data-lab-action="model"]');
       if (await model.isEnabled()) {
+        await positionOuterDocumentControl(model, page);
         await deepUxEffectBoundRerenderAction(
-          () => activate(model, page),
+          () => activate(model, page, { preserveScroll: true }),
           async () => {
             await waitForLabRender(page);
             const rendered = page.locator("article.lab-question");

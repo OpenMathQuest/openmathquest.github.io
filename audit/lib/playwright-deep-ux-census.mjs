@@ -7,6 +7,7 @@ export const DEEP_UX_CENSUS_REPORT_ID = "math-quest-playwright-deep-ux-census-re
 export const DEEP_UX_CENSUS_PLANNER_VERSION = "deep-ux-layout-risk-v1";
 export const DEEP_UX_CENSUS_SEED = 1297175628;
 export const DEEP_UX_CENSUS_ORDINALS = 32;
+export const DEEP_UX_NATIVE_ACTION_TIMEOUT_MS = 10_000;
 export const DEEP_UX_CENSUS_TIERS = Object.freeze(["EASY", "HARD/TARGET"]);
 export const DEEP_UX_CENSUS_REPRESENTATIONS = Object.freeze(["CONCRETE", "PICTORIAL", "ABSTRACT"]);
 export const DEEP_UX_CENSUS_THEMES = Object.freeze(["ocean", "forest", "space"]);
@@ -210,6 +211,17 @@ export function deepUxPartialResponseControlPriority(control) {
   if (control.ariaPressed === null || control.ariaPressed === undefined || control.ariaPressed === "") return 2;
   if (control.ariaPressed === "true") return 1;
   return -1;
+}
+
+export async function deepUxActivateNativeControl(locator, page, { preserveScroll = false, trial = false } = {}) {
+  if (!locator || typeof locator.tap !== "function" || typeof locator.click !== "function" || !page || typeof page.evaluate !== "function") {
+    throw new TypeError("A Playwright locator and page are required for a Deep UX native action.");
+  }
+  const options = preserveScroll
+    ? { scroll: "none", trial, timeout: DEEP_UX_NATIVE_ACTION_TIMEOUT_MS }
+    : { trial, timeout: DEEP_UX_NATIVE_ACTION_TIMEOUT_MS };
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await locator.tap(options);
+  else await locator.click(options);
 }
 
 export async function deepUxEffectBoundRerenderAction(action, observeEffect) {
