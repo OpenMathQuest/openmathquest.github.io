@@ -128,8 +128,11 @@ During preparation and the single final Public Beta 6 certification cycle:
     `audit/browser-runner-evidence-v1.json`. The canary must bind the
     qualification commit and its exact runtime snapshot; the successor
     validator must prove all game/runtime/PWA bytes are exactly identical. The
-    single final certification runs on that successor and must match every
-    field before publication can be approved.
+    single final certification runs on that successor. It must independently
+    record a complete exact live browser/image tuple; it need not equal the
+    reviewed qualification tuple because `windows-latest` floats. Clearance
+    must match every field of the reviewed qualification record, while the
+    final report must validate and retain every field of its own live tuple.
 
 For semantic-version betas selected by `ALTERNATING_BETA_V1`—beginning with
 Beta 4 and recurring at Beta 6, Beta 8, and so on—the exact frozen candidate
@@ -330,7 +333,8 @@ counts remain zero and unevaluated findings remain `UNKNOWN`.
 `EXT-HOSTED-WINDOWS` and `EXT-OWNER` are not waived. The exact candidate must
 still pass the complete deterministic, educational, privacy, licensing,
 mutation, coverage, browser, PWA, tag, immutable-snapshot, and deployment
-checks; match the reviewed GitHub-hosted browser/runner tuple; and carry exact
+checks; independently validate its live hosted tuple and its reviewed
+GitHub-hosted browser/runner record; and carry exact
 `EMERGENCY_BETA3_AUTHORIZED` owner evidence. The clearance status is
 `EMERGENCY_APPROVED`, and every later release returns to the ordinary
 fail-closed requirements.
@@ -362,9 +366,11 @@ The audit workflow intentionally retains `runs-on: windows-latest`.
 **Residual risk (Medium):** that label is a floating GitHub-hosted image
 selector. It is not accepted as evidence by itself. Each run records and
 uploads the exact underlying `ImageOS`/`ImageVersion` and exact browser binary
-identity. A browser update or hosted-image drift invalidates the reviewed
-record and publication clearance, requiring a new bounded evidence review.
-That review is a role assigned within the `AGENTS.md` collaboration cap; it
+identity. The reviewed qualification record must match its own artifact, and
+the final certification must independently validate its live tuple. Drift
+between those two valid records is retained explicitly and does not invalidate
+clearance; a missing, malformed, local, or falsely labelled record still
+blocks. Review remains a role within the `AGENTS.md` collaboration cap and
 does not automatically authorize another agent or critic cohort.
 
 The rights-state digest binds the policy, component register, licence and

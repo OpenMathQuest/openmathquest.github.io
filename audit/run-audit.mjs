@@ -12,8 +12,8 @@ import {
 } from "./lib/playwright-focused-contract.mjs";
 import {
   BROWSER_RUNNER_EVIDENCE_PATH,
-  browserRunnerTuplesMatch,
   parseReviewedBrowserRunnerEvidence,
+  publicationBrowserEvidenceState,
 } from "./lib/browser-runner-evidence.mjs";
 import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
@@ -195,6 +195,8 @@ async function reviewedBrowserRunnerEvidence() {
 async function publicationClearance(engineSha256, curriculumManifest, rightsSha256, publicCandidate, browser, reviewedBrowserEvidence, now) {
   const clearancePath = path.join(root, PUBLICATION_CLEARANCE_PATH);
   const liveBrowserEvidence = browser?.evidence ?? {};
+  const browserEvidenceState = publicationBrowserEvidenceState(liveBrowserEvidence, reviewedBrowserEvidence);
+  const reviewedBrowserTuple = browserEvidenceState.reviewedTuple ?? {};
   const expected = {
     engineSha256,
     manifestVersion: curriculumManifest.version,
@@ -202,16 +204,13 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     rightsSha256,
     payloadSha256: publicCandidate.payloadSha256,
     payloadTreeOid: publicCandidate.payloadTreeOid,
-    browserProductName: liveBrowserEvidence.browserProductName,
-    browserFullVersion: liveBrowserEvidence.browserFullVersion,
-    browserExecutableSha256: liveBrowserEvidence.browserExecutableSha256,
-    runnerImageOS: liveBrowserEvidence.runnerImageOS,
-    runnerImageVersion: liveBrowserEvidence.runnerImageVersion,
+    browserProductName: reviewedBrowserTuple.browserProductName,
+    browserFullVersion: reviewedBrowserTuple.browserFullVersion,
+    browserExecutableSha256: reviewedBrowserTuple.browserExecutableSha256,
+    runnerImageOS: reviewedBrowserTuple.runnerImageOS,
+    runnerImageVersion: reviewedBrowserTuple.runnerImageVersion,
     browserRunnerEvidenceSha256: reviewedBrowserEvidence.sha256,
-    browserRunnerEvidenceReviewed: liveBrowserEvidence.validForPublication === true
-      && reviewedBrowserEvidence.valid === true
-      && reviewedBrowserEvidence.status === "REVIEWED"
-      && browserRunnerTuplesMatch(liveBrowserEvidence, reviewedBrowserEvidence),
+    browserRunnerEvidenceReviewed: browserEvidenceState.valid,
     releaseTag: CURRENT_RELEASE_TAG,
     now,
   };
@@ -225,14 +224,11 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     expected.evidenceSuccessorValid = evidenceSuccessor.valid;
     expected.qualificationPayloadSha256 = evidenceSuccessor.qualificationPayloadSha256;
     expected.qualificationPayloadTreeOid = evidenceSuccessor.qualificationPayloadTreeOid;
-    const browserEvidenceMatches = liveBrowserEvidence.validForPublication === true
-      && reviewedBrowserEvidence.valid === true
-      && reviewedBrowserEvidence.status === "REVIEWED"
-      && browserRunnerTuplesMatch(liveBrowserEvidence, reviewedBrowserEvidence);
+    const browserEvidenceReady = browserEvidenceState.valid;
     const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, now);
     const approved = curriculumManifest.status === "PASS"
       && publicCandidate.status === "PASS"
-      && browserEvidenceMatches
+      && browserEvidenceReady
       && ["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)
       && clearanceMatches(parsed, expected);
     return {
@@ -253,17 +249,20 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
       reviewedBrowserExecutableSha256: parsed.reviewedBrowserExecutableSha256,
       reviewedRunnerImageOS: parsed.reviewedRunnerImageOS,
       reviewedRunnerImageVersion: parsed.reviewedRunnerImageVersion,
-      browserEvidenceMatches,
+      browserEvidenceReady,
+      liveBrowserEvidenceValid: browserEvidenceState.liveValid,
+      reviewedBrowserEvidenceValid: browserEvidenceState.reviewedValid,
+      browserTuplesMatch: browserEvidenceState.tuplesMatch,
       evidenceSuccessor,
       externalReleaseEvidence,
       schemaIssues: parsed.issues,
       reason: approved
         ? parsed.status === "EMERGENCY_APPROVED"
-          ? "Emergency Beta 3 clearance matches the exact candidate and hosted-Windows tuple; six external evidence gates are transparently owner-waived for this tag only."
+          ? "Emergency Beta 3 clearance matches the exact candidate and reviewed hosted-Windows record, and the final hosted tuple is independently valid; six external evidence gates are transparently owner-waived for this tag only."
           : externalReleaseEvidence.prereleaseHostDeferralEligible
-            ? "Reviewed publication clearance matches the exact prerelease candidate, direct evidence successor, hosted-Windows tuple, all four completed mandatory Beta external gates, the visible non-passing host deferral, the explicit non-passing Beta 4 canary skip, both optional evidence records, and project-owner authorization."
-            : "Reviewed publication clearance matches the exact candidate, hosted-Windows tuple, every mandatory external gate, both visible optional evidence records, and project-owner authorization."
-        : `PUBLICATION_CLEARANCE.md is absent, pending, stale, invalid, or does not match the exact candidate, direct evidence successor, live browser/runner tuple, required external gates, and visible optional, owner-skipped, or prerelease-deferred evidence records${[...parsed.issues, ...(evidenceSuccessor.issues || [])].length ? ` (${[...parsed.issues, ...(evidenceSuccessor.issues || [])].join("; ")})` : ""}.`,
+            ? "Reviewed publication clearance matches the exact prerelease candidate, direct evidence successor, reviewed qualification hosted-Windows record, independently valid final hosted tuple, every mandatory Beta external gate, the visible non-passing host deferral, both optional evidence records, and project-owner authorization."
+            : "Reviewed publication clearance matches the exact candidate, reviewed qualification hosted-Windows record, independently valid final hosted tuple, every mandatory external gate, both visible optional evidence records, and project-owner authorization."
+        : `PUBLICATION_CLEARANCE.md is absent, pending, stale, invalid, or does not match the exact candidate, direct evidence successor, reviewed qualification browser/runner record, independently valid final hosted tuple, required external gates, and visible optional, owner-skipped, or prerelease-deferred evidence records${[...parsed.issues, ...(evidenceSuccessor.issues || [])].length ? ` (${[...parsed.issues, ...(evidenceSuccessor.issues || [])].join("; ")})` : ""}.`,
     };
   } catch (error) {
     const parsed = parsePublicationClearance("");
@@ -280,7 +279,10 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
       reviewedBrowserExecutableSha256: null,
       reviewedRunnerImageOS: null,
       reviewedRunnerImageVersion: null,
-      browserEvidenceMatches: false,
+      browserEvidenceReady: false,
+      liveBrowserEvidenceValid: false,
+      reviewedBrowserEvidenceValid: false,
+      browserTuplesMatch: false,
       externalReleaseEvidence: evaluateExternalReleaseEvidence(parsed, expected, now),
       schemaIssues: ["publication clearance is absent or unreadable"],
       reason: `PUBLICATION_CLEARANCE.md is absent or unreadable; all external release evidence and owner authorization remain blocked (${String(error)}).`,
@@ -369,6 +371,13 @@ function markdown(report, { final = false } = {}) {
     ...(["APPROVED", "EMERGENCY_APPROVED"].includes(report.publication.status) ? [] : [`Public publication: ${report.publication.reason}`]),
   ];
   const title = final ? "Final build audit report" : "Last audit report";
+  const browserEvidenceDetail = !report.publication.reviewedBrowserEvidenceValid
+    ? "reviewed qualification record is invalid or pending"
+    : !report.publication.liveBrowserEvidenceValid
+      ? "final hosted tuple is invalid or unavailable"
+      : report.publication.browserTuplesMatch
+        ? "both exact tuples happen to match"
+        : "both exact tuples differ because windows-latest floated";
   const lines = [
     `# ${title}`, "",
     `- **Generated:** ${tick(report.generatedAt)}`,
@@ -427,7 +436,7 @@ function markdown(report, { final = false } = {}) {
     `| Direct Playwright journeys | ${report.playwright.status} | ${report.playwright.summary.passed}/${report.playwright.summary.expected} pass; ${report.playwright.summary.failed} fail; ${report.playwright.summary.skipped} skip; zero retries required |`,
     `| Browser executable identity | ${report.browser.evidence?.browserIdentityValid ? "PASS" : "FAIL"} | ${esc(report.browser.evidence?.browserProductName || "unavailable")} ${esc(report.browser.evidence?.browserFullVersion || "unavailable")}; sha256:${esc(report.browser.evidence?.browserExecutableSha256 || "unavailable")} |`,
     `| GitHub-hosted runner image identity | ${report.browser.evidence?.validForPublication ? "PASS" : "NOT_HOSTED"} | ImageOS ${esc(report.browser.evidence?.runnerImageOS || "unavailable")}; ImageVersion ${esc(report.browser.evidence?.runnerImageVersion || "unavailable")}; requested label ${esc(report.browser.evidence?.requestedRunnerLabel || "unavailable")} |`,
-    `| Reviewed browser/runner tuple | ${report.reviewedBrowserRunnerEvidence.status === "REVIEWED" ? "PASS" : "PENDING"} | live tuple ${report.publication.browserEvidenceMatches ? "matches" : "does not match"} the reviewed record |`,
+    `| Reviewed qualification browser/runner tuple | ${report.publication.browserEvidenceReady ? "PASS" : "PENDING"} | ${browserEvidenceDetail} |`,
     `| Launcher/server preflight | ${String(report.launcherPreflight).startsWith("PASS_") ? "PASS" : "FAIL"} | ${esc(report.launcherPreflight)} |`,
     `| Prompt digest matches register | ${report.metadata.promptDigestMatchesRegister ? "PASS" : "FAIL"} | recorded ${esc(report.metadata.recordedPromptSha || "missing")} |`,
     `| Parent string approval | ${report.parentStrings.status === "APPROVED" ? "PASS" : "PENDING"} | ${esc(report.parentStrings.digest || "No approved digest recorded")} |`,
@@ -544,7 +553,7 @@ export async function runAudit({ browserPath = null } = {}) {
   const residualRisks = [];
   const unverifiedClaims = [];
   residualRisks.push("At 390×844, an adult who expands an optional teaching model in the Parent Test Lab may need to scroll to its Grade control; the live child flow and the approved question-first narrow Lab baseline remain within their tested viewport and size floors.");
-  residualRisks.push("MEDIUM: GitHub's windows-latest selector is floating. Publication approval is bound to the observed browser product/version/executable SHA-256 and hosted ImageOS/ImageVersion, so any runner or browser drift requires a fresh review and clearance.");
+  residualRisks.push("MEDIUM: GitHub's windows-latest selector is floating. The qualification evidence and final certification each bind their own exact browser product/version/executable SHA-256 and hosted ImageOS/ImageVersion; the label alone is never evidence, and the two independently valid tuples may differ.");
   unverifiedClaims.push("This local automated review does not verify control of the OpenMathQuest organization and OpenMathQuest/openmathquest.github.io repository, exclusive use of that organization for Math Quest Pages, the root Pages configuration, absence of a CNAME, HTTPS, deployment from the exact reviewed release tag, the deployed artifact, physical Windows/iPhone/iPad devices, or external legal/privacy review.");
   if (parentStrings.status !== "APPROVED") residualRisks.push("Child-facing strings are placeholders pending the project owner's parent approval; the game is not shippable.");
   if (browser.status !== "PASS") unverifiedClaims.push("The complete real-browser interaction flow is not verified.");

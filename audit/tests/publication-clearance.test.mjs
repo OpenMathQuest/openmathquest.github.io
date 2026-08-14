@@ -9,6 +9,7 @@ import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   browserRunnerTuplesMatch,
   parseReviewedBrowserRunnerEvidence,
+  publicationBrowserEvidenceState,
 } from "../lib/browser-runner-evidence.mjs";
 import { observeBrowserRunnerEvidence } from "../lib/browser-smoke.mjs";
 import {
@@ -730,6 +731,76 @@ test("reviewed browser evidence is closed, canonical, and effect-sensitive", () 
   assert.equal(parseReviewedBrowserRunnerEvidence(`${JSON.stringify(extra, null, 2)}\n`).valid, false);
   assert.equal(parseReviewedBrowserRunnerEvidence(reviewedEvidence().replace(/\n  /u, "\n    ")).valid, false);
   assert.equal(parseReviewedBrowserRunnerEvidence(reviewedEvidence().replace(/\n$/u, "")).valid, false);
+});
+
+test("qualification review and final hosted observation are exact without requiring identical floating-runner tuples", async () => {
+  const reviewed = parseReviewedBrowserRunnerEvidence(reviewedEvidence());
+  const live = {
+    status: "OBSERVED_GITHUB_HOSTED",
+    validForPublication: true,
+    browserIdentityValid: true,
+    runnerKind: "GITHUB_HOSTED",
+    requestedRunnerLabel: "windows-latest",
+    browserProductName: "Microsoft Edge",
+    browserFullVersion: "151.0.4129.72",
+    browserExecutableSha256: "8".repeat(64),
+    runnerImageOS: "win25-vs2026",
+    runnerImageVersion: "20260810.198.2",
+  };
+  const state = publicationBrowserEvidenceState(live, reviewed);
+  assert.equal(state.valid, true);
+  assert.equal(state.liveValid, true);
+  assert.equal(state.reviewedValid, true);
+  assert.equal(state.tuplesMatch, false);
+  assert.deepEqual(state.reviewedTuple, {
+    browserProductName: expected.browserProductName,
+    browserFullVersion: expected.browserFullVersion,
+    browserExecutableSha256: expected.browserExecutableSha256,
+    runnerImageOS: expected.runnerImageOS,
+    runnerImageVersion: expected.runnerImageVersion,
+  });
+
+  const parsed = parsePublicationClearance(approvedClearance());
+  const composedExpected = {
+    ...expected,
+    ...state.reviewedTuple,
+    browserRunnerEvidenceReviewed: state.valid,
+  };
+  assert.equal(clearanceMatches(parsed, composedExpected), true);
+  assert.equal(clearanceMatches(parsed, {
+    ...composedExpected,
+    browserFullVersion: live.browserFullVersion,
+    browserExecutableSha256: live.browserExecutableSha256,
+    runnerImageOS: live.runnerImageOS,
+    runnerImageVersion: live.runnerImageVersion,
+  }), false, "clearance must remain bound to the reviewed qualification tuple");
+
+  for (const mutation of [
+    { validForPublication: false },
+    { status: "INVALID" },
+    { browserIdentityValid: false },
+    { runnerKind: "LOCAL" },
+    { requestedRunnerLabel: "windows-2025" },
+    { browserFullVersion: "151" },
+  ]) {
+    const invalid = publicationBrowserEvidenceState({ ...live, ...mutation }, reviewed);
+    assert.equal(invalid.valid, false);
+    assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceReviewed: invalid.valid }), false);
+  }
+  const pending = publicationBrowserEvidenceState(live, { ...reviewed, status: "PENDING" });
+  assert.equal(pending.valid, false);
+  assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceReviewed: pending.valid }), false);
+  assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceSha256: "0".repeat(64) }), false);
+
+  const runner = await readFile(path.join(root, "audit", "run-audit.mjs"), "utf8");
+  const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
+  assert.match(runner, /publicationBrowserEvidenceState\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
+  assert.match(runner, /browserProductName:\s*reviewedBrowserTuple\.browserProductName/u);
+  assert.match(runner, /reviewed qualification record is invalid or pending/u);
+  assert.match(runner, /final hosted tuple is invalid or unavailable/u);
+  assert.doesNotMatch(runner, /browserRunnerTuplesMatch\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
+  assert.match(workflow, /clearance or its independently required hosted evidence is invalid/u);
+  assert.doesNotMatch(workflow, /clearance does not match this exact browser\/runner audit tuple/u);
 });
 
 test("live browser evidence binds the selected bytes and exact hosted image tuple", async () => {

@@ -90,8 +90,9 @@ generated
 - a successful GitHub-hosted Windows audit artifact recording the exact
   browser product, full product version, executable SHA-256, `ImageOS`, and
   `ImageVersion`; and
-- a `REVIEWED` `audit/browser-runner-evidence-v1.json` tuple that matches both
-  that live audit and the exact fields in `PUBLICATION_CLEARANCE.md`.
+- a `REVIEWED` `audit/browser-runner-evidence-v1.json` tuple that matches the
+  qualification artifact and the exact fields in `PUBLICATION_CLEARANCE.md`;
+  the final audit independently validates and records its own hosted tuple.
 - exactly eight reported external release-evidence records: for Beta 6, five
   mandatory PASS gates for reconciled trusted-HTTPS canary evidence,
   independent adjudication, complete finding disposition, reviewed
@@ -189,5 +190,7 @@ and exact owner-authorization gates. This is not reusable release clearance.
 
 The `windows-latest` audit selector remains a documented Medium residual
 because GitHub may move it to a newer hosted image. Publication is nevertheless
-fail-closed: the floating label is never treated as the reviewed identity, and
-any change to the observed image or browser bytes invalidates approval.
+fail-closed: the floating label is never treated as identity. The qualification
+artifact and final certification each bind and validate their own exact hosted
+browser/image tuple. The two tuples may differ; clearance remains bound to the
+reviewed qualification record and the final report retains its live identity.

@@ -253,8 +253,10 @@ manifest version and SHA-256, exact engine SHA-256, exact open-component
 rights-state SHA-256, public-payload digest, and clearance-excluded payload
 tree, as well as the exact reviewed browser executable and GitHub-hosted runner
 image tuple. A machine-readable audit artifact records those values; the
-floating `windows-latest` label alone is never approval. No clearance should
-be inferred from this README.
+floating `windows-latest` label alone is never approval. The final hosted audit
+also records and validates its own exact tuple, which may differ from the
+reviewed qualification tuple. No clearance should be inferred from this
+README.
 
 Release preparation and remaining external gates are tracked in the
 [readiness record](docs/release/readiness.md),

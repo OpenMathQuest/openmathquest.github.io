@@ -640,6 +640,11 @@ changing any one of browser product, full product version, executable SHA-256,
 missing, reordered, extra, or noncanonical records fail; the live executable
 hash and requested hosted-runner label are bound; and a local run remains
 explicitly local rather than claiming GitHub-hosted evidence.
+It also proves that qualification review and final certification each require
+an independently complete exact hosted tuple while permitting their values to
+differ when the floating runner changes. A false publication flag, malformed
+live tuple, pending reviewed record, or clearance-to-review mismatch still
+fails closed; tuple equality is retained only as a diagnostic.
 For Beta 6's exact two-file runtime-equivalent successor, it also independently
 recomputes the qualification commit's public-payload SHA-256 and tree OID,
 requires the clearance to bind those values, rejects either qualification
@@ -680,7 +685,7 @@ request's observed status instead of assuming every allowed request returned
 | `EXT-REVIEWERS` | The six-reviewer cycle is offered but optional. A declined cycle must use exact `OPTIONAL_NOT_RUN`/`NONE`/zero fields and is reported as `OPTIONAL`, never `PASS`; if selected, all six context-independent reports must be sealed under one digest-bound `COMPLETE` record. Partial, malformed, or concealed review evidence blocks. |
 | `EXT-ADJUDICATION` | Independent adjudication must be `APPROVED`, recommend `RELEASE`, and carry its exact digest. Pending, missing, contrary, or malformed adjudication blocks. |
 | `EXT-FINDINGS` | Disposition must be `COMPLETE`, with zero open Critical/High, zero unaccepted Medium, and zero unrecorded Low findings. Each nonzero-count mutant blocks independently. |
-| `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest must equal the canonical reviewed browser/runner evidence bytes whose exact tuple also matches the live hosted run. Local, stale, or digest-mismatched evidence blocks. |
+| `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest and clearance fields must equal the canonical qualification browser/runner evidence bytes. The final audit independently requires a complete exact GitHub-hosted tuple; because `windows-latest` floats, equality between the two valid tuples is diagnostic rather than a gate. Local, malformed, pending, stale, falsely labelled, or digest-mismatched evidence blocks. |
 | `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.6`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
 
 The suite preserves the historical Beta 4 effect test for
