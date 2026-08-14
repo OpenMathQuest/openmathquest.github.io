@@ -12,6 +12,7 @@ import {
   buildDeepUxCensusPlan,
   deepUxCensusReportFindings,
   deepUxCensusRequiredForVersion,
+  deepUxEffectBoundRerenderAction,
   deepUxFirstScreenResponseRequired,
   deepUxNativeScrollDelta,
   deepUxPartialResponseControlPriority,
@@ -99,6 +100,40 @@ test("partial-response selection prefers a real unpressed choice and retains a p
   assert.equal(deepUxPartialResponseControlPriority({ disabled: false, ariaPressed: "mixed" }), -1);
 });
 
+test("rerendering native actions require an exact false-to-true effect and fail closed on unrelated errors", async () => {
+  let effect = false;
+  assert.deepEqual(await deepUxEffectBoundRerenderAction(
+    async () => { effect = true; },
+    async () => effect,
+  ), { effectObserved: true, actionCompleted: true });
+
+  effect = false;
+  const detachedTimeout = Object.assign(new Error("locator.tap timed out after the target rerendered"), { name: "TimeoutError" });
+  assert.deepEqual(await deepUxEffectBoundRerenderAction(
+    async () => { effect = true; throw detachedTimeout; },
+    async () => effect,
+  ), { effectObserved: true, actionCompleted: false });
+
+  effect = false;
+  await assert.rejects(deepUxEffectBoundRerenderAction(
+    async () => { throw detachedTimeout; },
+    async () => effect,
+  ), (error) => error === detachedTimeout);
+
+  effect = false;
+  const unrelated = new Error("unrelated browser failure");
+  await assert.rejects(deepUxEffectBoundRerenderAction(
+    async () => { effect = true; throw unrelated; },
+    async () => effect,
+  ), (error) => error === unrelated);
+
+  effect = true;
+  await assert.rejects(deepUxEffectBoundRerenderAction(
+    async () => {},
+    async () => effect,
+  ), /already true before the action/u);
+});
+
 test("planner inventories exactly 72,576 deterministic questions and creates a closed six-viewport risk plan", () => {
   const plan = buildDeepUxCensusPlan(fakeEngine(), { engineSha256: digest, executionMode: "FULL" });
   assert.equal(plan.sourceQuestionCount, 72_576);
@@ -175,6 +210,7 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(spec, /CONTROL_CLIPPED/u);
   assert.match(spec, /responseTransition\.available && responseTransition\.changed/u);
   assert.match(spec, /deepUxPartialResponseControlPriority\(control\)/u);
+  assert.equal((spec.match(/deepUxEffectBoundRerenderAction\(/gu) || []).length, 2);
   assert.match(spec, /data-render-settled/u);
   assert.match(spec, /\[data-lab-expected\][\s\S]*toBeVisible/u);
   assert.match(spec, /\.model\[data-worked-result='true'\][\s\S]*toBeVisible/u);

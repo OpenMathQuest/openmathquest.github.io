@@ -212,6 +212,27 @@ export function deepUxPartialResponseControlPriority(control) {
   return -1;
 }
 
+export async function deepUxEffectBoundRerenderAction(action, observeEffect) {
+  if (typeof action !== "function" || typeof observeEffect !== "function") {
+    throw new TypeError("Deep UX rerender action and effect observer are required.");
+  }
+  if (await observeEffect()) {
+    throw new Error("Deep UX rerender postcondition was already true before the action.");
+  }
+  let actionError = null;
+  try {
+    await action();
+  } catch (error) {
+    actionError = error;
+  }
+  if (!await observeEffect()) {
+    if (actionError) throw actionError;
+    throw new Error("Deep UX rerender action did not produce its exact postcondition.");
+  }
+  if (actionError && actionError?.name !== "TimeoutError") throw actionError;
+  return Object.freeze({ effectObserved: true, actionCompleted: actionError === null });
+}
+
 function balancedCellSample(cells, limit) {
   if (limit === null || limit === undefined || limit >= cells.length) return cells;
   const byViewport = new Map(DEEP_UX_CENSUS_VIEWPORTS.map((viewport) => [viewport.id, []]));

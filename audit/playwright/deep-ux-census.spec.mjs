@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
-import { deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta, deepUxPartialResponseControlPriority } from "../lib/playwright-deep-ux-census.mjs";
+import { deepUxEffectBoundRerenderAction, deepUxFirstScreenResponseRequired, deepUxNativeScrollDelta, deepUxPartialResponseControlPriority } from "../lib/playwright-deep-ux-census.mjs";
 
 const planPath = process.env.MQ_DEEP_UX_PLAN_PATH;
 const shardDirectory = process.env.MQ_DEEP_UX_SHARD_DIRECTORY;
@@ -351,8 +351,15 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
         anomalies.push({ ...base, ...await writeAnomalyArtifacts(page, question, base, await geometryCensus(question, page)) });
       }
       const expected = question.getByRole("button", { name: "Show expected", exact: true });
-      await activate(expected, page);
-      await waitForLabRender(page);
+      await deepUxEffectBoundRerenderAction(
+        () => activate(expected, page),
+        async () => {
+          await waitForLabRender(page);
+          const rendered = page.locator("article.lab-question");
+          return await rendered.locator("[data-lab-expected]").isVisible()
+            && await rendered.getByRole("button", { name: "Hide expected", exact: true }).isVisible();
+        },
+      );
       question = page.locator("article.lab-question");
       await expect(question.locator("[data-lab-expected]")).toBeVisible();
       await expect(question.getByRole("button", { name: "Hide expected", exact: true })).toBeVisible();
@@ -360,8 +367,15 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
       await progress("EXPECTED_INSPECTED");
       const model = page.locator('[data-lab-action="model"]');
       if (await model.isEnabled()) {
-        await activate(model, page);
-        await waitForLabRender(page);
+        await deepUxEffectBoundRerenderAction(
+          () => activate(model, page),
+          async () => {
+            await waitForLabRender(page);
+            const rendered = page.locator("article.lab-question");
+            return await rendered.locator(".model[data-worked-result='true']").isVisible()
+              && await page.getByRole("button", { name: "Hide teaching model", exact: true }).isVisible();
+          },
+        );
         question = page.locator("article.lab-question");
         await expect(question.locator(".model[data-worked-result='true']")).toBeVisible();
         await expect(page.getByRole("button", { name: "Hide teaching model", exact: true })).toBeVisible();
