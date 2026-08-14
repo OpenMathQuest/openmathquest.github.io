@@ -284,7 +284,7 @@ candidate and must pass before publication.
 |---|---|
 | Deterministic source inventory | Exactly 126 skills × 2 tiers × 3 representations × 3 worlds × 32 ordinals produce 72,576 source questions under one exact seed and engine/curriculum identity. Missing or extra source combinations fail plan validation. |
 | Risk-selected plan | Maximum-risk structural signatures plus required skill/tier, method/representation/theme, and model/representation witnesses form a closed, hash-bound scenario and six-viewport cell set. The planner cannot silently hand-pick only favourable examples. |
-| Rendered state census | Every selected cell checks initial and changed-response states, visibly proved expected-answer disclosure, and a visibly proved teaching model when one exists. It prefers an enabled, unpressed native response control so an already-selected default cannot create a false no-effect result, then waits for the production render-settled signal before inspecting or continuing. It uses native click/tap/form actions with normal Playwright actionability and `scroll: "none"` where first-screen discoverability matters. Later-grade content on the 844 by 390 short-landscape profile may use one deliberate outer-page wheel sequence before the same no-auto-scroll actionability proof; early levels and all other profiles remain first-screen strict. Unapproved nested vertical scrolling and ancestor-clipped controls fail; only the governed large route-grid scroller is exempt. |
+| Rendered state census | Every selected cell checks initial and changed-response states, visibly proved expected-answer disclosure, and a visibly proved teaching model when one exists. It prefers an enabled, unpressed native response control so an already-selected default cannot create a false no-effect result, then waits for the production render-settled signal before inspecting or continuing. It uses native click/tap/form actions with normal Playwright actionability and `scroll: "none"` where first-screen discoverability matters. Later-grade content on the 844 by 390 short-landscape profile may move only `document.scrollingElement`, prove that it is the outer document element and actually moved, then repeat the same real-control/no-auto-scroll actionability proof. Early levels and all other profiles remain first-screen strict. Unapproved nested vertical scrolling and ancestor-clipped controls fail; only the governed large route-grid scroller is exempt. |
 | UX and accessibility invariants | The rendered question enforces 16 px text, 44 px controls, accessible names, visible response/grade regions, no horizontal clipping or placeholder text, valid question contracts, unchanged child-save bytes, and zero unexpected requests, page errors, or console errors. |
 | Anomaly-only evidence | Passing cells create no screenshots, traces, or videos. A failure produces synthetic WebP, AI-mode ARIA-with-boxes, and geometry records plus one compact closed report. The workflow explicitly includes these hidden `.tmp` paths in its failure upload so retained evidence cannot silently disappear. |
 | Cadence and identity | Complete mode requires the exact frozen protected-main candidate on GitHub-hosted Windows, reviewed Edge 1.62.1 toolchain identity, exact server-root and served-payload digests, all six project shards, no retries/skips/unknowns/duplicates, and a matching executed-cell digest. |
@@ -294,6 +294,20 @@ candidate and must pass before publication.
 the exact 72,576 inventory, balanced 100-cell non-certifying mode, closed plan
 and report schemas, missing/duplicate/identity/privacy mutants, native-action
 rules, context-level network observation, and anomaly-only artifact policy.
+
+The Beta 6 frozen-candidate census classified its 27
+`PRIMARY_RESPONSE_REQUIRES_SCROLL` records before correction. Nine were product
+layout defects: MQ-028, MQ-029, MQ-034, and MQ-040 on the short-landscape phone,
+plus MQ-076 on the portrait phone. Their exact Parent Lab compositions were
+compacted without lowering 16 px text or 44 px control floors and without adding
+nested scrolling. The other 18 records—later-grade MQ-053, MQ-071, MQ-089, and
+MQ-125 on the short-landscape phone—were harness false negatives: Chromium
+mobile emulation ignored Playwright mouse-wheel and synthesized CDP scroll input.
+The corrected fallback is limited to that already-approved later-grade profile,
+moves only the outer document element, and still requires a real Playwright
+tap/click with automatic scrolling disabled. A focused five-cell rendered Edge
+check protects the product correction; the next exact frozen-candidate census
+must protect the complete matrix before publication.
 
 ## Browser-runner completion and capacity effect
 

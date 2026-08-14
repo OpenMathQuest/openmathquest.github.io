@@ -157,8 +157,10 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(config, /screenshot:\s*"off"/u);
   assert.match(spec, /scroll:\s*"none"/u);
   assert.match(spec, /deepUxFirstScreenResponseRequired\(scenario, viewportId\)/u);
-  assert.match(spec, /page\.mouse\.wheel\(0,/u);
   assert.match(spec, /deepUxNativeScrollDelta\(await primary\.boundingBox\(\), viewportHeight\)/u);
+  assert.match(spec, /outer !== document\.documentElement/u);
+  assert.match(spec, /outer\.scrollBy\(\{ top: amount, left: 0, behavior: "instant" \}\)/u);
+  assert.match(spec, /outer\.scrollTop !== before/u);
   assert.match(spec, /locator\.tap\(options\)/u);
   assert.match(spec, /locator\.click\(options\)/u);
   assert.match(spec, /ariaSnapshot\(\{ mode: "ai", boxes: true/u);
@@ -179,6 +181,7 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.doesNotMatch(spec, /screenshotFile:\s*null|ariaFile:\s*null|geometryFile:\s*null/u);
   assert.doesNotMatch(spec, /try\s*\{\s*await question\.screenshot[\s\S]*catch\s*\{\s*\}/u);
   assert.doesNotMatch(spec, /dispatchEvent|scrollIntoView\s*\(|waitForTimeout|\.focus\(/u);
+  assert.doesNotMatch(spec, /page\.mouse\.wheel|Input\.synthesizeScrollGesture/u);
   assert.doesNotMatch(spec, /\.(?:click|tap)\(\{[^}]*force:\s*true/su);
   const uploadStep = workflow.split(/- name: Upload compact census report and anomaly-only evidence/u)[1] || "";
   assert.match(uploadStep, /include-hidden-files:\s*true/u);

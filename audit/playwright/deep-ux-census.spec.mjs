@@ -35,16 +35,23 @@ async function provePrimaryResponseActionability(primary, page, scenario, viewpo
   } catch (initialError) {
     // A 390px-high landscape phone cannot always contain a later-grade model
     // and its response together. Early learning remains first-screen strict.
-    // For later content, prove that one deliberate native outer-page scroll
-    // exposes a normally actionable control; Playwright may not auto-scroll it.
+    // For later content, move only the document's outer scrolling element,
+    // then prove that the real control is actionable without Playwright auto-scroll.
+    // Playwright exposes tap but no touch-swipe API, and wheel input is ignored
+    // by Chromium's mobile emulation.
     if (deepUxFirstScreenResponseRequired(scenario, viewportId)) throw initialError;
     const viewportHeight = page.viewportSize()?.height || 390;
-    const viewportWidth = page.viewportSize()?.width || 844;
-    await page.mouse.move(Math.floor(viewportWidth / 2), Math.floor(viewportHeight / 2));
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const delta = deepUxNativeScrollDelta(await primary.boundingBox(), viewportHeight);
       if (delta === null || delta === 0) break;
-      await page.mouse.wheel(0, delta);
+      const moved = await page.evaluate((amount) => {
+        const outer = document.scrollingElement;
+        if (!outer || outer !== document.documentElement) return false;
+        const before = outer.scrollTop;
+        outer.scrollBy({ top: amount, left: 0, behavior: "instant" });
+        return outer.scrollTop !== before;
+      }, delta);
+      if (!moved) break;
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       try {
         await activate(primary, page, { preserveScroll: true, trial: true });
