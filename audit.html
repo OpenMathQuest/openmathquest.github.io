@@ -1174,7 +1174,7 @@
         const rect = element.getBoundingClientRect();
         return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
       };
-      const text = [...scope.querySelectorAll("h1,h2,h3,p,label,button,input,select,output,.prompt,.small")].filter(visible);
+      const text = [...scope.querySelectorAll("h1,h2,h3,p,label,button,input,select,output,.prompt,.small,.tutorial-stepper li")].filter(visible);
       const controls = [...scope.querySelectorAll("button,input,select")].filter(visible);
       return {
         minFont: text.length ? Math.min(...text.map((element) => Number.parseFloat(scenario.win.getComputedStyle(element).fontSize))) : 0,
@@ -1212,7 +1212,7 @@
         && rect.right <= scenario.win.innerWidth + 1
         && rect.bottom <= scenario.win.innerHeight + 1;
     }
-    function layoutViewportFlowPass({
+    function layoutViewportFlowOutcome({
       tutorialRequired,
       documentFitsFirstScreen,
       tutorialActionsReachable,
@@ -1227,8 +1227,11 @@
         && viewportWidth === 844
         && viewportHeight === 390
         && laterGradeLargeModel === true;
-      return (documentFitsFirstScreen || approvedOuterScroll)
-        && (!tutorialRequired || (tutorialActionsReachable && noNestedTutorialScroll));
+      return Object.freeze({
+        pass: (documentFitsFirstScreen || approvedOuterScroll)
+          && (!tutorialRequired || (tutorialActionsReachable && noNestedTutorialScroll)),
+        approvedOuterScroll,
+      });
     }
     function responseBeforeConfirm(scenario) {
       const response = scenario.doc.querySelector(".question-response");
@@ -4211,7 +4214,7 @@
                   responseControls.length > 0
                   && responseControlReachability.every(Boolean)
                 );
-                const viewportFlowPass = layoutViewportFlowPass({
+                const viewportFlow = layoutViewportFlowOutcome({
                   tutorialRequired,
                   documentFitsFirstScreen,
                   tutorialActionsReachable,
@@ -4239,7 +4242,7 @@
                   && supportVisible
                   && tutorialVisible
                   && !supportResponseCollision
-                  && viewportFlowPass
+                  && viewportFlow.pass
                   && noHorizontalOverflow
                   && flow.pass
                   && order.pass
@@ -4276,13 +4279,13 @@
                   tutorialVisible,
                   tutorialRenderedAtOrigin,
                   tutorialActionsReachable,
-                  tutorialOuterScrollAllowed,
+                  tutorialOuterScrollAllowed: viewportFlow.approvedOuterScroll,
                   noNestedTutorialScroll,
                   nestedTutorialScrollOffenders,
                   collisionWitnessRequired,
                   supportResponseCollision,
                   documentFitsFirstScreen,
-                  viewportFlowPass,
+                  viewportFlowPass: viewportFlow.pass,
                   rootScrollHeight,
                   viewportHeight: win.innerHeight,
                   noHorizontalOverflow,
