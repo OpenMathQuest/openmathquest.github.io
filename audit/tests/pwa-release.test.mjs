@@ -290,28 +290,30 @@ test("browser-audit session fixtures use the shipped active-UI schema and export
   assert.equal(tutorial.activeSession.uiState.tutorialOpen, true);
   assert.equal(tutorial.activeSession.uiState.tutorialStep, 3);
 
-  const layoutViewportFlowPass = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "layoutViewportFlowPass")})`,
+  const layoutViewportFlowOutcome = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "layoutViewportFlowOutcome")})`,
   );
-  assert.equal(layoutViewportFlowPass({
+  assert.equal(layoutViewportFlowOutcome({
     tutorialRequired: false,
     documentFitsFirstScreen: true,
     tutorialActionsReachable: false,
     noNestedTutorialScroll: false,
-  }), true, "ordinary question rows retain the first-screen contract");
-  assert.equal(layoutViewportFlowPass({
+  }).pass, true, "ordinary question rows retain the first-screen contract");
+  assert.equal(layoutViewportFlowOutcome({
     tutorialRequired: false,
     documentFitsFirstScreen: false,
     tutorialActionsReachable: true,
     noNestedTutorialScroll: true,
-  }), false, "ordinary question rows cannot borrow the tutorial outer-scroll exception");
-  assert.equal(layoutViewportFlowPass({
+  }).pass, false, "ordinary question rows cannot borrow the tutorial outer-scroll exception");
+  const unapprovedTutorialOverflow = layoutViewportFlowOutcome({
     tutorialRequired: true,
     documentFitsFirstScreen: false,
     tutorialActionsReachable: true,
     noNestedTutorialScroll: true,
-  }), false, "tutorial rows cannot use unrestricted outer-page scrolling");
-  assert.equal(layoutViewportFlowPass({
+  });
+  assert.equal(unapprovedTutorialOverflow.pass, false, "tutorial rows cannot use unrestricted outer-page scrolling");
+  assert.equal(unapprovedTutorialOverflow.approvedOuterScroll, false, "the diagnostic cannot claim an unapproved outer-scroll exception");
+  const approvedTutorialOverflow = layoutViewportFlowOutcome({
     tutorialRequired: true,
     documentFitsFirstScreen: false,
     tutorialActionsReachable: true,
@@ -320,22 +322,26 @@ test("browser-audit session fixtures use the shipped active-UI schema and export
     viewportWidth: 844,
     viewportHeight: 390,
     laterGradeLargeModel: true,
-  }), true, "only the exact later-grade 844x390 large-model exception may use outer-page scrolling");
+  });
+  assert.equal(approvedTutorialOverflow.pass, true, "only the exact later-grade 844x390 large-model exception may use outer-page scrolling");
+  assert.equal(approvedTutorialOverflow.approvedOuterScroll, true, "the diagnostic must report only the exact approved exception");
   for (const mutation of [
     { outerScrollException: "OTHER", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: true },
     { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 843, viewportHeight: 390, laterGradeLargeModel: true },
     { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 391, laterGradeLargeModel: true },
     { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: false },
   ]) {
-    assert.equal(layoutViewportFlowPass({
+    const outcome = layoutViewportFlowOutcome({
       tutorialRequired: true,
       documentFitsFirstScreen: false,
       tutorialActionsReachable: true,
       noNestedTutorialScroll: true,
       ...mutation,
-    }), false, "the short-landscape exception must fail closed when any approved predicate changes");
+    });
+    assert.equal(outcome.pass, false, "the short-landscape exception must fail closed when any approved predicate changes");
+    assert.equal(outcome.approvedOuterScroll, false, "a rejected exception cannot be reported as approved");
   }
-  assert.equal(layoutViewportFlowPass({
+  assert.equal(layoutViewportFlowOutcome({
     tutorialRequired: true,
     documentFitsFirstScreen: false,
     tutorialActionsReachable: false,
@@ -344,8 +350,8 @@ test("browser-audit session fixtures use the shipped active-UI schema and export
     viewportWidth: 844,
     viewportHeight: 390,
     laterGradeLargeModel: true,
-  }), false, "outer flow cannot hide a tutorial action");
-  assert.equal(layoutViewportFlowPass({
+  }).pass, false, "outer flow cannot hide a tutorial action");
+  assert.equal(layoutViewportFlowOutcome({
     tutorialRequired: true,
     documentFitsFirstScreen: false,
     tutorialActionsReachable: true,
@@ -354,9 +360,49 @@ test("browser-audit session fixtures use the shipped active-UI schema and export
     viewportWidth: 844,
     viewportHeight: 390,
     laterGradeLargeModel: true,
-  }), false, "a nested tutorial scroller remains prohibited");
-  assert.match(browserAudit, /const viewportFlowPass = layoutViewportFlowPass\(\{/u,
-    "the rendered BR-21 verdict must use the effect-tested viewport policy");
+  }).pass, false, "a nested tutorial scroller remains prohibited");
+  assert.match(browserAudit, /const viewportFlow = layoutViewportFlowOutcome\(\{/u,
+    "the rendered BR-21 verdict and diagnostic must use the effect-tested viewport policy outcome");
+  assert.match(browserAudit, /tutorialOuterScrollAllowed: viewportFlow\.approvedOuterScroll/u,
+    "the rendered BR-21 diagnostic must come from the same effect-tested outcome as its verdict");
+  assert.match(browserAudit, /viewportFlowPass: viewportFlow\.pass/u,
+    "the rendered BR-21 pass diagnostic must come from the same effect-tested outcome as its verdict");
+
+  const visibleMetrics = vm.runInNewContext(`(${adapterFunction(browserAudit, "visibleMetrics")})`);
+  const tutorialStep = { fontSize: 14 };
+  const ordinaryHeading = { fontSize: 18 };
+  const metricScenario = {
+    doc: {
+      querySelector() {
+        return {
+          querySelectorAll(selector) {
+            if (selector === "button,input,select") return [];
+            return selector.includes(".tutorial-stepper li")
+              ? [ordinaryHeading, tutorialStep]
+              : [ordinaryHeading];
+          },
+        };
+      },
+    },
+    win: {
+      getComputedStyle(element) {
+        return {
+          display: "block",
+          visibility: "visible",
+          fontSize: `${element.fontSize}px`,
+          fontFamily: "Inter",
+        };
+      },
+    },
+  };
+  for (const element of [ordinaryHeading, tutorialStep]) {
+    element.getBoundingClientRect = () => ({ width: 100, height: 44 });
+  }
+  assert.equal(
+    visibleMetrics(metricScenario, ".tutorial-panel").minFont,
+    14,
+    "BR-21 must measure tutorial step labels so a below-floor label fails the rendered font oracle",
+  );
 
   const visualAudit = await readFile(path.join(root, "audit", "approved-visual-regression.js"), "utf8");
   const resetBeforeMeasurement = /await selectCase\(auditCase\);\s*labWindow\.scrollTo\(0, 0\);\s*await pause\(\);/gu;
