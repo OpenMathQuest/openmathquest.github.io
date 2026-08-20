@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/tutorial-manifest-v1.schema.json",
+  "title": "Math Quest tutorial manifest v1 path with tutorial contract v2 semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestId",
+    "version",
+    "schemaVersion",
+    "licence",
+    "aiReaderContractRef",
+    "aiSemantics",
+    "orderingContract",
+    "tutorialContractVersion",
+    "questionGeneratorContractVersion",
+    "curriculumBinding",
+    "differentExample",
+    "phaseCatalog",
+    "visualAnchorCatalog",
+    "visualCueCatalog",
+    "tutorialFamilies",
+    "methodBindings",
+    "profileBindings",
+    "featureBindings",
+    "obligationBindings"
+  ],
+  "properties": {
+    "manifestId": { "const": "math-quest-tutorials" },
+    "version": { "const": "2.0.0" },
+    "schemaVersion": { "const": 1 },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "scope": { "type": "string", "minLength": 1 },
+        "originalWork": { "const": true }
+      }
+    },
+    "aiReaderContractRef": { "$ref": "#/$defs/aiReaderContractRef" },
+    "aiSemantics": {
+      "const": {
+        "methodJoinKey": "inputMethod",
+        "featureJoinKey": "featureId",
+        "profileJoinKey": "generatorProfile",
+        "promptJoinKey": "semanticPromptStringId",
+        "obligationJoinKey": "skillId|taskType",
+        "familyResolution": "METHOD_BINDING_ELSE_PROFILE_BINDING",
+        "resolutionAuthority": "EXACT_OBLIGATION_BINDING",
+        "narrativeFieldPolicy": "NO_NARRATIVE_CONTROL_FIELDS"
+      }
+    },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/phaseCatalog", "policy": "STEP_ASCENDING" },
+        { "jsonPointer": "/visualAnchorCatalog", "policy": "LEXICOGRAPHIC_BY_ANCHOR_ROLE_ID" },
+        { "jsonPointer": "/visualCueCatalog", "policy": "LEXICOGRAPHIC_BY_CUE_ID" },
+        { "jsonPointer": "/tutorialFamilies", "policy": "LEXICOGRAPHIC_BY_FAMILY_ID" },
+        { "jsonPointer": "/methodBindings", "policy": "LEXICOGRAPHIC_BY_INPUT_METHOD" },
+        { "jsonPointer": "/profileBindings", "policy": "LEXICOGRAPHIC_BY_GENERATOR_PROFILE" },
+        { "jsonPointer": "/featureBindings", "policy": "CANONICAL_JSON_TUPLE" },
+        { "jsonPointer": "/obligationBindings", "policy": "LEXICOGRAPHIC_BY_SKILL_ID_THEN_TASK_TYPE" }
+      ]
+    },
+    "tutorialContractVersion": { "const": "tutorial-contract-v2" },
+    "questionGeneratorContractVersion": { "type": "string", "minLength": 1 },
+    "curriculumBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestId", "manifestVersion", "manifestSha256", "projectionVersion", "projectionSha256", "skillCount", "taskObligationCount"],
+      "properties": {
+        "manifestId": { "const": "math-quest-curriculum" },
+        "manifestVersion": { "type": "string", "minLength": 1 },
+        "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "projectionVersion": { "const": "tutorial-curriculum-projection-v1" },
+        "projectionSha256": { "$ref": "#/$defs/sha256" },
+        "skillCount": { "type": "integer", "minimum": 1 },
+        "taskObligationCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "differentExample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["salt", "searchLimit", "sameInputMethod", "sameRepresentation", "differentQuestionId", "differentSampleKey", "differentParameters", "automaticInvariantAnswerFallback"],
+      "properties": {
+        "salt": { "const": "math-quest-different-example-v2" },
+        "searchLimit": { "type": "integer", "minimum": 16, "maximum": 256 },
+        "sameInputMethod": { "const": true },
+        "sameRepresentation": { "const": true },
+        "differentQuestionId": { "const": true },
+        "differentSampleKey": { "const": true },
+        "differentParameters": { "const": true },
+        "automaticInvariantAnswerFallback": { "const": "FORBIDDEN" }
+      }
+    },
+    "phaseCatalog": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/phaseRecord" } },
+    "visualAnchorCatalog": { "type": "array", "minItems": 21, "uniqueItems": true, "items": { "$ref": "#/$defs/visualAnchor" } },
+    "visualCueCatalog": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/visualCue" } },
+    "tutorialFamilies": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "$ref": "#/$defs/tutorialFamily" } },
+    "methodBindings": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/methodBinding" } },
+    "profileBindings": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/profileBinding" } },
+    "featureBindings": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/featureBinding" } },
+    "obligationBindings": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/obligationBinding" } }
+  },
+  "$defs": {
+    "aiReaderContractRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractId", "version"],
+      "properties": { "contractId": { "const": "math-quest-ai-first-drift-control" }, "version": { "const": 1 } }
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "identifier": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+    "stringId": { "type": "string", "pattern": "^(?:tutorial|ui)\\.[a-z][A-Za-z0-9.]*$" },
+    "phaseRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phaseId", "step", "labelStringId"],
+      "properties": { "phaseId": { "enum": ["NOTICE", "PLAN", "CHECK"] }, "step": { "type": "integer", "minimum": 1, "maximum": 3 }, "labelStringId": { "$ref": "#/$defs/stringId" } }
+    },
+    "visualAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchorRoleId", "semanticRole"],
+      "properties": { "anchorRoleId": { "$ref": "#/$defs/identifier" }, "semanticRole": { "enum": ["GIVEN", "TARGET", "STRUCTURE", "STRATEGY", "VERIFICATION"] } }
+    },
+    "visualCue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cueId", "cueKind"],
+      "properties": { "cueId": { "$ref": "#/$defs/identifier" }, "cueKind": { "enum": ["OUTLINE", "SEQUENCE", "VERIFY"] } }
+    },
+    "phaseBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phaseId", "anchorRoleIds", "visualCueIds"],
+      "properties": {
+        "phaseId": { "enum": ["NOTICE", "PLAN", "CHECK"] },
+        "anchorRoleIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "visualCueIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      }
+    },
+    "tutorialFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["familyId", "visualTeachingContractId", "noticeStringId", "planStringId", "checkStringId", "phaseBindings"],
+      "properties": {
+        "familyId": { "$ref": "#/$defs/identifier" },
+        "visualTeachingContractId": { "$ref": "#/$defs/identifier" },
+        "noticeStringId": { "$ref": "#/$defs/stringId" },
+        "planStringId": { "$ref": "#/$defs/stringId" },
+        "checkStringId": { "$ref": "#/$defs/stringId" },
+        "phaseBindings": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/phaseBinding" } }
+      }
+    },
+    "methodBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputMethod", "featureId", "familyId", "profileDriven"],
+      "properties": {
+        "inputMethod": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "featureId": { "type": "string", "pattern": "^child\\.mechanic\\.[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+        "familyId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "profileDriven": { "type": "boolean" }
+      }
+    },
+    "profileBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generatorProfile", "familyId"],
+      "properties": { "generatorProfile": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" }, "familyId": { "$ref": "#/$defs/identifier" } }
+    },
+    "featureBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generatorProfile", "inputMethod", "semanticPromptStringId"],
+      "properties": {
+        "generatorProfile": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+        "inputMethod": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "semanticPromptStringId": { "type": "string", "pattern": "^question\\.[a-z][A-Za-z0-9]*$" }
+      }
+    },
+    "obligationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skillId", "taskType", "resolutionMode", "answerDisclosurePolicy"],
+      "properties": {
+        "skillId": { "type": "string", "pattern": "^MQ-[0-9]{3}$" },
+        "taskType": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+        "resolutionMode": { "enum": ["SAME_TASK_DIFFERENT_ANSWER", "SIBLING_TASK_DIFFERENT_ANSWER", "PROCEDURE_ONLY"] },
+        "answerDisclosurePolicy": { "enum": ["DIFFERENT_ANSWER_REQUIRED", "PROCEDURE_ONLY_REQUIRED"] },
+        "siblingTaskType": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+        "compatibilityContractId": { "$ref": "#/$defs/identifier" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "resolutionMode": { "const": "SIBLING_TASK_DIFFERENT_ANSWER" } }, "required": ["resolutionMode"] },
+          "then": { "required": ["siblingTaskType", "compatibilityContractId"], "properties": { "siblingTaskType": true, "compatibilityContractId": true, "answerDisclosurePolicy": { "const": "DIFFERENT_ANSWER_REQUIRED" } } },
+          "else": { "not": { "anyOf": [{ "required": ["siblingTaskType"], "properties": { "siblingTaskType": true } }, { "required": ["compatibilityContractId"], "properties": { "compatibilityContractId": true } }] } }
+        },
+        {
+          "if": { "properties": { "resolutionMode": { "const": "PROCEDURE_ONLY" } }, "required": ["resolutionMode"] },
+          "then": { "properties": { "answerDisclosurePolicy": { "const": "PROCEDURE_ONLY_REQUIRED" } } },
+          "else": { "properties": { "answerDisclosurePolicy": { "const": "DIFFERENT_ANSWER_REQUIRED" } } }
+        }
+      ]
+    }
+  }
+}

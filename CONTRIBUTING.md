@@ -22,24 +22,37 @@ repository.
    behavior from titles or identifiers.
 3. Preserve the neutral 21-level, 126-skill manifest contract unless the change
    is an explicitly reviewed curriculum-version proposal.
-4. Do not reintroduce a publisher's skill wording, identifiers, chapter
+4. Keep `curriculum/math-quest-tutorial-manifest-v1.json` synchronized with
+   every skill, level, required task type, input method, generator profile,
+   semantic prompt, response family, and child-visible representation. A new
+   game or curriculum move is incomplete until its different-example tutorial,
+   Parent Test path, and focused Playwright tutorial effects are covered.
+5. Before changing a shared fact, mechanic, count, identifier, or path, use
+   `tools/blast-radius-lookup.mjs`, whose default output is machine-readable
+   JSON, then inspect the sole owner and typed dependency
+   edges in `audit/repository-code-map-v1.json`. Keep every child-operable
+   mechanic synchronized with `curriculum/math-quest-feature-map-v1.json` and
+   its Tutorial Manifest `featureId`; run the focused `driftless` gate. These
+   closed records are AI-first authorities. Human summaries are generated,
+   non-authoritative projections only.
+6. Do not reintroduce a publisher's skill wording, identifiers, chapter
    taxonomy, grouping, sequence, or crosswalk.
-5. Keep required runtime assets local. Do not add trackers, analytics, remote
+7. Keep required runtime assets local. Do not add trackers, analytics, remote
    fonts, remote speech, or network-dependent play features. Never transmit
    child data automatically. Backup export is a local operation initiated only
    by a deliberate grown-up action; Math Quest must not upload the backup.
-6. Preserve exact grading, deterministic generation, progress isolation in
+8. Preserve exact grading, deterministic generation, progress isolation in
    Parent Test, visible touch controls, keyboard operation, and the text-size
    floor.
-7. Keep state-schema changes explicit and transactional. Do not reinterpret
+9. Keep state-schema changes explicit and transactional. Do not reinterpret
    evidence from an incompatible curriculum.
-8. Run `audit/run-audit.ps1 -DevelopmentOnly` on Windows plus every focused,
+10. Run `audit/run-audit.ps1 -DevelopmentOnly` on Windows plus every focused,
    effect-sensitive check required by the changed behavior. Report failures or
    skips honestly. `audit.bat` is reserved for the frozen release candidate
    immediately before public publication.
-9. Run secret, personal-information, filename, metadata, archive, and
+11. Run secret, personal-information, filename, metadata, archive, and
    third-party-rights scans over changed files.
-10. Do not commit saves, generated screenshots, local audit reports, ZIP
+12. Do not commit saves, generated screenshots, local audit reports, ZIP
     archives, private working notes, or reference material without confirmed
     redistribution rights.
 

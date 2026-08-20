@@ -570,7 +570,7 @@
 
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
-        logicalIdentity !== "math-quest-static-v1.0.0-beta.6"
+        logicalIdentity !== "math-quest-static-v1.0.0-beta.7"
         || !Array.isArray(cacheNames)
       ) return [];
       const prefix = `${logicalIdentity}-`;
@@ -7844,6 +7844,7 @@
             "./assets/sounds/tap.wav",
             "./index.html",
             "./manifest.webmanifest",
+            "./curriculum/math-quest-tutorial-manifest-v1.json",
             "./LICENSE",
             "./PRIVACY.md",
             "./THIRD_PARTY_NOTICES.md",
@@ -7896,16 +7897,16 @@
           const expectedPaths = [shellManifestRelative, ...expectedShellEntryPaths];
           const readinessValid = Boolean(
             readiness?.type === "MATH_QUEST_READINESS_V1"
-            && readiness?.release === "1.0.0-beta.6"
-            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.6"
-            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.6"
+            && readiness?.release === "1.0.0-beta.7"
+            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.7"
+            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.7"
             && readiness?.ready === true
             && requiredPaths.length === expectedPaths.length
             && requiredPaths.every((entry) => entry?.ready === true)
             && JSON.stringify(requiredPaths.map((entry) => entry.path).sort()) === JSON.stringify([...expectedPaths].sort())
           );
           const shellManifestValid = Boolean(shellManifest?.schemaVersion === 1
-            && shellManifest?.release === "1.0.0-beta.6"
+            && shellManifest?.release === "1.0.0-beta.7"
             && shellManifest?.buildId === readiness?.buildId
             && shellManifest?.cacheName === readiness?.cacheIdentity
             && shellManifest?.entryPath === "./index.html"

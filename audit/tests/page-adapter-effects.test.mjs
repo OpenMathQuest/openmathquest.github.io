@@ -534,8 +534,8 @@ test("only a fully valid exact immutable retired Beta 1 envelope is eligible for
   assert.equal(harness.isRetainedRetiredBeta1Save(null), false);
 });
 
-test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 6 save commits transactionally", async () => {
-  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 6 starts fresh so old mastery is not applied to changed skills.";
+test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 7 save commits transactionally", async () => {
+  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 7 starts fresh so old mastery is not applied to changed skills.";
   const successful = createBeta1MigrationHarness("retained-success");
   assert.equal(successful.harness.status().selectedSource, "BETA1-A");
   assert.equal(successful.harness.status().beta1RetainedCutoverPending, true);
@@ -1195,9 +1195,9 @@ test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mi
   const effects = { requests: [], replyMode: "valid" };
   const harness = evaluateHarness({
     prelude: `
-      const PWA_RELEASE="1.0.0-beta.6";
-      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.6";
-      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.6";
+      const PWA_RELEASE="1.0.0-beta.7";
+      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.7";
+      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.7";
       const PWA_REQUIRED_PATHS=Object.freeze(["./index.html","./PRIVACY.md"]);
       const PWA_ACTIVATION_CHALLENGE_PATTERN=/^[a-f0-9]{64}$/;
       const waiting={
@@ -1537,6 +1537,7 @@ function createFatigueTransitionHarness() {
       function replayText(){return "fatigue prompt";}
       function speak(text){effects.speech.push(String(text));}
       function startReteach(){throw new Error("unexpected chained reteach");}
+      function commitPendingAttempt(){return {ok:true,changed:false};}
       function checkTimeCap(){return false;}
       function addClassification(value){
         if(value&&!ui.sessionClassifications.includes(value))ui.sessionClassifications.push(value);
@@ -1673,6 +1674,101 @@ test("pattern visuals never impersonate response actions", () => {
     assert.match(html, new RegExp(`data-pattern-action="${action}"`, "u"));
     assert.doesNotMatch(html, /\sdata-action=/u);
   }
+});
+
+function createTutorialCommitHarness({ saveResults = [true] } = {}) {
+  const effects = {
+    applyCalls: 0,
+    suppressed: 0,
+    saves: 0,
+    renders: 0,
+    focuses: [],
+    speeches: [],
+    announcements: [],
+    warnings: [],
+    saveResults: [...saveResults],
+  };
+  const harness = evaluateHarness({
+    prelude: `
+      const structuredClone=(value)=>JSON.parse(JSON.stringify(value));
+      let state={seed:41,evidenceCount:0,practiceCount:0,feedbackHistory:[]};
+      let ui={
+        screen:"session",phase:"feedback",selected:"wrong",entry:"",fractionParts:{whole:"",numerator:"",denominator:""},
+        modelCells:[],responseState:{tokens:["wrong"]},modelTouched:false,hintUsed:false,tutorialOpen:false,tutorialStep:1,
+        selectionEvents:[],selectionRestored:false,feedback:"Try a different way.",
+        lastAttempt:{recordId:"attempt-1",questionId:"question-1",skillId:"MQ-004",stage:"PRE_K",feedbackClass:"INCORRECT",evidenceClass:"CONSTRUCTION",playDay:7},
+        attemptCommitted:false,reteachPending:null,fatiguePending:false,isReteach:false,
+        question:{questionId:"question-1",skillId:"MQ-004"},session:{sessionId:"session-1"}
+      };
+      const E={
+        CONSTANTS:{FEEDBACK_HISTORY_MAX:100},
+        createResponseState(){return {tokens:[]};},
+        suppressAttemptEvidenceForTutorial(attempt){effects.suppressed+=1;return {...attempt,evidenceClass:"NON_EVIDENCE",hintUsed:true,modelUsed:true};},
+        applyAttempt(current,attempt){
+          effects.applyCalls+=1;
+          const next=structuredClone(current);
+          if(attempt.evidenceClass!=="NON_EVIDENCE"){next.evidenceCount+=1;next.practiceCount+=1;}
+          return {state:next,effects:[]};
+        }
+      };
+      function save(){effects.saves+=1;return effects.saveResults.length?effects.saveResults.shift():true;}
+      function raiseWarning(message){effects.warnings.push(String(message));}
+      function tutorialAvailable(){return true;}
+      function tutorialPlan(){return {sourceQuestionId:"question-1",example:{questionId:"example-1"}};}
+      function render(){effects.renders+=1;}
+      function renderPlayAndFocus(selector){effects.focuses.push(selector);}
+      function speak(value){effects.speeches.push(String(value));}
+      function tutorialStepSpeech(){return "Tutorial step one";}
+      function announce(value){effects.announcements.push(String(value));}
+      function s(value){return value;}
+    `,
+    functions: ["restoreTutorialOpenCheckpoint", "commitPendingAttempt", "openTutorial"],
+    exposed: "state:()=>state,ui:()=>ui,effects,commitPendingAttempt,openTutorial",
+    context: { effects },
+  });
+  return harness;
+}
+
+test("tutorial assistance commits a pending attempt once without evidence and rolls back on save failure", () => {
+  const direct = createTutorialCommitHarness();
+  const first = direct.commitPendingAttempt({ assisted: true });
+  assert.equal(first.ok, true);
+  assert.equal(first.changed, true);
+  assert.equal(direct.effects.applyCalls, 1);
+  assert.equal(direct.effects.suppressed, 1);
+  assert.equal(direct.effects.saves, 1);
+  assert.equal(direct.state().evidenceCount, 0);
+  assert.equal(direct.state().practiceCount, 0);
+  assert.equal(direct.state().feedbackHistory.length, 1);
+  assert.equal(direct.ui().lastAttempt.evidenceClass, "NON_EVIDENCE");
+  assert.equal(direct.ui().attemptCommitted, true);
+  const repeated = direct.commitPendingAttempt({ assisted: true });
+  assert.equal(repeated.ok, true);
+  assert.equal(repeated.changed, false);
+  assert.equal(direct.effects.applyCalls, 1, "a pending attempt must not be committed twice");
+
+  const opened = createTutorialCommitHarness();
+  assert.equal(opened.openTutorial(), true);
+  assert.equal(opened.effects.applyCalls, 1);
+  assert.equal(opened.state().evidenceCount, 0);
+  assert.equal(opened.state().practiceCount, 0);
+  assert.equal(opened.state().feedbackHistory.length, 1);
+  assert.equal(opened.ui().phase, "question");
+  assert.equal(opened.ui().tutorialOpen, true);
+  assert.equal(opened.ui().tutorialStep, 1);
+  assert.equal(opened.ui().hintUsed, true);
+  assert.equal(opened.ui().attemptCommitted, true);
+  assert.equal(opened.ui().lastAttempt, null);
+
+  const rollback = createTutorialCommitHarness({ saveResults: [false] });
+  const beforeState = JSON.parse(JSON.stringify(rollback.state()));
+  const beforeUi = JSON.parse(JSON.stringify(rollback.ui()));
+  assert.equal(rollback.openTutorial(), false);
+  assert.deepEqual(JSON.parse(JSON.stringify(rollback.state())), beforeState);
+  assert.deepEqual(JSON.parse(JSON.stringify(rollback.ui())), beforeUi);
+  assert.equal(rollback.effects.applyCalls, 1, "the attempted transaction must exercise the real pending commit");
+  assert.equal(rollback.effects.saves, 1);
+  assert.equal(rollback.effects.renders, 1);
 });
 
 test("duration comparison vectors and tracks are first-party, proportional, and event-specific", () => {

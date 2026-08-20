@@ -27,6 +27,58 @@ disproportionate, or when the user or project conventions require it. If no
 suitable open-source option turns up after a reasonable search, propose a
 custom approach—do not implement the substantial version until approved.
 
+<!-- AI-FIRST-DRIFT-CONTROL-START -->
+## AI-first drift-control authority
+
+The primary consumer of the **Owners, Code Map, Feature Map, Tutorial
+Manifest, Blast Radius, and Gates** systems is an AI coding agent. Design and
+maintain these systems for maximum machine legibility. Never choose prose,
+layout, naming, omission, convenience, or a human-friendly summary when that
+choice makes the machine contract less exact or more ambiguous.
+
+Their canonical records must use closed machine-readable schemas, stable
+namespaced identifiers, explicit sole owners, typed relationships, enumerated
+states and predicates, exact source bindings, deterministic declared ordering,
+and fail-closed validation for missing, unknown, duplicate, stale, or orphaned
+facts. A machine consumer must not need to infer control flow, authority,
+ownership, dependency, proof meaning, or release impact from narrative prose.
+Machine-facing commands emit structured data by default.
+
+Human-readable tables, Markdown, diagrams, and summaries may exist only as
+generated, non-authoritative projections. They may annotate canonical facts,
+but may not introduce, reinterpret, weaken, or override one. When human and
+machine convenience conflict, preserve the unambiguous machine contract. The
+closed machine mirror of this directive is
+`audit/repository-code-map-v1.json#aiReaderContract`; its authority binding and
+focused tests must be updated in the same change whenever this section changes.
+<!-- AI-FIRST-DRIFT-CONTROL-END -->
+
+## Driftless repository routine
+
+Before changing a shared fact, mechanic, count, identifier, path, or public
+contract, run the relevant exact, word, symbol, or count query through
+`tools/blast-radius-lookup.mjs`. Treat its output as a bounded dependency
+hypothesis, then inspect the declared owners and artifact relations in
+`audit/repository-code-map-v1.json`; do not treat text search as proof that no
+other dependency exists.
+
+The permanent chain is **Owners → Code Map → Feature Map → Tutorial Manifest →
+Blast Radius → Gates**. Each governed fact has one sole owner in the Code Map.
+Each child-operable mechanic has one stable `child.mechanic.*` identity in
+`curriculum/math-quest-feature-map-v1.json`, and that identity must appear in
+the matching Tutorial Manifest method binding. Any new, removed, renamed, or
+moved mechanic, file, owner, projection, tutorial binding, proof obligation,
+or dependency edge must update the applicable canonical maps and focused gates
+in the same change. Never create a parallel ownership, feature, or status map
+to work around this chain.
+
+Run `node tools/blast-radius-lookup.mjs --self-test` and the focused `driftless`
+development gate after changing any layer in the chain. Unknown paths and
+unclassified effects fail safe to the broad development suite. The maps and
+automation predict impact; they do not replace independent mathematical
+oracles, rendered-browser evidence, accessibility review, human play testing,
+or the single frozen-candidate certification run.
+
 ## Owner interaction and identity-placeholder policy
 
 All communication addressed to the project owner—not child-facing game copy
@@ -36,6 +88,12 @@ direct language; include only what is useful; make the outcome, meaning, and
 next action unmistakable; and retain a warm, respectful human voice. This
 applies to questions, commentary, status updates, reviews, reports, release
 notices, and final responses.
+
+When a genuine ambiguity could materially change the result or waste work,
+ask the owner one concise question early instead of guessing. Questions are
+welcome whenever they improve shared clarity; do not postpone a necessary
+question until after implementation. This does not create repeated approval
+prompts for work already authorized.
 
 For work the project owner has already authorized, proceed autonomously through
 ordinary file, focused-test, Git, GitHub, and release operations. Do not
@@ -455,7 +513,10 @@ sample ordinals. Its versioned risk planner selects a closed representative
 set across structural signatures and required skill, method, representation,
 theme, and model witnesses. Each selected scenario is rendered in six
 governed Edge viewport/touch profiles and inspected in its initial, partial-
-response, expected-answer, and available teaching-model states. It uses native
+response, expected-answer, available teaching-model, and three-step tutorial
+states. The tutorial states must prove a structurally matched different example,
+Notice / Plan / Check progression, return to the exact source question, and
+unchanged child-save bytes. It uses native
 Playwright mouse, touch, keyboard, wheel, and form actions; zero retries; context-
 level request observation; browser actionability without forced interaction;
 16 px text and 44 px control floors; layout, overflow, accessible-name, save-
@@ -481,6 +542,35 @@ comprehension, visual taste, screen-reader speech, real-finger operation,
 software-keyboard behaviour, Safari/iOS behaviour, or installed-PWA relaunch.
 The closed machine cadence is owned by
 `audit/certification-cadence-v1.json`.
+
+### Permanent tutorial linkage
+
+Every ordinary curriculum question must provide the real in-level **Show me
+how** path and a structurally matched different example. The tutorial proceeds
+through three child-visible steps—Notice, Plan, and Check—without exposing the
+source question's answer. Opening a tutorial or answering after tutorial help
+must preserve truthful feedback but contribute no mastery, spacing, practice,
+promotion, placement, or other learning evidence. Parent Test must expose the
+same tutorial behavior while remaining byte-for-byte isolated from the child
+save.
+
+`curriculum/math-quest-tutorial-manifest-v1.json` is the canonical tutorial
+linkage record. It must remain schema-valid and exactly bound to the current
+curriculum bytes, skill-to-level map, required task types, generator contract,
+input-method set, generator-profile set, generated semantic-prompt feature set,
+and approved child-string IDs. Any new, removed, renamed, or moved skill, level,
+task type, input method, generator profile, semantic prompt, response family,
+or child-visible mathematical representation must update or regenerate this
+record and its focused tests in the same change. A feature is not implemented,
+release-certified, or shipped while its tutorial linkage is missing or stale.
+
+Focused development evidence must exercise different-example structure,
+answer separation, persistence, save-failure rollback, non-evidentiary assisted
+attempts, Parent Test isolation, and native desktop/touch tutorial operation.
+The direct Playwright journeys and the alternating-beta Deep UX Census must
+stay synchronized with tutorial controls, steps, geometry, accessibility, and
+return-to-question behavior. Adding a game type without extending these
+tutorial effects is a process defect.
 
 ### Defect regression policy
 

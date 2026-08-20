@@ -15,7 +15,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Fail-closed component, provenance, and licence eligibility policy.",
-      "sha256": "af80469037e788b5739fbcea72e2c9fc7d2385707469fcdc231ebfcc66d12258"
+      "sha256": "91d5d7e9d29c83cf9689d57faf558c236fc627ca2161bd75d0813571361b0809"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -53,9 +53,9 @@
       "path": "licenses/ci-toolchain.md",
       "kind": "attribution",
       "origin": "mixed-open",
-      "licenceExpression": "MIT",
+      "licenceExpression": "Apache-2.0 AND MIT AND BSD-3-Clause",
       "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser-verification tools.",
-      "sha256": "e1b4b22936f6b36da0d8bccdc47172db9e6090911efd789460c339af6858d46c"
+      "sha256": "ad56c4ed74fa0fc8059873e8c73d3c19e7ef01852a1e9158361b7a8924d8e889"
     },
     {
       "path": "licenses/sound-effects.md",

@@ -24,6 +24,7 @@ export const RIGHTS_STATE_PATHS = Object.freeze([
   "audit/lib/trusted-https-canary.mjs",
   "audit/lib/playwright-focused-contract.mjs",
   "audit/lib/playwright-deep-ux-census.mjs",
+  "audit/lib/tutorial-manifest.mjs",
   "audit/install-reviewed-ci-dependencies.ps1",
   "audit/playwright/compact-reporter.mjs",
   "audit/playwright/critical-journeys.spec.mjs",
@@ -33,9 +34,12 @@ export const RIGHTS_STATE_PATHS = Object.freeze([
   "audit/run-playwright-focused.mjs",
   "audit/run-trusted-https-canary.mjs",
   "audit/run-trusted-https-canary.ps1",
+  "audit/schemas/tutorial-manifest-v1.schema.json",
   "audit/tests/playwright-focused-contract.test.mjs",
   "audit/tests/playwright-deep-ux-census.test.mjs",
+  "audit/tests/tutorial-manifest.test.mjs",
   "audit/validate-trusted-https-canary.mjs",
+  "curriculum/math-quest-tutorial-manifest-v1.json",
   "licenses/Inter-OFL.txt",
   "licenses/app-icons.md",
   "licenses/ci-toolchain.md",
@@ -47,6 +51,8 @@ export const RIGHTS_STATE_PATHS = Object.freeze([
   "package.json",
   "playwright.config.mjs",
   "playwright.deep-ux.config.mjs",
+  "tools/build-tutorial-manifest.mjs",
+  "tools/sync-tutorial-manifest.mjs",
 ]);
 
 export async function rightsStateSha256(root) {

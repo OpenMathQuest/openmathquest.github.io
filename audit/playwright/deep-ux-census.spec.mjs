@@ -174,6 +174,7 @@ async function geometryCensus(question, page) {
       return /^(?:auto|scroll)$/u.test(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
     });
     const rootBox = root.getBoundingClientRect();
+    const tutorial = root.querySelector('[data-tutorial="different-example"]');
     const grade = root.querySelector('[data-lab-action="grade"]');
     const response = root.querySelector(".answer-controls");
     const placeholderText = /(?:\bundefined\b|\bNaN\b|\[object Object\])/u.test(root.innerText);
@@ -192,7 +193,7 @@ async function geometryCensus(question, page) {
     const minimumFont = fontSizes.length ? Math.min(...fontSizes) : 0;
     if (minimumFont < 16) issues.push({ code: "TEXT_BELOW_FLOOR", message: `Minimum visible question text is ${minimumFont}px, below 16px.` });
     if (placeholderText) issues.push({ code: "PLACEHOLDER_TEXT_VISIBLE", message: "Undefined, NaN, or object placeholder text is visible." });
-    if (!response || !grade) issues.push({ code: "RESPONSE_OR_GRADE_MISSING", message: "The response area or Test answer control is missing." });
+    if (!tutorial && (!response || !grade)) issues.push({ code: "RESPONSE_OR_GRADE_MISSING", message: "The response area or Test answer control is missing." });
     if (grade && !visible(grade)) issues.push({ code: "GRADE_NOT_VISIBLE", message: "The Test answer control is not visibly rendered." });
     return {
       viewport: { width: innerWidth, height: innerHeight, devicePixelRatio },
@@ -253,6 +254,48 @@ async function makePartialResponse(question, page) {
     available = value !== null;
   }
   return { available, changed: available && await responseFingerprint() !== before };
+}
+
+async function expectTutorialRenderedPhaseEffect(panel) {
+  const effect = await panel.evaluate((root) => {
+    const anchor = root.querySelector(".tutorial-example [data-visual-anchor-role][data-visual-cue-id]");
+    const overlay = anchor?.querySelector(":scope > .tutorial-anchor-overlay");
+    const overlayBox = overlay?.getBoundingClientRect();
+    const instruction = root.querySelector(".tutorial-instruction");
+    const style = anchor ? getComputedStyle(anchor) : null;
+    return {
+      phase: root.dataset.tutorialPhaseId || "",
+      declaredAnchor: root.dataset.visualAnchorIds || "",
+      declaredCue: root.dataset.visualCueIds || "",
+      anchorCount: root.querySelectorAll(".tutorial-example [data-visual-anchor-role][data-visual-cue-id]").length,
+      actualMathSurface: Boolean(anchor?.matches(".prompt,.stimulus,.model")),
+      anchorRole: anchor?.getAttribute("data-visual-anchor-role") || "",
+      cueId: anchor?.getAttribute("data-visual-cue-id") || "",
+      describedByInstruction: anchor?.getAttribute("aria-describedby") === instruction?.id,
+      outlineWidth: Number.parseFloat(style?.outlineWidth || "0"),
+      outlineColor: style?.outlineColor || "",
+      outlineStyle: style?.outlineStyle || "",
+      outlineOffset: style?.outlineOffset || "",
+      overlayVisible: Boolean(overlayBox && overlayBox.width > 0 && overlayBox.height > 0 && getComputedStyle(overlay).display !== "none" && getComputedStyle(overlay).visibility !== "hidden"),
+      overlayGeometry: overlay?.querySelector("svg")?.innerHTML || "",
+      overlayHasSvgGeometry: Boolean(overlay?.querySelector("svg :is(circle,rect,path,line,polyline)")),
+    };
+  });
+  expect(effect.anchorCount).toBe(1);
+  expect(effect.actualMathSurface).toBe(true);
+  expect(effect.anchorRole).toBe(effect.declaredAnchor);
+  expect(effect.cueId).toBe(effect.declaredCue);
+  expect(effect.describedByInstruction).toBe(true);
+  expect(effect.outlineWidth).toBeGreaterThanOrEqual(4);
+  expect(effect.overlayVisible).toBe(true);
+  expect(effect.overlayHasSvgGeometry).toBe(true);
+  return JSON.stringify({
+    outlineWidth: effect.outlineWidth,
+    outlineColor: effect.outlineColor,
+    outlineStyle: effect.outlineStyle,
+    outlineOffset: effect.outlineOffset,
+    overlayGeometry: effect.overlayGeometry,
+  });
 }
 
 async function writeAnomalyArtifacts(page, question, anomalyBase, geometry) {
@@ -383,6 +426,107 @@ test("[PW-DUX-01] deterministic deep UX census", async ({ page, browser }, testI
         await inspectState("TEACHING_MODEL_WHEN_AVAILABLE");
         await progress("MODEL_INSPECTED");
       }
+      const sourceQuestionId = await question.getAttribute("data-question-id");
+      const tutorial = page.getByRole("button", { name: "Show tutorial", exact: true });
+      await positionOuterDocumentControl(tutorial, page);
+      await deepUxEffectBoundRerenderAction(
+        () => activate(tutorial, page, { preserveScroll: true }),
+        async () => {
+          await waitForLabRender(page);
+          const panel = page.locator('[data-tutorial="different-example"]');
+          return await panel.isVisible()
+            && await panel.getAttribute("data-tutorial-step") === "1"
+            && await page.getByRole("button", { name: "Hide tutorial", exact: true }).isVisible();
+        },
+      );
+      question = page.locator("article.lab-question");
+      let tutorialPanel = question.locator('[data-tutorial="different-example"]');
+      await expect(tutorialPanel).toHaveAttribute("data-source-question-id", sourceQuestionId || "");
+      const tutorialContract = await page.evaluate(({ scenario, seed }) => {
+        const engine = window.MathQuestEngine;
+        const source = engine.makeQuestion({
+          skillId: scenario.skillId,
+          tier: scenario.tier,
+          representation: scenario.representation,
+          theme: scenario.theme,
+          seed,
+          ordinal: scenario.ordinal,
+          eligibleQuestionOrdinal: scenario.ordinal,
+          scheduledReview: false,
+          coldTest: false,
+          preview: true,
+          scaffolded: true,
+        });
+        const tutorialPlan = engine.makeTutorialPlan(source);
+        return tutorialPlan ? {
+          resolutionMode: tutorialPlan.resolutionMode,
+          answerDisclosurePolicy: tutorialPlan.answerDisclosurePolicy,
+          sourceTerminalAnswerFingerprint: tutorialPlan.sourceTerminalAnswerFingerprint,
+          exampleTerminalAnswerFingerprint: tutorialPlan.exampleTerminalAnswerFingerprint,
+        } : null;
+      }, { scenario, seed: plan.seed });
+      expect(tutorialContract).not.toBeNull();
+      await expect(tutorialPanel).toHaveAttribute("data-resolution-mode", tutorialContract.resolutionMode);
+      await expect(tutorialPanel).toHaveAttribute("data-answer-disclosure-policy", tutorialContract.answerDisclosurePolicy);
+      await expect(tutorialPanel).toHaveAttribute("data-answer-source", tutorialContract.answerDisclosurePolicy === "PROCEDURE_ONLY_REQUIRED" ? "procedure-only" : "different-terminal-answer");
+      if (tutorialContract.answerDisclosurePolicy === "DIFFERENT_ANSWER_REQUIRED") {
+        expect(tutorialContract.exampleTerminalAnswerFingerprint).not.toBe(tutorialContract.sourceTerminalAnswerFingerprint);
+      }
+      const exampleQuestionId = await tutorialPanel.getAttribute("data-example-question-id");
+      expect(exampleQuestionId).toBeTruthy();
+      expect(exampleQuestionId).not.toBe(sourceQuestionId);
+      await expect(tutorialPanel).toHaveAttribute("data-tutorial-step", "1");
+      await expect(tutorialPanel).toHaveAttribute("data-tutorial-phase-id", "NOTICE");
+      await expect(tutorialPanel.getByRole("heading", { name: "Notice — Step 1 of 3", exact: true })).toBeVisible();
+      await expect(tutorialPanel.locator(".tutorial-phase-cue")).toHaveCount(0);
+      await expect(tutorialPanel).not.toHaveAttribute("data-visual-anchor-ids", "");
+      await expect(tutorialPanel).not.toHaveAttribute("data-visual-cue-ids", "");
+      await expect(tutorialPanel).toHaveAttribute("data-terminal-answer-rendered", "false");
+      await expect(tutorialPanel.locator(".model[data-worked-result='true']")).toHaveCount(0);
+      const tutorialPhaseSignatures = [await expectTutorialRenderedPhaseEffect(tutorialPanel)];
+      await inspectState("TUTORIAL_STEP_1_DIFFERENT_EXAMPLE");
+      await progress("TUTORIAL_STEP_1_INSPECTED");
+
+      const advanceTutorialTo = async (step, state, stage) => {
+        const next = page.getByRole("button", { name: "Next step", exact: true });
+        await deepUxEffectBoundRerenderAction(
+          () => activate(next, page),
+          async () => {
+            await waitForLabRender(page);
+            return await page.locator('[data-tutorial="different-example"]').getAttribute("data-tutorial-step") === String(step);
+          },
+        );
+        question = page.locator("article.lab-question");
+        tutorialPanel = question.locator('[data-tutorial="different-example"]');
+        await expect(tutorialPanel).toHaveAttribute("data-source-question-id", sourceQuestionId || "");
+        await expect(tutorialPanel).toHaveAttribute("data-example-question-id", exampleQuestionId || "");
+        await expect(tutorialPanel).toHaveAttribute("data-tutorial-step", String(step));
+        await expect(tutorialPanel).toHaveAttribute("data-tutorial-phase-id", ["NOTICE", "PLAN", "CHECK"][step - 1]);
+        await expect(tutorialPanel.getByRole("heading", { name: ["Notice — Step 1 of 3", "Plan — Step 2 of 3", "Check — Step 3 of 3"][step - 1], exact: true })).toBeVisible();
+        await expect(tutorialPanel).not.toHaveAttribute("data-visual-anchor-ids", "");
+        await expect(tutorialPanel).not.toHaveAttribute("data-visual-cue-ids", "");
+        const shouldRenderDifferentAnswer = step === 3 && tutorialContract.answerDisclosurePolicy === "DIFFERENT_ANSWER_REQUIRED";
+        await expect(tutorialPanel).toHaveAttribute("data-terminal-answer-rendered", String(shouldRenderDifferentAnswer));
+        if (shouldRenderDifferentAnswer) await expect(tutorialPanel.locator(".model[data-worked-result='true']")).toBeVisible();
+        else await expect(tutorialPanel.locator(".model[data-worked-result='true']")).toHaveCount(0);
+        tutorialPhaseSignatures.push(await expectTutorialRenderedPhaseEffect(tutorialPanel));
+        await inspectState(state);
+        await progress(stage);
+      };
+      await advanceTutorialTo(2, "TUTORIAL_STEP_2_PLAN", "TUTORIAL_STEP_2_INSPECTED");
+      await advanceTutorialTo(3, "TUTORIAL_STEP_3_CHECK", "TUTORIAL_STEP_3_INSPECTED");
+      expect(new Set(tutorialPhaseSignatures).size).toBe(3);
+      await deepUxEffectBoundRerenderAction(
+        () => activate(page.getByRole("button", { name: "Back to your question", exact: true }), page),
+        async () => {
+          await waitForLabRender(page);
+          const rendered = page.locator("article.lab-question");
+          return await rendered.getAttribute("data-question-id") === sourceQuestionId
+            && await rendered.locator(".answer-controls").isVisible()
+            && await page.getByRole("button", { name: "Show tutorial", exact: true }).isVisible();
+        },
+      );
+      question = page.locator("article.lab-question");
       const currentSave = await page.evaluate(() => localStorage.getItem(window.MathQuestEngine.CONSTANTS.STORAGE_NAMESPACE));
       if (currentSave !== saveBytes) {
         const geometry = await geometryCensus(question, page);

@@ -32,6 +32,7 @@ const REQUIRED_PUBLIC_RUNTIME_PATHS = Object.freeze([
   "release-shell-v1.json",
   "sw.js",
   CURRICULUM_PATH,
+  "curriculum/math-quest-tutorial-manifest-v1.json",
 ]);
 const COMPONENT_REGISTER_PATH = "licenses/component-register-v1.json";
 const EVIDENCE_DECLARATION_PATH = "licenses/evidence-paths-v1.json";
@@ -54,7 +55,7 @@ const REQUIRED_RIGHTS_PATHS = Object.freeze([
   "licenses/ci-toolchain.md",
   "licenses/sound-effects.md",
 ]);
-const APPROVED_LICENCES = new Set(["Apache-2.0", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
+const APPROVED_LICENCES = new Set(["Apache-2.0", "BSD-3-Clause", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
 const KIND_LICENCES = Object.freeze({
   font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
   image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
@@ -64,6 +65,7 @@ const KIND_LICENCES = Object.freeze({
 const EVIDENCE_KINDS = new Set(["licence-text", "policy", "attribution", "provenance"]);
 const EVIDENCE_ORIGINS = new Set(["standard-open-text", "original-project", "mixed-open", "third-party-open"]);
 const EVIDENCE_LICENCE_EXPRESSIONS = new Set([
+  "Apache-2.0 AND MIT AND BSD-3-Clause",
   "MIT",
   "OFL-1.1",
   "MIT AND OGL-UK-3.0 AND CC-BY-4.0",
@@ -824,11 +826,11 @@ function registerFindings(register, entries, blobs, manifest) {
 
   const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
   const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
-  const playwrightToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
-  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 6) {
-    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the six reviewed Node.js, Caddy, and Playwright dependency records`);
+  const packageToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
+  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 11) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the eleven reviewed Node.js, Caddy, Playwright, and Ajv dependency records`);
   } else {
-    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fseventsTool] = register.toolchain;
+    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
     if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
       if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
       if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
@@ -909,12 +911,92 @@ function registerFindings(register, entries, blobs, manifest) {
       bundled: false,
       scope: "optional dependency omitted by the reviewed Windows npm ci",
     };
+    const exactAjv = {
+      id: "ajv-8.20.0",
+      kind: "ci-only-json-schema-validator",
+      version: "8.20.0",
+      licence: "MIT",
+      sourceUrl: "https://github.com/ajv-validator/ajv/tree/0fba0b8e649909613cfce0999b149cd08f4a4987",
+      sourceCommit: "0fba0b8e649909613cfce0999b149cd08f4a4987",
+      licenceEvidence: "https://github.com/ajv-validator/ajv/blob/0fba0b8e649909613cfce0999b149cd08f4a4987/LICENSE",
+      packageName: "ajv",
+      packageUrl: "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+      packageSri: "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "tutorial-manifest build, synchronization, and focused validation only",
+    };
+    const exactFastDeepEqual = {
+      id: "fast-deep-equal-3.1.3",
+      kind: "ci-only-transitive-validator-dependency",
+      version: "3.1.3",
+      licence: "MIT",
+      sourceUrl: "https://github.com/epoberezkin/fast-deep-equal/tree/6d7b0967c6a3c7051ba51e236f2404db34e8b13c",
+      sourceCommit: "6d7b0967c6a3c7051ba51e236f2404db34e8b13c",
+      licenceEvidence: "https://github.com/epoberezkin/fast-deep-equal/blob/6d7b0967c6a3c7051ba51e236f2404db34e8b13c/LICENSE",
+      packageName: "fast-deep-equal",
+      packageUrl: "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz",
+      packageSri: "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+    };
+    const exactFastUri = {
+      id: "fast-uri-3.1.5",
+      kind: "ci-only-transitive-validator-dependency",
+      version: "3.1.5",
+      licence: "BSD-3-Clause",
+      sourceUrl: "https://github.com/fastify/fast-uri/tree/5e179cbb4636d5f773ed21126e5bd3068e87e94e",
+      sourceCommit: "5e179cbb4636d5f773ed21126e5bd3068e87e94e",
+      licenceEvidence: "https://github.com/fastify/fast-uri/blob/5e179cbb4636d5f773ed21126e5bd3068e87e94e/LICENSE",
+      packageName: "fast-uri",
+      packageUrl: "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.5.tgz",
+      packageSri: "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+    };
+    const exactSchemaTraverse = {
+      id: "json-schema-traverse-1.0.0",
+      kind: "ci-only-transitive-validator-dependency",
+      version: "1.0.0",
+      licence: "MIT",
+      sourceUrl: "https://github.com/epoberezkin/json-schema-traverse/tree/a20697b59096545a52bc8050b0878135c16979d6",
+      sourceCommit: "a20697b59096545a52bc8050b0878135c16979d6",
+      licenceEvidence: "https://github.com/epoberezkin/json-schema-traverse/blob/a20697b59096545a52bc8050b0878135c16979d6/LICENSE",
+      packageName: "json-schema-traverse",
+      packageUrl: "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz",
+      packageSri: "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+    };
+    const exactRequireFromString = {
+      id: "require-from-string-2.0.2",
+      kind: "ci-only-transitive-validator-dependency",
+      version: "2.0.2",
+      licence: "MIT",
+      sourceUrl: "https://github.com/floatdrop/require-from-string/tree/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13",
+      sourceCommit: "bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13",
+      licenceEvidence: "https://github.com/floatdrop/require-from-string/blob/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13/LICENSE",
+      packageName: "require-from-string",
+      packageUrl: "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
+      packageSri: "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+    };
     for (const [tool, keys, expected, index] of [
       [caddyTool, caddyToolKeys, exactCaddy, 1],
-      [playwrightCoreTool, playwrightToolKeys, exactPlaywright, 2],
-      [playwrightTestTool, playwrightToolKeys, exactPlaywrightTest, 3],
-      [playwrightRunnerTool, playwrightToolKeys, exactPlaywrightRunner, 4],
-      [fseventsTool, playwrightToolKeys, exactFsevents, 5],
+      [playwrightCoreTool, packageToolKeys, exactPlaywright, 2],
+      [playwrightTestTool, packageToolKeys, exactPlaywrightTest, 3],
+      [playwrightRunnerTool, packageToolKeys, exactPlaywrightRunner, 4],
+      [fseventsTool, packageToolKeys, exactFsevents, 5],
+      [ajvTool, packageToolKeys, exactAjv, 6],
+      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 7],
+      [fastUriTool, packageToolKeys, exactFastUri, 8],
+      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 9],
+      [requireFromStringTool, packageToolKeys, exactRequireFromString, 10],
     ]) {
       const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
       if (exactKeys(tool, keys, label, findings)

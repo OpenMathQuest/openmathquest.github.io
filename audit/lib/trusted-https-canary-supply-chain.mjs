@@ -16,6 +16,21 @@ export const PLAYWRIGHT_PACKAGE_SRI = "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBc
 export const FSEVENTS_VERSION = "2.3.2";
 export const FSEVENTS_URL = `https://registry.npmjs.org/fsevents/-/fsevents-${FSEVENTS_VERSION}.tgz`;
 export const FSEVENTS_SRI = "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==";
+export const AJV_VERSION = "8.20.0";
+export const AJV_URL = `https://registry.npmjs.org/ajv/-/ajv-${AJV_VERSION}.tgz`;
+export const AJV_SRI = "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==";
+export const FAST_DEEP_EQUAL_VERSION = "3.1.3";
+export const FAST_DEEP_EQUAL_URL = `https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-${FAST_DEEP_EQUAL_VERSION}.tgz`;
+export const FAST_DEEP_EQUAL_SRI = "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==";
+export const FAST_URI_VERSION = "3.1.5";
+export const FAST_URI_URL = `https://registry.npmjs.org/fast-uri/-/fast-uri-${FAST_URI_VERSION}.tgz`;
+export const FAST_URI_SRI = "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==";
+export const JSON_SCHEMA_TRAVERSE_VERSION = "1.0.0";
+export const JSON_SCHEMA_TRAVERSE_URL = `https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-${JSON_SCHEMA_TRAVERSE_VERSION}.tgz`;
+export const JSON_SCHEMA_TRAVERSE_SRI = "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==";
+export const REQUIRE_FROM_STRING_VERSION = "2.0.2";
+export const REQUIRE_FROM_STRING_URL = `https://registry.npmjs.org/require-from-string/-/require-from-string-${REQUIRE_FROM_STRING_VERSION}.tgz`;
+export const REQUIRE_FROM_STRING_SRI = "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==";
 
 const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "package.json",
@@ -26,6 +41,11 @@ const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "@playwright/test",
   "node_modules/playwright",
   "playwright-core",
+  "node_modules/ajv",
+  "audit/lib/tutorial-manifest.mjs",
+  "audit/schemas/tutorial-manifest-v1.schema.json",
+  "tools/build-tutorial-manifest.mjs",
+  "tools/sync-tutorial-manifest.mjs",
 ]);
 
 function exactKeys(value, expected) {
@@ -65,10 +85,11 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     if (!exactKeys(packageJson.engines, ["node"]) || packageJson.engines?.node !== "24.14.0") {
       findings.push("package.json: Node must remain pinned to 24.14.0");
     }
-    if (!exactKeys(packageJson.devDependencies, ["@playwright/test", "playwright-core"])
+    if (!exactKeys(packageJson.devDependencies, ["@playwright/test", "ajv", "playwright-core"])
         || packageJson.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
+        || packageJson.devDependencies?.ajv !== AJV_VERSION
         || packageJson.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION) {
-      findings.push(`package.json: Playwright Test and Playwright Core must remain the exact reviewed dev dependencies at ${PLAYWRIGHT_TEST_VERSION}`);
+      findings.push(`package.json: Playwright Test, Ajv, and Playwright Core must remain the exact reviewed dev dependencies`);
     }
   }
   if (packageLock) {
@@ -78,16 +99,17 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     if (packageLock.name !== "open-math-quest-ci-tools" || packageLock.version !== "0.0.0" || packageLock.lockfileVersion !== 3 || packageLock.requires !== true) {
       findings.push("package-lock.json: lockfile identity must remain exact");
     }
-    if (!exactKeys(packageLock.packages, ["", "node_modules/@playwright/test", "node_modules/fsevents", "node_modules/playwright", "node_modules/playwright-core"])) {
-      findings.push("package-lock.json: lockfile must contain only the reviewed Playwright Test dependency closure");
+    if (!exactKeys(packageLock.packages, ["", "node_modules/@playwright/test", "node_modules/ajv", "node_modules/fast-deep-equal", "node_modules/fast-uri", "node_modules/fsevents", "node_modules/json-schema-traverse", "node_modules/playwright", "node_modules/playwright-core", "node_modules/require-from-string"])) {
+      findings.push("package-lock.json: lockfile must contain only the reviewed Playwright Test and Ajv dependency closures");
     }
     const root = packageLock.packages?.[""];
     if (!exactKeys(root, ["name", "version", "license", "devDependencies", "engines"])
         || root?.name !== packageJson?.name
         || root?.version !== packageJson?.version
         || root?.license !== "MIT"
-        || !exactKeys(root?.devDependencies, ["@playwright/test", "playwright-core"])
+        || !exactKeys(root?.devDependencies, ["@playwright/test", "ajv", "playwright-core"])
         || root?.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
+        || root?.devDependencies?.ajv !== AJV_VERSION
         || root?.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
         || !exactKeys(root?.engines, ["node"])
         || root?.engines?.node !== "24.14.0") {
@@ -154,6 +176,69 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
         || fsevents?.engines?.node !== "^8.16.0 || ^10.6.0 || >=11.0.0") {
       findings.push("package-lock.json: optional fsevents artifact, integrity, licence, and macOS-only metadata must remain exact");
     }
+    const ajv = packageLock.packages?.["node_modules/ajv"];
+    if (!exactKeys(ajv, ["version", "resolved", "integrity", "dev", "license", "dependencies", "funding"])
+        || ajv?.version !== AJV_VERSION
+        || ajv?.resolved !== AJV_URL
+        || ajv?.integrity !== AJV_SRI
+        || ajv?.dev !== true
+        || ajv?.license !== "MIT"
+        || !exactKeys(ajv?.dependencies, ["fast-deep-equal", "fast-uri", "json-schema-traverse", "require-from-string"])
+        || ajv?.dependencies?.["fast-deep-equal"] !== "^3.1.3"
+        || ajv?.dependencies?.["fast-uri"] !== "^3.0.1"
+        || ajv?.dependencies?.["json-schema-traverse"] !== "^1.0.0"
+        || ajv?.dependencies?.["require-from-string"] !== "^2.0.2"
+        || !exactKeys(ajv?.funding, ["type", "url"])
+        || ajv?.funding?.type !== "github"
+        || ajv?.funding?.url !== "https://github.com/sponsors/epoberezkin") {
+      findings.push("package-lock.json: Ajv artifact, integrity, licence, dependency closure, and metadata must remain exact");
+    }
+    const fastDeepEqual = packageLock.packages?.["node_modules/fast-deep-equal"];
+    if (!exactKeys(fastDeepEqual, ["version", "resolved", "integrity", "dev", "license"])
+        || fastDeepEqual?.version !== FAST_DEEP_EQUAL_VERSION
+        || fastDeepEqual?.resolved !== FAST_DEEP_EQUAL_URL
+        || fastDeepEqual?.integrity !== FAST_DEEP_EQUAL_SRI
+        || fastDeepEqual?.dev !== true
+        || fastDeepEqual?.license !== "MIT") {
+      findings.push("package-lock.json: fast-deep-equal artifact, integrity, licence, and metadata must remain exact");
+    }
+    const fastUri = packageLock.packages?.["node_modules/fast-uri"];
+    if (!exactKeys(fastUri, ["version", "resolved", "integrity", "dev", "funding", "license"])
+        || fastUri?.version !== FAST_URI_VERSION
+        || fastUri?.resolved !== FAST_URI_URL
+        || fastUri?.integrity !== FAST_URI_SRI
+        || fastUri?.dev !== true
+        || fastUri?.license !== "BSD-3-Clause"
+        || !Array.isArray(fastUri?.funding)
+        || fastUri.funding.length !== 2
+        || !exactKeys(fastUri.funding[0], ["type", "url"])
+        || fastUri.funding[0].type !== "github"
+        || fastUri.funding[0].url !== "https://github.com/sponsors/fastify"
+        || !exactKeys(fastUri.funding[1], ["type", "url"])
+        || fastUri.funding[1].type !== "opencollective"
+        || fastUri.funding[1].url !== "https://opencollective.com/fastify") {
+      findings.push("package-lock.json: fast-uri artifact, integrity, BSD licence, and funding metadata must remain exact");
+    }
+    const schemaTraverse = packageLock.packages?.["node_modules/json-schema-traverse"];
+    if (!exactKeys(schemaTraverse, ["version", "resolved", "integrity", "dev", "license"])
+        || schemaTraverse?.version !== JSON_SCHEMA_TRAVERSE_VERSION
+        || schemaTraverse?.resolved !== JSON_SCHEMA_TRAVERSE_URL
+        || schemaTraverse?.integrity !== JSON_SCHEMA_TRAVERSE_SRI
+        || schemaTraverse?.dev !== true
+        || schemaTraverse?.license !== "MIT") {
+      findings.push("package-lock.json: json-schema-traverse artifact, integrity, licence, and metadata must remain exact");
+    }
+    const requireFromString = packageLock.packages?.["node_modules/require-from-string"];
+    if (!exactKeys(requireFromString, ["version", "resolved", "integrity", "dev", "license", "engines"])
+        || requireFromString?.version !== REQUIRE_FROM_STRING_VERSION
+        || requireFromString?.resolved !== REQUIRE_FROM_STRING_URL
+        || requireFromString?.integrity !== REQUIRE_FROM_STRING_SRI
+        || requireFromString?.dev !== true
+        || requireFromString?.license !== "MIT"
+        || !exactKeys(requireFromString?.engines, ["node"])
+        || requireFromString?.engines?.node !== ">=0.10.0") {
+      findings.push("package-lock.json: require-from-string artifact, integrity, licence, and engine metadata must remain exact");
+    }
   }
 
   const dependencyInstaller = String(input.dependencyInstallerText);
@@ -161,7 +246,9 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
       || !dependencyInstaller.includes("ci --ignore-scripts --omit=optional --no-audit --no-fund")
       || !dependencyInstaller.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")
       || !dependencyInstaller.includes("$manifest.name -cne '@playwright/test'")
-      || !dependencyInstaller.includes("$manifest.version -cne '1.62.1'")) {
+      || !dependencyInstaller.includes("$manifest.version -cne '1.62.1'")
+      || !dependencyInstaller.includes("$ajvManifest.name -cne 'ajv'")
+      || !dependencyInstaller.includes("$ajvManifest.version -cne '8.20.0'")) {
     findings.push("audit/install-reviewed-ci-dependencies.ps1: install must retain the exact lockfile, script, optional-dependency, browser-download, and installed-version controls");
   }
   if (/(?:\bnpx\b|\bnpm(?:\.cmd)?\s+install\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b|Invoke-WebRequest)/iu.test(dependencyInstaller)) {
@@ -227,8 +314,8 @@ export function trustedHttpsCanarySupplyChainFindings(input) {
     "bind 127.0.0.1",
     "server.listen(requestedPort, \"127.0.0.1\"",
     "activateCanaryHomeUpdate(candidatePage)",
-    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.6\")",
-    "Playwright same-tab Beta 1 to Beta 6 candidate transition",
+    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.7\")",
+    "Playwright same-tab Beta 1 to Beta 7 candidate transition",
     "[data-action=\"pwa-retry\"]",
     "[data-action=\"pwa-repair\"]",
     "v1.0.0-beta.1",
@@ -303,6 +390,12 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("a changed Playwright Test integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_TEST_SRI, "sha512-forged"), /Playwright Test artifact, integrity/u);
   run("a changed Playwright runner integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_PACKAGE_SRI, "sha512-forged"), /Playwright runner artifact, integrity/u);
   run("a changed optional dependency integrity", "packageLockText", (text) => text.replace(FSEVENTS_SRI, "sha512-forged"), /optional fsevents artifact, integrity/u);
+  run("a changed Ajv version", "packageJsonText", (text) => text.replace(`"ajv": "${AJV_VERSION}"`, '"ajv": "8.19.0"'), /exact reviewed dev dependencies/u);
+  run("a changed Ajv integrity", "packageLockText", (text) => text.replace(AJV_SRI, "sha512-forged"), /Ajv artifact, integrity/u);
+  run("a changed fast-deep-equal integrity", "packageLockText", (text) => text.replace(FAST_DEEP_EQUAL_SRI, "sha512-forged"), /fast-deep-equal artifact, integrity/u);
+  run("a changed fast-uri integrity", "packageLockText", (text) => text.replace(FAST_URI_SRI, "sha512-forged"), /fast-uri artifact, integrity/u);
+  run("a changed json-schema-traverse integrity", "packageLockText", (text) => text.replace(JSON_SCHEMA_TRAVERSE_SRI, "sha512-forged"), /json-schema-traverse artifact, integrity/u);
+  run("a changed require-from-string integrity", "packageLockText", (text) => text.replace(REQUIRE_FROM_STRING_SRI, "sha512-forged"), /require-from-string artifact, integrity/u);
   run("an added dependency", "packageJsonText", (text) => text.replace(`\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\"`, `\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\",\n    \"another-package\": \"1.0.0\"`), /exact reviewed dev dependencies/u);
   run("relaxed focused dependency install", "dependencyInstallerText", (text) => text.replace("ci --ignore-scripts --omit=optional --no-audit --no-fund", "ci"), /install must retain/u);
   run("relaxed npm install flags", "wrapperText", (text) => text.replace("npm ci --ignore-scripts --omit=optional --no-audit --no-fund", "npm ci"), /retain every reviewed hardening flag/u);
@@ -312,7 +405,7 @@ export function trustedHttpsCanarySupplyChainMutationFailures(input) {
   run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
   run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
   run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
-  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.6\")", "context.newPage()"), /missing required production-path canary control/u);
+  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.7\")", "context.newPage()"), /missing required production-path canary control/u);
   run("reintroduced retired-curriculum migration", "runnerText", (text) => text.replace("RETIRED_BETA1_PRESERVED_FRESH_START", "SCHEMA3_MIGRATION_PRESERVED"), /missing required production-path canary control/u);
   run("removed retained-source terminal proof", "runnerText", (text) => text.replaceAll("RETAINED_BETA1_COMPLETE_VALUE", "null"), /missing required production-path canary control/u);
   run("removed retained fresh-start notice observation", "runnerText", (text) => text.replace("observeCanaryRetainedFreshStartNotice(candidatePage)", "Promise.resolve(null)"), /missing required production-path canary control/u);

@@ -2,6 +2,27 @@
 
 All notable public changes to Math Quest are recorded here.
 
+## 1.0.0-beta.7 — Unreleased
+
+- Added **Show me how** to every ordinary question in real levels. Each
+  tutorial uses a structurally matched different example and moves through
+  Notice, Plan, and Check before returning to the exact source question.
+- Made tutorial-assisted answers non-evidentiary while preserving truthful
+  feedback, reload persistence, transactional rollback, and Parent Test save
+  isolation. Placement remains uncoached.
+- Added a schema-validated tutorial manifest that fails closed when skills,
+  levels, task types, response methods, generator profiles, semantic prompts,
+  or child-visible feature families move without matching tutorial coverage.
+- Expanded native desktop and touch Playwright journeys to cover tutorial
+  actionability, accessibility, different-example identity, save isolation,
+  and return paths. The full Deep UX Census remains governed by its even-beta
+  cadence and is not required for Beta 7.
+- Added AI-first Owners, Code Map, Feature Map, Tutorial Manifest, Blast Radius,
+  and Gate contracts with closed schemas, stable identifiers, typed dependency
+  edges, deterministic ordering, and fail-closed drift checks.
+- Kept pattern source and response tokens in one visual row, made joining and
+  leaving scenes independently answerable, and centered sharing recipients.
+
 ## 1.0.0-beta.6 — 2026-08-13
 
 - Added six screen-native early-mathematics activities: continue an AB pattern,

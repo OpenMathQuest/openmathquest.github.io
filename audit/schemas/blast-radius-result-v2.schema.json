@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/blast-radius-result-v2.schema.json",
+  "title": "Math Quest blast-radius lookup result v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "resultType",
+    "aiReaderContractRef",
+    "orderingContract",
+    "kind",
+    "query",
+    "maximumDepth",
+    "symbolVariants",
+    "direct",
+    "dependencies",
+    "factFamilies",
+    "developmentPlan",
+    "countPrediction",
+    "binarySkipped",
+    "coverage",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "resultType": { "const": "BLAST_RADIUS_LOOKUP" },
+    "aiReaderContractRef": {
+      "const": { "contractId": "math-quest-ai-first-drift-control", "version": 1 }
+    },
+    "orderingContract": {
+      "const": {
+        "direct": "LEXICOGRAPHIC_BY_FILE",
+        "dependencies": "ASCENDING_DEPTH_THEN_LEXICOGRAPHIC_BY_FILE",
+        "factFamilies": "LEXICOGRAPHIC_BY_ID",
+        "binarySkipped": "LEXICOGRAPHIC_BY_PATH"
+      }
+    },
+    "kind": { "enum": ["exact", "word", "symbol", "count"] },
+    "query": { "type": "string", "minLength": 1 },
+    "maximumDepth": { "type": "integer", "minimum": 0, "maximum": 8 },
+    "symbolVariants": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      ]
+    },
+    "direct": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/direct" }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "factFamilies": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/factFamily" }
+    },
+    "developmentPlan": { "$ref": "#/$defs/developmentPlan" },
+    "countPrediction": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/countPrediction" }
+      ]
+    },
+    "binarySkipped": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/path" }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trackedFiles", "readFiles", "binaryFiles", "unreadableFiles"],
+      "properties": {
+        "trackedFiles": { "type": "integer", "minimum": 1 },
+        "readFiles": { "type": "integer", "minimum": 1 },
+        "binaryFiles": { "type": "integer", "minimum": 0 },
+        "unreadableFiles": { "const": 0 }
+      }
+    },
+    "limitations": {
+      "const": [
+        { "id": "COINCIDENCE", "effect": "OVER_REPORTS", "description": "Text search cannot decide whether a match is a true dependency." },
+        { "id": "COMPUTED_UNMAPPED", "effect": "UNDER_REPORTS", "description": "Computed facts not connected through the code map may be missed." },
+        { "id": "HUMAN_JUDGMENT", "effect": "OUT_OF_SCOPE", "description": "Human-legibility and product-correctness decisions remain outside this lookup." }
+      ]
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+    },
+    "role": {
+      "enum": ["governance", "runtime", "launcher", "toolchain", "asset", "audit", "schema", "test", "curriculum", "documentation", "licence", "research", "tool", "unclassified"]
+    },
+    "releaseImpact": {
+      "enum": ["PUBLIC_BYTES", "CERTIFICATION", "DEVELOPMENT_ONLY", "DOCUMENTATION_ONLY", "UNKNOWN"]
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line", "text"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string", "maxLength": 240 }
+      }
+    },
+    "direct": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "pathHit", "lines", "role", "releaseImpact"],
+      "properties": {
+        "file": { "$ref": "#/$defs/path" },
+        "pathHit": { "type": "boolean" },
+        "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } },
+        "role": { "$ref": "#/$defs/role" },
+        "releaseImpact": { "$ref": "#/$defs/releaseImpact" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "depth",
+        "role",
+        "releaseImpact",
+        "predecessor",
+        "relationId",
+        "relationClass",
+        "declaredKind",
+        "traversalDirection",
+        "dependencyRole"
+      ],
+      "properties": {
+        "file": { "$ref": "#/$defs/path" },
+        "depth": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "role": { "$ref": "#/$defs/role" },
+        "releaseImpact": { "$ref": "#/$defs/releaseImpact" },
+        "predecessor": { "$ref": "#/$defs/path" },
+        "relationId": { "type": "string", "minLength": 1 },
+        "relationClass": { "enum": ["ARTIFACT_RELATION", "FACT_PROJECTION", "FACT_VALIDATOR"] },
+        "declaredKind": {
+          "enum": [
+            "GENERATES",
+            "EMBEDS",
+            "CONSUMES",
+            "VALIDATES",
+            "PUBLISHES",
+            "DOCUMENTS",
+            "TESTS",
+            "GENERATED",
+            "EXACT_MIRROR",
+            "RUNTIME_EMBED",
+            "DOCUMENTED_REFERENCE",
+            "LOCKFILE",
+            "OPERATIONAL_CONFIG",
+            "VALIDATION_EXPECTATION",
+            "GENERATED_METADATA",
+            "VALIDATOR"
+          ]
+        },
+        "traversalDirection": { "enum": ["FORWARD_SOURCE_TO_TARGET", "REVERSE_TARGET_TO_SOURCE"] },
+        "dependencyRole": { "enum": ["DEPENDENT", "DEPENDENCY"] }
+      }
+    },
+    "factFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner", "owns"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+        "owner": { "$ref": "#/$defs/path" },
+        "owns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" }
+        }
+      }
+    },
+    "developmentPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "mode", "changedPaths", "unknownPaths", "suites"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "mode": { "enum": ["BROAD_NO_PATHS", "BROAD_UNKNOWN_PATH", "FOCUSED_CHANGED_PATHS"] },
+        "changedPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "unknownPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "suites": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["governance", "metadata", "launcher", "product", "pwa", "canary", "engine", "tutorial", "driftless", "playwright", "guard"] }
+        }
+      }
+    },
+    "countPrediction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current", "ifListEntryAdded", "ifListEntryRemoved", "listEntryCase", "warning"],
+      "properties": {
+        "current": { "type": ["string", "null"], "pattern": "^[0-9]+$" },
+        "ifListEntryAdded": { "type": ["string", "null"], "pattern": "^[0-9]+$" },
+        "ifListEntryRemoved": { "type": ["string", "null"], "pattern": "^[0-9]+$" },
+        "listEntryCase": { "type": "boolean" },
+        "warning": { "const": "Prediction is conditional. Verify the owning collection rather than editing a copied count." }
+      }
+    }
+  }
+}

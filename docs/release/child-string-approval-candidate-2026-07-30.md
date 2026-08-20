@@ -1,17 +1,76 @@
-# Child-string approval candidate — updated 2026-08-13
+# Child-string approval candidate — updated 2026-08-20
 
 Canonicalization: `child-strings-v1`
-Complete table: 407 records
-Current candidate SHA-256: `956dc30c2b8a58a5d15d6c1c5face5629e5e5cc038150447b849fcaa2dc09b4a`
-Current engine SHA-256: `df664ec5e7de0dc811640d8beab27ac76e950270fd1d4489402e396a6551e19b`
+Complete table: 441 records
+Current candidate SHA-256: `a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`
+Current engine SHA-256: `26e75cd042fee62ba01a3fb1608b2b847ae6b0b8ade5e6b09d26cc37b461c871`
 Extraction validation errors: 0
 
-Owner decision: **Approved on 2026-08-13**
+Owner decision: **Approved on 2026-08-20**
 
-The owner approved the complete 407-record candidate and exact SHA-256 above.
-It retains the previously approved strategy-construction and Free Play wording,
-adds ten exact screen-native activity records, and revises one existing counting
-prompt for the approved group-count activity.
+The current 441-record candidate retains the complete owner-approved 407-record
+table unchanged and adds 34 exact tutorial and visual-clarity records. The
+project owner approved this complete candidate and exact SHA-256 on
+2026-08-20.
+
+## Approved visual-clarity wording
+
+| ID | Exact text |
+|---|---|
+| `ui.tutorialPhaseNotice` | Notice — Step 1 of 3 |
+| `ui.tutorialPhasePlan` | Plan — Step 2 of 3 |
+| `ui.tutorialPhaseCheck` | Check — Step 3 of 3 |
+| `ui.selected` | Selected |
+| `model.arrayRow` | Row {row}: {count} |
+
+The `{row}` and `{count}` slots are positive integers. These records make the
+tutorial phase, selected state, and bounded array rows legible without relying
+on colour or layout alone.
+
+## Approved different-example tutorial wording
+
+| ID | Exact text |
+|---|---|
+| `ui.practiceExample` | Practice example |
+| `ui.yourQuestion` | Your question |
+| `ui.tutorialNext` | Next step |
+| `ui.tutorialPrevious` | Previous step |
+| `ui.tutorialBack` | Back to your question |
+| `ui.tutorialOffer` | Would a different example help? |
+| `ui.tutorialStep` | Step {step} of 3 |
+| `ui.tutorialUnavailable` | This practice example is unavailable. Go back to your question. |
+| `tutorial.notice.choose` | Notice what the question asks you to choose. |
+| `tutorial.plan.choose` | Compare one choice at a time using the same rule. |
+| `tutorial.check.choose` | Check that the choice matches the rule. |
+| `tutorial.notice.count` | Notice the start, the order, and what must come next. |
+| `tutorial.plan.count` | Mark each object, number, or move once. |
+| `tutorial.check.count` | Check the count or position from the start. |
+| `tutorial.notice.spatial` | Notice the parts, positions, labels, and scale. |
+| `tutorial.plan.spatial` | Build one part at a time without skipping or overlapping. |
+| `tutorial.check.spatial` | Check every part against the whole model. |
+| `tutorial.notice.groups` | Notice the total, the groups, and the unit. |
+| `tutorial.plan.groups` | Keep the groups equal and the unit the same. |
+| `tutorial.check.groups` | Combine the groups and check the total. |
+| `tutorial.notice.operations` | Notice the operation, the known parts, and the unknown part. |
+| `tutorial.plan.operations` | Use one step at a time and keep each place or side aligned. |
+| `tutorial.check.operations` | Use the model or inverse operation to check the result. |
+| `tutorial.notice.parts` | Notice the whole, the known part, and the missing part. |
+| `tutorial.plan.parts` | Keep equal shares the same size and connect the model to the number. |
+| `tutorial.check.parts` | Put the parts together and check the whole. |
+| `tutorial.notice.measure` | Notice the zero point, unit, and interval. |
+| `tutorial.plan.measure` | Read the instrument first, then calculate if needed. |
+| `tutorial.check.measure` | Check the unit and count every interval once. |
+
+The `{step}` slot is restricted to integers 1 through 3. Every other new
+record has no runtime slot.
+
+## Approved 407-record table from 2026-08-13
+
+The owner approved the complete prior 407-record candidate and exact SHA-256
+`956dc30c2b8a58a5d15d6c1c5face5629e5e5cc038150447b849fcaa2dc09b4a`.
+It retained the strategy-construction and Free Play wording, added ten exact
+screen-native activity records, and revised one existing counting prompt for
+the approved group-count activity.
 
 ## Approved screen-native activity wording and accessible names
 
@@ -194,7 +253,7 @@ addition. Braced names are governed runtime slots, not unreviewed prose.
 | `speech.targetChoices` | The choices are {choices}. |
 | `aria.balanceUnchecked` | Not compared yet. |
 
-Each prior approval bound its complete canonical table and digest, not merely
-the display order in this review document. The owner's 2026-08-13 decision
-extends that approval to the complete 407-record table and exact candidate
-SHA-256 recorded at the top of this file.
+Each approval binds its complete canonical table and digest, not merely the
+display order in this review document. The owner's 2026-08-20 decision applies
+to the complete 441-record candidate and exact candidate SHA-256 at the top of
+this file.

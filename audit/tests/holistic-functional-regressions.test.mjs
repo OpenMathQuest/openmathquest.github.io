@@ -1079,7 +1079,7 @@ test("QA-029 child play renders an explicit large answer outcome for both result
   assert.match(incorrect, /<strong id="feedback-title">Not correct yet\.<\/strong>/u);
 });
 
-test("QA-030 early pattern choices always contain a visible and spoken token", () => {
+test("QA-030 early pattern choices stay visible, spoken, and joined to the source row", () => {
   const source = `(()=>{
     "use strict";
     const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -1087,7 +1087,7 @@ test("QA-030 early pattern choices always contain a visible and spoken token", (
     const categoryIconHtml=value=>"<i data-animal=\\""+escape(value)+"\\"></i>";
     const shapeVisualHtml=value=>"<i data-shape=\\""+escape(value)+"\\"></i>";
     const responseAction=()=>\"\";
-    const questionModelHtml=()=>\"\";
+    const questionModelHtml=()=>'<div class="math-model"><div class="pattern-cue-row"><span data-token-kind="source-1"></span><span data-token-kind="source-2"></span></div></div>';
     ${extractFunction("patternTokenName")}
     ${extractFunction("patternTokenVisualHtml")}
     ${extractFunction("patternBuildConstructionHtml")}
@@ -1110,47 +1110,66 @@ test("QA-030 early pattern choices always contain a visible and spoken token", (
   assert.equal((rendered.match(/aria-label="(?:circle|triangle|square|diamond)"/gu) || []).length, 4);
   assert.equal((rendered.match(/class="pattern-token-label"/gu) || []).length, 4);
   assert.doesNotMatch(rendered, /<button[^>]*>\s*<\/button>/u);
+  const rowStart = rendered.indexOf('<div class="pattern-response-row"');
+  const modelStart = rendered.indexOf('<div class="math-model">', rowStart);
+  const slotsStart = rendered.indexOf('<div class="pattern-slots"', modelStart);
+  const bankStart = rendered.indexOf('<div class="pattern-token-bank"', slotsStart);
+  assert.ok(rowStart >= 0, "the source and answer spaces have one response-row wrapper");
+  assert.ok(modelStart > rowStart, "the answer-free source model starts inside that row");
+  assert.ok(slotsStart > modelStart, "answer spaces follow the source model from left to right");
+  assert.match(rendered.slice(rowStart, bankStart), /pattern-cue-row[\s\S]*pattern-slots/u);
+  assert.match(html, /\.pattern-response-row\{[^}]*flex-wrap:nowrap/u);
+  assert.match(html, /\.pattern-response-row \.pattern-cue-row,\.pattern-response-row>\.pattern-slots\{flex-wrap:nowrap/u);
 });
 
-test("QA-031 Help is operable only for active questions and reteaching", () => {
+test("QA-031 tutorials are operable only for active questions, reteaching, and incorrect feedback", () => {
   const effects = { buttons: [] };
   const source = `(()=>{
     "use strict";
-    let ui={screen:"session",phase:"question",question:{questionId:"q1"}};
+    let ui={screen:"session",phase:"question",question:{questionId:"q1"},lastAttempt:null,tutorialOpen:false};
     const app={querySelectorAll(){return effects.buttons;}};
     const pwa={pendingControllerReload:false};
     function saveRecoveryView(){} function progressProtectionView(){} function qaConfirmView(){} function nameGateView(){}
     function home(){} function playgroundView(){} function placementView(){} function sessionView(){} function fatigueView(){}
     function capstoneView(){} function doneView(){} function grown(){} function parentLabViewV2(){} function parents(){}
     function renderRuntimeWarning(){} function renderPwaOverlay(){} function renderDestructiveOverlay(){}
+    function applySelectedStateIndicators(){}
     function resumePendingPwaReloadAtBoundary(){} function checkPwaUpdateAtBoundary(){}
-    ${extractFunction("helpAvailable")}
-    ${extractFunction("applyHelpAvailability")}
+    ${extractFunction("tutorialAvailable")}
+    ${extractFunction("applyTutorialAvailability")}
     ${extractFunction("render")}
-    function setPhase(phase,{screen="session",question=true}={}){ui={screen,phase,question:question?{questionId:"q1"}:null};render();return {available:helpAvailable()};}
+    function setPhase(phase,{screen="session",question=true,feedbackClass=null,tutorialOpen=false}={}){ui={screen,phase,question:question?{questionId:"q1"}:null,lastAttempt:feedbackClass?{feedbackClass}:null,tutorialOpen};render();return {available:tutorialAvailable()&&!ui.tutorialOpen};}
     return {setPhase};
   })()`;
   const harness = new vm.Script(source, { filename: "math-quest-help-phase-gate.js" })
     .runInNewContext({ effects });
-  const makeButton = () => ({
+  const makeButton = ({ contextual = false } = {}) => ({
     hidden: false,
     disabled: false,
     attributes: {},
+    closest(selector) { return contextual && selector === ".tutorial-offer" ? {} : null; },
     setAttribute(name, value) { this.attributes[name] = value; },
   });
-  effects.buttons = [makeButton(), makeButton()];
+  effects.buttons = [makeButton(), makeButton({ contextual: true })];
   for (const phase of ["question", "reteach"]) {
     const result = harness.setPhase(phase);
     assert.equal(result.available, true);
     assert.ok(effects.buttons.every((button) => !button.hidden && !button.disabled));
     assert.ok(effects.buttons.every((button) => button.attributes["aria-hidden"] === "false"));
   }
-  for (const phase of ["pick", "physical", "feedback"]) {
+  const incorrect = harness.setPhase("feedback", { feedbackClass: "INCORRECT" });
+  assert.equal(incorrect.available, true);
+  assert.equal(effects.buttons.filter((button) => !button.hidden && !button.disabled).length, 1);
+  assert.equal(effects.buttons[0].attributes["aria-hidden"], "true");
+  assert.equal(effects.buttons[1].attributes["aria-hidden"], "false");
+  for (const phase of ["pick", "physical"]) {
     const result = harness.setPhase(phase);
     assert.equal(result.available, false);
     assert.ok(effects.buttons.every((button) => button.hidden && button.disabled));
     assert.ok(effects.buttons.every((button) => button.attributes["aria-hidden"] === "true"));
   }
+  assert.equal(harness.setPhase("feedback", { feedbackClass: "CORRECT" }).available, false);
+  assert.equal(harness.setPhase("question", { tutorialOpen: true }).available, false);
   assert.equal(harness.setPhase("question", { screen: "capstone" }).available, false);
   assert.equal(harness.setPhase("question", { question: false }).available, false);
 });

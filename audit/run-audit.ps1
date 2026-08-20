@@ -223,6 +223,7 @@ function Get-LauncherAuditExpectation {
         @('/', 'index.html'),
         @('/index.html', 'index.html'),
         @('/manifest.webmanifest', 'manifest.webmanifest'),
+        @('/curriculum/math-quest-tutorial-manifest-v1.json', 'curriculum/math-quest-tutorial-manifest-v1.json'),
         @('/release-shell-v1.json', 'release-shell-v1.json'),
         @('/sw.js', 'sw.js'),
         @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
@@ -263,7 +264,7 @@ function Get-LauncherAuditExpectation {
     $canonicalPayload = ($records -join "`n") + "`n"
     $servedPayloadSha256 = Get-LauncherAuditSha256Hex -Bytes ([Text.Encoding]::UTF8.GetBytes($canonicalPayload))
     $identity = 'math-quest-local-server:v2'
-    $release = '1.0.0-beta.6'
+    $release = '1.0.0-beta.7'
     $port = 8771
     $body = "{`"schemaVersion`":1,`"identity`":`"$identity`",`"release`":`"$release`",`"port`":$port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$servedPayloadSha256`"}"
 
@@ -453,6 +454,55 @@ try {
         Write-Host 'Focused deterministic engine and semantic development checks passed.'
     } elseif ($DevelopmentOnly) {
         Write-Host 'Engine and semantic checks not selected by the changed-path development plan.'
+    }
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'tutorial') {
+        Push-Location $workspace
+        try {
+            & $node.Path (Join-Path $workspace 'tools\build-tutorial-manifest.mjs') --check
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The tutorial manifest is stale or no longer covers the curriculum.'
+            }
+            & $node.Path (Join-Path $workspace 'tools\sync-tutorial-manifest.mjs') --check
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The embedded tutorial manifest is stale.'
+            }
+            & $node.Path --test (Join-Path $auditDirectory 'tests\tutorial-manifest.test.mjs')
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The different-example tutorial coverage, linkage, and evidence tests failed.'
+            }
+            Write-Host 'Tutorial manifest, curriculum linkage, and different-example checks passed.'
+        } finally {
+            Pop-Location
+        }
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Tutorial manifest and linkage checks not selected by the changed-path development plan.'
+    }
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'driftless') {
+        Push-Location $workspace
+        try {
+            & $node.Path (Join-Path $workspace 'tools\sync-repository-code-map.mjs') --check
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The generated repository ownership projection is stale.'
+            }
+            & $node.Path (Join-Path $workspace 'tools\blast-radius-lookup.mjs') --self-test
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The pre-edit blast-radius matcher controls failed.'
+            }
+            $driftlessTests = @(
+                (Join-Path $auditDirectory 'tests\repository-code-map.test.mjs'),
+                (Join-Path $auditDirectory 'tests\blast-radius-lookup.test.mjs'),
+                (Join-Path $auditDirectory 'tests\feature-map.test.mjs')
+            )
+            & $node.Path --test $driftlessTests
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The owner, code-map, blast-radius, and feature-map gates failed.'
+            }
+            Write-Host 'Driftless ownership, dependency, mechanic-legibility, and blast-radius gates passed.'
+        } finally {
+            Pop-Location
+        }
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Driftless map and blast-radius checks not selected by the changed-path development plan.'
     }
     if ($DevelopmentOnly -and $developmentPlan.suites -contains 'playwright') {
         Push-Location $workspace

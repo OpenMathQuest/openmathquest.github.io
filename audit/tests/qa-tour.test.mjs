@@ -263,7 +263,7 @@ function qaReportHarness({
     window: { devicePixelRatio: 3 },
   };
   const source = `(()=>{"use strict";
-    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.6",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.6";
+    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.7",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.7";
     let childName="CHILD-NAME-SECRET";
     let lab={saveBytes:effects.storedSave,qaTour:true,qaComplete:effects.complete,qaIndex:49,qaRecords:structuredClone(effects.records),qaSubmitted:false,qaSubmitNotice:"",qaBusy:false,integrityError:effects.integrityError};
     let ui={screen:"lab",world:"forest"};
@@ -356,7 +356,8 @@ test("render routes qaConfirm explicitly rather than falling through to another 
     function renderRuntimeWarning(){}
     function renderPwaOverlay(){}
     function renderDestructiveOverlay(){}
-    function applyHelpAvailability(){}
+    function applyTutorialAvailability(){}
+    function applySelectedStateIndicators(){}
     function resumePendingPwaReloadAtBoundary(){}
     function checkPwaUpdateAtBoundary(){}
     ${extractFunction("render")}

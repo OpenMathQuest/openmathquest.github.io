@@ -1,11 +1,11 @@
 # Math Quest
 
 Math Quest is an offline-first, browser-based mathematics game for a child and
-a grown-up to use together. The Public Beta 6 candidate is driven by an independently
+a grown-up to use together. The Public Beta 7 candidate is driven by an independently
 authored, neutral curriculum manifest containing 126 skills across 21 ordered
 levels, from pre-kindergarten through Grade 5.
 
-Release target: **v1.0.0-beta.6**
+Release target: **v1.0.0-beta.7**
 
 > This is beta software. A grown-up should co-play, especially when a skill is
 > new, and report any ambiguous question or grading error.
@@ -44,7 +44,7 @@ release, the origin must be affirmatively qualified or the runnable game must
 move to a suitable host; the source repository can remain on GitHub.
 
 The Beta 4 trusted-HTTPS canary was explicitly skipped and remains recorded as
-missing evidence for that historical release. Beta 6 restores the mandatory
+missing evidence for that historical release. Beta 7 restores the mandatory
 canary: its exact qualification bytes must pass the private trusted-HTTPS
 update, cache-repair, migration, teardown, privacy, and cold-offline checks
 before publication clearance can be approved.
@@ -64,7 +64,7 @@ launcher and a hosted site requires a deliberate backup and restore.
 
 The Pages workflow is dispatched from protected `main` only while that branch
 and its exact `release_tag` input resolve to the same annotated
-`v1.0.0-beta.6` commit. Its product version and publication-clearance hashes
+`v1.0.0-beta.7` commit. Its product version and publication-clearance hashes
 must match the reviewed candidate. Publication clearance also binds the exact
 audited browser product, full product version, executable SHA-256, and
 GitHub-hosted runner `ImageOS`/`ImageVersion`. The hosted link is not considered verified
@@ -90,10 +90,10 @@ See the [iPhone and iPad installation guide](docs/release/install-ios-ipados.md)
 
 Essential actions use visible touch controls; a hardware keyboard is optional.
 The optional six-lane physical-device cycle and optional six-reviewer cycle are
-not selected for Beta 6. This release therefore makes no tested-
+not selected for Beta 7. This release therefore makes no tested-
 generation support claim for Apple devices and no independent-review
 qualification claim. Safari Lockdown Mode and managed
-configurations that disable Web Locks are outside the Beta 6 support claim:
+configurations that disable Web Locks are outside the Beta 7 support claim:
 the game pauses before child play rather than using an unsafe persistence
 fallback. Do not weaken a security setting just for Math Quest; use another
 qualified device or browser configuration.
@@ -106,6 +106,17 @@ The canonical file is
 phases, generator profiles, representations, skill constraints, and required
 semantic task-type witnesses. A multi-variant skill cannot become solid until
 every declared task type has a clean evidentiary witness.
+
+`curriculum/math-quest-tutorial-manifest-v1.json` binds every current skill,
+level, required task type, response method, generator profile, and generated
+feature to its in-game tutorial family. New games and curriculum moves cannot
+pass focused validation until their tutorial linkage is updated.
+
+`curriculum/math-quest-feature-map-v1.json` gives every child-operable mechanic
+one stable identity, goal, action sequence, legibility invariants, automated
+proofs, and human-review questions. Its mechanic IDs are bound directly into
+the Tutorial Manifest, so a mechanic cannot move without its tutorial and UX
+obligations moving with it.
 
 Counts, stage boundaries, progress denominators, and Parent Test choices are
 derived from that manifest. The sequence is independently authored from
@@ -128,13 +139,17 @@ Trigonometry is outside this pre-kindergarten-to-Grade-5 scope.
 - Short sessions with deterministic spaced review and prerequisite gating
 - Ocean, Forest, and Space themes that do not change learning requirements
 - Large select-and-confirm choices and construction-style inputs
+- An in-level **Show me how** tutorial for every ordinary question, using a
+  different example through Notice, Plan, and Check without recording mastery
+  evidence
 - Ten-frames, number bonds, number lines, arrays, fractions, clocks, money,
   measurement, graphs, and bar models
 - Optional operating-system speech synthesis and gentle local sound effects;
   both automatic reading and effects are off by default, while Replay remains
   available on demand
 - Touch, mouse, keyboard, switch-style scanning, and reduced-motion support
-- A progress-isolated Parent Test lab for inspecting every manifest skill
+- A progress-isolated Parent Test lab for inspecting every manifest skill and
+  its complete different-example tutorial
 - Optional Math Quest Free Play, revealed only after its exact prerequisite
   skills have been introduced, with Play Solo and Family Play Together
   versions of original construction activities
@@ -178,6 +193,15 @@ The stable development contract is
 [`docs/development/build-spec.md`](docs/development/build-spec.md). The
 repository layout and generated-file boundary are documented in
 [`docs/repository-structure.md`](docs/repository-structure.md).
+The canonical owner and dependency pointers live in
+`audit/repository-code-map-v1.json`. Before a shared change, use
+`tools/blast-radius-lookup.mjs` to find direct references, owner families,
+dependency edges, and predicted focused suites. Its default output is closed
+JSON for an AI consumer; `--human` is an optional non-authoritative view.
+Verify the result rather than treating search as proof. The Code Map, Feature
+Map, Tutorial Manifest, Blast Radius, and certification reports follow the
+hash-bound AI-reader contract in `AGENTS.md`; generated Markdown cannot define
+or override their facts.
 The [normative finished-work policy](AGENTS.md#what-counts-as-finished-work)
 defines **implemented**, **release-certified**, and **shipped** status and the
 evidence required for each.

@@ -26,6 +26,7 @@ export const AUDIT_SERVED_RELATIVE_PATHS = Object.freeze([
   "LICENSE",
   "PRIVACY.md",
   "THIRD_PARTY_NOTICES.md",
+  "curriculum/math-quest-tutorial-manifest-v1.json",
   "audit/approved-visual-regression.js",
   "assets/fonts/Inter-Variable.ttf",
   "assets/icons/apple-touch-icon.png",

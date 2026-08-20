@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/repository-code-map-v1.schema.json",
+  "title": "Math Quest repository code map v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mapId",
+    "version",
+    "schemaVersion",
+    "licence",
+    "aiReaderContract",
+    "orderingContract",
+    "copyPolicySemantics",
+    "copyDiscoverySemantics",
+    "projectionRelationshipSemantics",
+    "relationKindSemantics",
+    "coverageRules",
+    "factFamilies",
+    "artifactRelations",
+    "dataArtifactPatterns",
+    "tombstones"
+  ],
+  "properties": {
+    "mapId": { "const": "math-quest-repository-code-map" },
+    "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": 1 },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "scope": { "type": "string", "minLength": 1 },
+        "originalWork": { "const": true }
+      }
+    },
+    "aiReaderContract": { "$ref": "#/$defs/aiReaderContract" },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/coverageRules", "policy": "DECLARED_FIRST_MATCH_PRECEDENCE" },
+        { "jsonPointer": "/factFamilies", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/factFamilies/*/owns", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/factFamilies/*/projections", "policy": "LEXICOGRAPHIC_BY_PATH" },
+        { "jsonPointer": "/factFamilies/*/validators", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/artifactRelations", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/dataArtifactPatterns", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/tombstones", "policy": "LEXICOGRAPHIC_BY_PATH" }
+      ]
+    },
+    "copyPolicySemantics": {
+      "const": {
+        "REFERENCES_ONLY": "NON_OWNER_MAY_STORE_POINTERS_NOT_OWNED_VALUES",
+        "DECLARED_PROJECTIONS_ONLY": "ONLY_DECLARED_PROJECTIONS_MAY_COPY_OWNED_VALUES",
+        "SECTION_MIRROR": "DECLARED_PROJECTION_MUST_EXACTLY_MIRROR_MARKED_OWNER_SECTION"
+      }
+    },
+    "copyDiscoverySemantics": {
+      "const": {
+        "NONE": "NO_COMPLETE_REPOSITORY_LITERAL_SCAN_IS_CLAIMED",
+        "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT": "EVERY_TRACKED_TEXT_FILE_CONTAINING_THE_EXACT_TRIMMED_OWNER_BYTES_MUST_BE_A_DECLARED_PROJECTION"
+      }
+    },
+    "projectionRelationshipSemantics": {
+      "const": {
+        "GENERATED": "OWNER_OR_DECLARED_GENERATOR_WRITES_PROJECTION",
+        "EXACT_MIRROR": "PROJECTION_BYTES_OR_MARKED_SECTION_EQUAL_OWNER_AUTHORITY",
+        "RUNTIME_EMBED": "PROJECTION_EMBEDS_OWNER_FACTS_IN_RUNTIME_BYTES",
+        "DOCUMENTED_REFERENCE": "PROJECTION_STORES_POINTER_OR_DIGEST_NOT_AUTHORITY",
+        "LOCKFILE": "PROJECTION_LOCKS_OWNER_DECLARED_DEPENDENCY_GRAPH",
+        "OPERATIONAL_CONFIG": "PROJECTION_CONFIGURES_BUILD_LAUNCH_AUDIT_OR_DEPLOYMENT_WITH_OWNER_FACT",
+        "VALIDATION_EXPECTATION": "PROJECTION_ASSERTS_OWNER_FACT_IN_VALIDATION_OR_TEST_BYTES",
+        "GENERATED_METADATA": "GENERATED_PROJECTION_STORES_OWNER_FACT_WITH_DERIVED_METADATA"
+      }
+    },
+    "relationKindSemantics": {
+      "const": {
+        "GENERATES": "SOURCE_WRITES_TARGET",
+        "EMBEDS": "SOURCE_WRITES_EMBEDDED_REPRESENTATION_IN_TARGET",
+        "CONSUMES": "TARGET_READS_SOURCE",
+        "VALIDATES": "TARGET_USES_SOURCE_AS_VALIDATION_AUTHORITY",
+        "PUBLISHES": "SOURCE_PUBLISHES_TARGET",
+        "DOCUMENTS": "TARGET_DOCUMENTS_SOURCE",
+        "TESTS": "TARGET_TESTS_SOURCE"
+      }
+    },
+    "coverageRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/coverageRule" }
+    },
+    "factFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/factFamily" }
+    },
+    "artifactRelations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relation" }
+    },
+    "dataArtifactPatterns": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tombstones": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tombstone" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+    },
+    "aiReaderContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractId",
+        "version",
+        "primaryConsumer",
+        "authority",
+        "canonicalRecordFormat",
+        "schemaClosure",
+        "identifierPolicy",
+        "relationshipPolicy",
+        "orderingPolicy",
+        "prosePolicy",
+        "humanViewPolicy",
+        "commandOutputPolicy",
+        "ambiguityPolicy",
+        "governedSystems"
+      ],
+      "properties": {
+        "contractId": { "const": "math-quest-ai-first-drift-control" },
+        "version": { "const": 1 },
+        "primaryConsumer": { "const": "AI_AGENT" },
+        "authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "startMarker", "endMarker", "sha256"],
+          "properties": {
+            "path": { "const": "AGENTS.md" },
+            "startMarker": { "const": "<!-- AI-FIRST-DRIFT-CONTROL-START -->" },
+            "endMarker": { "const": "<!-- AI-FIRST-DRIFT-CONTROL-END -->" },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "canonicalRecordFormat": { "const": "CLOSED_JSON" },
+        "schemaClosure": { "const": "ADDITIONAL_PROPERTIES_FALSE" },
+        "identifierPolicy": { "const": "STABLE_NAMESPACED_IDENTIFIERS" },
+        "relationshipPolicy": { "const": "EXPLICIT_TYPED_EDGES" },
+        "orderingPolicy": { "const": "DECLARED_AND_VALIDATED" },
+        "prosePolicy": { "const": "ANNOTATION_ONLY_NON_NORMATIVE" },
+        "humanViewPolicy": { "const": "GENERATED_NON_AUTHORITATIVE_ONLY" },
+        "commandOutputPolicy": { "const": "MACHINE_READABLE_BY_DEFAULT" },
+        "ambiguityPolicy": { "const": "FAIL_CLOSED" },
+        "governedSystems": { "const": ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "BLAST_RADIUS", "GATES"] }
+      }
+    },
+    "coverageRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pattern", "role", "releaseImpact"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "pattern": { "type": "string", "minLength": 1 },
+        "role": {
+          "enum": ["governance", "runtime", "launcher", "toolchain", "asset", "audit", "schema", "test", "curriculum", "documentation", "licence", "research", "tool"]
+        },
+        "releaseImpact": { "enum": ["PUBLIC_BYTES", "CERTIFICATION", "DEVELOPMENT_ONLY", "DOCUMENTATION_ONLY"] }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "relationship"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "relationship": { "enum": ["GENERATED", "EXACT_MIRROR", "RUNTIME_EMBED", "DOCUMENTED_REFERENCE", "LOCKFILE", "OPERATIONAL_CONFIG", "VALIDATION_EXPECTATION", "GENERATED_METADATA"] }
+      }
+    },
+    "factFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner", "owns", "copyPolicy", "copyDiscovery", "projections", "validators"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "owner": { "$ref": "#/$defs/path" },
+        "owns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" }
+        },
+        "copyPolicy": { "enum": ["REFERENCES_ONLY", "DECLARED_PROJECTIONS_ONLY", "SECTION_MIRROR"] },
+        "copyDiscovery": { "enum": ["NONE", "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT"] },
+        "projections": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/projection" }
+        },
+        "validators": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/path" }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "target", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/path" },
+        "target": { "$ref": "#/$defs/path" },
+        "kind": { "enum": ["GENERATES", "EMBEDS", "CONSUMES", "VALIDATES", "PUBLISHES", "DOCUMENTS", "TESTS"] }
+      }
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "reason", "ownerRecord"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "reason": { "type": "string", "minLength": 12 },
+        "ownerRecord": { "$ref": "#/$defs/path" }
+      }
+    }
+  }
+}

@@ -645,10 +645,15 @@ test("QA-033: the browser placement oracle submits valid complete responses for 
   }
 });
 
-test("QA-008: direct construction emits a primary action whose winning colour is white", () => {
-  const actionQuestion = findGeneratedQuestion((question) => question.inputMethod === "ACTION_SCENE");
+test("QA-008: action scenes separate the shown move from a real answer choice", () => {
+  const actionQuestions = ["MQ-013", "MQ-014"].map((skillId) => (
+    findGeneratedQuestion((question) => question.skillId === skillId && question.inputMethod === "ACTION_SCENE")
+  ));
   const measureQuestion = findGeneratedQuestion((question) => question.inputMethod === "MEASURE_OBJECT");
-  assert.ok(actionQuestion, "a generated ACTION_SCENE question must remain reachable");
+  actionQuestions.forEach((question, index) => assert.ok(
+    question,
+    `${["joining", "leaving"][index]} ACTION_SCENE questions must remain reachable`,
+  ));
   assert.ok(measureQuestion, "a generated MEASURE_OBJECT question must remain reachable");
 
   const harness = evaluateHarness({
@@ -657,12 +662,14 @@ test("QA-008: direct construction emits a primary action whose winning colour is
       function questionModelHtml(){return "";}
       function themedObjectTokenHtml(noun){return '<i data-object-kind="'+escape(noun)+'"></i>';}
       function responseAction(mode,action,extra=""){return 'data-control-mode="'+mode+'" data-response-action="'+action+'" '+extra;}
+      function s(id){return id==="aria.yourAnswer"?"Your answer":"Undo";}
     `,
     functions: ["directNumericConstructionHtml"],
     exposed: "directNumericConstructionHtml",
+    context: { E },
   });
 
-  for (const question of [actionQuestion, measureQuestion]) {
+  for (const question of [...actionQuestions, measureQuestion]) {
     const controls = { responseState: E.createResponseState(question) };
     const rendered = String(harness.directNumericConstructionHtml(question, "play", controls));
     assert.match(
@@ -680,6 +687,35 @@ test("QA-008: direct construction emits a primary action whose winning colour is
   const colour = computedDeclaration(actionButton, "color");
   assert.ok(colour, "the direct primary action needs a resolved text colour");
   assert.equal(colour.value.toLowerCase(), "#fff");
+
+  for (const actionQuestion of actionQuestions) {
+    const specification = E.actionSceneSpecification(actionQuestion);
+    assert.ok(specification.choices.length >= 3, "every action scene must offer at least three plausible result choices");
+    const initial = E.createResponseState(actionQuestion);
+    assert.equal(initial.value, "", "the scene must not preselect or calculate an answer");
+    assert.equal(initial.actions.length, 0, "the scene must begin before any move is shown");
+    const moved = {
+      value: "",
+      actions: Array.from({ length: specification.required }, () => specification.action),
+    };
+    const readyHtml = String(harness.directNumericConstructionHtml(actionQuestion, "play", {
+      responseState: moved,
+    }));
+    assert.match(readyHtml, /class="action-scene-count"/u, "the current quantity must be visibly labelled");
+    assert.match(readyHtml, /class="action-result-choices"/u, "the numerical answer choices appear after the move");
+    assert.match(readyHtml, /data-response-action="action-value"/u, "answer selection must be independent of the move button");
+
+    const wrong = specification.choices.find((value) => value !== specification.expected);
+    assert.notEqual(wrong, undefined, "the displayed answer set must include an incorrect but plausible choice");
+    const wrongGrade = E.gradeAnswer(actionQuestion, { ...moved, value: String(wrong) });
+    assert.equal(wrongGrade.valid, true, "the incorrect displayed choice must be a valid submission");
+    assert.equal(wrongGrade.correct, false, "the incorrect displayed choice must remain incorrect");
+    assert.equal(
+      E.gradeAnswer(actionQuestion, { ...moved, value: String(specification.expected) }).correct,
+      true,
+      "the separately selected correct result must still grade correctly",
+    );
+  }
 });
 
 test("QA-009: zero number-connection support works the answer and renders an explicit empty set", () => {
@@ -1594,4 +1630,127 @@ test("QA-038: strategy construction owns and renders its answer-free source mode
     assert.ok(rendered.indexOf("data-model-family=") < rendered.indexOf("data-response-action=\"strategy-select\""),
       "the source model must precede the strategy controls in reading order");
   }
+});
+
+test("QA-039: dense mathematical models stay bounded and contextual help stays singular", () => {
+  const bounded = evaluateHarness({
+    prelude: `
+      function finitePositiveInteger(value){const number=Number(value);return Number.isInteger(number)&&number>0?number:null;}
+      function s(id,slots){return id === "model.arrayRow" ? "Row "+slots.row+": "+slots.count : id;}
+    `,
+    functions: ["boundedArrayVisualHtml"],
+    exposed: "boundedArrayVisualHtml",
+  }).boundedArrayVisualHtml(2, 35);
+  assert.equal((bounded.match(/class="array-bounded-row"/gu) || []).length, 2,
+    "the 2 by 35 relationship must retain two visibly distinct mathematical rows");
+  assert.equal((bounded.match(/class="array-row-chunk"/gu) || []).length, 10,
+    "each 35-dot row must wrap into five bounded seven-dot segments");
+  assert.equal((bounded.match(/<i><\/i>/gu) || []).length, 70,
+    "responsive grouping must retain every one of the 70 represented objects");
+  assert.match(bounded, /Row 1: 35/u);
+  assert.match(bounded, /Row 2: 35/u);
+
+  const idHarness = evaluateHarness({
+    functions: ["semanticSvgId"],
+    exposed: "semanticSvgId",
+  }).semanticSvgId;
+  const sourceId = idHarness("area", { questionId: "MQ-121-example" }, "source");
+  const workedId = idHarness("area", { questionId: "MQ-121-example" }, "worked");
+  assert.notEqual(sourceId, workedId, "simultaneous source and worked models must not reuse one document-wide SVG clip id");
+  assert.equal(sourceId, "area-MQ-121-example-source");
+  assert.equal(workedId, "area-MQ-121-example-worked");
+
+  const contextual = { hidden: null, disabled: null, ariaHidden: null,
+    closest: (selector) => selector === ".tutorial-offer" ? {} : null,
+    setAttribute: (_name, value) => { contextual.ariaHidden = value; } };
+  const global = { hidden: null, disabled: null, ariaHidden: null,
+    closest: () => null,
+    setAttribute: (_name, value) => { global.ariaHidden = value; } };
+  const availability = evaluateHarness({
+    prelude: `
+      const ui=contextUi;
+      const app=contextApp;
+      function tutorialAvailable(){return true;}
+    `,
+    functions: ["applyTutorialAvailability"],
+    exposed: "applyTutorialAvailability",
+    context: {
+      contextUi: { tutorialOpen: false, screen: "session", phase: "feedback", lastAttempt: { feedbackClass: "INCORRECT" } },
+      contextApp: { querySelectorAll: () => [contextual, global] },
+    },
+  }).applyTutorialAvailability();
+  assert.equal(availability.available, true);
+  assert.equal(availability.count, 2);
+  assert.equal(availability.visibleCount, 1);
+  assert.equal(contextual.hidden, false);
+  assert.equal(contextual.disabled, false);
+  assert.equal(contextual.ariaHidden, "false");
+  assert.equal(global.hidden, true);
+  assert.equal(global.disabled, true);
+  assert.equal(global.ariaHidden, "true");
+
+  assert.match(styleSource, /\.share-mats\{[^}]*grid-template-columns:repeat\(auto-fit,minmax\(96px,1fr\)\)/u,
+    "group mats must wrap rather than widen the document");
+  assert.match(styleSource, /\.isometric-prism polyline\{fill:none\}/u,
+    "layer separators must remain strokes rather than filled wedges");
+  assert.match(styleSource, /\.selected-state--labelled\[aria-pressed="true"\]::after/u,
+    "selection must carry a visible label in addition to colour");
+  assert.match(styleSource, /repeating-linear-gradient/u,
+    "selection and mathematical state must retain a non-colour texture cue");
+  assert.match(styleSource, /@media\(forced-colors:active\)/u,
+    "selection must remain visible when authored colours are replaced");
+});
+
+test("QA-040: grown-up records render as readable in-app documents without nested two-axis tables", () => {
+  const legalBlockStart = adapter.indexOf("function legalSafeHref");
+  const legalBlockEnd = adapter.indexOf("function legalView", legalBlockStart);
+  assert.ok(legalBlockStart >= 0 && legalBlockEnd > legalBlockStart,
+    "the effect test must execute the exact shipped legal renderer block");
+  const legal = new vm.Script(`(()=>{
+    function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
+    ${adapter.slice(legalBlockStart, legalBlockEnd)}
+    return legalDocumentBodyHtml;
+  })()`, { filename: "holistic-child-ux-legal-effects.js" }).runInNewContext();
+  const rendered = String(legal("# Privacy\n\n**Local only.**\n\n- No telemetry\n\n<script>alert(1)</script>", "Privacy"));
+  assert.doesNotMatch(rendered, /<h2>Privacy<\/h2>/u,
+    "the in-app title must not be repeated by the embedded document heading");
+  assert.match(rendered, /<strong>Local only\.<\/strong>/u);
+  assert.match(rendered, /<ul><li>No telemetry<\/li><\/ul>/u);
+  assert.doesNotMatch(rendered, /<script>/u);
+  assert.match(rendered, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/u,
+    "legal text must remain inert even if a governed source file contains markup-looking text");
+  const embeddedStart = adapter.indexOf("const LEGAL_DOCUMENT_TEXT=Object.freeze(")
+    + "const LEGAL_DOCUMENT_TEXT=Object.freeze(".length;
+  const embeddedEnd = adapter.indexOf(");\n    const LEGAL_DOCUMENTS", embeddedStart);
+  assert.ok(embeddedEnd > embeddedStart, "the exact governed legal payload must remain machine-readable");
+  const embedded = JSON.parse(adapter.slice(embeddedStart, embeddedEnd));
+  assert.deepEqual(embedded, {
+    privacy: readFileSync(path.join(root, "PRIVACY.md"), "utf8").replace(/\r\n?/gu, "\n"),
+    notices: readFileSync(path.join(root, "THIRD_PARTY_NOTICES.md"), "utf8").replace(/\r\n?/gu, "\n"),
+    license: readFileSync(path.join(root, "LICENSE"), "utf8").replace(/\r\n?/gu, "\n"),
+  }, "the in-app legal reader must reproduce the exact governed source documents");
+  const renderedNotices = String(legal(embedded.notices, "Licences and attributions"));
+  assert.match(renderedNotices, /<a href="https:\/\/www\.nationalarchives\.gov\.uk\/doc\/open-government-licence\/version\/3\/" target="_blank" rel="noopener noreferrer">Open Government Licence v3\.0<\/a>/u,
+    "the actual attribution source must render Markdown links as safe semantic links");
+  assert.match(renderedNotices, /<a href="https:\/\/github\.com\/rsms\/inter\/releases\/download\/v4\.1\/Inter-4\.1\.zip" target="_blank" rel="noopener noreferrer">https:\/\/github\.com\/rsms\/inter\/releases\/download\/v4\.1\/Inter-4\.1\.zip<\/a>/u,
+    "the actual attribution source must render HTTPS autolinks without raw angle brackets");
+  assert.match(renderedNotices, /<table class="legal-table">[\s\S]*<th scope="col">File<\/th>[\s\S]*<td><code>tap\.wav<\/code><\/td>/u,
+    "the actual attribution table must render as a semantic table");
+  assert.match(renderedNotices, /<em>National curriculum in England: mathematics programmes of study<\/em>/u,
+    "the actual attribution source must render governed emphasis rather than literal asterisks");
+  assert.doesNotMatch(renderedNotices, /\]\(https:\/\/|&lt;https:\/\/|\|\s*File\s*\|/u,
+    "the actual attribution view must not expose raw Markdown links, autolinks, or table rows");
+  assert.match(adapter, /const LEGAL_DOCUMENTS=Object\.freeze\(\{privacy:/u);
+  assert.doesNotMatch(extractFunction("openLegalDocument"), /fetch\(/u,
+    "the in-app legal reader must preserve connect-src 'none' and make no runtime request");
+  assert.doesNotMatch(adapter, /href="\.\/PRIVACY\.md"/u,
+    "the parent surface must not hand a grown-up a raw Markdown navigation");
+  assert.match(adapter, /class="string-review-table"/u);
+  assert.doesNotMatch(extractFunction("stringReviewTab"), /class="scroll"/u,
+    "the wording review must use the outer document scroll rather than a nested two-axis viewport");
+  assert.match(styleSource, /\.place-value-exact\{overflow:visible\}/u);
+  assert.match(styleSource, /\.number-line-exact\{max-width:100%;overflow:visible\}/u);
+  assert.match(styleSource, /\.partition-regions\{overflow:hidden\}/u);
+  assert.match(styleSource, /@media\(max-height:450px\) and \(orientation:landscape\)/u,
+    "short landscape Home and tutorial actions must have an explicit first-screen packing contract");
 });

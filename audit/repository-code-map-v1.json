@@ -1,0 +1,831 @@
+{
+  "mapId": "math-quest-repository-code-map",
+  "version": "1.3.0",
+  "schemaVersion": 1,
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest file ownership, dependency, and tracked-artifact map.",
+    "originalWork": true
+  },
+  "aiReaderContract": {
+    "contractId": "math-quest-ai-first-drift-control",
+    "version": 1,
+    "primaryConsumer": "AI_AGENT",
+    "authority": {
+      "path": "AGENTS.md",
+      "startMarker": "<!-- AI-FIRST-DRIFT-CONTROL-START -->",
+      "endMarker": "<!-- AI-FIRST-DRIFT-CONTROL-END -->",
+      "sha256": "6d8f0018125ed2d5a104e0e0c6aeecb94f22f0bb14069138aea1eacb3c0dc0f9"
+    },
+    "canonicalRecordFormat": "CLOSED_JSON",
+    "schemaClosure": "ADDITIONAL_PROPERTIES_FALSE",
+    "identifierPolicy": "STABLE_NAMESPACED_IDENTIFIERS",
+    "relationshipPolicy": "EXPLICIT_TYPED_EDGES",
+    "orderingPolicy": "DECLARED_AND_VALIDATED",
+    "prosePolicy": "ANNOTATION_ONLY_NON_NORMATIVE",
+    "humanViewPolicy": "GENERATED_NON_AUTHORITATIVE_ONLY",
+    "commandOutputPolicy": "MACHINE_READABLE_BY_DEFAULT",
+    "ambiguityPolicy": "FAIL_CLOSED",
+    "governedSystems": [
+      "OWNERS",
+      "CODE_MAP",
+      "FEATURE_MAP",
+      "TUTORIAL_MANIFEST",
+      "BLAST_RADIUS",
+      "GATES"
+    ]
+  },
+  "orderingContract": [
+    {
+      "jsonPointer": "/coverageRules",
+      "policy": "DECLARED_FIRST_MATCH_PRECEDENCE"
+    },
+    {
+      "jsonPointer": "/factFamilies",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/factFamilies/*/owns",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/factFamilies/*/projections",
+      "policy": "LEXICOGRAPHIC_BY_PATH"
+    },
+    {
+      "jsonPointer": "/factFamilies/*/validators",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/artifactRelations",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/dataArtifactPatterns",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/tombstones",
+      "policy": "LEXICOGRAPHIC_BY_PATH"
+    }
+  ],
+  "copyPolicySemantics": {
+    "REFERENCES_ONLY": "NON_OWNER_MAY_STORE_POINTERS_NOT_OWNED_VALUES",
+    "DECLARED_PROJECTIONS_ONLY": "ONLY_DECLARED_PROJECTIONS_MAY_COPY_OWNED_VALUES",
+    "SECTION_MIRROR": "DECLARED_PROJECTION_MUST_EXACTLY_MIRROR_MARKED_OWNER_SECTION"
+  },
+  "copyDiscoverySemantics": {
+    "NONE": "NO_COMPLETE_REPOSITORY_LITERAL_SCAN_IS_CLAIMED",
+    "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT": "EVERY_TRACKED_TEXT_FILE_CONTAINING_THE_EXACT_TRIMMED_OWNER_BYTES_MUST_BE_A_DECLARED_PROJECTION"
+  },
+  "projectionRelationshipSemantics": {
+    "GENERATED": "OWNER_OR_DECLARED_GENERATOR_WRITES_PROJECTION",
+    "EXACT_MIRROR": "PROJECTION_BYTES_OR_MARKED_SECTION_EQUAL_OWNER_AUTHORITY",
+    "RUNTIME_EMBED": "PROJECTION_EMBEDS_OWNER_FACTS_IN_RUNTIME_BYTES",
+    "DOCUMENTED_REFERENCE": "PROJECTION_STORES_POINTER_OR_DIGEST_NOT_AUTHORITY",
+    "LOCKFILE": "PROJECTION_LOCKS_OWNER_DECLARED_DEPENDENCY_GRAPH",
+    "OPERATIONAL_CONFIG": "PROJECTION_CONFIGURES_BUILD_LAUNCH_AUDIT_OR_DEPLOYMENT_WITH_OWNER_FACT",
+    "VALIDATION_EXPECTATION": "PROJECTION_ASSERTS_OWNER_FACT_IN_VALIDATION_OR_TEST_BYTES",
+    "GENERATED_METADATA": "GENERATED_PROJECTION_STORES_OWNER_FACT_WITH_DERIVED_METADATA"
+  },
+  "relationKindSemantics": {
+    "GENERATES": "SOURCE_WRITES_TARGET",
+    "EMBEDS": "SOURCE_WRITES_EMBEDDED_REPRESENTATION_IN_TARGET",
+    "CONSUMES": "TARGET_READS_SOURCE",
+    "VALIDATES": "TARGET_USES_SOURCE_AS_VALIDATION_AUTHORITY",
+    "PUBLISHES": "SOURCE_PUBLISHES_TARGET",
+    "DOCUMENTS": "TARGET_DOCUMENTS_SOURCE",
+    "TESTS": "TARGET_TESTS_SOURCE"
+  },
+  "coverageRules": [
+    {
+      "id": "root-governance",
+      "pattern": "^(?:\\.gitattributes|\\.gitignore|AGENTS\\.md|CHANGELOG\\.md|CONTRIBUTING\\.md|LICENSE|OPEN_SOURCE_POLICY\\.md|PRIVACY\\.md|PUBLICATION_CLEARANCE\\.md|README\\.md|SECURITY\\.md|THIRD_PARTY_NOTICES\\.md|VERSION)$",
+      "role": "governance",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "root-runtime",
+      "pattern": "^(?:index\\.html|sw\\.js|manifest\\.webmanifest|release-shell-v1\\.json|audit\\.html)$",
+      "role": "runtime",
+      "releaseImpact": "PUBLIC_BYTES"
+    },
+    {
+      "id": "root-launchers",
+      "pattern": "^(?:Math Quest\\.bat|audit\\.bat|Serve-MathQuest\\.ps1)$",
+      "role": "launcher",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "root-toolchain",
+      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.deep-ux)?\\.config\\.mjs)$",
+      "role": "toolchain",
+      "releaseImpact": "DEVELOPMENT_ONLY"
+    },
+    {
+      "id": "github-workflows",
+      "pattern": "^\\.github/",
+      "role": "governance",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "runtime-assets",
+      "pattern": "^assets/",
+      "role": "asset",
+      "releaseImpact": "PUBLIC_BYTES"
+    },
+    {
+      "id": "audit-root",
+      "pattern": "^audit/[^/]+$",
+      "role": "audit",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "audit-fixtures",
+      "pattern": "^audit/fixtures/",
+      "role": "test",
+      "releaseImpact": "DEVELOPMENT_ONLY"
+    },
+    {
+      "id": "audit-library",
+      "pattern": "^audit/lib/",
+      "role": "audit",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "audit-playwright",
+      "pattern": "^audit/playwright/",
+      "role": "test",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "audit-schemas",
+      "pattern": "^audit/schemas/",
+      "role": "schema",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "audit-tests",
+      "pattern": "^audit/tests/",
+      "role": "test",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "curriculum",
+      "pattern": "^curriculum/",
+      "role": "curriculum",
+      "releaseImpact": "PUBLIC_BYTES"
+    },
+    {
+      "id": "docs-root",
+      "pattern": "^docs/[^/]+$",
+      "role": "documentation",
+      "releaseImpact": "DOCUMENTATION_ONLY"
+    },
+    {
+      "id": "docs-development",
+      "pattern": "^docs/development/",
+      "role": "documentation",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "docs-release",
+      "pattern": "^docs/release/",
+      "role": "documentation",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "docs-testing",
+      "pattern": "^docs/testing/",
+      "role": "documentation",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "licences",
+      "pattern": "^licenses/",
+      "role": "licence",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "research",
+      "pattern": "^research/",
+      "role": "research",
+      "releaseImpact": "DOCUMENTATION_ONLY"
+    },
+    {
+      "id": "tools",
+      "pattern": "^tools/",
+      "role": "tool",
+      "releaseImpact": "CERTIFICATION"
+    }
+  ],
+  "factFamilies": [
+    {
+      "id": "browser.reviewed-identity",
+      "owner": "audit/browser-runner-evidence-v1.json",
+      "owns": [
+        "browser.identity.executable-sha256",
+        "browser.identity.product",
+        "browser.identity.runner-image",
+        "browser.identity.version"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "PUBLICATION_CLEARANCE.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.cadence",
+      "owner": "audit/certification-cadence-v1.json",
+      "owns": [
+        "certification.cadence.beta-census",
+        "certification.cadence.evidence-classes"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "AGENTS.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/certification-cadence.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.gates",
+      "owner": "audit/run-audit.mjs",
+      "owns": [
+        "certification.gates.aggregation",
+        "certification.gates.report-identity",
+        "certification.gates.status-semantics"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/audit-orchestration.test.mjs"
+      ]
+    },
+    {
+      "id": "curriculum.contract",
+      "owner": "curriculum/math-quest-manifest-v1.json",
+      "owns": [
+        "curriculum.counts",
+        "curriculum.generator-profiles",
+        "curriculum.skill-levels",
+        "curriculum.skills",
+        "curriculum.task-obligations"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs",
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "feature.user-operable-mechanics",
+      "owner": "curriculum/math-quest-feature-map-v1.json",
+      "owns": [
+        "feature.human-review-requirements",
+        "feature.legibility-invariants",
+        "feature.mechanic-identities",
+        "feature.proof-requirements"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/feature-map.test.mjs",
+        "audit/tests/holistic-child-ux-regressions.test.mjs"
+      ]
+    },
+    {
+      "id": "policy.agent-collaboration",
+      "owner": "AGENTS.md",
+      "owns": [
+        "policy.agent-collaboration.normative-section"
+      ],
+      "copyPolicy": "SECTION_MIRROR",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/agent-collaboration-policy-v1.json",
+          "relationship": "EXACT_MIRROR"
+        }
+      ],
+      "validators": [
+        "audit/tests/agent-collaboration-policy.test.mjs"
+      ]
+    },
+    {
+      "id": "policy.ai-first-drift-control",
+      "owner": "AGENTS.md",
+      "owns": [
+        "policy.ai-first-drift-control.normative-section"
+      ],
+      "copyPolicy": "SECTION_MIRROR",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/repository-code-map-v1.json",
+          "relationship": "EXACT_MIRROR"
+        }
+      ],
+      "validators": [
+        "audit/tests/repository-code-map.test.mjs"
+      ]
+    },
+    {
+      "id": "policy.finished-work",
+      "owner": "AGENTS.md",
+      "owns": [
+        "policy.finished-work.normative-section"
+      ],
+      "copyPolicy": "SECTION_MIRROR",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/finished-work-policy-v1.json",
+          "relationship": "EXACT_MIRROR"
+        }
+      ],
+      "validators": [
+        "audit/tests/finished-work-policy.test.mjs"
+      ]
+    },
+    {
+      "id": "product.version",
+      "owner": "VERSION",
+      "owns": [
+        "product.version.current"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT",
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": ".github/workflows/trusted-https-canary.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/publication-clearance.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-supply-chain.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-trusted-https-canary.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/page-adapter-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/playwright-deep-ux-census.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/publication-clearance.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/pwa-release.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/qa-tour.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/trusted-https-canary.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "CHANGELOG.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/development/pwa-adapter-contract.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/release/checklist.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/release/privacy-review.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/release/publication-gates.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/release/readiness.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "README.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        },
+        {
+          "path": "research/build-axioms.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "sw.js",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs",
+        "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "release.public-shell",
+      "owner": "release-shell-v1.json",
+      "owns": [
+        "release.public-shell.byte-digests",
+        "release.public-shell.entry-set"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "sw.js",
+          "relationship": "RUNTIME_EMBED"
+        }
+      ],
+      "validators": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "repository.change-impact",
+      "owner": "tools/blast-radius-lookup.mjs",
+      "owns": [
+        "repository.change-impact.content-path-lookup",
+        "repository.change-impact.count-prediction",
+        "repository.change-impact.dependency-chase",
+        "repository.change-impact.limitations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/blast-radius-lookup.test.mjs"
+      ]
+    },
+    {
+      "id": "repository.structure",
+      "owner": "audit/repository-code-map-v1.json",
+      "owns": [
+        "repository.structure.artifact-ownership",
+        "repository.structure.artifact-relations",
+        "repository.structure.file-classifications",
+        "repository.structure.tombstones"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/repository-structure.md",
+          "relationship": "GENERATED"
+        }
+      ],
+      "validators": [
+        "audit/tests/repository-code-map.test.mjs"
+      ]
+    },
+    {
+      "id": "rights.components",
+      "owner": "licenses/component-register-v1.json",
+      "owns": [
+        "rights.components.approved-licenses",
+        "rights.components.classification",
+        "rights.components.first-party-paths"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "licenses/first-party-paths-v1.txt",
+          "relationship": "GENERATED"
+        }
+      ],
+      "validators": [
+        "audit/public-candidate-guard.mjs"
+      ]
+    },
+    {
+      "id": "rights.evidence-paths",
+      "owner": "licenses/evidence-paths-v1.json",
+      "owns": [
+        "rights.evidence-paths.allowlist"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/public-candidate-guard.mjs"
+      ]
+    },
+    {
+      "id": "toolchain.dependencies",
+      "owner": "package.json",
+      "owns": [
+        "toolchain.dependencies.approved-names-versions"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "licenses/ci-toolchain.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "licenses/component-register-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "package-lock.json",
+          "relationship": "LOCKFILE"
+        }
+      ],
+      "validators": [
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "tutorial.linkage",
+      "owner": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "owns": [
+        "tutorial.linkage.answer-disclosure-policies",
+        "tutorial.linkage.answer-separation",
+        "tutorial.linkage.families",
+        "tutorial.linkage.feature-coverage",
+        "tutorial.linkage.generator-profiles",
+        "tutorial.linkage.input-methods",
+        "tutorial.linkage.obligation-resolution-modes",
+        "tutorial.linkage.phase-identities",
+        "tutorial.linkage.sibling-compatibility",
+        "tutorial.linkage.visual-anchors",
+        "tutorial.linkage.visual-cues",
+        "tutorial.linkage.visual-teaching-contracts"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "curriculum/math-quest-feature-map-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/development/build-spec.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        }
+      ],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/playwright/deep-ux-census.spec.mjs",
+        "audit/tests/tutorial-manifest.test.mjs"
+      ]
+    }
+  ],
+  "artifactRelations": [
+    {
+      "id": "blast-radius.development-plan",
+      "source": "audit/lib/development-suite-plan.mjs",
+      "target": "tools/blast-radius-lookup.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "blast-radius.gate",
+      "source": "tools/blast-radius-lookup.mjs",
+      "target": "audit/run-audit.ps1",
+      "kind": "TESTS"
+    },
+    {
+      "id": "blast-radius.schema",
+      "source": "audit/schemas/blast-radius-result-v2.schema.json",
+      "target": "tools/blast-radius-lookup.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "cadence.audit",
+      "source": "audit/certification-cadence-v1.json",
+      "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "code-map.blast-radius",
+      "source": "audit/repository-code-map-v1.json",
+      "target": "tools/blast-radius-lookup.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "code-map.gate",
+      "source": "audit/repository-code-map-v1.json",
+      "target": "audit/run-audit.ps1",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "curriculum.generator",
+      "source": "curriculum/math-quest-manifest-v1.json",
+      "target": "tools/sync-curriculum-manifest.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "curriculum.runtime",
+      "source": "tools/sync-curriculum-manifest.mjs",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "feature.gate",
+      "source": "curriculum/math-quest-feature-map-v1.json",
+      "target": "audit/run-audit.ps1",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "feature.schema",
+      "source": "audit/schemas/feature-map-v1.schema.json",
+      "target": "audit/lib/feature-map.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "feature.test",
+      "source": "audit/lib/feature-map.mjs",
+      "target": "audit/tests/feature-map.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "feature.tutorial",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "curriculum/math-quest-feature-map-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.deep-ux",
+      "source": "index.html",
+      "target": "audit/playwright/deep-ux-census.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "playwright.product",
+      "source": "index.html",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "rights.guard",
+      "source": "licenses/component-register-v1.json",
+      "target": "audit/public-candidate-guard.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "shell.generator",
+      "source": "tools/build-pwa-release-manifest.mjs",
+      "target": "release-shell-v1.json",
+      "kind": "GENERATES"
+    },
+    {
+      "id": "shell.worker",
+      "source": "release-shell-v1.json",
+      "target": "sw.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "tutorial.build-spec",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "docs/development/build-spec.md",
+      "kind": "DOCUMENTS"
+    },
+    {
+      "id": "tutorial.deep-ux",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "audit/playwright/deep-ux-census.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "tutorial.gate",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "audit/run-audit.ps1",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "tutorial.generator",
+      "source": "tools/build-tutorial-manifest.mjs",
+      "target": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "kind": "GENERATES"
+    },
+    {
+      "id": "tutorial.runtime",
+      "source": "tools/sync-tutorial-manifest.mjs",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "tutorial.schema",
+      "source": "audit/schemas/tutorial-manifest-v1.schema.json",
+      "target": "audit/lib/tutorial-manifest.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "tutorial.test",
+      "source": "audit/lib/tutorial-manifest.mjs",
+      "target": "audit/tests/tutorial-manifest.test.mjs",
+      "kind": "TESTS"
+    }
+  ],
+  "dataArtifactPatterns": [
+    "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
+    "^audit/(?:agent-collaboration-policy-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|repository-code-map-v1)\\.json$",
+    "^curriculum/.*\\.json$",
+    "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
+  ],
+  "tombstones": [
+    {
+      "path": "audit/legacy-file-ownership-map.json",
+      "reason": "A second ownership authority would drift from the canonical repository code map.",
+      "ownerRecord": "audit/repository-code-map-v1.json"
+    },
+    {
+      "path": "docs/repository-code-map.md",
+      "reason": "The human repository map is generated into the existing repository structure document.",
+      "ownerRecord": "audit/repository-code-map-v1.json"
+    }
+  ]
+}

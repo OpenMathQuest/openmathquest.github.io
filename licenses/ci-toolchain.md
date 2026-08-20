@@ -41,6 +41,26 @@ funding requests disabled. The focused browser suite, Deep UX Census, and canary
 Microsoft Edge binary already present on Windows; no Playwright-managed browser
 is downloaded or shipped.
 
+## Ajv 8.20.0 tutorial-manifest validator
+
+- Provider: Ajv contributors
+- Licence: MIT
+- Source: <https://github.com/ajv-validator/ajv/tree/0fba0b8e649909613cfce0999b149cd08f4a4987>
+- Licence: <https://github.com/ajv-validator/ajv/blob/0fba0b8e649909613cfce0999b149cd08f4a4987/LICENSE>
+- Registry artifact: <https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz>
+- Registry SRI: `sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==`
+
+Ajv validates the closed tutorial-manifest schema during development and
+release checks. It and its dependency closure are CI-only and never enter the
+Pages or service-worker payload.
+
+## Ajv 8.20.0 transitive dependency closure
+
+- `fast-deep-equal` 3.1.3 — MIT — [source](https://github.com/epoberezkin/fast-deep-equal/tree/6d7b0967c6a3c7051ba51e236f2404db34e8b13c) — [licence](https://github.com/epoberezkin/fast-deep-equal/blob/6d7b0967c6a3c7051ba51e236f2404db34e8b13c/LICENSE) — [artifact](https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz) — SRI `sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==`
+- `fast-uri` 3.1.5 — BSD-3-Clause — [source](https://github.com/fastify/fast-uri/tree/5e179cbb4636d5f773ed21126e5bd3068e87e94e) — [licence](https://github.com/fastify/fast-uri/blob/5e179cbb4636d5f773ed21126e5bd3068e87e94e/LICENSE) — [artifact](https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.5.tgz) — SRI `sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==`
+- `json-schema-traverse` 1.0.0 — MIT — [source](https://github.com/epoberezkin/json-schema-traverse/tree/a20697b59096545a52bc8050b0878135c16979d6) — [licence](https://github.com/epoberezkin/json-schema-traverse/blob/a20697b59096545a52bc8050b0878135c16979d6/LICENSE) — [artifact](https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz) — SRI `sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==`
+- `require-from-string` 2.0.2 — MIT — [source](https://github.com/floatdrop/require-from-string/tree/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13) — [licence](https://github.com/floatdrop/require-from-string/blob/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13/LICENSE) — [artifact](https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz) — SRI `sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==`
+
 ## Optional fsevents 2.3.2 lockfile entry
 
 - Provider: fsevents contributors

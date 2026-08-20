@@ -1,7 +1,7 @@
 # Math Quest — Public Beta Build Contract
 
-- **Contract version:** `3.5`
-- **Date:** `2026-08-02`
+- **Contract version:** `3.6`
+- **Date:** `2026-08-14`
 - **Digest record:** `research/build-axioms.md`
 - **Status:** active for the independently authored public beta
 
@@ -136,7 +136,7 @@ and marker all re-verify. The terminal marker prevents a virgin current save
 from rediscovering and replacing itself from the retained source on later
 boots. A missing protected save behind that marker, any source or guard race,
 or any unrecognized invalid legacy envelope fails closed. The grown-up notice
-must say plainly that the old save remains stored separately and that Beta 6
+must say plainly that the old save remains stored separately and that Beta 7
 starts fresh because the curriculum changed.
 
 Do not translate pre-beta mastery or evidence into the new curriculum: the
@@ -269,6 +269,47 @@ answers when that is the clearest truthful interaction. Only formats that meet
 the engine's evidence safeguards may contribute selection evidence. All
 selection questions must have distinct options under the real grader and
 exactly one correct option.
+
+## Different-example tutorials
+
+Every ordinary question in a real level offers **Show me how**. The tutorial
+uses the exact obligation binding in the canonical tutorial manifest. It uses
+one of three closed resolution modes: a same-task example with a different
+terminal answer, an explicitly compatible sibling task with a different
+terminal answer, or an approved procedure-only example that omits the terminal
+answer. Automatic same-answer fallback is forbidden. Every example has a
+different question ID, sample key, and parameters while retaining the governed
+response method, representation, and structural teaching contract.
+
+The child moves through three steps: Notice, Plan, and Check. Notice and Plan
+remain answer-free. Check may show the completed teaching model only when the
+binding requires a different terminal answer; procedure-only Check preserves
+the mathematical procedure without rendering a terminal answer. Each phase
+binds a declared visual cue to the actual prompt, stimulus, or worked model,
+and each phase must produce a distinct visible mathematical transformation.
+Returning restores the exact source question and response.
+An incorrect answer may offer the same tutorial. Any answer submitted after
+tutorial help keeps truthful feedback but is `NON_EVIDENCE` and cannot affect
+mastery, spacing, practice counts, promotion, placement, or fatigue. Tutorial
+state is resumable, save-failure rollback is transactional, and an incompatible
+older active UI session is discarded without changing durable progress or
+history.
+
+Parent Test exposes the same three-step tutorial for every selected sample and
+must leave every child-save byte unchanged. Placement remains tutorial-free so
+the starting-point result is not coached.
+
+`curriculum/math-quest-tutorial-manifest-v1.json` is the canonical linkage
+record. Its JSON Schema and focused validator bind it to the exact curriculum
+bytes; skill, level, profile, and required-task projection; question-generator
+contract; all live input methods and generator profiles; the generated
+profile/method/semantic-prompt feature inventory; the closed 149 same-task,
+5 sibling-task, and 12 procedure-only obligation split; disclosure policies;
+phase identities; visual teaching contracts, anchors, and cues; independent
+answer separation; and the child-string table.
+Changing any of those governed inputs requires regenerating the tutorial
+manifest, synchronizing its embedded runtime bytes and PWA shell, and extending
+the direct Playwright and Deep UX tutorial effects where needed.
 
 ## Child experience
 
