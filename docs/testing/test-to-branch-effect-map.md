@@ -265,7 +265,11 @@ AI-first authority section to remain hash-bound. The closed contract requires
 stable IDs, typed edges, declared ordering, annotation-only prose, JSON-default
 commands, globally unique owned-fact IDs, exact source/target direction for
 every edge type, closed copy/projection semantics, and fail-closed ambiguity
-handling. Tutorial ownership is a closed V2 fact set covering resolution,
+handling. A state-dependent documented projection may omit an owner literal
+only while its evidence record is pending; the same projection is mandatory
+and discovered when an approved record contains that literal. Focused fixtures
+protect both states and reject an approved clearance whose version projection
+is undeclared. Tutorial ownership is a closed V2 fact set covering resolution,
 disclosure, answer separation, sibling compatibility, phases, visual teaching
 contracts, anchors, and cues, with explicit focused and Deep UX validator
 edges. The generated human view lives
