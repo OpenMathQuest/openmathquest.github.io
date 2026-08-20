@@ -196,16 +196,18 @@
       frame.addEventListener("error", () => { clearTimeout(timer); reject(new Error(`${frame.title || "frame"} failed to load`)); }, { once: true });
     });
 
-    function baseUi(question, {
+    function baseUi(engine, question, {
       screen = "session",
       phase = "question",
       candidates = [],
       choiceResolved = {},
       hintUsed = false,
+      tutorialOpen = false,
+      tutorialStep = 1,
       isReteach = false,
     } = {}) {
       return {
-        version: 1,
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
         screen,
         phase,
         question,
@@ -217,9 +219,12 @@
         modelCells: [],
         modelTouched: false,
         hintUsed,
+        tutorialOpen,
+        tutorialStep,
         selectionChanged: false,
         feedback: null,
         lastAttempt: null,
+        attemptCommitted: true,
         replayMs: 0,
         manipulationMs: 0,
         maxIdleMs: 0,
@@ -267,6 +272,8 @@
       phase = "question",
       screen = "session",
       hintUsed = false,
+      tutorialOpen = false,
+      tutorialStep = 1,
       isReteach = false,
       previewLevel = null,
       stopReason = null,
@@ -370,10 +377,12 @@
         stopReason,
         classifications: stopReason ? [stopReason] : [],
         oneMore: false,
-        uiState: baseUi(activeQuestion, {
+        uiState: baseUi(engine, activeQuestion, {
           phase,
           screen,
           hintUsed,
+          tutorialOpen,
+          tutorialStep,
           isReteach,
           choiceResolved,
         }),
@@ -728,17 +737,17 @@
       await pause();
     }
 
-    async function requireLayoutQuestionReady(scenario, skillId, label) {
+    async function requireLayoutQuestionReady(scenario, skillId, label, { tutorial = false } = {}) {
       const ready = await waitUntil(() => {
         if (!scenarioAppReady(scenario.frame)) return false;
         const question = scenario.doc?.querySelector(".question");
         const response = question?.querySelector(".question-response");
         const controls = response?.querySelector(".answer-controls[data-input-method]");
         const confirm = response?.querySelector('.question-submit [data-action="confirm"]');
+        const tutorialPanel = question?.querySelector('[data-tutorial="different-example"]');
         return question?.getAttribute("data-skill-id") === skillId
           && Boolean(question.getAttribute("data-input-method"))
-          && Boolean(controls)
-          && Boolean(confirm);
+          && (tutorial ? Boolean(tutorialPanel) : Boolean(controls) && Boolean(confirm));
       }, 350, 20);
       if (!ready) {
         const app = scenario.doc?.getElementById("app");
@@ -1202,6 +1211,24 @@
       return rect.left >= -1 && rect.top >= -1
         && rect.right <= scenario.win.innerWidth + 1
         && rect.bottom <= scenario.win.innerHeight + 1;
+    }
+    function layoutViewportFlowPass({
+      tutorialRequired,
+      documentFitsFirstScreen,
+      tutorialActionsReachable,
+      noNestedTutorialScroll,
+      outerScrollException = "NONE",
+      viewportWidth = 0,
+      viewportHeight = 0,
+      laterGradeLargeModel = false,
+    }) {
+      const approvedOuterScroll = tutorialRequired
+        && outerScrollException === "LATER_GRADE_844x390_LARGE_MODEL"
+        && viewportWidth === 844
+        && viewportHeight === 390
+        && laterGradeLargeModel === true;
+      return (documentFitsFirstScreen || approvedOuterScroll)
+        && (!tutorialRequired || (tutorialActionsReachable && noNestedTutorialScroll));
     }
     function responseBeforeConfirm(scenario) {
       const response = scenario.doc.querySelector(".question-response");
@@ -2007,13 +2034,20 @@
         openFrames.push(reteachScenario.frame);
         const reteachVisible = Boolean(reteachScenario.doc.querySelector(".phase-reteach .parent-cue"));
         await answerCorrect(reteachScenario, reteachQuestion);
-        const reteachSaved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        const reteachPending = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+        reteachScenario.doc.querySelector('[data-action="next"]')?.click();
+        const reteachSaved = await waitUntil(() => {
+          const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
+          return saved.reteachQueue.length === 0 ? saved : null;
+        });
         add("BR-15", "An active re-teach resumes, renders support, and completes non-evidentially", reteachVisible
-          && reteachSaved.activeSession?.uiState?.phase === "feedback"
+          && reteachPending.activeSession?.uiState?.phase === "feedback"
+          && reteachPending.reteachQueue.length === 1
           && reteachSaved.reteachQueue.length === 0
           && Object.values(reteachSaved.skills).every((record) => record.evidence.length === 0), {
           visible: reteachVisible,
-          phase: reteachSaved.activeSession?.uiState?.phase,
+          pendingPhase: reteachPending.activeSession?.uiState?.phase,
+          pendingQueue: reteachPending.reteachQueue.length,
           reteachQueue: reteachSaved.reteachQueue.length,
         });
         reteachScenario.frame.remove();
@@ -4021,7 +4055,7 @@
         ]);
         const layoutPhases = Object.freeze([
           { name: "question", phase: "question", hintUsed: false, isReteach: false },
-          { name: "help", phase: "question", hintUsed: true, isReteach: false },
+          { name: "tutorial", phase: "question", hintUsed: true, tutorialOpen: true, tutorialStep: 1, isReteach: false },
           { name: "reteach", phase: "reteach", hintUsed: false, isReteach: true },
         ]);
         for (const layoutCase of layoutCases) {
@@ -4038,6 +4072,8 @@
               const layoutState = activeStateFor(engine, playDay, capability.question, {
                 phase: phase.phase,
                 hintUsed: phase.hintUsed,
+                tutorialOpen: Boolean(phase.tutorialOpen),
+                tutorialStep: phase.tutorialStep || 1,
                 isReteach: phase.isReteach,
                 canonicalIndex: capability.canonicalIndex ?? 1,
                 reteachIndex: phase.isReteach ? capability.canonicalIndex : 0,
@@ -4061,17 +4097,23 @@
                   layoutScenario,
                   capability.skill.skillId,
                   `${layoutCase.caseId} ${phase.name} ${viewport.name}`,
+                  { tutorial: Boolean(phase.tutorialOpen) },
                 );
                 const doc = layoutScenario.doc;
                 const win = layoutScenario.win;
                 const question = doc.querySelector(".question");
-                const prompt = question?.querySelector(".prompt");
+                const tutorial = question?.querySelector('[data-tutorial="different-example"]');
+                const tutorialRequired = Boolean(phase.tutorialOpen);
+                win.scrollTo(0, 0);
+                const prompt = tutorialRequired
+                  ? tutorial?.querySelector(".prompt")
+                  : question?.querySelector(".prompt");
                 const response = question?.querySelector(".question-response");
                 const answerControls = response?.querySelector(".answer-controls");
                 const confirm = response?.querySelector('.question-submit [data-action="confirm"]');
                 const support = question?.querySelector(".question-support");
                 const model = support?.querySelector('.math-model[data-model-derived="true"]');
-                const supportRequired = phase.name !== "question";
+                const supportRequired = phase.isReteach;
                 const collisionWitnessRequired = supportRequired
                   && capability.skill.skillId === "MQ-006"
                   && viewport.name === "phone";
@@ -4087,21 +4129,29 @@
                 );
                 const decoration = doc.querySelector(".world-decoration");
                 const metrics = visibleMetrics(layoutScenario, ".play-shell");
-                const flow = naturalQuestionFlow(layoutScenario);
-                const order = responseBeforeConfirm(layoutScenario);
-                const responseControls = [...(answerControls?.querySelectorAll("button,input,select,textarea") || [])]
+                const flow = tutorialRequired
+                  ? { pass: Boolean(tutorial && question?.contains(tutorial)), kind: "tutorial" }
+                  : naturalQuestionFlow(layoutScenario);
+                const order = tutorialRequired ? { pass: true } : responseBeforeConfirm(layoutScenario);
+                const responseControls = [...((tutorialRequired ? tutorial : answerControls)
+                  ?.querySelectorAll("button,input,select,textarea") || [])]
                   .filter((control) => renderedElement(layoutScenario, control));
                 const enabledResponseControls = responseControls.filter((control) => !control.disabled && control.tabIndex >= 0);
                 const firstResponseControl = enabledResponseControls[0] || null;
                 const lastResponseControl = enabledResponseControls.at(-1) || null;
-                firstResponseControl?.focus();
-                const firstResponseFocused = Boolean(
-                  firstResponseControl && doc.activeElement === firstResponseControl
+                const tutorialRenderedAtOrigin = !tutorialRequired || Boolean(
+                  renderedElement(layoutScenario, tutorial)
+                  && actionVisibleInViewport(layoutScenario, prompt)
                 );
-                lastResponseControl?.focus();
-                const lastResponseFocused = Boolean(
-                  lastResponseControl && doc.activeElement === lastResponseControl
-                );
+                const responseControlReachability = enabledResponseControls.map((control) => {
+                  control.focus();
+                  return Boolean(
+                    doc.activeElement === control
+                    && actionVisibleInViewport(layoutScenario, control)
+                  );
+                });
+                const firstResponseFocused = Boolean(firstResponseControl && responseControlReachability[0]);
+                const lastResponseFocused = Boolean(lastResponseControl && responseControlReachability.at(-1));
                 const keyboardFocusReachable = Boolean(
                   enabledResponseControls.length > 0
                   && enabledResponseControls.every((control) => (
@@ -4112,22 +4162,63 @@
                 );
                 const renderedFamily = question?.getAttribute("data-input-method") || "";
                 const controlsFamily = answerControls?.getAttribute("data-input-method") || "";
-                const familyMatches = renderedFamily === family && controlsFamily === family;
+                const familyMatches = renderedFamily === family
+                  && (tutorialRequired || controlsFamily === family);
                 const supportVisible = !supportRequired || Boolean(
                   actionVisibleInViewport(layoutScenario, support)
                   && actionVisibleInViewport(layoutScenario, model),
                 );
-                const promptVisible = actionVisibleInViewport(layoutScenario, prompt);
-                const responseVisible = actionVisibleInViewport(layoutScenario, response);
-                const answerControlsVisible = actionVisibleInViewport(layoutScenario, answerControls);
-                const confirmVisible = actionVisibleInViewport(layoutScenario, confirm);
+                const tutorialVisible = !tutorialRequired || Boolean(
+                  tutorialRenderedAtOrigin
+                  && tutorial?.dataset.tutorialStep === "1"
+                  && tutorial.dataset.tutorialPhaseId === "NOTICE"
+                  && tutorial.dataset.sourceQuestionId
+                  && tutorial.dataset.exampleQuestionId
+                  && tutorial.dataset.sourceQuestionId !== tutorial.dataset.exampleQuestionId,
+                );
+                const promptVisible = tutorialRequired
+                  ? tutorialRenderedAtOrigin
+                  : actionVisibleInViewport(layoutScenario, prompt);
+                const responseVisible = tutorialRequired || actionVisibleInViewport(layoutScenario, response);
+                const answerControlsVisible = tutorialRequired || actionVisibleInViewport(layoutScenario, answerControls);
+                const confirmVisible = tutorialRequired || actionVisibleInViewport(layoutScenario, confirm);
                 const everyResponseControlVisible = responseControls.length > 0
-                  && responseControls.every((control) => actionVisibleInViewport(layoutScenario, control));
+                  && (tutorialRequired
+                    ? responseControlReachability.every(Boolean)
+                    : responseControls.every((control) => actionVisibleInViewport(layoutScenario, control)));
                 const rootScrollHeight = Math.max(
                   doc.documentElement.scrollHeight,
                   doc.body?.scrollHeight || 0,
                 );
                 const documentFitsFirstScreen = rootScrollHeight <= win.innerHeight + 1;
+                const nestedTutorialScrollOffenders = tutorialRequired && tutorial
+                  ? [tutorial, ...tutorial.querySelectorAll("*")]
+                    .filter((element) => renderedElement(layoutScenario, element))
+                    .filter((element) => {
+                      if (element.scrollHeight <= element.clientHeight + 1) return false;
+                      return ["auto", "scroll", "hidden", "clip"]
+                        .includes(win.getComputedStyle(element).overflowY);
+                    })
+                    .map((element) => ({
+                      element: `${element.localName}.${[...element.classList].slice(0, 3).join(".")}`,
+                      overflowY: win.getComputedStyle(element).overflowY,
+                      scrollHeight: element.scrollHeight,
+                      clientHeight: element.clientHeight,
+                    }))
+                  : [];
+                const noNestedTutorialScroll = nestedTutorialScrollOffenders.length === 0;
+                const tutorialActionsReachable = !tutorialRequired || Boolean(
+                  responseControls.length > 0
+                  && responseControlReachability.every(Boolean)
+                );
+                const viewportFlowPass = layoutViewportFlowPass({
+                  tutorialRequired,
+                  documentFitsFirstScreen,
+                  tutorialActionsReachable,
+                  noNestedTutorialScroll,
+                  viewportWidth: viewport.width,
+                  viewportHeight: viewport.height,
+                });
                 const noHorizontalOverflow = doc.documentElement.scrollWidth
                   <= doc.documentElement.clientWidth + 1
                   && (doc.body?.scrollWidth || 0) <= win.innerWidth + 1
@@ -4146,8 +4237,9 @@
                   && everyResponseControlVisible
                   && keyboardFocusReachable
                   && supportVisible
+                  && tutorialVisible
                   && !supportResponseCollision
-                  && documentFitsFirstScreen
+                  && viewportFlowPass
                   && noHorizontalOverflow
                   && flow.pass
                   && order.pass
@@ -4180,9 +4272,17 @@
                   confirmVisible,
                   supportRequired,
                   supportVisible,
+                  tutorialRequired,
+                  tutorialVisible,
+                  tutorialRenderedAtOrigin,
+                  tutorialActionsReachable,
+                  tutorialOuterScrollAllowed,
+                  noNestedTutorialScroll,
+                  nestedTutorialScrollOffenders,
                   collisionWitnessRequired,
                   supportResponseCollision,
                   documentFitsFirstScreen,
+                  viewportFlowPass,
                   rootScrollHeight,
                   viewportHeight: win.innerHeight,
                   noHorizontalOverflow,
@@ -4576,7 +4676,7 @@
         const expectedLayoutRows = layoutCases.length
           * layoutPhases.length
           * layoutViewports.length;
-        add("BR-21", "Dense response-family layouts, seven screen-native early activities, and money labels stay readable and actionable across supported screens", discoveryComplete
+        add("BR-21", "Dense response-family question, tutorial, and re-teach layouts, seven screen-native early activities, and money labels stay readable and actionable across supported screens", discoveryComplete
           && requiredWitnessesComplete
           && layoutCases.length === 25
           && layoutRows.length === expectedLayoutRows
@@ -4629,7 +4729,6 @@
         }));
         const childFlowCases = [
           { name: "selection", question: selectionCase.question, options: {} },
-          { name: "selection-help", question: selectionCase.question, options: { hintUsed: true } },
           { name: "selection-reteach", question: reteachQuestion, options: { phase: "reteach", isReteach: true } },
           { name: "pair-link", question: pairCase.question, options: {} },
           { name: "categorical-sort", question: categoricalQuestion, options: {} },
@@ -4731,7 +4830,7 @@
         const mq121OrdinaryCandidates = mq121ChoicePosition
           ? engine.makeQuestionChoices(mq121CanonicalArgs)
           : [engine.makeQuestion(mq121CanonicalArgs)];
-        const mq121HelpQuestion = mq121OrdinaryCandidates.find((question) => (
+        const mq121Question = mq121OrdinaryCandidates.find((question) => (
           question.inputMethod === "AREA_DECOMPOSE"
         ));
         const mq121ReteachQuestion = engine.makeQuestion(questionArgs(mq121Skill, {
@@ -4742,10 +4841,10 @@
           scaffolded: true,
           reteachStep: true,
         }));
-        if (!mq121HelpQuestion) throw new Error("The canonical MQ-121 slot has no area-decompose question.");
+        if (!mq121Question) throw new Error("The canonical MQ-121 slot has no area-decompose question.");
         const mq121ContainmentRows = [];
         for (const phase of [
-          { name: "help", question: mq121HelpQuestion, options: { hintUsed: true, canonicalIndex: 0 } },
+          { name: "question", question: mq121Question, options: { canonicalIndex: 0 } },
           {
             name: "reteach",
             question: mq121ReteachQuestion,
@@ -4817,7 +4916,7 @@
         if (!mq034Skill || !mq122Skill) {
           throw new Error("The Batch 2 layout witnesses require MQ-034 and MQ-122.");
         }
-        const mq034HelpQuestion = engine.makeQuestion(questionArgs(mq034Skill, {
+        const mq034Question = engine.makeQuestion(questionArgs(mq034Skill, {
           tier: "EASY",
           representation: "CONCRETE",
           seed: 0x6d617468,
@@ -4833,10 +4932,10 @@
         }));
         for (const exactCase of [
           {
-            name: "mq034-help-ipad-portrait",
+            name: "mq034-question-ipad-portrait",
             skillId: "MQ-034",
-            question: mq034HelpQuestion,
-            options: { hintUsed: true, canonicalIndex: 0 },
+            question: mq034Question,
+            options: { canonicalIndex: 0 },
             width: 768,
             height: 1024,
           },
@@ -5477,10 +5576,14 @@
             const detail = normalized(feedback?.querySelector(".feedback-state__copy p")?.textContent);
             const action = scenario.doc.querySelector('[data-action="next"]');
             const focusedOutcome = Boolean(focusedAtTransition && feedback === transitionedFeedback);
-            const reviewModel = scenario.doc.querySelector(
-              '.feedback-review .model[data-worked-result="true"]',
-            );
-            const reviewModelVisible = renderedElement(scenario, reviewModel);
+            const tutorialOffer = scenario.doc.querySelector(".tutorial-offer");
+            const tutorialControl = tutorialOffer?.querySelector('[data-action="tutorial"]');
+            const assistanceContract = correct
+              ? !tutorialOffer
+              : Boolean(
+                renderedElement(scenario, tutorialOffer)
+                && actionVisibleInViewport(scenario, tutorialControl),
+              );
             const liveAfter = scenario.doc.querySelector("#live");
             const liveText = normalized(liveAfter?.textContent);
             const saved = JSON.parse(localStorage.getItem(TEST_SAVE_KEY) || "null");
@@ -5512,7 +5615,7 @@
               && semanticIcon
               && actionVisibleInViewport(scenario, action)
               && focusedOutcome
-              && (correct || reviewModelVisible)
+              && assistanceContract
               && focusedAnnouncementContract
               && noDuplicateLiveAnnouncement
               && attemptTruthMatches
@@ -5534,7 +5637,9 @@
                 actionVisible: actionVisibleInViewport(scenario, action),
                 actionBottom: action?.getBoundingClientRect().bottom ?? null,
                 outcomeFocused: focusedOutcome,
-                reviewModelVisible,
+                assistanceContract,
+                tutorialOfferVisible: renderedElement(scenario, tutorialOffer),
+                tutorialControlVisible: actionVisibleInViewport(scenario, tutorialControl),
                 attemptTruth,
                 attemptTruthMatches,
                 deterministicFrameClock,
@@ -5548,7 +5653,7 @@
         const semanticIconDifferentiation = new Set(feedbackRows.map((row) => row.iconName)).size === 2
           && feedbackRows.some((row) => row.iconName === "correct")
           && feedbackRows.some((row) => row.iconName === "incorrect");
-        add("BR-26", "Correct and incorrect submissions show exact persistent feedback, distinct check/X icons, a focused outcome, and a visible next action", feedbackRows.every((row) => row.pass) && semanticIconDifferentiation, {
+        add("BR-26", "Correct and incorrect submissions show exact persistent feedback, distinct check/X icons, a focused outcome, a contextual Show me how offer after errors, and a visible next action", feedbackRows.every((row) => row.pass) && semanticIconDifferentiation, {
           semanticIconDifferentiation,
           outcomes: feedbackRows,
         });
@@ -6511,27 +6616,28 @@
         }
 
         rerenderRows.push(await inspectRerenderContinuity(
-          "help-desktop-origin",
+          "tutorial-desktop-origin",
           selectionCase.question,
           [{
-            selector: '.session-actions [data-action="hint"]',
-            expectedSelector: '.session-actions [data-action="hint"]',
-            focusScope: ".session-actions",
+            selector: '.session-actions [data-action="tutorial"]',
+            expectedSelector: '[data-tutorial] h2',
+            focusScope: "[data-tutorial]",
           }],
-          { width: 1366, height: 568 },
+          { width: 1366, height: 568, requireNaturalFlow: false },
         ));
         rerenderRows.push(await inspectRerenderContinuity(
-          "help-mobile-reteach-origin",
+          "tutorial-mobile-reteach-origin",
           keyboardReteachQuestion,
           [{
-            selector: '.mobile-session-toolbar [data-action="hint"]',
-            expectedSelector: '.mobile-session-toolbar [data-action="hint"]',
-            focusScope: ".mobile-session-toolbar",
+            selector: '.mobile-session-toolbar [data-action="tutorial"]',
+            expectedSelector: '[data-tutorial] h2',
+            focusScope: "[data-tutorial]",
           }],
           {
             stateOptions: { phase: "reteach", isReteach: true },
             width: 390,
             height: 568,
+            requireNaturalFlow: false,
           },
         ));
 
@@ -6933,15 +7039,22 @@
           sizeOrdering,
         });
 
-        const supportCase = findQuestion(engine, (question) => (
-          question.level >= 4
-          && question.inputClass === "SELECTION"
-          && Boolean(engine.makeTeachingSupport(question))
-        ));
+        const supportCase = findQuestion(engine, (question) => {
+          if (question.level < 4 || question.inputClass !== "SELECTION") return false;
+          try {
+            return engine.makeTutorialPlan(question)?.answerDisclosurePolicy === "DIFFERENT_ANSWER_REQUIRED";
+          } catch {
+            return false;
+          }
+        });
         const supportScenario = await scenarioFrame(
           engine,
-          "expanded-support-breakpoints",
-          activeStateFor(engine, playDay, supportCase.question, { hintUsed: true }),
+          "tutorial-check-breakpoints",
+          activeStateFor(engine, playDay, supportCase.question, {
+            hintUsed: true,
+            tutorialOpen: true,
+            tutorialStep: 3,
+          }),
           1180,
           820,
         );
@@ -6950,30 +7063,31 @@
         try {
           for (const [width, height] of [[851, 768], [900, 768], [1024, 768], [1180, 820]]) {
             await resizeScenario(supportScenario, width, height);
-            const question = supportScenario.doc.querySelector(".question.support-expanded");
-            const grid = question?.querySelector(".support-grid.has-reference-model");
-            const support = question?.querySelector(".support-scroll");
+            const question = supportScenario.doc.querySelector(".question.tutorial-open");
+            const panel = question?.querySelector('[data-tutorial="different-example"][data-tutorial-step="3"]');
+            const example = panel?.querySelector(".tutorial-example");
             const questionRect = question?.getBoundingClientRect();
-            const inspected = grid ? [
-              grid,
-              ...grid.querySelectorAll(
-                ".question-support,.model,.math-model,.visual-item,.shape-visual,.question-response,.answer-controls,.choices,button,input,select,.question-submit",
+            const inspected = panel ? [
+              panel,
+              ...panel.querySelectorAll(
+                ".tutorial-example,.prompt,.stimulus,.model,.math-model,.visual-item,.shape-visual,.tutorial-instruction,.tutorial-actions,button",
               ),
             ].filter((element) => renderedElement(supportScenario, element)) : [];
             const contained = Boolean(questionRect && inspected.length > 0 && inspected.every((element) => (
               rectContains(questionRect, element.getBoundingClientRect(), 2)
             )));
-            const gridStyle = grid ? supportScenario.win.getComputedStyle(grid) : null;
-            const supportStyle = support ? supportScenario.win.getComputedStyle(support) : null;
+            const panelStyle = panel ? supportScenario.win.getComputedStyle(panel) : null;
+            const exampleStyle = example ? supportScenario.win.getComputedStyle(example) : null;
             const questionStyle = question ? supportScenario.win.getComputedStyle(question) : null;
             const pass = Boolean(
-              question && grid && support && contained
-              // Expanded Help may use block flow or a responsive grid. Certify
-              // the observable containment effect, not one CSS implementation.
-              && grid.scrollWidth <= grid.clientWidth + 1
-              && support.scrollWidth <= support.clientWidth + 1
+              question && panel && example && contained
+              && panel.dataset.tutorialPhaseId === "CHECK"
+              && panel.dataset.sourceQuestionId !== panel.dataset.exampleQuestionId
+              && panel.dataset.terminalAnswerRendered === "true"
+              && panel.scrollWidth <= panel.clientWidth + 1
               && question.scrollWidth <= question.clientWidth + 1
-              && !["hidden", "clip"].includes(supportStyle.overflowX)
+              && !["hidden", "clip"].includes(panelStyle.overflowX)
+              && !["auto", "scroll", "hidden", "clip"].includes(exampleStyle.overflowX)
               && !["hidden", "clip"].includes(questionStyle.overflowX)
               && supportScenario.doc.documentElement.scrollWidth
                 <= supportScenario.doc.documentElement.clientWidth + 1
@@ -6982,11 +7096,12 @@
               width,
               height,
               pass,
-              display: gridStyle?.display || null,
+              display: panelStyle?.display || null,
               inspected: inspected.length,
               contained,
-              gridWidth: [grid?.clientWidth || 0, grid?.scrollWidth || 0],
-              supportWidth: [support?.clientWidth || 0, support?.scrollWidth || 0],
+              exampleOverflowX: exampleStyle?.overflowX || null,
+              panelWidth: [panel?.clientWidth || 0, panel?.scrollWidth || 0],
+              exampleWidth: [example?.clientWidth || 0, example?.scrollWidth || 0],
               questionWidth: [question?.clientWidth || 0, question?.scrollWidth || 0],
               documentWidth: [
                 supportScenario.doc.documentElement.clientWidth,
@@ -6998,7 +7113,7 @@
           supportScenario.frame.remove();
           openFrames.splice(openFrames.indexOf(supportScenario.frame), 1);
         }
-        add("BR-31", "Expanded Help content stays horizontally contained at the 851, 900, 1024, and 1180 pixel breakpoints", supportRows.every((row) => row.pass), {
+        add("BR-31", "The Check step of a different-example tutorial stays horizontally contained at the 851, 900, 1024, and 1180 pixel breakpoints", supportRows.every((row) => row.pass), {
           breakpoints: supportRows,
           skillId: supportCase.question.skillId,
           inputMethod: supportCase.question.inputMethod,
@@ -7018,7 +7133,9 @@
           newSessionUsesCurrentDay: false,
           reteachFinishedOnNewDay: false,
           reteachWasNonEvidentiary: false,
+          reteachFeedbackQueuePreserved: false,
           reteachThenCapstone: false,
+          reteachQueueClearedAfterNext: false,
           reteachNoOrdinaryEvidence: false,
           reteachOldSessionLogged: false,
         };
@@ -7142,7 +7259,10 @@
           rolloverDetails.reteachWasNonEvidentiary = Boolean(
             reteachAttempt?.reteachStep === true
             && reteachAttempt?.evidenceClass === "NON_EVIDENCE"
-            && reteachSubmitted.state?.reteachQueue?.length === 0
+          );
+          rolloverDetails.reteachFeedbackQueuePreserved = Boolean(
+            reteachSubmitted.state?.reteachQueue?.length === 1
+            && reteachSubmitted.state.reteachQueue[0]?.skillId === reteachQuestion.skillId
           );
           rolloverDetails.reteachNoOrdinaryEvidence = Boolean(
             reteachSubmitted.ok
@@ -7163,6 +7283,11 @@
           rolloverDetails.reteachThenCapstone = Boolean(
             reteachCapstone
             && reteachCapstone.questionId !== reteachQuestion.questionId
+          );
+          const reteachAdvanced = engine.loadState(localStorage.getItem(TEST_SAVE_KEY), currentDay);
+          rolloverDetails.reteachQueueClearedAfterNext = Boolean(
+            reteachAdvanced.ok
+            && reteachAdvanced.state.reteachQueue.length === 0
           );
           if (!reteachCapstone) throw new Error("Rollover re-teach did not continue to its closing question.");
           await answerCorrect(reteachRolloverScenario, reteachCapstone);

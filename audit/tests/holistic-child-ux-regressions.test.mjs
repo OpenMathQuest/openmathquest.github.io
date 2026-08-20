@@ -420,6 +420,24 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
     fixedVisualOracle,
     "the visual matrix must retain the independent exact five-token/value oracle",
   );
+  const tokenStateContract = visualContract.practiceTokenStateTokenContract;
+  assert.equal(typeof tokenStateContract, "function");
+  assert.equal(tokenStateContract("ordinary", "single-dot", ["single-dot"], []), true);
+  assert.equal(tokenStateContract("incorrect", "single-dot", ["single-dot"], []), true);
+  assert.equal(tokenStateContract("ordinary", "single-dot", ["double-stripe"], []), false,
+    "ordinary and feedback states must retain the source token");
+  assert.equal(tokenStateContract(
+    "tutorial-notice", "single-dot", ["double-stripe"], ["double-stripe"],
+  ), true, "the different-example tutorial must render one governed token different from the source");
+  assert.equal(tokenStateContract(
+    "tutorial-notice", "single-dot", ["single-dot"], ["single-dot"],
+  ), false, "a tutorial that repeats the source token must fail");
+  assert.equal(tokenStateContract(
+    "tutorial-notice", "single-dot", ["unknown-token"], ["unknown-token"],
+  ), false, "an ungoverned tutorial token must fail");
+  assert.equal(tokenStateContract(
+    "tutorial-notice", "single-dot", ["double-stripe", "triangle-dots"], ["double-stripe", "triangle-dots"],
+  ), false, "a tutorial with more than one visual token cannot satisfy the singular example contract");
   const visualKeys = fixedVisualOracle.map(({ tokenId }) => visualContract.semanticVisualObligationKey({
     modelDescriptor: { type: "visualPrompt" },
     semanticPromptStringId: "question.coinValue",
@@ -437,7 +455,7 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
     { viewport: "ipad-landscape-standard", width: 1024, height: 768 },
     { viewport: "phone", width: 390, height: 844 },
   ];
-  const fixedStates = ["ordinary", "help", "incorrect"];
+  const fixedStates = ["ordinary", "tutorial-notice", "incorrect"];
   const expectedVisualObligations = fixedVisualOracle.flatMap(({ tokenId, value }) => (
     fixedViewports.flatMap(({ viewport, width, height }) => fixedStates.map((state) => ({
       tokenId,
