@@ -76,6 +76,22 @@ function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+export function exactOwnerLiteralProjectionIssues(family, literal, trackedTextEntries) {
+  const issues = [];
+  const discovered = trackedTextEntries.filter((entry) => entry.text.includes(literal)).map((entry) => normalizePath(entry.path));
+  const declared = family.projections.map((projection) => normalizePath(projection.path));
+  const required = family.projections
+    .filter((projection) => projection.relationship !== "STATE_DEPENDENT_DOCUMENTED_REFERENCE")
+    .map((projection) => normalizePath(projection.path));
+  for (const file of discovered.filter((file) => !declared.includes(file))) {
+    issues.push(`fact family ${family.id} has undeclared exact owner-literal projection ${file}.`);
+  }
+  for (const file of required.filter((file) => !discovered.includes(file))) {
+    issues.push(`fact family ${family.id} declares projection ${file} but it does not contain the exact owner literal.`);
+  }
+  return Object.freeze(issues);
+}
+
 export function aiReaderAuthoritySection(text, contract) {
   const { startMarker, endMarker } = contract.authority;
   const start = text.indexOf(startMarker);
@@ -187,6 +203,7 @@ export async function validateRepositoryCodeMap(map, {
         OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool"]),
         VALIDATION_EXPECTATION: new Set(["audit", "runtime", "test"]),
         GENERATED_METADATA: new Set(["runtime"]),
+        STATE_DEPENDENT_DOCUMENTED_REFERENCE: new Set(["documentation", "governance", "research"]),
       }[projection.relationship];
       if (allowedRoles && !allowedRoles.has(role)) {
         issues.push(`fact family ${family.id} projection ${projectionPath} relationship ${projection.relationship} is incompatible with role ${role || "unclassified"}.`);
@@ -200,19 +217,13 @@ export async function validateRepositoryCodeMap(map, {
         if (!literal) {
           issues.push(`fact family ${family.id} copy-discovery owner text must not be blank.`);
         } else {
-          const discovered = [];
+          const trackedTextEntries = [];
           for (const file of tracked) {
             if (file === normalizePath(family.owner)) continue;
             const bytes = await readFile(path.join(root, ...file.split("/")));
-            if (!bytes.includes(0) && bytes.toString("utf8").includes(literal)) discovered.push(file);
+            if (!bytes.includes(0)) trackedTextEntries.push({ path: file, text: bytes.toString("utf8") });
           }
-          const declared = family.projections.map((projection) => normalizePath(projection.path));
-          for (const file of discovered.filter((file) => !declared.includes(file))) {
-            issues.push(`fact family ${family.id} has undeclared exact owner-literal projection ${file}.`);
-          }
-          for (const file of declared.filter((file) => !discovered.includes(file))) {
-            issues.push(`fact family ${family.id} declares projection ${file} but it does not contain the exact owner literal.`);
-          }
+          issues.push(...exactOwnerLiteralProjectionIssues(family, literal, trackedTextEntries));
         }
       } catch (error) {
         issues.push(`fact family ${family.id} copy discovery failed: ${error.message}`);

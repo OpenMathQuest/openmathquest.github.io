@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   aiReaderAuthoritySha256,
   AI_READER_CONTRACT_REF,
+  exactOwnerLiteralProjectionIssues,
   REPOSITORY_CODE_MAP_PATH,
   REPOSITORY_CODE_MAP_SCHEMA_PATH,
   repositoryCodeMapMarkdown,
@@ -106,6 +107,7 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.relationKindSemantics.TESTS, "TARGET_TESTS_SOURCE");
   assert.equal(map.copyPolicySemantics.SECTION_MIRROR, "DECLARED_PROJECTION_MUST_EXACTLY_MIRROR_MARKED_OWNER_SECTION");
   assert.equal(map.projectionRelationshipSemantics.DOCUMENTED_REFERENCE, "PROJECTION_STORES_POINTER_OR_DIGEST_NOT_AUTHORITY");
+  assert.equal(map.projectionRelationshipSemantics.STATE_DEPENDENT_DOCUMENTED_REFERENCE, "PROJECTION_STORES_OWNER_FACT_ONLY_WHEN_ITS_EVIDENCE_STATE_REQUIRES_THAT_FACT");
   assert.equal(aiReaderAuthoritySha256(authority, map.aiReaderContract), map.aiReaderContract.authority.sha256);
 
   const weakened = clone(map);
@@ -136,6 +138,16 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   const productVersion = missingVersionProjection.factFamilies.find((family) => family.id === "product.version");
   productVersion.projections = productVersion.projections.filter((projection) => projection.path !== "Serve-MathQuest.ps1");
   assert.match((await validateRepositoryCodeMap(missingVersionProjection)).join("\n"), /undeclared exact owner-literal projection Serve-MathQuest\.ps1/u);
+
+  const clearanceProductVersion = clone(map.factFamilies.find((family) => family.id === "product.version"));
+  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path === "PUBLICATION_CLEARANCE.md");
+  const versionLiteral = (await readFile("VERSION", "utf8")).trim();
+  const pendingClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: "Authorized release tag: PENDING\n" }];
+  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, pendingClearance), []);
+  const approvedClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: `Authorized release tag: v${versionLiteral}\n` }];
+  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance), []);
+  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path !== "PUBLICATION_CLEARANCE.md");
+  assert.match(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance).join("\n"), /undeclared exact owner-literal projection PUBLICATION_CLEARANCE\.md/u);
 
   const falseVersionProjection = clone(map);
   falseVersionProjection.factFamilies.find((family) => family.id === "product.version").projections.push({

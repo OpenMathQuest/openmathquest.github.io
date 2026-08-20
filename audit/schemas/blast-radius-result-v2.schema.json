@@ -157,6 +157,7 @@
             "EXACT_MIRROR",
             "RUNTIME_EMBED",
             "DOCUMENTED_REFERENCE",
+            "STATE_DEPENDENT_DOCUMENTED_REFERENCE",
             "LOCKFILE",
             "OPERATIONAL_CONFIG",
             "VALIDATION_EXPECTATION",
