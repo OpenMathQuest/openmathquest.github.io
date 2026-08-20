@@ -2,7 +2,7 @@
 
 - **Register revision:** `AR-PUBLIC-21`
 - **Contract:** `docs/development/build-spec.md` version `3.6`
-- **Contract SHA-256:** `59c0e040ef24f2f6db47e2746b4a2166ac6f11ff1a9fb020750cd52251e266c0`
+- **Contract SHA-256:** `4ebb89b7a9d7d5aba92360a1f0474623da938a29d44b5b07ffae34d786568f51`
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `14ef82f104a113f07f98c7593b3b8d3dc35a5d16bf75b7c307fc6bb6303355ad`
 - **Engine SHA-256:** `26e75cd042fee62ba01a3fb1608b2b847ae6b0b8ade5e6b09d26cc37b461c871`
