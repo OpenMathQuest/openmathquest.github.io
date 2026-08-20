@@ -9,7 +9,7 @@ records in distinct locations.
 | `.github/` | Issue, pull-request, dependency, audit, and deployment automation |
 | `assets/` | Bundled app icons, fonts, sounds, and their first-party generation source |
 | `audit/` | Machine-readable collaboration, certification-cadence, and finished-work mirrors; executable focused-development and complete-release checks; direct-user Playwright journeys; the alternating-beta Deep UX Census planner, runner, evidence validator, and anomaly-only renderer; the reviewed browser/runner tuple and exact direct-evidence-successor validator; and the disposable trusted-HTTPS canary runner, validator, and regressions |
-| `curriculum/` | Canonical versioned curriculum manifest and provenance |
+| `curriculum/` | Canonical versioned curriculum manifest, fail-closed tutorial-linkage manifest, and provenance |
 | `docs/development/` | Stable development contract |
 | `docs/release/` | Release gates, checklists, reviews, and public-tree inventory |
 | `docs/testing/` | Human-readable test coverage and effect maps |
@@ -23,7 +23,8 @@ and must not be committed. Scratch or one-time migration scripts should be
 removed once their reviewed output is canonical.
 
 The root `package.json` and `package-lock.json` install the exact Playwright
-1.62.1 development toolchain. Playwright Test drives a small, direct-user
+1.62.1 and Ajv 8.20.0 development toolchain. Ajv validates the tutorial JSON
+Schema during development and is not loaded by the game. Playwright Test drives a small, direct-user
 browser-journey suite in installed Microsoft Edge; Playwright Core also drives
 the private GitHub-hosted trusted-HTTPS canary. The reviewed installer disables
 lifecycle scripts, optional dependencies, audit submission, funding requests,
@@ -34,7 +35,7 @@ is included in `release-shell-v1.json`, the service-worker cache, or the Pages
 runtime payload.
 
 `playwright.deep-ux.config.mjs` is a separate release diagnostic rather than
-an expansion of the 16-result focused journey lane. Its complete mode is
+an expansion of the 24-result focused journey lane. Its complete mode is
 cadence-gated to Beta 4, 6, 8, and later even-numbered betas and runs only on
 the exact frozen GitHub-hosted Windows candidate. Its local 100-cell mode is a
 non-certifying benchmark. Passing cells produce no screenshots or traces;
@@ -66,3 +67,29 @@ all listed bytes are final but before the immutable candidate commit is frozen,
 use `--write`, then run the same tool with `--check`; the write operation also
 updates the non-circular manifest hash binding in `sw.js`. Freeze the resulting
 commit and payload before starting the single complete pre-publication gate.
+
+<!-- REPOSITORY-CODE-MAP-START -->
+## Generated repository ownership map
+
+This non-authoritative section is generated from `audit/repository-code-map-v1.json`. Edit the canonical JSON, not this projection; no fact in this Markdown may override the closed machine record.
+
+| Fact family | Sole owner | Declared projections | Validators |
+|---|---|---|---|
+| `browser.reviewed-identity` | `audit/browser-runner-evidence-v1.json` | `PUBLICATION_CLEARANCE.md` | `audit/tests/publication-clearance.test.mjs` |
+| `certification.cadence` | `audit/certification-cadence-v1.json` | `AGENTS.md` | `audit/tests/certification-cadence.test.mjs` |
+| `certification.gates` | `audit/run-audit.mjs` | — | `audit/tests/audit-orchestration.test.mjs` |
+| `curriculum.contract` | `curriculum/math-quest-manifest-v1.json` | `index.html` | `audit/tests/manifest-semantic-suite.mjs`<br>`audit/tests/node-engine.test.mjs` |
+| `feature.user-operable-mechanics` | `curriculum/math-quest-feature-map-v1.json` | — | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/tests/feature-map.test.mjs`<br>`audit/tests/holistic-child-ux-regressions.test.mjs` |
+| `policy.agent-collaboration` | `AGENTS.md` | `audit/agent-collaboration-policy-v1.json` | `audit/tests/agent-collaboration-policy.test.mjs` |
+| `policy.ai-first-drift-control` | `AGENTS.md` | `audit/repository-code-map-v1.json` | `audit/tests/repository-code-map.test.mjs` |
+| `policy.finished-work` | `AGENTS.md` | `audit/finished-work-policy-v1.json` | `audit/tests/finished-work-policy.test.mjs` |
+| `product.version` | `VERSION` | `.github/workflows/pages.yml`<br>`.github/workflows/trusted-https-canary.yml`<br>`audit.html`<br>`audit/lib/playwright-focused-contract.mjs`<br>`audit/lib/publication-clearance.mjs`<br>`audit/lib/trusted-https-canary-supply-chain.mjs`<br>`audit/lib/trusted-https-canary.mjs`<br>`audit/playwright/fixtures.mjs`<br>`audit/run-audit.ps1`<br>`audit/run-trusted-https-canary.mjs`<br>`audit/test-launcher-identity.ps1`<br>`audit/tests/page-adapter-effects.test.mjs`<br>`audit/tests/playwright-deep-ux-census.test.mjs`<br>`audit/tests/publication-clearance.test.mjs`<br>`audit/tests/pwa-release.test.mjs`<br>`audit/tests/qa-tour.test.mjs`<br>`audit/tests/trusted-https-canary.test.mjs`<br>`CHANGELOG.md`<br>`docs/development/pwa-adapter-contract.md`<br>`docs/release/checklist.md`<br>`docs/release/privacy-review.md`<br>`docs/release/publication-gates.md`<br>`docs/release/readiness.md`<br>`index.html`<br>`README.md`<br>`release-shell-v1.json`<br>`research/build-axioms.md`<br>`Serve-MathQuest.ps1`<br>`sw.js`<br>`tools/build-pwa-release-manifest.mjs` | `audit/tests/engine-suite.mjs`<br>`audit/tests/pwa-release.test.mjs` |
+| `release.public-shell` | `release-shell-v1.json` | `sw.js` | `audit/tests/pwa-release.test.mjs` |
+| `repository.change-impact` | `tools/blast-radius-lookup.mjs` | — | `audit/tests/blast-radius-lookup.test.mjs` |
+| `repository.structure` | `audit/repository-code-map-v1.json` | `docs/repository-structure.md` | `audit/tests/repository-code-map.test.mjs` |
+| `rights.components` | `licenses/component-register-v1.json` | `licenses/first-party-paths-v1.txt` | `audit/public-candidate-guard.mjs` |
+| `rights.evidence-paths` | `licenses/evidence-paths-v1.json` | — | `audit/public-candidate-guard.mjs` |
+| `toolchain.dependencies` | `package.json` | `licenses/ci-toolchain.md`<br>`licenses/component-register-v1.json`<br>`package-lock.json` | `audit/tests/trusted-https-canary.test.mjs` |
+| `tutorial.linkage` | `curriculum/math-quest-tutorial-manifest-v1.json` | `curriculum/math-quest-feature-map-v1.json`<br>`docs/development/build-spec.md`<br>`index.html`<br>`release-shell-v1.json` | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/playwright/deep-ux-census.spec.mjs`<br>`audit/tests/tutorial-manifest.test.mjs` |
+
+<!-- REPOSITORY-CODE-MAP-END -->

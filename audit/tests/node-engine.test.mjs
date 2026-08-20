@@ -127,7 +127,7 @@ function findActiveQuestion(engine, predicate, { preview = false, skillId = null
 
 function baseUi(question, overrides = {}) {
   return {
-    version: 1,
+    version: 2,
     screen: "session",
     phase: "question",
     question,
@@ -139,9 +139,12 @@ function baseUi(question, overrides = {}) {
     modelCells: [],
     modelTouched: false,
     hintUsed: false,
+    tutorialOpen: false,
+    tutorialStep: 1,
     selectionChanged: false,
     feedback: null,
     lastAttempt: null,
+    attemptCommitted: true,
     replayMs: 0,
     manipulationMs: 0,
     maxIdleMs: 0,
@@ -406,6 +409,7 @@ test("MQ-002 keeps exact quantities while each world uses its own countable obje
 test("screen-native early activities expose exact visible sources without revealing their answers", async () => {
   const { engine } = await sharedEngineSuite();
   assert.equal(engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION, "question-generator-v6");
+  assert.equal(engine.CONSTANTS.ACTIVE_UI_VERSION, 2);
   const seen = new Set();
   for (let seed = 1; seed <= 12; seed += 1) {
     for (const [skillId, ordinals] of Object.entries({
@@ -664,6 +668,21 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
     questionId: submittedAttempt.questionId,
   });
   await accept("feedback phase", feedbackState);
+  const pendingFeedbackState = stateWithUi(engine, baseUi(selection, {
+    phase: "feedback",
+    selected: selection.options[selection.correctIndex].optionId,
+    feedback: feedbackLine,
+    lastAttempt: submittedAttempt,
+    attemptCommitted: false,
+  }));
+  await accept("pending feedback survives reload before its attempt is committed", pendingFeedbackState);
+  await accept("open tutorial and exact step survive reload", stateWithUi(engine, baseUi(selection, {
+    selected: selection.options[selection.correctIndex].optionId,
+    modelTouched: true,
+    hintUsed: true,
+    tutorialOpen: true,
+    tutorialStep: 2,
+  })));
   await accept("capstone question", stateWithUi(engine, baseUi(capstone, { screen: "capstone" })));
   await accept("fatigue without a question", stateWithUi(engine, baseUi(null, { screen: "fatigue" })));
   const optionalMaxIdle = clone(validState);
@@ -682,6 +701,20 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   const inactive = clone(validState);
   inactive.activeSession = null;
   await accept("no active session", inactive);
+  await rejectUi("tutorial open without assisted-attempt marker", baseUi(selection, {
+    tutorialOpen: true,
+    tutorialStep: 2,
+  }));
+  await rejectUi("tutorial open during feedback", baseUi(selection, {
+    phase: "feedback",
+    feedback: feedbackLine,
+    lastAttempt: submittedAttempt,
+    attemptCommitted: false,
+    modelTouched: true,
+    hintUsed: true,
+    tutorialOpen: true,
+    tutorialStep: 2,
+  }));
 
   for (const [name, value, expected] of [
     ["root/null", null, /not an object/iu],
@@ -922,6 +955,23 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   assert.deepEqual(clone(migratedPriorV5.state.skills), priorV5Progress);
   assert.deepEqual(clone(migratedPriorV5.state.sessionLog), priorV5SessionHistory);
   assert.deepEqual(clone(migratedPriorV5.state.feedbackHistory), priorV5FeedbackHistory);
+
+  const priorUiV1 = clone(populatedRoot);
+  priorUiV1.activeSession.uiState.version = 1;
+  delete priorUiV1.activeSession.uiState.tutorialOpen;
+  delete priorUiV1.activeSession.uiState.tutorialStep;
+  delete priorUiV1.activeSession.uiState.attemptCommitted;
+  const priorUiV1Progress = clone(priorUiV1.skills);
+  const priorUiV1SessionHistory = clone(priorUiV1.sessionLog);
+  const priorUiV1FeedbackHistory = clone(priorUiV1.feedbackHistory);
+  const migratedPriorUiV1 = engine.loadState(JSON.stringify(priorUiV1), 22_001);
+  assert.equal(migratedPriorUiV1.ok, true, migratedPriorUiV1.error);
+  assert.equal(migratedPriorUiV1.migrated, true);
+  assert.equal(migratedPriorUiV1.state.activeSession, null);
+  assert.equal(migratedPriorUiV1.state.previewLevel, null);
+  assert.deepEqual(clone(migratedPriorUiV1.state.skills), priorUiV1Progress);
+  assert.deepEqual(clone(migratedPriorUiV1.state.sessionLog), priorUiV1SessionHistory);
+  assert.deepEqual(clone(migratedPriorUiV1.state.feedbackHistory), priorUiV1FeedbackHistory);
 
   const malformedCurrentActive = clone(populatedRoot);
   malformedCurrentActive.activeSession.uiState.question.inputClass = "BROKEN";
@@ -1198,7 +1248,7 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
 
   for (const [name, mutate] of [
     ["not an object", () => "saved-ui"],
-    ["version", (ui) => { ui.version = 2; }],
+    ["version", (ui) => { ui.version = 3; }],
     ["screen", (ui) => { ui.screen = "home"; }],
     ["phase", (ui) => { ui.phase = "answer"; }],
     ["question type", (ui) => { ui.question = "question"; }],
@@ -3773,8 +3823,8 @@ test("structured response persistence rejects every method-specific boundary wit
     mutate("ACTION_SCENE", "wrong action token", (response) => {
       response.actions = ["invented"];
     });
-    mutate("ACTION_SCENE", "value disagrees with actions", (response) => {
-      response.value = String(Number(response.value) + 1);
+    mutate("ACTION_SCENE", "value is outside the displayed choices", (response, question) => {
+      response.value = String(Math.max(...engine.actionSceneSpecification(question).choices) + 100);
     });
     mutate("MEASURE_OBJECT", "wrong action token", (response) => {
       response.actions = ["invented"];

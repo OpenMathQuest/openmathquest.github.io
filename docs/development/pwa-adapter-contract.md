@@ -2,15 +2,15 @@
 
 The deterministic engine does not register a service worker, inspect install
 state, read Cache Storage, or perform network effects. The browser adapter
-outside the engine owns the Public Beta 6 PWA lifecycle.
+outside the engine owns the Public Beta 7 PWA lifecycle.
 
 ## Frozen identities
 
-- Release: `1.0.0-beta.6`
-- Build: `math-quest-pwa-v1.0.0-beta.6`
-- Reported logical cache identity: `math-quest-static-v1.0.0-beta.6`
+- Release: `1.0.0-beta.7`
+- Build: `math-quest-pwa-v1.0.0-beta.7`
+- Reported logical cache identity: `math-quest-static-v1.0.0-beta.7`
 - Physical cache storage:
-  `math-quest-static-v1.0.0-beta.6-<release-manifest-sha256>`
+  `math-quest-static-v1.0.0-beta.7-<release-manifest-sha256>`
 - Readiness request/reply: `MATH_QUEST_GET_READINESS_V1` /
   `MATH_QUEST_READINESS_V1`
 - Waiting-readiness request/reply:
@@ -67,7 +67,7 @@ manifest. Only when no valid cached copy exists may it request the manifest
 from the network. Thus readiness and navigation from an already populated
 exact cache cannot wait on a slow or never-settling network request.
 The physical cache name includes the worker's embedded exact manifest hash.
-Two worker scripts that accidentally reuse the same logical Beta 6 identity
+Two worker scripts that accidentally reuse the same logical Beta 7 identity
 therefore cannot read, overwrite, stage into, or delete each other's live shell
 storage. The logical identity remains the closed readiness-protocol value.
 
@@ -208,10 +208,10 @@ writes or removes the Beta 1 record. A stale Beta 1 client therefore has no
 write path to the protected Beta 2 record.
 
 The exact immutable Public Beta 1 envelope is now curriculum-incompatible with
-Beta 6. Its full state must also pass the existing engine validator after only
+Beta 7. Its full state must also pass the existing engine validator after only
 the reviewed identity substitution; identity fields alone never admit a
 malformed save. For that one closed identity, the current adapter must preserve the
-Beta 1 bytes verbatim and start from the canonical fresh Beta 6 state; it must
+Beta 1 bytes verbatim and start from the canonical fresh Beta 7 state; it must
 not copy old mastery, evidence, settings, counts, logs, or sessions. The
 transaction uses `beta1-retained-to-protected-v1` while pending and commits the
 terminal `beta1-retained-current-curriculum-v1` marker only after the unchanged
@@ -308,7 +308,7 @@ The adapter does not fall back to an unlocked read/compare/write when Web Locks
 are missing or fail. It pauses child play and shows a grown-up-only explanation,
 backup export for valid loaded state, and a supported-browser/reload path.
 Safari Lockdown Mode and managed configurations that disable Web Locks are
-outside the Beta 6 support claim; the explanation recommends another qualified
+outside the Beta 7 support claim; the explanation recommends another qualified
 configuration and does not ask a family to weaken a security setting. Physical
 Apple qualification still has to prove the supported release devices.
 

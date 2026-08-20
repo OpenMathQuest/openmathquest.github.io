@@ -24,6 +24,9 @@ export const DEEP_UX_CENSUS_STATES = Object.freeze([
   "PARTIAL_RESPONSE",
   "EXPECTED_REVEALED",
   "TEACHING_MODEL_WHEN_AVAILABLE",
+  "TUTORIAL_STEP_1_DIFFERENT_EXAMPLE",
+  "TUTORIAL_STEP_2_PLAN",
+  "TUTORIAL_STEP_3_CHECK",
 ]);
 export const DEEP_UX_BETA_CADENCE = Object.freeze({
   firstRequiredBetaOrdinal: 4,

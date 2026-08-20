@@ -62,6 +62,50 @@ meaningful trade-offs for approval before changing the game. This research is
 not legal advice; obtain qualified legal review if a material rights question
 remains unresolved.
 
+## Beta 8 AI-rule rationale contract
+
+**Status:** Owner-approved for Beta 8 by PB-052. Do not expand the Beta 7
+candidate to implement this schema refactor.
+
+### Objective
+
+Make consequential rules easier for an AI agent to apply correctly in novel
+cases without weakening the machine contract or creating prose as a second
+authority.
+
+### Required record shape
+
+- Keep `threshold`, exact predicates, and enumerations normative and singular.
+- Add normative `knownFalsePassModes` entries with stable IDs whenever a known
+  shortcut could produce a false pass.
+- Add adjacent non-normative `rationale.intent` and
+  `rationale.userImpact` fields. They explain why the rule exists and what a
+  miss costs the child or grown-up; they must not repeat threshold numbers.
+- Resolve every conflict in favour of the normative field. Mandatory behaviour
+  must never exist only in rationale prose.
+- Require rationale for behavioural rules, thresholds, exceptions,
+  human-legibility checks, and checks with plausible false-pass
+  implementations. Exempt exact trivial mappings and enums where explanation
+  would be boilerplate.
+
+### Implementation and verification
+
+1. Inventory the Owners, Code Map, Feature Map, Tutorial Manifest, Blast
+   Radius, and gate records for consequential rule objects.
+2. Extend their owning schemas and validators with one consistent rationale
+   contract rather than independent prose conventions.
+3. Keep rationale local to its rule and enforce deterministic field and record
+   ordering for AI consumption.
+4. Add focused mutations for missing rationale, orphaned or duplicate
+   false-pass IDs, false-pass requirements hidden only in prose, numeric
+   threshold duplication, and weakened precedence.
+5. Regenerate derived projections and update the Code Map and blast-radius
+   relationships in the same Beta 8 change.
+
+Exit criterion: every consequential governed rule has one unambiguous
+normative implementation contract, locally useful intent and user-impact
+context, and effect-sensitive protection against its declared false passes.
+
 ## Certification-cycle efficiency review
 
 **Status:** Cadence decision approved on 2026-08-02 and encoded in `AGENTS.md`

@@ -19,6 +19,7 @@ for an open licence under this policy.
 The initial approved licence identifiers are:
 
 - `Apache-2.0`
+- `BSD-3-Clause`
 - `MIT`
 - `OFL-1.1`
 - `OGL-UK-3.0`

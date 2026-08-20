@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(root, "release-shell-v1.json");
 const workerPath = path.join(root, "sw.js");
-const RELEASE = "1.0.0-beta.6";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.6";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.6";
+const RELEASE = "1.0.0-beta.7";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.7";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.7";
 const HASH_MARKER = /const RELEASE_MANIFEST_SHA256 = "[a-f0-9]{64}";/u;
 const ENTRIES = Object.freeze([
   ["./assets/fonts/Inter-Variable.ttf", "font/ttf"],
@@ -21,6 +21,7 @@ const ENTRIES = Object.freeze([
   ["./assets/sounds/tap.wav", "audio/wav"],
   ["./index.html", "text/html"],
   ["./manifest.webmanifest", "application/manifest+json"],
+  ["./curriculum/math-quest-tutorial-manifest-v1.json", "application/json"],
   ["./LICENSE", "application/octet-stream"],
   ["./PRIVACY.md", "text/markdown"],
   ["./THIRD_PARTY_NOTICES.md", "text/markdown"],

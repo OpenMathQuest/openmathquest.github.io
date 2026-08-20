@@ -1,0 +1,2438 @@
+{
+  "manifestId": "math-quest-tutorials",
+  "version": "2.0.0",
+  "schemaVersion": 1,
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest different-example tutorial contract and mappings.",
+    "originalWork": true
+  },
+  "aiReaderContractRef": {
+    "contractId": "math-quest-ai-first-drift-control",
+    "version": 1
+  },
+  "aiSemantics": {
+    "methodJoinKey": "inputMethod",
+    "featureJoinKey": "featureId",
+    "profileJoinKey": "generatorProfile",
+    "promptJoinKey": "semanticPromptStringId",
+    "obligationJoinKey": "skillId|taskType",
+    "familyResolution": "METHOD_BINDING_ELSE_PROFILE_BINDING",
+    "resolutionAuthority": "EXACT_OBLIGATION_BINDING",
+    "narrativeFieldPolicy": "NO_NARRATIVE_CONTROL_FIELDS"
+  },
+  "orderingContract": [
+    {
+      "jsonPointer": "/phaseCatalog",
+      "policy": "STEP_ASCENDING"
+    },
+    {
+      "jsonPointer": "/visualAnchorCatalog",
+      "policy": "LEXICOGRAPHIC_BY_ANCHOR_ROLE_ID"
+    },
+    {
+      "jsonPointer": "/visualCueCatalog",
+      "policy": "LEXICOGRAPHIC_BY_CUE_ID"
+    },
+    {
+      "jsonPointer": "/tutorialFamilies",
+      "policy": "LEXICOGRAPHIC_BY_FAMILY_ID"
+    },
+    {
+      "jsonPointer": "/methodBindings",
+      "policy": "LEXICOGRAPHIC_BY_INPUT_METHOD"
+    },
+    {
+      "jsonPointer": "/profileBindings",
+      "policy": "LEXICOGRAPHIC_BY_GENERATOR_PROFILE"
+    },
+    {
+      "jsonPointer": "/featureBindings",
+      "policy": "CANONICAL_JSON_TUPLE"
+    },
+    {
+      "jsonPointer": "/obligationBindings",
+      "policy": "LEXICOGRAPHIC_BY_SKILL_ID_THEN_TASK_TYPE"
+    }
+  ],
+  "tutorialContractVersion": "tutorial-contract-v2",
+  "questionGeneratorContractVersion": "question-generator-v6",
+  "curriculumBinding": {
+    "manifestId": "math-quest-curriculum",
+    "manifestVersion": "1.0.0",
+    "manifestSha256": "14ef82f104a113f07f98c7593b3b8d3dc35a5d16bf75b7c307fc6bb6303355ad",
+    "projectionVersion": "tutorial-curriculum-projection-v1",
+    "projectionSha256": "081de1231837f0a4b2df57586ea7a582fb8c73363b000322222458f88fb420bf",
+    "skillCount": 126,
+    "taskObligationCount": 166
+  },
+  "differentExample": {
+    "salt": "math-quest-different-example-v2",
+    "searchLimit": 128,
+    "sameInputMethod": true,
+    "sameRepresentation": true,
+    "differentQuestionId": true,
+    "differentSampleKey": true,
+    "differentParameters": true,
+    "automaticInvariantAnswerFallback": "FORBIDDEN"
+  },
+  "phaseCatalog": [
+    {
+      "phaseId": "NOTICE",
+      "step": 1,
+      "labelStringId": "ui.tutorialPhaseNotice"
+    },
+    {
+      "phaseId": "PLAN",
+      "step": 2,
+      "labelStringId": "ui.tutorialPhasePlan"
+    },
+    {
+      "phaseId": "CHECK",
+      "step": 3,
+      "labelStringId": "ui.tutorialPhaseCheck"
+    }
+  ],
+  "visualAnchorCatalog": [
+    {
+      "anchorRoleId": "CHOOSE_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "CHOOSE_NOTICE",
+      "semanticRole": "TARGET"
+    },
+    {
+      "anchorRoleId": "CHOOSE_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "COUNT_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "COUNT_NOTICE",
+      "semanticRole": "GIVEN"
+    },
+    {
+      "anchorRoleId": "COUNT_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "DATA_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "DATA_NOTICE",
+      "semanticRole": "STRUCTURE"
+    },
+    {
+      "anchorRoleId": "DATA_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "GROUPS_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "GROUPS_NOTICE",
+      "semanticRole": "STRUCTURE"
+    },
+    {
+      "anchorRoleId": "GROUPS_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "MEASURE_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "MEASURE_NOTICE",
+      "semanticRole": "GIVEN"
+    },
+    {
+      "anchorRoleId": "MEASURE_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "OPERATIONS_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "OPERATIONS_NOTICE",
+      "semanticRole": "GIVEN"
+    },
+    {
+      "anchorRoleId": "OPERATIONS_PLAN",
+      "semanticRole": "STRATEGY"
+    },
+    {
+      "anchorRoleId": "PARTS_CHECK",
+      "semanticRole": "VERIFICATION"
+    },
+    {
+      "anchorRoleId": "PARTS_NOTICE",
+      "semanticRole": "STRUCTURE"
+    },
+    {
+      "anchorRoleId": "PARTS_PLAN",
+      "semanticRole": "STRATEGY"
+    }
+  ],
+  "visualCueCatalog": [
+    {
+      "cueId": "CHECK_VERIFY",
+      "cueKind": "VERIFY"
+    },
+    {
+      "cueId": "NOTICE_SPOTLIGHT",
+      "cueKind": "OUTLINE"
+    },
+    {
+      "cueId": "PLAN_SEQUENCE",
+      "cueKind": "SEQUENCE"
+    }
+  ],
+  "tutorialFamilies": [
+    {
+      "familyId": "CHOOSE_COMPARE_CLASSIFY",
+      "visualTeachingContractId": "VISUAL_TEACHING_CHOOSE_COMPARE_CLASSIFY",
+      "noticeStringId": "tutorial.notice.choose",
+      "planStringId": "tutorial.plan.choose",
+      "checkStringId": "tutorial.check.choose",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "CHOOSE_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "CHOOSE_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "CHOOSE_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "COUNT_SEQUENCE_POSITION",
+      "visualTeachingContractId": "VISUAL_TEACHING_COUNT_SEQUENCE_POSITION",
+      "noticeStringId": "tutorial.notice.count",
+      "planStringId": "tutorial.plan.count",
+      "checkStringId": "tutorial.check.count",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "COUNT_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "COUNT_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "COUNT_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "DATA_SPATIAL",
+      "visualTeachingContractId": "VISUAL_TEACHING_DATA_SPATIAL",
+      "noticeStringId": "tutorial.notice.spatial",
+      "planStringId": "tutorial.plan.spatial",
+      "checkStringId": "tutorial.check.spatial",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "DATA_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "DATA_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "DATA_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "GROUPS_PROPORTION_MONEY",
+      "visualTeachingContractId": "VISUAL_TEACHING_GROUPS_PROPORTION_MONEY",
+      "noticeStringId": "tutorial.notice.groups",
+      "planStringId": "tutorial.plan.groups",
+      "checkStringId": "tutorial.check.groups",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "GROUPS_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "GROUPS_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "GROUPS_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "visualTeachingContractId": "VISUAL_TEACHING_OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "noticeStringId": "tutorial.notice.operations",
+      "planStringId": "tutorial.plan.operations",
+      "checkStringId": "tutorial.check.operations",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "OPERATIONS_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "OPERATIONS_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "OPERATIONS_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "visualTeachingContractId": "VISUAL_TEACHING_PART_WHOLE_FRACTIONS",
+      "noticeStringId": "tutorial.notice.parts",
+      "planStringId": "tutorial.plan.parts",
+      "checkStringId": "tutorial.check.parts",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "PARTS_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "PARTS_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "PARTS_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    },
+    {
+      "familyId": "TIME_MEASUREMENT",
+      "visualTeachingContractId": "VISUAL_TEACHING_TIME_MEASUREMENT",
+      "noticeStringId": "tutorial.notice.measure",
+      "planStringId": "tutorial.plan.measure",
+      "checkStringId": "tutorial.check.measure",
+      "phaseBindings": [
+        {
+          "phaseId": "NOTICE",
+          "anchorRoleIds": [
+            "MEASURE_NOTICE"
+          ],
+          "visualCueIds": [
+            "NOTICE_SPOTLIGHT"
+          ]
+        },
+        {
+          "phaseId": "PLAN",
+          "anchorRoleIds": [
+            "MEASURE_PLAN"
+          ],
+          "visualCueIds": [
+            "PLAN_SEQUENCE"
+          ]
+        },
+        {
+          "phaseId": "CHECK",
+          "anchorRoleIds": [
+            "MEASURE_CHECK"
+          ],
+          "visualCueIds": [
+            "CHECK_VERIFY"
+          ]
+        }
+      ]
+    }
+  ],
+  "methodBindings": [
+    {
+      "inputMethod": "ACTION_SCENE",
+      "featureId": "child.mechanic.action-scene",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "ANGLE_MEASURE",
+      "featureId": "child.mechanic.angle-measure",
+      "familyId": "TIME_MEASUREMENT",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "AREA_DECOMPOSE",
+      "featureId": "child.mechanic.area-decompose",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "BAR_MODEL",
+      "featureId": "child.mechanic.bar-model",
+      "familyId": "GROUPS_PROPORTION_MONEY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "BOND_SPLIT",
+      "featureId": "child.mechanic.bond-split",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "CLOCK_READ",
+      "featureId": "child.mechanic.clock-read",
+      "familyId": "TIME_MEASUREMENT",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "COIN_BUILD",
+      "featureId": "child.mechanic.coin-build",
+      "familyId": "GROUPS_PROPORTION_MONEY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "COUNT_TOUCH",
+      "featureId": "child.mechanic.count-touch",
+      "familyId": "COUNT_SEQUENCE_POSITION",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "EXPRESSION_BUILD",
+      "featureId": "child.mechanic.expression-build",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "FACT_FAMILY",
+      "featureId": "child.mechanic.fact-family",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "FRACTION_ENTRY",
+      "featureId": "child.mechanic.fraction-entry",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "FRACTION_PARTITION",
+      "featureId": "child.mechanic.fraction-partition",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "GRAPH_BUILD",
+      "featureId": "child.mechanic.graph-build",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "GRID_ROUTE",
+      "featureId": "child.mechanic.grid-route",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "GROUP_BUILD",
+      "featureId": "child.mechanic.group-build",
+      "familyId": "GROUPS_PROPORTION_MONEY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "LANDMARK_PLACE",
+      "featureId": "child.mechanic.landmark-place",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "MEASURE_OBJECT",
+      "featureId": "child.mechanic.measure-object",
+      "familyId": "TIME_MEASUREMENT",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "METRIC_SCALE",
+      "featureId": "child.mechanic.metric-scale",
+      "familyId": "TIME_MEASUREMENT",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "MIXED_NUMBER_ENTRY",
+      "featureId": "child.mechanic.mixed-number-entry",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "NUMBER_BOND",
+      "featureId": "child.mechanic.number-bond",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "NUMBER_CHOICE",
+      "featureId": "child.mechanic.number-choice",
+      "familyId": null,
+      "profileDriven": true
+    },
+    {
+      "inputMethod": "NUMBER_LINE",
+      "featureId": "child.mechanic.number-line",
+      "familyId": "COUNT_SEQUENCE_POSITION",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "NUMBER_PAD",
+      "featureId": "child.mechanic.number-pad",
+      "familyId": null,
+      "profileDriven": true
+    },
+    {
+      "inputMethod": "ORDER_BUILD",
+      "featureId": "child.mechanic.order-build",
+      "familyId": "COUNT_SEQUENCE_POSITION",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "PAIR_LINK",
+      "featureId": "child.mechanic.pair-link",
+      "familyId": "CHOOSE_COMPARE_CLASSIFY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "PATTERN_BUILD",
+      "featureId": "child.mechanic.pattern-build",
+      "familyId": "COUNT_SEQUENCE_POSITION",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "PICTURE_CHOICE",
+      "featureId": "child.mechanic.picture-choice",
+      "familyId": null,
+      "profileDriven": true
+    },
+    {
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "featureId": "child.mechanic.place-value-build",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "SHARE_DEAL",
+      "featureId": "child.mechanic.share-deal",
+      "familyId": "GROUPS_PROPORTION_MONEY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "SLOT_COMPOSER",
+      "featureId": "child.mechanic.slot-composer",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "SORT_BINS",
+      "featureId": "child.mechanic.sort-bins",
+      "familyId": "CHOOSE_COMPARE_CLASSIFY",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "STRATEGY_BUILD",
+      "featureId": "child.mechanic.strategy-build",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "SYMMETRY_BUILD",
+      "featureId": "child.mechanic.symmetry-build",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "TEN_FRAME",
+      "featureId": "child.mechanic.ten-frame",
+      "familyId": "PART_WHOLE_FRACTIONS",
+      "profileDriven": false
+    },
+    {
+      "inputMethod": "VOLUME_INSPECT",
+      "featureId": "child.mechanic.volume-inspect",
+      "familyId": "DATA_SPATIAL",
+      "profileDriven": false
+    }
+  ],
+  "profileBindings": [
+    {
+      "generatorProfile": "area-model",
+      "familyId": "DATA_SPATIAL"
+    },
+    {
+      "generatorProfile": "chance-experiment",
+      "familyId": "DATA_SPATIAL"
+    },
+    {
+      "generatorProfile": "data-display",
+      "familyId": "DATA_SPATIAL"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "familyId": "DATA_SPATIAL"
+    },
+    {
+      "generatorProfile": "decimal-model",
+      "familyId": "PART_WHOLE_FRACTIONS"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "factor-classify",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "fraction-model",
+      "familyId": "PART_WHOLE_FRACTIONS"
+    },
+    {
+      "generatorProfile": "geometry-classify",
+      "familyId": "CHOOSE_COMPARE_CLASSIFY"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "familyId": "DATA_SPATIAL"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "familyId": "GROUPS_PROPORTION_MONEY"
+    },
+    {
+      "generatorProfile": "measure-compare",
+      "familyId": "TIME_MEASUREMENT"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "familyId": "TIME_MEASUREMENT"
+    },
+    {
+      "generatorProfile": "money-model",
+      "familyId": "GROUPS_PROPORTION_MONEY"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "operation-model",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "pattern-extend",
+      "familyId": "COUNT_SEQUENCE_POSITION"
+    },
+    {
+      "generatorProfile": "pattern-rule",
+      "familyId": "COUNT_SEQUENCE_POSITION"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "quantity-compare",
+      "familyId": "CHOOSE_COMPARE_CLASSIFY"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "familyId": "COUNT_SEQUENCE_POSITION"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "familyId": "COUNT_SEQUENCE_POSITION"
+    },
+    {
+      "generatorProfile": "rounding-estimate",
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
+    },
+    {
+      "generatorProfile": "time-read",
+      "familyId": "TIME_MEASUREMENT"
+    },
+    {
+      "generatorProfile": "volume-model",
+      "familyId": "DATA_SPATIAL"
+    }
+  ],
+  "featureBindings": [
+    {
+      "generatorProfile": "area-model",
+      "inputMethod": "AREA_DECOMPOSE",
+      "semanticPromptStringId": "question.compositeArea"
+    },
+    {
+      "generatorProfile": "area-model",
+      "inputMethod": "BAR_MODEL",
+      "semanticPromptStringId": "question.areaRectangle"
+    },
+    {
+      "generatorProfile": "chance-experiment",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.chanceClassify"
+    },
+    {
+      "generatorProfile": "chance-experiment",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.chanceRunCompare"
+    },
+    {
+      "generatorProfile": "data-display",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.responseListDifference"
+    },
+    {
+      "generatorProfile": "data-display",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.sortRecord"
+    },
+    {
+      "generatorProfile": "data-display",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.twoCategoryDisplay"
+    },
+    {
+      "generatorProfile": "data-display",
+      "inputMethod": "SORT_BINS",
+      "semanticPromptStringId": "question.sortRule"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.scaledSurveyPlan"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.scaledSurveyVariation"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "inputMethod": "GRAPH_BUILD",
+      "semanticPromptStringId": "question.surveyResponseList"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.distributionMode"
+    },
+    {
+      "generatorProfile": "data-investigate",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.distributionShape"
+    },
+    {
+      "generatorProfile": "decimal-model",
+      "inputMethod": "FRACTION_ENTRY",
+      "semanticPromptStringId": "question.percentFraction"
+    },
+    {
+      "generatorProfile": "decimal-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.decimal"
+    },
+    {
+      "generatorProfile": "decimal-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.percentDecimal"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "inputMethod": "EXPRESSION_BUILD",
+      "semanticPromptStringId": "question.patternRuleExpression"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.missingPart"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.missingSubtrahend"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.missingPart"
+    },
+    {
+      "generatorProfile": "expression-solve",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.missingSubtrahend"
+    },
+    {
+      "generatorProfile": "factor-classify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.factorClass"
+    },
+    {
+      "generatorProfile": "factor-classify",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.parity"
+    },
+    {
+      "generatorProfile": "fraction-model",
+      "inputMethod": "FRACTION_PARTITION",
+      "semanticPromptStringId": "question.fraction"
+    },
+    {
+      "generatorProfile": "fraction-model",
+      "inputMethod": "FRACTION_PARTITION",
+      "semanticPromptStringId": "question.fractionEquivalent"
+    },
+    {
+      "generatorProfile": "fraction-model",
+      "inputMethod": "FRACTION_PARTITION",
+      "semanticPromptStringId": "question.makeHalves"
+    },
+    {
+      "generatorProfile": "fraction-model",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.fractionCompare"
+    },
+    {
+      "generatorProfile": "geometry-classify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.featureDescription"
+    },
+    {
+      "generatorProfile": "geometry-classify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.shape"
+    },
+    {
+      "generatorProfile": "geometry-classify",
+      "inputMethod": "SORT_BINS",
+      "semanticPromptStringId": "question.shapeProperty"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "inputMethod": "GRID_ROUTE",
+      "semanticPromptStringId": "question.coordinateMove"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "inputMethod": "GRID_ROUTE",
+      "semanticPromptStringId": "question.routeFinish"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "inputMethod": "LANDMARK_PLACE",
+      "semanticPromptStringId": "question.landmarkPosition"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.symmetry"
+    },
+    {
+      "generatorProfile": "geometry-transform",
+      "inputMethod": "SYMMETRY_BUILD",
+      "semanticPromptStringId": "question.symmetryComplete"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "FACT_FAMILY",
+      "semanticPromptStringId": "question.factFamilyBuild"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "GROUP_BUILD",
+      "semanticPromptStringId": "question.appliedMultiplication"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "GROUP_BUILD",
+      "semanticPromptStringId": "question.multiplication"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "GROUP_BUILD",
+      "semanticPromptStringId": "question.relatedMultiplyDivide"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "MIXED_NUMBER_ENTRY",
+      "semanticPromptStringId": "question.remainderFraction"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.remainderFullGroups"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.remainderInterpret"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.quotientRemainder"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.remainderWhole"
+    },
+    {
+      "generatorProfile": "grouping-model",
+      "inputMethod": "SHARE_DEAL",
+      "semanticPromptStringId": "question.fairShare"
+    },
+    {
+      "generatorProfile": "measure-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.attributeName"
+    },
+    {
+      "generatorProfile": "measure-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.directCompare"
+    },
+    {
+      "generatorProfile": "measure-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.eventDuration"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "ANGLE_MEASURE",
+      "semanticPromptStringId": "question.angleMeasure"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "MEASURE_OBJECT",
+      "semanticPromptStringId": "question.informalMeasure"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "METRIC_SCALE",
+      "semanticPromptStringId": "question.metricRead"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.metricConversion"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.polygonPerimeter"
+    },
+    {
+      "generatorProfile": "measure-instrument",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.metricUnitChoice"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "COIN_BUILD",
+      "semanticPromptStringId": "question.coinEquivalent"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.moneyBudget"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.moneyOperation"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.moneyPurchase"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.moneyTotalCost"
+    },
+    {
+      "generatorProfile": "money-model",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.coinValue"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "inputMethod": "FACT_FAMILY",
+      "semanticPromptStringId": "question.factFamilyBuild"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "inputMethod": "SLOT_COMPOSER",
+      "semanticPromptStringId": "question.addition"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "inputMethod": "SLOT_COMPOSER",
+      "semanticPromptStringId": "question.appliedAddition"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "inputMethod": "SLOT_COMPOSER",
+      "semanticPromptStringId": "question.appliedSubtraction"
+    },
+    {
+      "generatorProfile": "operation-equation",
+      "inputMethod": "SLOT_COMPOSER",
+      "semanticPromptStringId": "question.subtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "BOND_SPLIT",
+      "semanticPromptStringId": "question.missingPart"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "FRACTION_ENTRY",
+      "semanticPromptStringId": "question.fractionOperation"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.addition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.appliedAddition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.appliedDivision"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.appliedMultiplication"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.appliedSubtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.decimalOperation"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.division"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.factFamily"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.fractionOperation"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.makeTen"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.mentalShift"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.multiplication"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.subtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.subtractMakeTen"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.addition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.appliedAddition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.appliedSubtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.subtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.addition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.appliedAddition"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.appliedMultiplication"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.appliedSubtraction"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.makeTen"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.multiplication"
+    },
+    {
+      "generatorProfile": "operation-fluency",
+      "inputMethod": "STRATEGY_BUILD",
+      "semanticPromptStringId": "question.subtraction"
+    },
+    {
+      "generatorProfile": "operation-model",
+      "inputMethod": "ACTION_SCENE",
+      "semanticPromptStringId": "question.addition"
+    },
+    {
+      "generatorProfile": "operation-model",
+      "inputMethod": "ACTION_SCENE",
+      "semanticPromptStringId": "question.subtraction"
+    },
+    {
+      "generatorProfile": "pattern-extend",
+      "inputMethod": "PATTERN_BUILD",
+      "semanticPromptStringId": "question.copyPatternAction"
+    },
+    {
+      "generatorProfile": "pattern-extend",
+      "inputMethod": "PATTERN_BUILD",
+      "semanticPromptStringId": "question.patternNext"
+    },
+    {
+      "generatorProfile": "pattern-extend",
+      "inputMethod": "PATTERN_BUILD",
+      "semanticPromptStringId": "question.patternVisualNext"
+    },
+    {
+      "generatorProfile": "pattern-extend",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.patternNext"
+    },
+    {
+      "generatorProfile": "pattern-rule",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.patternNext"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "BOND_SPLIT",
+      "semanticPromptStringId": "question.missingPart"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "BOND_SPLIT",
+      "semanticPromptStringId": "question.secondPartition"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.hiddenPart"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.makeTenFrame"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.placePartition"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.renamePlace"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "PLACE_VALUE_BUILD",
+      "semanticPromptStringId": "question.scalePlace"
+    },
+    {
+      "generatorProfile": "placevalue-compose",
+      "inputMethod": "TEN_FRAME",
+      "semanticPromptStringId": "question.teenBuild"
+    },
+    {
+      "generatorProfile": "quantity-compare",
+      "inputMethod": "PAIR_LINK",
+      "semanticPromptStringId": "question.compare"
+    },
+    {
+      "generatorProfile": "quantity-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.decimalCompare"
+    },
+    {
+      "generatorProfile": "quantity-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.decimalOrderList"
+    },
+    {
+      "generatorProfile": "quantity-compare",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.oneMoreLess"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "COUNT_TOUCH",
+      "semanticPromptStringId": "question.countSet"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.numeralForm"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "PAIR_LINK",
+      "semanticPromptStringId": "question.pairObjects"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.countSet"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.frameNumber"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.numberConnection"
+    },
+    {
+      "generatorProfile": "quantity-identify",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.structuredQuantity"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "ORDER_BUILD",
+      "semanticPromptStringId": "question.numberBetween"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "ORDER_BUILD",
+      "semanticPromptStringId": "question.orderSetConnection"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.contextIntegerCompare"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.contextIntegerOrder"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.numberLeast"
+    },
+    {
+      "generatorProfile": "quantity-order",
+      "inputMethod": "PICTURE_CHOICE",
+      "semanticPromptStringId": "question.numberOrder"
+    },
+    {
+      "generatorProfile": "rounding-estimate",
+      "inputMethod": "NUMBER_LINE",
+      "semanticPromptStringId": "question.rounding"
+    },
+    {
+      "generatorProfile": "rounding-estimate",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.estimateCalculation"
+    },
+    {
+      "generatorProfile": "time-read",
+      "inputMethod": "CLOCK_READ",
+      "semanticPromptStringId": "question.timeReadMinute"
+    },
+    {
+      "generatorProfile": "time-read",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.durationMinutes"
+    },
+    {
+      "generatorProfile": "time-read",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.timeReadDigital"
+    },
+    {
+      "generatorProfile": "time-read",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.timeReadMinute"
+    },
+    {
+      "generatorProfile": "time-read",
+      "inputMethod": "NUMBER_PAD",
+      "semanticPromptStringId": "question.timetableInterval"
+    },
+    {
+      "generatorProfile": "volume-model",
+      "inputMethod": "VOLUME_INSPECT",
+      "semanticPromptStringId": "question.prismVolume"
+    }
+  ],
+  "obligationBindings": [
+    {
+      "skillId": "MQ-001",
+      "taskType": "pair-each-object",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-002",
+      "taskType": "count-a-set-to-three",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-003",
+      "taskType": "compare-tiny-sets",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-004",
+      "taskType": "continue-an-ab-repeat",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-005",
+      "taskType": "match-familiar-shapes",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-006",
+      "taskType": "direct-compare",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-007",
+      "taskType": "sort",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-008",
+      "taskType": "count-a-set-to-five",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-009",
+      "taskType": "recognize-structured-set-to-three",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-010",
+      "taskType": "order-zero-to-five",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-011",
+      "taskType": "make-a-small-whole-two-ways",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-012",
+      "taskType": "compare-one-attribute-directly",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-013",
+      "taskType": "show-one-joining",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-014",
+      "taskType": "show-one-leaving",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-015",
+      "taskType": "share-small-sets-fairly",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-016",
+      "taskType": "copy-a-three-part-repeat",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-017",
+      "taskType": "place-it-by-a-landmark",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-018",
+      "taskType": "record-a-two-group-sort",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-019",
+      "taskType": "connect-numbers-zero-to-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-020",
+      "taskType": "recognize-structured-set-to-five",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-021",
+      "taskType": "compare-collections-to-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-022",
+      "taskType": "recall-parts-of-five",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-023",
+      "taskType": "build-and-break-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-024",
+      "taskType": "classify-flat-shape",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-024",
+      "taskType": "classify-solid",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-025",
+      "taskType": "order-numbers-zero-to-twenty",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-026",
+      "taskType": "see-ten-inside-teen-numbers",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-027",
+      "taskType": "find-one-more-or-less",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-028",
+      "taskType": "write-joining-equations-to-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-029",
+      "taskType": "write-leaving-equations-to-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-030",
+      "taskType": "make-two-equal-halves",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-031",
+      "taskType": "read-and-form-numerals-to-twenty",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-032",
+      "taskType": "make-equal-groups-to-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-033",
+      "taskType": "extend",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-034",
+      "taskType": "follow-a-short-route",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-035",
+      "taskType": "compare-two-objects-directly",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-035",
+      "taskType": "name-compared-attribute",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-036",
+      "taskType": "display-two-shown-categories",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-037",
+      "taskType": "read-and-order-to-one-hundred-twenty",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-038",
+      "taskType": "partition-two-digit-numbers",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-039",
+      "taskType": "count-in-twos-fives-and-tens",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-040",
+      "taskType": "add-by-counting-on",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-040",
+      "taskType": "add-by-known-bond",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-040",
+      "taskType": "add-by-making-ten",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-041",
+      "taskType": "subtract-by-counting-back",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-041",
+      "taskType": "subtract-by-counting-up",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-041",
+      "taskType": "subtract-by-known-bond",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-042",
+      "taskType": "read-hour-and-half-hour",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-043",
+      "taskType": "build-an-add-subtract-family",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-044",
+      "taskType": "balance-a-missing-part",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-045",
+      "taskType": "make-equal-groups-and-shares",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-046",
+      "taskType": "measure-with-equal-informal-units",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-047",
+      "taskType": "find-halves-and-quarters",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-048",
+      "taskType": "match-practice-token-1-dollar",
+      "resolutionMode": "SIBLING_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED",
+      "siblingTaskType": "match-practice-token-2-dollars",
+      "compatibilityContractId": "MQ048_TOKEN_VALUE_LOOKUP"
+    },
+    {
+      "skillId": "MQ-048",
+      "taskType": "match-practice-token-10-cents",
+      "resolutionMode": "SIBLING_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED",
+      "siblingTaskType": "match-practice-token-25-cents",
+      "compatibilityContractId": "MQ048_TOKEN_VALUE_LOOKUP"
+    },
+    {
+      "skillId": "MQ-048",
+      "taskType": "match-practice-token-2-dollars",
+      "resolutionMode": "SIBLING_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED",
+      "siblingTaskType": "match-practice-token-5-cents",
+      "compatibilityContractId": "MQ048_TOKEN_VALUE_LOOKUP"
+    },
+    {
+      "skillId": "MQ-048",
+      "taskType": "match-practice-token-25-cents",
+      "resolutionMode": "SIBLING_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED",
+      "siblingTaskType": "match-practice-token-1-dollar",
+      "compatibilityContractId": "MQ048_TOKEN_VALUE_LOOKUP"
+    },
+    {
+      "skillId": "MQ-048",
+      "taskType": "match-practice-token-5-cents",
+      "resolutionMode": "SIBLING_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED",
+      "siblingTaskType": "match-practice-token-10-cents",
+      "compatibilityContractId": "MQ048_TOKEN_VALUE_LOOKUP"
+    },
+    {
+      "skillId": "MQ-049",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-049",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-050",
+      "taskType": "repartition-a-two-digit-number",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-051",
+      "taskType": "match-equivalent-coin-amounts",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-052",
+      "taskType": "classify-flat-shape",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-052",
+      "taskType": "classify-solid",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-053",
+      "taskType": "give-and-follow-directions",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-054",
+      "taskType": "make-a-one-to-one-data-display",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-055",
+      "taskType": "read-and-order-to-one-thousand",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-056",
+      "taskType": "partition-and-rename-three-digits",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-057",
+      "taskType": "position-compare",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-058",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-058",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-059",
+      "taskType": "add-two-digit-numbers",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-060",
+      "taskType": "subtract-two-digit-numbers",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-061",
+      "taskType": "recall-two-times-facts",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-062",
+      "taskType": "recall-five-and-ten-times-facts",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-063",
+      "taskType": "model-related-multiplication-and-division",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-063",
+      "taskType": "write-related-multiplication-and-division-equations",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-064",
+      "taskType": "partition-halves-quarters-and-eighths",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-065",
+      "taskType": "find-canadian-coin-change",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-066",
+      "taskType": "read",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-067",
+      "taskType": "shift-by-one-ten-or-hundred",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-068",
+      "taskType": "continue-an-additive-rule",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-069",
+      "taskType": "choose-and-use-early-metric-units",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-070",
+      "taskType": "describe-flat-shape",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-070",
+      "taskType": "describe-solid",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-071",
+      "taskType": "read-a-simple-map-route",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-072",
+      "taskType": "build-and-interpret-survey-display",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-073",
+      "taskType": "read-and-order-beyond-ten-thousand",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-074",
+      "taskType": "partition-four-and-five-digit-numbers",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-075",
+      "taskType": "round-to-tens-and-hundreds",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-076",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-076",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-077",
+      "taskType": "recall-three-four-and-eight-times-facts",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-078",
+      "taskType": "use-related-division-facts",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-079",
+      "taskType": "multiply-two-digits-by-one-digit",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-080",
+      "taskType": "divide-two-digits-with-remainders",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-081",
+      "taskType": "compare-proper-fractions",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-082",
+      "taskType": "add-and-subtract-like-fractions-within-one",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-083",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-083",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-084",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-084",
+      "taskType": "multiplication",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-084",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-085",
+      "taskType": "find-change-from-canadian-price",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-086",
+      "taskType": "read-time-to-the-minute",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-087",
+      "taskType": "polygon-perimeter",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-088",
+      "taskType": "property-classification",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-089",
+      "taskType": "locate-places-on-a-grid-map",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-090",
+      "taskType": "repeat-and-compare",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-091",
+      "taskType": "read-and-order-to-one-hundred-thousand",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-092",
+      "taskType": "scale-whole-numbers-by-ten-and-one-hundred",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-093",
+      "taskType": "round-to-ten-hundred-or-thousand",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-094",
+      "taskType": "read-negative-values-in-context",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-095",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-095",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-096",
+      "taskType": "multiply",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-097",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-097",
+      "taskType": "multiplication",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-097",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-098",
+      "taskType": "generate-equivalent-fractions",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-099",
+      "taskType": "connect-tenths-hundredths-and-decimals",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-100",
+      "taskType": "compare-decimals",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-100",
+      "taskType": "order-decimals",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-101",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-101",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-102",
+      "taskType": "change",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-102",
+      "taskType": "purchase",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-103",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-103",
+      "taskType": "multiplication",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-104",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-104",
+      "taskType": "subtraction",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-105",
+      "taskType": "rectangle-area",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-106",
+      "taskType": "complete",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-106",
+      "taskType": "identify",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-107",
+      "taskType": "plan-and-display-a-scaled-survey",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-108",
+      "taskType": "dependency-test",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-109",
+      "taskType": "compare",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-109",
+      "taskType": "order",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-110",
+      "taskType": "compare",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-110",
+      "taskType": "order",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-111",
+      "taskType": "plausibility-check",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-112",
+      "taskType": "classify-composite",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-112",
+      "taskType": "classify-cube",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-112",
+      "taskType": "classify-prime",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-112",
+      "taskType": "classify-square",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-113",
+      "taskType": "multiply-large-numbers",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-114",
+      "taskType": "divide-large-numbers-and-interpret-remainders",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-115",
+      "taskType": "addition",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-115",
+      "taskType": "subtraction",
+      "resolutionMode": "PROCEDURE_ONLY",
+      "answerDisclosurePolicy": "PROCEDURE_ONLY_REQUIRED"
+    },
+    {
+      "skillId": "MQ-116",
+      "taskType": "percent-to-decimal",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-116",
+      "taskType": "percent-to-fraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-117",
+      "taskType": "addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-117",
+      "taskType": "subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-118",
+      "taskType": "budget",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-118",
+      "taskType": "total-cost",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-119",
+      "taskType": "pattern-addition",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-119",
+      "taskType": "pattern-division",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-119",
+      "taskType": "pattern-multiplication",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-119",
+      "taskType": "pattern-subtraction",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-120",
+      "taskType": "metric-conversion",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-121",
+      "taskType": "composite-area",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-122",
+      "taskType": "rectangular-prism-volume",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-123",
+      "taskType": "timetable-interval",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-124",
+      "taskType": "angle-measure",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-125",
+      "taskType": "describe-transform",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    },
+    {
+      "skillId": "MQ-126",
+      "taskType": "interpret-distribution",
+      "resolutionMode": "SAME_TASK_DIFFERENT_ANSWER",
+      "answerDisclosurePolicy": "DIFFERENT_ANSWER_REQUIRED"
+    }
+  ]
+}

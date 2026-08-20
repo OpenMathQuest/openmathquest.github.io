@@ -23,7 +23,7 @@ test("documentation-only work avoids product and engine execution", () => {
 
 test("single-file product changes select every affected independent layer", () => {
   const plan = planDevelopmentSuites(["index.html"]);
-  for (const id of ["governance", "metadata", "product", "pwa", "engine", "playwright", "guard"]) {
+  for (const id of ["governance", "metadata", "product", "pwa", "engine", "tutorial", "driftless", "playwright", "guard"]) {
     assert.equal(plan.suites.includes(id), true, id);
   }
   assert.equal(plan.suites.includes("canary"), false);
@@ -35,6 +35,43 @@ test("launcher, canary, and engine routes remain distinct", () => {
   assert.equal(planDevelopmentSuites(["Serve-MathQuest.ps1"]).suites.includes("playwright"), true);
   assert.equal(planDevelopmentSuites(["audit/run-trusted-https-canary.mjs"]).suites.includes("canary"), true);
   assert.equal(planDevelopmentSuites(["curriculum/math-quest-manifest-v1.json"]).suites.includes("engine"), true);
+  assert.equal(planDevelopmentSuites(["curriculum/math-quest-manifest-v1.json"]).suites.includes("tutorial"), true);
+  const tutorialManifest = planDevelopmentSuites(["curriculum/math-quest-tutorial-manifest-v1.json"]);
+  assert.equal(tutorialManifest.suites.includes("tutorial"), true);
+  assert.equal(tutorialManifest.suites.includes("driftless"), true);
+  assert.equal(tutorialManifest.suites.includes("pwa"), true);
+  const nodeEngine = planDevelopmentSuites(["audit/tests/node-engine.test.mjs"]);
+  assert.equal(nodeEngine.mode, "FOCUSED_CHANGED_PATHS");
+  assert.equal(nodeEngine.suites.includes("engine"), true);
+  const curriculumSync = planDevelopmentSuites(["tools/sync-curriculum-manifest.mjs"]);
+  assert.equal(curriculumSync.mode, "FOCUSED_CHANGED_PATHS");
+  assert.equal(curriculumSync.suites.includes("engine"), true);
+  assert.equal(curriculumSync.suites.includes("tutorial"), true);
+});
+
+test("VERSION routes every consumer of the current product identity", () => {
+  const plan = planDevelopmentSuites(["VERSION"]);
+  assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS");
+  for (const id of ["governance", "metadata", "launcher", "product", "pwa", "canary", "engine", "driftless", "playwright", "guard"]) {
+    assert.equal(plan.suites.includes(id), true, id);
+  }
+  assert.equal(plan.suites.includes("tutorial"), false);
+});
+
+test("driftless maps and blast-radius controls select their shared focused gate", () => {
+  for (const file of [
+    "AGENTS.md",
+    "audit/repository-code-map-v1.json",
+    "audit/run-audit.mjs",
+    "audit/tests/audit-orchestration.test.mjs",
+    "curriculum/math-quest-feature-map-v1.json",
+    "tools/blast-radius-lookup.mjs",
+    "audit/tests/feature-map.test.mjs",
+  ]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.suites.includes("driftless"), true, file);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+  }
 });
 
 test("Playwright Test changes select only the focused browser and shared policy layers", () => {

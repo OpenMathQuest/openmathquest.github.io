@@ -19,6 +19,10 @@ export const PLAYWRIGHT_FOCUSED_CASE_IDS = Object.freeze([
   "PW-F-06",
   "PW-F-07",
   "PW-F-08",
+  "PW-F-09",
+  "PW-F-10",
+  "PW-F-11",
+  "PW-F-12",
 ]);
 
 export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
@@ -27,6 +31,7 @@ export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
   ["/manifest.webmanifest", "manifest.webmanifest"],
   ["/release-shell-v1.json", "release-shell-v1.json"],
   ["/sw.js", "sw.js"],
+  ["/curriculum/math-quest-tutorial-manifest-v1.json", "curriculum/math-quest-tutorial-manifest-v1.json"],
   ["/assets/fonts/Inter-Variable.ttf", "assets/fonts/Inter-Variable.ttf"],
   ["/assets/icons/apple-touch-icon.png", "assets/icons/apple-touch-icon.png"],
   ["/assets/icons/icon-192.png", "assets/icons/icon-192.png"],
@@ -67,7 +72,7 @@ export async function playwrightFocusedExpectedServerIdentity(root) {
   return {
     schemaVersion: 1,
     identity: "math-quest-local-server:v2",
-    release: "1.0.0-beta.6",
+    release: "1.0.0-beta.7",
     port: 8771,
     rootId: sha256(Buffer.from(normalizedRoot, "utf8")),
     servedPayloadSha256: sha256(Buffer.from(`${records.join("\n")}\n`, "utf8")),

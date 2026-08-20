@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "1.0.0-beta.6",
-  "buildId": "math-quest-pwa-v1.0.0-beta.6",
-  "cacheName": "math-quest-static-v1.0.0-beta.6",
+  "release": "1.0.0-beta.7",
+  "buildId": "math-quest-pwa-v1.0.0-beta.7",
+  "cacheName": "math-quest-static-v1.0.0-beta.7",
   "entryPath": "./index.html",
   "excludedPaths": [
     "./release-shell-v1.json",
@@ -67,8 +67,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "8cede289a4014e41398edad5b09de95612e4734d07179dec8df8f9fd436199f3",
-      "bytes": 1121790,
+      "sha256": "82cdbfd69a22a49c323e56063a0e4a49d7684cfcec0c5d894ffcccb7b5d2e98b",
+      "bytes": 1236284,
       "mime": "text/html",
       "status": 200
     },
@@ -77,6 +77,13 @@
       "sha256": "5ab3554a7bc0356b2b400a70c7a7d4fbca828227b425ab9e7855d824594d03ee",
       "bytes": 647,
       "mime": "application/manifest+json",
+      "status": 200
+    },
+    {
+      "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
+      "sha256": "f6347716820dc423ca26c6217d5d61858c1c0e66f96a4fb2a833099729abbc30",
+      "bytes": 73046,
+      "mime": "application/json",
       "status": 200
     },
     {

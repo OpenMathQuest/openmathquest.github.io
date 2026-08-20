@@ -258,7 +258,7 @@ test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impers
   assert.equal(
     evaluateExternalReleaseEvidence(parsed, expected, expected.now).status,
     "BLOCKED",
-    "the Beta 3 emergency record must never authorize the Beta 6 candidate",
+    "the Beta 3 emergency record must never authorize the Beta 7 candidate",
   );
 
   assert.equal(computeReleaseDecision({
@@ -292,7 +292,7 @@ test("an approved clearance matches only the exact complete browser/runner tuple
   }
 });
 
-test("a valid Beta 6 evidence successor binds clearance to the qualification payload rather than its changed evidence payload", () => {
+test("a valid Beta 7 evidence successor binds clearance to the qualification payload rather than its changed evidence payload", () => {
   const parsed = parsePublicationClearance(approvedClearance());
   const successorExpected = {
     ...expected,
@@ -311,7 +311,7 @@ test("a valid Beta 6 evidence successor binds clearance to the qualification pay
   }
 });
 
-test("the Beta 6 runtime-equivalent evidence successor is one exact non-merge commit changing only the two governed records", () => {
+test("the Beta 7 runtime-equivalent evidence successor is one exact non-merge commit changing only the two governed records", () => {
   const candidateCommitSha = "1".repeat(40);
   const qualificationCommitSha = expected.qualificationCommitSha;
   const baseline = {
@@ -342,7 +342,7 @@ test("the Beta 6 runtime-equivalent evidence successor is one exact non-merge co
   }
 });
 
-test("the Git observer proves an actual immediate Beta 6 runtime-equivalent evidence successor", async () => {
+test("the Git observer proves an actual immediate Beta 7 runtime-equivalent evidence successor", async () => {
   const repository = await mkdtemp(path.join(root, "audit", ".tmp-successor-observer-"));
   const git = (...args) => execFileSync("git", args, {
     cwd: repository,
@@ -404,7 +404,7 @@ test("the standalone Pages validator binds clearance to the observed qualificati
   }), false);
 });
 
-test("five mandatory Beta 6 gates, the deferred host, and both optional cycles remain visible", () => {
+test("five mandatory Beta 7 gates, the deferred host, and both optional cycles remain visible", () => {
   const parsed = parsePublicationClearance(approvedClearance());
   const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
   assert.equal(parsed.valid, true, parsed.issues.join("; "));
@@ -506,8 +506,8 @@ test("the owner-directed host deferral is non-passing and release-eligible only 
   }), false, "a synthetic DEFERRED status without evaluator-bound prerelease eligibility must not ship");
 });
 
-test("the Beta 4 canary skip is historical and cannot authorize Beta 6", () => {
-  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.6");
+test("the Beta 4 canary skip is historical and cannot authorize Beta 7", () => {
+  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.7");
   assert.equal(BETA4_RELEASE_TAG, "v1.0.0-beta.4");
   assert.deepEqual(BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS, ["EXT-CANARY"]);
   const parsed = parsePublicationClearance(deferredHostClearance({

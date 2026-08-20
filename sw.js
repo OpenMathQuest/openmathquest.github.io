@@ -1,10 +1,10 @@
 "use strict";
 
-const RELEASE = "1.0.0-beta.6";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.6";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.6";
+const RELEASE = "1.0.0-beta.7";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.7";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.7";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "67339f46b460f54d0e3c06e1cce74abdaae80f7505e6a25f6fa7c08cf22b3971";
+const RELEASE_MANIFEST_SHA256 = "a9fb06986ef9ef7e787398c43cdc4e0a9b8ddbcb610c4e8bc109874e5054f1d8";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 function freshStagingCacheName() {
   const nonce = new Uint8Array(16);
@@ -34,6 +34,7 @@ const SHELL_RELATIVE_PATHS = Object.freeze([
   "./assets/sounds/tap.wav",
   "./index.html",
   "./manifest.webmanifest",
+  "./curriculum/math-quest-tutorial-manifest-v1.json",
   "./LICENSE",
   "./PRIVACY.md",
   "./THIRD_PARTY_NOTICES.md",

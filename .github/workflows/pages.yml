@@ -7,7 +7,7 @@ on:
         description: Exact annotated beta tag to deploy
         required: true
         type: string
-        default: v1.0.0-beta.6
+        default: v1.0.0-beta.7
 
 permissions:
   contents: read
@@ -38,9 +38,9 @@ jobs:
              [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
              [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
              [[ "$GITHUB_REF_NAME" != "main" ]] ||
-             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.6" ]]
+             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.7" ]]
           then
-            echo "::error::Deploy only OpenMathQuest Public Beta 6 from the protected main branch."
+            echo "::error::Deploy only OpenMathQuest Public Beta 7 from the protected main branch."
             exit 1
           fi
 
@@ -297,6 +297,7 @@ jobs:
             ["assets/sounds/incorrect.wav", "audio/wav", true],
             ["assets/sounds/tap.wav", "audio/wav", true],
             ["curriculum/math-quest-manifest-v1.json", "application/json", true],
+            ["curriculum/math-quest-tutorial-manifest-v1.json", "application/json", true],
             ["curriculum/PROVENANCE.md", "text/markdown", true],
             ["index.html", "text/html", true],
             ["manifest.webmanifest", "application/manifest+json", true],
@@ -322,6 +323,7 @@ jobs:
             ["assets/sounds/tap.wav", "audio/wav"],
             ["index.html", "text/html"],
             ["manifest.webmanifest", "application/manifest+json"],
+            ["curriculum/math-quest-tutorial-manifest-v1.json", "application/json"],
             ["LICENSE", "application/octet-stream"],
             ["PRIVACY.md", "text/markdown"],
             ["THIRD_PARTY_NOTICES.md", "text/markdown"],
@@ -576,9 +578,9 @@ jobs:
           fi
           if [[ -z "$RELEASE_COMMIT" ]] ||
              [[ ! "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]] ||
-             [[ "$RELEASE_TAG" != "v1.0.0-beta.6" ]] ||
+             [[ "$RELEASE_TAG" != "v1.0.0-beta.7" ]] ||
              [[ ! "$SNAPSHOT_SHA256" =~ ^[a-f0-9]{64}$ ]]
           then
-            echo "::error::The deployment is not bound to the verified Public Beta 6 tag, commit, and immutable snapshot."
+            echo "::error::The deployment is not bound to the verified Public Beta 7 tag, commit, and immutable snapshot."
             exit 1
           fi

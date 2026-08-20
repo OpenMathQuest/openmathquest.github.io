@@ -17,6 +17,7 @@ $RuntimeEntries = @(
     @('/', 'index.html'),
     @('/index.html', 'index.html'),
     @('/manifest.webmanifest', 'manifest.webmanifest'),
+    @('/curriculum/math-quest-tutorial-manifest-v1.json', 'curriculum/math-quest-tutorial-manifest-v1.json'),
     @('/release-shell-v1.json', 'release-shell-v1.json'),
     @('/sw.js', 'sw.js'),
     @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
@@ -96,7 +97,7 @@ function Get-TestHealthBody {
     $payloadDigest = Get-TestSha256Hex -Bytes (
         [Text.Encoding]::UTF8.GetBytes((($records -join "`n") + "`n"))
     )
-    return "{`"schemaVersion`":1,`"identity`":`"math-quest-local-server:v2`",`"release`":`"1.0.0-beta.6`",`"port`":$Port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$payloadDigest`"}"
+    return "{`"schemaVersion`":1,`"identity`":`"math-quest-local-server:v2`",`"release`":`"1.0.0-beta.7`",`"port`":$Port,`"rootId`":`"$rootId`",`"servedPayloadSha256`":`"$payloadDigest`"}"
 }
 
 function Copy-LauncherFixture {

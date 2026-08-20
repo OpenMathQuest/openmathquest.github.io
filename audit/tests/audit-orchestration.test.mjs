@@ -117,6 +117,9 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.match(runAuditBody, /playwright\.status === "PASS"/u);
   assert.match(runner, /playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS\.length/u);
   assert.match(runner, /actual\.playwrightAssertions/u);
+  assert.match(runner, /AI_READER_CONTRACT_REF/u);
+  assert.match(runner, /schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF/u);
+  assert.match(runner, /aiReaderContractRef: report\.aiReaderContractRef/u);
   assert.match(coverage, /MQ_STRUCTURED_AUDIT_FILE/u);
   assert.match(coverage, /structuredAuditValid/u);
   assert.match(nodeEngine, /MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1/u);

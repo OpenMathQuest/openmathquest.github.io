@@ -27,6 +27,7 @@ import {
 } from "./lib/publication-clearance.mjs";
 import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
+import { AI_READER_CONTRACT_REF } from "./lib/repository-code-map.mjs";
 import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT, runCoverage } from "./run-coverage.mjs";
 import { runMutations } from "./mutation-runner.mjs";
 
@@ -584,6 +585,7 @@ export async function runAudit({ browserPath = null } = {}) {
     externalReleaseEvidence,
   });
   const report = {
+    schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF,
     generatedAt: auditTime.toISOString(), status: gatesPass ? (parentStrings.status === "APPROVED" ? (shippable ? "PASS" : "PUBLICATION_BLOCKED") : "PENDING_PARENT_APPROVAL") : "FAIL",
     technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,
@@ -608,6 +610,9 @@ const browserDiagnostic = report.browser.status === "PASS" ? null : {
   assertions: report.browser.results.length,
 };
 process.stdout.write(`${JSON.stringify({
+  schemaVersion: report.schemaVersion,
+  reportType: report.reportType,
+  aiReaderContractRef: report.aiReaderContractRef,
   status: report.status,
   technicalShippable: report.technicalShippable,
   publication: report.publication.status,
