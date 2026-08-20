@@ -31,6 +31,7 @@ import {
   waitForBrowserCleanup,
   waitForAuditPageCompletion,
 } from "../lib/browser-smoke.mjs";
+import { loadShippedEngine } from "../lib/engine-loader.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const execFile = promisify(execFileCallback);
@@ -219,6 +220,155 @@ test("generator, worker, page, and browser audit share one exact explicit shell 
   assert.deepEqual(
     explicitRelativePathArray(browserAudit, "const expectedShellEntryPaths = Object.freeze("),
     expectedEntries,
+  );
+});
+
+test("browser-audit session fixtures use the shipped active-UI schema and export as valid state", async () => {
+  const [browserAudit, loaded] = await Promise.all([
+    readFile(path.join(root, "audit.html"), "utf8"),
+    loadShippedEngine(new URL("../../index.html", import.meta.url)),
+  ]);
+  const baseUi = vm.runInNewContext(`(${adapterFunction(browserAudit, "baseUi")})`);
+  const activeStateFor = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "activeStateFor")})`,
+    { baseUi },
+  );
+  const { engine } = loaded;
+  const generated = [];
+  for (const skill of engine.SKILLS) {
+    for (const tier of ["EASY", "HARD/TARGET"]) {
+      for (let ordinal = 0; ordinal < 12; ordinal += 1) {
+        const representation = skill.phases.includes("P") ? "PICTORIAL" : "ABSTRACT";
+        generated.push(engine.makeQuestion({
+          skillId: skill.skillId,
+          tier,
+          representation,
+          seed: 1732050807,
+          ordinal,
+          eligibleQuestionOrdinal: ordinal,
+          scheduledReview: false,
+          coldTest: false,
+          preview: false,
+          theme: "ocean",
+          scaffolded: false,
+        }));
+      }
+    }
+  }
+  const fixtures = [
+    ["native selection", generated.find((question) => question.inputClass === "SELECTION")],
+    ["incorrect COUNT_TOUCH", generated.find((question) => question.inputMethod === "COUNT_TOUCH")],
+    ["MQ-048 practice token", generated.find((question) => question.skillId === "MQ-048")],
+  ];
+  for (const [label, question] of fixtures) {
+    assert.ok(question, `${label} fixture must remain generated`);
+    const state = activeStateFor(engine, 20_000, question);
+    assert.equal(engine.validateState(state), null, label);
+    const exported = engine.exportState(state);
+    const restored = engine.loadState(exported, 20_000);
+    assert.equal(restored.ok, true, label);
+    assert.notEqual(restored.state.activeSession, null, label);
+    assert.equal(restored.state.activeSession.uiState.question.questionId, state.activeSession.uiState.question.questionId, label);
+    assert.equal(state.activeSession.uiState.version, engine.CONSTANTS.ACTIVE_UI_VERSION, label);
+    assert.equal(state.activeSession.uiState.tutorialOpen, false, label);
+    assert.equal(state.activeSession.uiState.tutorialStep, 1, label);
+    assert.equal(state.activeSession.uiState.attemptCommitted, true, label);
+  }
+
+  const stale = activeStateFor(engine, 20_000, fixtures[0][1]);
+  stale.activeSession.uiState.version -= 1;
+  assert.equal(engine.validateState(stale), "Invalid active session.");
+  assert.throws(() => engine.exportState(stale), /Invalid active session/u);
+
+  const tutorial = activeStateFor(engine, 20_000, fixtures[0][1], {
+    hintUsed: true,
+    tutorialOpen: true,
+    tutorialStep: 3,
+  });
+  assert.equal(engine.validateState(tutorial), null);
+  assert.equal(tutorial.activeSession.uiState.hintUsed, true);
+  assert.equal(tutorial.activeSession.uiState.tutorialOpen, true);
+  assert.equal(tutorial.activeSession.uiState.tutorialStep, 3);
+
+  const layoutViewportFlowPass = vm.runInNewContext(
+    `(${adapterFunction(browserAudit, "layoutViewportFlowPass")})`,
+  );
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: false,
+    documentFitsFirstScreen: true,
+    tutorialActionsReachable: false,
+    noNestedTutorialScroll: false,
+  }), true, "ordinary question rows retain the first-screen contract");
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: false,
+    documentFitsFirstScreen: false,
+    tutorialActionsReachable: true,
+    noNestedTutorialScroll: true,
+  }), false, "ordinary question rows cannot borrow the tutorial outer-scroll exception");
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: true,
+    documentFitsFirstScreen: false,
+    tutorialActionsReachable: true,
+    noNestedTutorialScroll: true,
+  }), false, "tutorial rows cannot use unrestricted outer-page scrolling");
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: true,
+    documentFitsFirstScreen: false,
+    tutorialActionsReachable: true,
+    noNestedTutorialScroll: true,
+    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
+    viewportWidth: 844,
+    viewportHeight: 390,
+    laterGradeLargeModel: true,
+  }), true, "only the exact later-grade 844x390 large-model exception may use outer-page scrolling");
+  for (const mutation of [
+    { outerScrollException: "OTHER", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: true },
+    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 843, viewportHeight: 390, laterGradeLargeModel: true },
+    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 391, laterGradeLargeModel: true },
+    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: false },
+  ]) {
+    assert.equal(layoutViewportFlowPass({
+      tutorialRequired: true,
+      documentFitsFirstScreen: false,
+      tutorialActionsReachable: true,
+      noNestedTutorialScroll: true,
+      ...mutation,
+    }), false, "the short-landscape exception must fail closed when any approved predicate changes");
+  }
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: true,
+    documentFitsFirstScreen: false,
+    tutorialActionsReachable: false,
+    noNestedTutorialScroll: true,
+    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
+    viewportWidth: 844,
+    viewportHeight: 390,
+    laterGradeLargeModel: true,
+  }), false, "outer flow cannot hide a tutorial action");
+  assert.equal(layoutViewportFlowPass({
+    tutorialRequired: true,
+    documentFitsFirstScreen: false,
+    tutorialActionsReachable: true,
+    noNestedTutorialScroll: false,
+    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
+    viewportWidth: 844,
+    viewportHeight: 390,
+    laterGradeLargeModel: true,
+  }), false, "a nested tutorial scroller remains prohibited");
+  assert.match(browserAudit, /const viewportFlowPass = layoutViewportFlowPass\(\{/u,
+    "the rendered BR-21 verdict must use the effect-tested viewport policy");
+
+  const visualAudit = await readFile(path.join(root, "audit", "approved-visual-regression.js"), "utf8");
+  const resetBeforeMeasurement = /await selectCase\(auditCase\);\s*labWindow\.scrollTo\(0, 0\);\s*await pause\(\);/gu;
+  assert.equal(
+    [...visualAudit.matchAll(resetBeforeMeasurement)].length,
+    2,
+    "desktop and mobile layout measurements must start from the top instead of inheriting focus-induced scroll from a prior case",
+  );
+  assert.match(
+    visualAudit,
+    /toggle\.click\(\);\s*await pause\(\);\s*\}\s*labWindow\.scrollTo\(0, 0\);\s*await pause\(\);/u,
+    "opening a teaching model must not leave the following geometry measurement at a focus-induced scroll offset",
   );
 });
 

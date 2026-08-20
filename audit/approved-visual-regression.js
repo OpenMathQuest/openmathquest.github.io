@@ -750,7 +750,7 @@
     Object.freeze({ viewport: "ipad-landscape-standard", width: 1024, height: 768 }),
     Object.freeze({ viewport: "phone", width: 390, height: 844 }),
   ]);
-  const PRACTICE_TOKEN_VISUAL_STATES = Object.freeze(["ordinary", "help", "incorrect"]);
+  const PRACTICE_TOKEN_VISUAL_STATES = Object.freeze(["ordinary", "tutorial-notice", "incorrect"]);
 
   const indexedItems = (prefix, count) => Array.from(
     { length: Math.max(0, Number(count) || 0) },
@@ -1346,6 +1346,21 @@
 
   function practiceTokenVisualRowKey(row) {
     return `${row.tokenId}|${row.value}|${row.viewport}|${row.width}x${row.height}|${row.state}`;
+  }
+
+  function practiceTokenStateTokenContract(state, sourceTokenId, renderedTokenIds, tutorialTokenIds) {
+    const governedTokenIds = new Set(PRACTICE_TOKEN_VISUAL_ORACLE.map(({ tokenId }) => tokenId));
+    const rendered = [...new Set(renderedTokenIds)];
+    const tutorial = [...new Set(tutorialTokenIds)];
+    if (state === "tutorial-notice") {
+      return tutorial.length === 1
+        && governedTokenIds.has(tutorial[0])
+        && tutorial[0] !== sourceTokenId
+        && rendered.length === 1
+        && rendered[0] === tutorial[0];
+    }
+    return rendered.includes(sourceTokenId)
+      && rendered.every((tokenId) => tokenId === sourceTokenId);
   }
 
   function generatedCaseMap(engine) {
@@ -2262,11 +2277,15 @@
               continue;
             }
             await selectCase(auditCase);
+            labWindow.scrollTo(0, 0);
+            await pause();
             const toggle = labDocument.querySelector('[data-lab-action="model"]');
             if (toggle && !toggle.disabled && /show/iu.test(toggle.textContent)) {
               toggle.click();
               await pause();
             }
+            labWindow.scrollTo(0, 0);
+            await pause();
             const article = labDocument.querySelector(".lab-question");
             const grade = labDocument.querySelector('[data-lab-action="grade"]');
             const answer = labDocument.querySelector(".answer-controls");
@@ -2332,6 +2351,8 @@
             continue;
           }
           await selectCase(auditCase);
+          labWindow.scrollTo(0, 0);
+          await pause();
           const workspace = labDocument.querySelector(".lab-workspace");
           const article = labDocument.querySelector(".lab-question");
           const controls = labDocument.querySelector(".lab-controls");
@@ -2969,11 +2990,18 @@
             const prompt = questionNode?.querySelector(".prompt");
             const source = questionNode?.querySelector('.stimulus[data-answer-free="true"]');
             const worked = questionNode?.querySelector('[data-worked-result="true"]');
+            const tutorial = questionNode?.querySelector('[data-tutorial="different-example"]');
+            const tutorialInstruction = tutorial?.querySelector(".tutorial-instruction");
+            const tutorialBack = tutorial?.querySelector('[data-action="tutorial-back"]');
             const answer = questionNode?.querySelector('.answer-controls[data-input-method="PICTURE_CHOICE"]');
             const confirm = questionNode?.querySelector('[data-action="confirm"]');
             const outcome = questionNode?.querySelector('.feedback-state[data-feedback-state="incorrect"]');
             const next = questionNode?.querySelector('[data-action="next"]');
-            const action = stateName === "incorrect" ? next : confirm;
+            const action = stateName === "incorrect"
+              ? next
+              : stateName === "tutorial-notice"
+                ? tutorialBack
+                : confirm;
             const expectedSelector = `.practice-coin-token[data-practice-token="${CSS.escape(expected.tokenId)}"]`;
             const tokenNodes = [...(questionNode?.querySelectorAll(".practice-coin-token[data-practice-token]") || [])]
               .filter((node) => visible(node));
@@ -2981,6 +3009,19 @@
             const unexpectedTokenIds = [...new Set(tokenNodes
               .map((node) => node.dataset.practiceToken)
               .filter((tokenId) => tokenId !== expected.tokenId))];
+            const tutorialTokenNodes = [...(tutorial?.querySelectorAll(".practice-coin-token[data-practice-token]") || [])]
+              .filter((node) => visible(node));
+            const tutorialTokenIds = [...new Set(tutorialTokenNodes.map((node) => node.dataset.practiceToken))];
+            const renderedTokenIds = [...new Set(tokenNodes.map((node) => node.dataset.practiceToken))];
+            const tokenStateContract = practiceTokenStateTokenContract(
+              stateName,
+              expected.tokenId,
+              renderedTokenIds,
+              tutorialTokenIds,
+            );
+            const stateTokenNodes = stateName === "tutorial-notice"
+              ? tutorialTokenNodes
+              : expectedTokenNodes;
             const sourceToken = source?.querySelector(expectedSelector);
             const workedToken = worked?.querySelector(expectedSelector);
             const valueLeaksIntoSource = PRACTICE_TOKEN_VISUAL_ORACLE.some((row) => (
@@ -2991,15 +3032,15 @@
               .filter((node) => visible(node));
             const renderedOptionIds = renderedOptions.map((node) => node.dataset.id).sort();
             const expectedOptionIds = question.options.map((option) => option.optionId).sort();
-            const exactOptions = stateName === "incorrect" || Boolean(
+            const exactOptions = stateName !== "ordinary" || Boolean(
               renderedOptions.length === PRACTICE_TOKEN_VISUAL_ORACLE.length
               && engine.canonical(renderedOptionIds) === engine.canonical(expectedOptionIds)
               && engine.canonical(question.options.map((option) => option.value).sort()) === engine.canonical(optionOracle),
             );
             const requiredElements = stateName === "incorrect"
-              ? [prompt, source, worked, outcome, next]
-              : stateName === "help"
-                ? [prompt, source, worked, answer, confirm]
+              ? [prompt, source, outcome, next]
+              : stateName === "tutorial-notice"
+                ? [tutorial, prompt, source, tutorialInstruction, tutorialBack]
                 : [prompt, source, answer, confirm];
             const requiredRects = requiredElements.map((element) => element?.getBoundingClientRect());
             const contentOnFirstScreen = requiredRects.every((rect) => Boolean(
@@ -3009,14 +3050,16 @@
               && rect.top >= -1
               && rect.bottom <= labWindow.innerHeight + 1
             ));
-            const tokenRects = expectedTokenNodes.map((node) => node.getBoundingClientRect());
-            const tokensOnFirstScreen = tokenRects.length >= (stateName === "ordinary" ? 1 : 2)
+            const tokenRects = stateTokenNodes.map((node) => node.getBoundingClientRect());
+            const tokensOnFirstScreen = tokenRects.length >= 1
               && tokenRects.every((rect) => rect.left >= -1 && rect.right <= labWindow.innerWidth + 1
                 && rect.top >= -1 && rect.bottom <= labWindow.innerHeight + 1);
             const tokensLarge = tokenRects.length > 0
               && tokenRects.every((rect) => rect.width >= 50 && rect.height >= 50);
             const responseBeforeAction = stateName === "incorrect" || Boolean(
-              answer?.getBoundingClientRect().bottom <= confirm?.getBoundingClientRect().top + 1,
+              stateName === "tutorial-notice"
+                ? tutorialInstruction?.getBoundingClientRect().bottom <= tutorialBack?.getBoundingClientRect().top + 1
+                : answer?.getBoundingClientRect().bottom <= confirm?.getBoundingClientRect().top + 1,
             );
             const feedbackBeforeAction = stateName !== "incorrect" || Boolean(
               outcome?.getBoundingClientRect().bottom <= next?.getBoundingClientRect().top + 1,
@@ -3024,7 +3067,8 @@
             const metrics = scopedFloorMetrics(questionNode);
             const noHorizontalOverflow = labDocument.documentElement.scrollWidth
               <= labDocument.documentElement.clientWidth + 1;
-            const mark = sourceToken?.querySelector(".practice-coin-token__mark");
+            const stateToken = stateTokenNodes[0] || null;
+            const mark = stateToken?.querySelector(".practice-coin-token__mark");
             const markStyle = mark ? labWindow.getComputedStyle(mark) : null;
             const afterStyle = mark ? labWindow.getComputedStyle(mark, "::after") : null;
             const fingerprint = markStyle ? [
@@ -3039,18 +3083,27 @@
             ].join("|") : "";
             const stateContract = stateName === "ordinary"
               ? !worked && !outcome
-              : stateName === "help"
-                ? Boolean(worked && workedToken && !outcome && workedNamesValue)
-                : Boolean(worked && workedToken && outcome && workedNamesValue && feedbackFocusedAtTransition);
+              : stateName === "tutorial-notice"
+                ? Boolean(
+                  tutorial
+                  && tutorial.dataset.tutorialStep === "1"
+                  && tutorial.dataset.tutorialPhaseId === "NOTICE"
+                  && tutorial.dataset.sourceQuestionId === question.questionId
+                  && tutorial.dataset.exampleQuestionId !== question.questionId
+                  && tutorial.dataset.terminalAnswerRendered === "false"
+                  && !worked
+                  && !outcome,
+                )
+                : Boolean(!worked && outcome && feedbackFocusedAtTransition);
             const pass = Boolean(
               questionNode
               && questionNode.dataset.inputMethod === "PICTURE_CHOICE"
               && question.params?.tokenId === expected.tokenId
               && question.answer?.value === expected.value
               && source
-              && sourceToken
+              && (stateName === "tutorial-notice" || sourceToken)
               && !valueLeaksIntoSource
-              && unexpectedTokenIds.length === 0
+              && tokenStateContract
               && exactOptions
               && action
               && visible(action)
@@ -3074,7 +3127,12 @@
               width: profile.width,
               height: profile.height,
               renderedTokens: expectedTokenNodes.length,
+              renderedTokenIds,
               unexpectedTokenIds,
+              tutorialTokenIds,
+              tutorialUsesDifferentToken: stateName !== "tutorial-notice"
+                || Boolean(tutorialTokenIds.length === 1 && tutorialTokenIds[0] !== expected.tokenId),
+              tokenStateContract,
               renderedOptions: renderedOptions.length,
               exactOptions,
               valueLeaksIntoSource,
@@ -3102,17 +3160,24 @@
             }
 
             await resize(1366, 768);
-            const help = [...labDocument.querySelectorAll('[data-action="hint"]')].find((button) => visible(button));
-            if (!help || help.disabled) throw new Error(`${fixture.expected.tokenId} did not expose its real Help control.`);
+            const help = [...labDocument.querySelectorAll('[data-action="tutorial"]')].find((button) => visible(button));
+            if (!help || help.disabled) throw new Error(`${fixture.expected.tokenId} did not expose its real Show me how control.`);
             help.click();
             await pause();
             await pause();
             for (const profile of PRACTICE_TOKEN_VISUAL_VIEWPORTS) {
               await resize(profile.width, profile.height);
-              practiceTokenRows.push(practiceTokenSnapshot(fixture, profile, "help"));
+              practiceTokenRows.push(practiceTokenSnapshot(fixture, profile, "tutorial-notice"));
             }
 
             await resize(1366, 768);
+            const tutorialBack = labDocument.querySelector('[data-action="tutorial-back"]');
+            if (!tutorialBack || tutorialBack.disabled) {
+              throw new Error(`${fixture.expected.tokenId} did not expose Back to your question.`);
+            }
+            tutorialBack.click();
+            await pause();
+            await pause();
             const wrongOption = fixture.question.options.find((option) => option.value !== fixture.question.answer.value);
             const wrongControl = wrongOption
               ? labDocument.querySelector(`[data-action="select"][data-id="${CSS.escape(wrongOption.optionId)}"]`)
@@ -3183,7 +3248,7 @@
             practiceTokenFingerprintsDistinct,
             practiceTokenObligationsExact,
             practiceTokenFixtureError,
-            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, Help, and real incorrect-feedback states, and the separate first-use guide renders all five mappings without answer controls, at desktop, tablet portrait, and both automated iPad-landscape viewports.",
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps the separate first-use guide free of answer controls at desktop, tablet portrait, and both automated iPad-landscape viewports.",
           },
         );
         tests["VIS-MOBILE-LAYOUT"] = result(
@@ -3208,7 +3273,7 @@
             practiceTokenFingerprintsDistinct,
             practiceTokenObligationsExact,
             practiceTokenFixtureError,
-            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, Help, and real incorrect-feedback states, and the separate first-use guide renders all five mappings without answer controls, at 390x844.",
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps the separate first-use guide free of answer controls at 390x844.",
           },
         );
         approvedChecksComplete = true;
@@ -3247,5 +3312,6 @@
     semanticVisualObligationKey,
     practiceTokenVisualObligations,
     practiceTokenVisualOracle: PRACTICE_TOKEN_VISUAL_ORACLE,
+    practiceTokenStateTokenContract,
   });
 })();
