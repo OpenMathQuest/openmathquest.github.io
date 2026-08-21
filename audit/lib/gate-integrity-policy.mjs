@@ -26,6 +26,17 @@ const canonical = (values, key) => [...values].sort((left, right) => key(left).l
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 const schemaIssue = (error) => `${error.instancePath || "/"} ${error.message || "is invalid"}`;
 
+export function releaseCertificationRunEligible(run, jobs, releaseCommit) {
+  return run?.event === "workflow_dispatch"
+    && run?.status === "completed"
+    && run?.conclusion === "success"
+    && run?.head_sha === releaseCommit
+    && Array.isArray(jobs)
+    && jobs.filter((job) => job?.name === "full-audit"
+      && job?.status === "completed"
+      && job?.conclusion === "success").length === 1;
+}
+
 export function evaluateGithubEnforcementSnapshot(snapshot, policy) {
   const requiredContexts = Array.isArray(snapshot?.requiredPullRequestChecks)
     ? snapshot.requiredPullRequestChecks

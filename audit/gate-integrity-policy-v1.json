@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -305,7 +305,7 @@
       "independenceBoundary": "DOES_NOT_PREVENT_A_SEPARATE_GITHUB_RELEASE_FROM_BEING_CREATED_OUTSIDE_THE_DEPLOYMENT_WORKFLOW",
       "nonRunPolicy": "FAIL",
       "negativeControl": { "id": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit" },
-      "implementationPaths": [".github/workflows/pages.yml"],
+      "implementationPaths": [".github/workflows/pages.yml", "audit/lib/gate-integrity-policy.mjs"],
       "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
     },
     {

@@ -32,6 +32,7 @@ import {
   waitForAuditPageCompletion,
 } from "../lib/browser-smoke.mjs";
 import { loadShippedEngine } from "../lib/engine-loader.mjs";
+import { releaseCertificationRunEligible } from "../lib/gate-integrity-policy.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const execFile = promisify(execFileCallback);
@@ -2103,6 +2104,13 @@ test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a 
     path.join(root, ".github", "workflows", "pages.yml"),
     "utf8",
   );
+  const releaseCommit = "a".repeat(40);
+  const successfulDispatch = { event: "workflow_dispatch", status: "completed", conclusion: "success", head_sha: releaseCommit };
+  assert.equal(releaseCertificationRunEligible(successfulDispatch, [{ name: "full-audit", status: "completed", conclusion: "success" }], releaseCommit), true);
+  assert.equal(releaseCertificationRunEligible(successfulDispatch, [{ name: "audit-execution-qualification", status: "completed", conclusion: "success" }], releaseCommit), false);
+  assert.equal(releaseCertificationRunEligible({ ...successfulDispatch, head_sha: "b".repeat(40) }, [{ name: "full-audit", status: "completed", conclusion: "success" }], releaseCommit), false);
+  assert.match(pagesWorkflow, /actions\/runs\/\$\{run_id\}\/jobs\?filter=all/iu);
+  assert.match(pagesWorkflow, /\.name == "full-audit" and \.status == "completed" and \.conclusion == "success"/u);
   const scriptMatch = pagesWorkflow.match(
     /node --input-type=module <<'NODE'\r?\n([\s\S]*?)\r?\n {10}NODE/u,
   );

@@ -11,6 +11,7 @@ import {
   compareAuditExecutionReports,
   createAuditLaneEnvelope,
   interpretJsonChildCompletion,
+  processTreeCleanupVerified,
   runBoundedAuditLanes,
   runTreeSupervisedProcess,
 } from "../lib/bounded-audit-lanes.mjs";
@@ -133,6 +134,11 @@ test("serial and parallel timing-free evidence is byte-for-byte identical and se
       requests: [{ method: "GET", pathname: "/engine.js", host: "127.0.0.1:51321" }],
       process: { debugPort: 51320, stdout: "one", stderr: "" },
     },
+    playwright: {
+      status: "PASS",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      results: [{ key: "edge-desktop:fixture", status: "passed", durationMs: 49 }],
+    },
   };
   const parallel = structuredClone(baseline);
   parallel.generatedAt = "second";
@@ -144,6 +150,8 @@ test("serial and parallel timing-free evidence is byte-for-byte identical and se
   parallel.browser.requests[0].host = "127.0.0.1:61119";
   parallel.browser.process.debugPort = 61118;
   parallel.browser.process.stdout = "two";
+  parallel.playwright.generatedAt = "2026-01-01T00:00:03.000Z";
+  parallel.playwright.results[0].durationMs = 5;
   assert.deepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
   parallel.coverage.status = "FAIL";
   assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
@@ -162,7 +170,7 @@ test("JSON child failures cannot become passes from diagnostic PASS output", () 
   assert.deepEqual(interpretJsonChildCompletion({ stdout, exitCode: 0 }), { status: "PASS" });
 });
 
-test("Windows lane timeout terminates the full descendant process tree", { skip: process.platform !== "win32" }, async () => {
+test("Windows lane timeout terminates the full descendant tree or reports cleanup unverified", { skip: process.platform !== "win32" }, async () => {
   const source = [
     "const {spawn}=require('node:child_process');",
     "const child=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{windowsHide:true});",
@@ -176,12 +184,32 @@ test("Windows lane timeout terminates the full descendant process tree", { skip:
     timeoutMs: 500,
   });
   assert.equal(result.timedOut, true);
-  assert.equal(result.cleanupVerified, true);
   const descendantPid = Number(result.stdout.trim().split(/\s+/u)[0]);
   assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);
   let descendantAlive = true;
   try { process.kill(descendantPid, 0); } catch { descendantAlive = false; }
-  assert.equal(descendantAlive, false);
+  if (result.cleanupVerified) {
+    assert.equal(descendantAlive, false);
+  } else {
+    assert.match(result.cleanupDetail, /taskkill status=(?!0)/u);
+    if (descendantAlive) {
+      try { process.kill(descendantPid, "SIGKILL"); } catch {}
+    }
+  }
+});
+
+test("descendant cleanup is never inferred from parent exit when tree termination failed", async () => {
+  assert.equal(processTreeCleanupVerified({ treeTerminationSucceeded: false, parentAlive: false }), false);
+  assert.equal(processTreeCleanupVerified({ treeTerminationSucceeded: true, parentAlive: true }), false);
+  assert.equal(processTreeCleanupVerified({ treeTerminationSucceeded: true, parentAlive: false }), true);
+  const abnormal = await runTreeSupervisedProcess({
+    command: process.execPath,
+    args: ["-e", "process.exit(7)"],
+    cwd: process.cwd(),
+    timeoutMs: 2_000,
+  });
+  assert.equal(abnormal.exitCode, 7);
+  assert.equal(abnormal.cleanupVerified, false);
 });
 
 test("adoption requires exact evidence equivalence and at least twenty percent measured reduction", () => {

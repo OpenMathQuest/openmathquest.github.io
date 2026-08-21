@@ -152,7 +152,9 @@ test("deployment requires exact-commit certification and does not repeat the gau
   assert.match(pages, /^\s{6}actions:\s*read\s*$/mu);
   assert.match(pages, /Require successful certification of the exact frozen commit/u);
   assert.match(pages, /actions\/workflows\/audit\.yml\/runs\?head_sha=\$\{RELEASE_COMMIT\}&event=workflow_dispatch/iu);
-  assert.match(pages, /\.head_sha == \$sha and \.conclusion == "success"/u);
+  assert.match(pages, /select\(\.head_sha == \$sha and \.event == "workflow_dispatch" and \.status == "completed" and \.conclusion == "success"\)/u);
+  assert.match(pages, /actions\/runs\/\$\{run_id\}\/jobs\?filter=all/iu);
+  assert.match(pages, /select\(\.name == "full-audit" and \.status == "completed" and \.conclusion == "success"\)/u);
   assert.doesNotMatch(pages, /node audit\/run-coverage\.mjs|node audit\/mutation-runner\.mjs|node audit\/exhaustive-generator-audit\.mjs|node --test audit\/tests\/node-engine\.test\.mjs/u);
   assert.ok(
     pages.indexOf("Require successful certification of the exact frozen commit")

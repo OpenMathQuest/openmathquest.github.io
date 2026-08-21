@@ -128,11 +128,16 @@ function processExists(pid) {
   }
 }
 
-async function terminateProcessTree(child, closePromise, graceMs = 10_000) {
+export function processTreeCleanupVerified({ treeTerminationSucceeded, parentAlive } = {}) {
+  return treeTerminationSucceeded === true && parentAlive === false;
+}
+
+async function terminateProcessTree(child, closePromise, graceMs = 2_000) {
   if (!Number.isInteger(child.pid) || child.pid <= 0) {
     return { attempted: false, cleanupVerified: true, detail: "process did not start" };
   }
   let detail;
+  let treeTerminationSucceeded = false;
   if (process.platform === "win32") {
     const systemRoot = process.env.SystemRoot || "C:\\Windows";
     const killed = spawnSync(path.join(systemRoot, "System32", "taskkill.exe"), ["/PID", String(child.pid), "/T", "/F"], {
@@ -140,22 +145,30 @@ async function terminateProcessTree(child, closePromise, graceMs = 10_000) {
       encoding: "utf8",
       timeout: 5_000,
     });
+    treeTerminationSucceeded = killed.status === 0 && !killed.signal && !killed.error;
     detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}`;
   } else {
     try {
       process.kill(-child.pid, "SIGKILL");
+      treeTerminationSucceeded = true;
       detail = "SIGKILL sent to process group";
     } catch {
       try { child.kill("SIGKILL"); } catch {}
       detail = "SIGKILL sent to direct process";
     }
   }
-  await Promise.race([closePromise, wait(graceMs)]);
+  if (processExists(child.pid)) await Promise.race([closePromise, wait(graceMs)]);
   if (processExists(child.pid)) {
     try { child.kill("SIGKILL"); } catch {}
     await Promise.race([closePromise, wait(1_000)]);
   }
-  return { attempted: true, cleanupVerified: !processExists(child.pid), detail };
+  const parentAlive = processExists(child.pid);
+  return {
+    attempted: true,
+    cleanupVerified: processTreeCleanupVerified({ treeTerminationSucceeded, parentAlive }),
+    detail,
+    treeTerminationSucceeded,
+  };
 }
 
 export async function runTreeSupervisedProcess({
@@ -209,6 +222,8 @@ export async function runTreeSupervisedProcess({
   if (first.kind !== "CLOSED") {
     cleanup = await terminateProcessTree(child, closePromise);
     closed ??= await Promise.race([closePromise, wait(100).then(() => ({ exitCode: null, signal: null }))]);
+  } else if (spawnError || first.closed.exitCode !== 0 || first.closed.signal) {
+    cleanup = await terminateProcessTree(child, closePromise);
   }
   return {
     stdout,
@@ -269,9 +284,9 @@ async function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs,
     return fail("TIMEOUT", `lane exceeded ${timeoutMs} ms; ${cleanup}`);
   }
   if (processResult.outputOverflow) return fail("ERROR", `lane output exceeded 32 MiB; cleanup verified=${String(processResult.cleanupVerified)}`);
-  if (processResult.spawnError) return fail("ERROR", processResult.spawnError);
+  if (processResult.spawnError) return fail("ERROR", `${processResult.spawnError}; descendant cleanup verified=${String(processResult.cleanupVerified)}`);
   if (processResult.exitCode !== 0 || processResult.signal) {
-    return fail("ERROR", `lane process ended with code ${processResult.exitCode ?? "null"} and signal ${processResult.signal ?? "null"}: ${processResult.stderr.slice(-4_000)}`);
+    return fail("ERROR", `lane process ended with code ${processResult.exitCode ?? "null"} and signal ${processResult.signal ?? "null"}; descendant cleanup verified=${String(processResult.cleanupVerified)}: ${processResult.stderr.slice(-4_000)}`);
   }
   try {
     return JSON.parse(processResult.stdout);
@@ -427,6 +442,8 @@ function timingFreeProjection(report) {
   removeKeys(projected.browser, ["dumpTail"]);
   removeKeys(projected.browser?.process, ["browserPath", "debugPort", "durationMs", "stderr", "stdout"]);
   removeKeys(projected.playwright?.process, ["durationMs", "stderr", "stdout"]);
+  removeKeys(projected.playwright, ["generatedAt"]);
+  for (const result of projected.playwright?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const key of ["requests", "unexpectedRequests"]) {
     if (Array.isArray(projected.browser?.[key])) {
       projected.browser[key] = projected.browser[key].map((request) => ({
