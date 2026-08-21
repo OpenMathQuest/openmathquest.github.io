@@ -27,6 +27,7 @@ audit/agent-collaboration-policy-v1.json
 audit/approved-visual-regression.js
 audit/browser-runner-evidence-v1.json
 audit/certification-cadence-v1.json
+audit/compare-audit-execution-modes.mjs
 audit/exhaustive-generator-audit.mjs
 audit/extract-child-strings.mjs
 audit/finished-work-policy-v1.json
@@ -36,6 +37,7 @@ audit/fixtures/mq-coverage-calibration-full.js
 audit/fixtures/mq-coverage-calibration-partial.js
 audit/gate-integrity-policy-v1.json
 audit/install-reviewed-ci-dependencies.ps1
+audit/lib/bounded-audit-lanes.mjs
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
 audit/lib/child-strings.mjs
@@ -67,6 +69,7 @@ audit/playwright/fixtures.mjs
 audit/public-candidate-guard.mjs
 audit/release-evidence-bundle-v1.json
 audit/repository-code-map-v1.json
+audit/run-audit-lane.mjs
 audit/run-audit.mjs
 audit/run-audit.ps1
 audit/run-browser-smoke.mjs
@@ -84,6 +87,7 @@ audit/schemas/tutorial-manifest-v1.schema.json
 audit/test-launcher-identity.ps1
 audit/tests/adapter-syntax.test.mjs
 audit/tests/agent-collaboration-policy.test.mjs
+audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs
 audit/tests/certification-cadence.test.mjs

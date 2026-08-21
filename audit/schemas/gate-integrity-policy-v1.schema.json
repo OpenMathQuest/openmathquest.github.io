@@ -4,7 +4,7 @@
   "title": "Math Quest gate-integrity policy v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["policyId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "orderingContract", "statusSemantics", "rules", "metricFloors", "enforcement", "retryPolicy", "outcomeReporting", "gateFamilies", "acceptanceCriteria"],
+  "required": ["policyId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "orderingContract", "statusSemantics", "rules", "metricFloors", "enforcement", "retryPolicy", "executionPolicy", "outcomeReporting", "gateFamilies", "acceptanceCriteria"],
   "properties": {
     "policyId": { "const": "math-quest-gate-integrity" },
     "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
@@ -48,6 +48,7 @@
     "metricFloors": { "$ref": "#/$defs/metricFloors" },
     "enforcement": { "$ref": "#/$defs/enforcement" },
     "retryPolicy": { "$ref": "#/$defs/retryPolicy" },
+    "executionPolicy": { "$ref": "#/$defs/executionPolicy" },
     "outcomeReporting": { "$ref": "#/$defs/outcomeReporting" },
     "gateFamilies": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gateFamily" } },
     "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/acceptance" } }
@@ -115,6 +116,33 @@
         "diagnosticRerun": { "const": "ALLOWED_WITH_FIRST_RESULT_RETAINED" },
         "postCorrectionRerun": { "const": "REQUIRED_AND_LINKED_TO_CORRECTION" },
         "unchangedRerunForGreen": { "const": "PROHIBITED" }
+      }
+    },
+    "executionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "laneOrder", "local", "githubHosted", "laneTimeoutMs", "nestedConcurrency", "automaticRetries", "resultOrdering", "reportWriter", "identityBinding", "equivalenceProjection", "minimumMeasuredWallTimeReductionPercent"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "laneOrder": { "const": ["coverage", "browser", "playwright", "mutation", "generator"] },
+        "local": {
+          "const": { "mode": "SERIAL_REFERENCE", "maximumConcurrentLanes": 1 }
+        },
+        "githubHosted": {
+          "const": { "mode": "BOUNDED_PARALLEL", "maximumConcurrentLanes": 2 }
+        },
+        "laneTimeoutMs": {
+          "const": { "browser": 2400000, "coverage": 240000, "generator": 360000, "mutation": 180000, "playwright": 240000 }
+        },
+        "nestedConcurrency": {
+          "const": { "browserShardMaximum": 2, "playwrightWorkers": 1 }
+        },
+        "automaticRetries": { "const": 0 },
+        "resultOrdering": { "const": "DECLARED_LANE_ORDER" },
+        "reportWriter": { "const": "PARENT_ONLY" },
+        "identityBinding": { "const": "RUN_ID_REVISION_PUBLIC_CANDIDATE_AND_CROSS_LANE_ENGINE_SHA256" },
+        "equivalenceProjection": { "const": "TIMING_FREE_CANONICAL_GATE_EVIDENCE" },
+        "minimumMeasuredWallTimeReductionPercent": { "const": 20 }
       }
     },
     "outcomeReporting": {

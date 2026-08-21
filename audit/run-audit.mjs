@@ -5,11 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { EXPECTED_BROWSER_RESULT_IDS, runBrowserSmoke } from "./lib/browser-smoke.mjs";
-import {
-  PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS,
-  playwrightFocusedReportFindings,
-} from "./lib/playwright-focused-contract.mjs";
+import { EXPECTED_BROWSER_RESULT_IDS } from "./lib/browser-smoke.mjs";
+import { PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS } from "./lib/playwright-focused-contract.mjs";
 import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   parseReviewedBrowserRunnerEvidence,
@@ -35,8 +32,12 @@ import {
   REPRESENTATIVE_MUTATION_FAMILY_COUNT,
   summarizeGateOutcomes,
 } from "./lib/gate-integrity-policy.mjs";
-import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT, runCoverage } from "./run-coverage.mjs";
-import { runMutations } from "./mutation-runner.mjs";
+import {
+  AUDIT_LANE_IDS,
+  failedAuditLaneResult,
+  runBoundedAuditLanes,
+} from "./lib/bounded-audit-lanes.mjs";
+import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT } from "./run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED_SEMANTIC = Object.freeze({ assertions: 130, skills: 126, taskTypes: 166, questions: 6_048 });
@@ -90,6 +91,16 @@ async function deliveredFiles() {
   const files = stdout.toString("utf8").split("\0").filter(Boolean).map((file) => file.replaceAll("\\", "/"));
   if (!files.length) throw new Error("The exact staged public candidate could not be enumerated.");
   return [...new Set(files)].sort();
+}
+
+async function repositoryRevision() {
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
+    const revision = String(stdout || "").trim();
+    return /^[a-f0-9]{40}$/u.test(revision) ? revision : "UNAVAILABLE";
+  } catch {
+    return "UNAVAILABLE";
+  }
 }
 
 async function runPublicCandidateGuard() {
@@ -305,57 +316,6 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
   }
 }
 
-async function runGeneratorAudit() {
-  try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [path.join(root, "audit", "exhaustive-generator-audit.mjs")], {
-      cwd: root, encoding: "utf8", timeout: 300_000, windowsHide: true, maxBuffer: 4 * 1024 * 1024,
-    });
-    const result = JSON.parse(stdout);
-    return { ...result, processStatus: 0, stderr: String(stderr || "").slice(-4_000) };
-  } catch (error) {
-    let parsed = null;
-    try { parsed = JSON.parse(String(error.stdout || "")); } catch {}
-    return { ...(parsed || {}), status: "FAIL", processStatus: error.code ?? null, error: String(error), stderr: String(error.stderr || "").slice(-4_000) };
-  }
-}
-
-async function runPlaywrightFocusedAudit() {
-  const reportPath = path.join(root, "audit", ".tmp-playwright-focused-report.json");
-  let processFailure = null;
-  let stdout = "";
-  let stderr = "";
-  try {
-    const result = await execFileAsync(process.execPath, [path.join(root, "audit", "run-playwright-focused.mjs")], {
-      cwd: root, encoding: "utf8", timeout: 180_000, windowsHide: true, maxBuffer: 4 * 1024 * 1024,
-    });
-    stdout = String(result.stdout || "");
-    stderr = String(result.stderr || "");
-  } catch (error) {
-    processFailure = String(error.stack || error);
-    stdout = String(error.stdout || "");
-    stderr = String(error.stderr || "");
-  }
-  try {
-    const report = JSON.parse(await readFile(reportPath, "utf8"));
-    const findings = playwrightFocusedReportFindings(report);
-    if (processFailure) findings.unshift(processFailure);
-    return {
-      ...report,
-      status: findings.length ? "FAIL" : "PASS",
-      findings: [...new Set(findings)],
-      process: { status: processFailure ? "FAIL" : "PASS", stdout: stdout.slice(-8_000), stderr: stderr.slice(-8_000) },
-    };
-  } catch (error) {
-    return {
-      status: "FAIL",
-      findings: [processFailure, String(error.stack || error)].filter(Boolean),
-      summary: { expected: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, actual: 0, passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 },
-      results: [],
-      process: { status: "FAIL", stdout: stdout.slice(-8_000), stderr: stderr.slice(-8_000) },
-    };
-  }
-}
-
 function markdown(report, { final = false } = {}) {
   const engineResults = report.engine.results;
   const semanticResults = report.semantic.assertions;
@@ -372,6 +332,7 @@ function markdown(report, { final = false } = {}) {
     ...(report.coverage.status === "PASS" ? [] : [`Coverage: ${report.coverage.calibration.reasons.join("; ") || report.coverage.aggregationError || `engine branch result ${report.coverage.branchPct ?? "unavailable"}`}`]),
     ...(report.browser.status === "PASS" ? [] : [`Browser smoke process: ${report.browser.reason || report.browser.process?.error || report.browser.process?.stderr || "did not complete"}`]),
     ...(report.playwright.status === "PASS" ? [] : report.playwright.findings.map((item) => `Playwright Test: ${item}`)),
+    ...(report.auditOrchestration.status === "PASS" ? [] : report.auditOrchestration.issues.map((item) => `Audit orchestration: ${item}`)),
     ...(report.curriculumManifest.status === "PASS" ? [] : [`Curriculum manifest: ${report.curriculumManifest.issues.join("; ") || "validation failed"}`]),
     ...(report.countsMatch ? [] : ["Predicted and actual audit counts do not match."]),
   ];
@@ -398,6 +359,7 @@ function markdown(report, { final = false } = {}) {
     `- **Generated:** ${tick(report.generatedAt)}`,
     `- **Overall:** ${tick(report.status)}`,
     `- **Technical game gates:** ${tick(report.technicalShippable ? "PASS" : "FAIL")}`,
+    `- **Audit orchestration:** ${tick(`${report.auditOrchestration.status}; ${report.auditOrchestration.executionMode}; ${report.auditOrchestration.maximumObservedConcurrency}/${report.auditOrchestration.maximumConcurrentLanes} top-level lanes`)}`,
     `- **Public publication clearance:** ${tick(report.publication.status)}`,
     `- **External release evidence:** ${tick(`${report.externalReleaseEvidence.status} (${report.externalReleaseEvidence.passCount}/${report.externalReleaseEvidence.requiredCount} mandatory; ${report.externalReleaseEvidence.deferredCount ?? 0} prerelease deferred; ${report.externalReleaseEvidence.optionalCompletedCount}/${report.externalReleaseEvidence.optionalCount} optional completed)`)}`,
     `- **External evidence expiry:** ${tick(report.externalReleaseEvidence.expiresAt || "PENDING")}`,
@@ -460,6 +422,7 @@ function markdown(report, { final = false } = {}) {
     `| Eleven-family mutation sanity | ${report.mutation.status} | ${report.mutation.families.filter((x) => x.status === "PASS").length}/11 families; ${mutationCases.filter((x) => x.status === "PASS").length}/${mutationCases.length} effect-sensitive cases killed |`,
     `| Browser smoke | ${report.browser.status} | ${report.browser.results.filter((x) => x.status === "PASS").length} pass, ${report.browser.results.filter((x) => x.status === "FAIL").length} fail, ${report.browser.results.filter((x) => x.status === "SKIP").length} skip |`,
     `| Direct Playwright journeys | ${report.playwright.status} | ${report.playwright.summary.passed}/${report.playwright.summary.expected} pass; ${report.playwright.summary.failed} fail; ${report.playwright.summary.skipped} skip; zero retries required |`,
+    `| Bounded audit orchestration | ${report.auditOrchestration.status} | ${report.auditOrchestration.executionMode}; ${report.auditOrchestration.wallDurationMs} ms wall; ${report.auditOrchestration.serialEquivalentDurationMs} ms summed lane time; ${report.auditOrchestration.observedOverlapReductionPercent}% observed overlap reduction; ${report.auditOrchestration.maximumObservedConcurrency}/${report.auditOrchestration.maximumConcurrentLanes} top-level lanes; zero retries |`,
     `| Browser executable identity | ${report.browser.evidence?.browserIdentityValid ? "PASS" : "FAIL"} | ${esc(report.browser.evidence?.browserProductName || "unavailable")} ${esc(report.browser.evidence?.browserFullVersion || "unavailable")}; sha256:${esc(report.browser.evidence?.browserExecutableSha256 || "unavailable")} |`,
     `| GitHub-hosted runner image identity | ${report.browser.evidence?.validForPublication ? "PASS" : "NOT_HOSTED"} | ImageOS ${esc(report.browser.evidence?.runnerImageOS || "unavailable")}; ImageVersion ${esc(report.browser.evidence?.runnerImageVersion || "unavailable")}; requested label ${esc(report.browser.evidence?.requestedRunnerLabel || "unavailable")} |`,
     `| Reviewed qualification browser/runner tuple | ${report.publication.browserEvidenceReady ? "PASS" : "PENDING"} | ${browserEvidenceDetail} |`,
@@ -490,31 +453,50 @@ export async function runAudit({ browserPath = null } = {}) {
     metadata(),
     curriculumManifestStatus(),
   ]);
-  let coverage; let mutation; let browser; let generator; let playwright;
-  const coverageTask = async () => {
-    try { return await runCoverage({ nodePath: process.execPath, indexPath }); }
-    catch (error) { return { status: "FAIL", calibrated: false, calibration: { reasons: [String(error)], fullBranchPct: null, partialBranchPct: null, aggregateBranchPct: null }, exactBytes: false, branchPct: null, engineSha256: null, structuredAuditValid: false, structuredAudit: null }; }
-  };
-  const mutationTask = async () => {
-    try { return await runMutations({ indexPath }); }
-    catch (error) { return { status: "FAIL", families: [], error: String(error) }; }
-  };
-  const browserTask = async () => {
-    try { return await runBrowserSmoke({ root, browserPath }); }
-    catch (error) { return { status: "FAIL", results: [], reason: String(error) }; }
-  };
-  if (process.env.GITHUB_ACTIONS === "true") {
-    coverage = await coverageTask();
-    browser = await browserTask();
-    playwright = await runPlaywrightFocusedAudit();
-    [mutation, generator] = await Promise.all([mutationTask(), runGeneratorAudit()]);
-  } else {
-    coverage = await coverageTask();
-    mutation = await mutationTask();
-    generator = await runGeneratorAudit();
-    browser = await browserTask();
-    playwright = await runPlaywrightFocusedAudit();
+  const candidateId = `${await repositoryRevision()}:${publicCandidateBefore.payloadSha256 || "UNAVAILABLE"}`;
+  const runId = process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_RUN_ID}:${process.env.GITHUB_RUN_ATTEMPT || "1"}`
+    : `LOCAL:${process.pid}:${auditTime.toISOString()}`;
+  let laneExecution;
+  try {
+    laneExecution = await runBoundedAuditLanes({
+      browserPath,
+      candidateId,
+      indexPath,
+      policy: gateIntegrityPolicy.executionPolicy,
+      root,
+      runId,
+    });
+  } catch (error) {
+    const message = String(error?.stack || error);
+    laneExecution = {
+      report: {
+        schemaVersion: 1,
+        resultType: "MATH_QUEST_AUDIT_ORCHESTRATION",
+        status: "FAIL",
+        runId,
+        candidateId,
+        executionMode: "FAILED_BEFORE_AGGREGATION",
+        maximumConcurrentLanes: 0,
+        maximumObservedConcurrency: 0,
+        laneOrder: [...AUDIT_LANE_IDS],
+        wallDurationMs: 0,
+        serialEquivalentDurationMs: 0,
+        observedOverlapReductionPercent: 0,
+        minimumAdoptionReductionPercent: gateIntegrityPolicy.executionPolicy.minimumMeasuredWallTimeReductionPercent,
+        automaticRetries: 0,
+        laneExecutions: AUDIT_LANE_IDS.map((laneId) => ({ laneId, executionStatus: "ERROR", durationMs: 0, resultStatus: "FAIL", error: message })),
+        issues: [message],
+      },
+      results: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, failedAuditLaneResult(laneId, message, "ERROR")])),
+    };
   }
+  const auditOrchestration = laneExecution.report;
+  const coverage = laneExecution.results.coverage;
+  const browser = laneExecution.results.browser;
+  const playwright = laneExecution.results.playwright;
+  const mutation = laneExecution.results.mutation;
+  const generator = laneExecution.results.generator;
   const structured = coverage.structuredAuditValid ? coverage.structuredAudit : null;
   const engine = structured
     ? { summary: structured.engine.summary, results: structured.engine.results, effectMap: structured.engine.effectMap }
@@ -626,7 +608,7 @@ export async function runAudit({ browserPath = null } = {}) {
       unverifiedClaims.push(`${gateResult.id} [${gateResult.classification}]: ${gateResult.title} is not verified (${gateResult.details}).`);
     }
   }
-  const gatesPass = engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && playwright.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
+  const gatesPass = auditOrchestration.status === "PASS" && engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && playwright.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
   const technicalShippable = gatesPass && parentStrings.status === "APPROVED";
   if (!["APPROVED", "EMERGENCY_APPROVED"].includes(publication.status)) residualRisks.push(publication.reason);
   const shippable = computeReleaseDecision({
@@ -638,7 +620,7 @@ export async function runAudit({ browserPath = null } = {}) {
     schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF,
     gateIntegrityPolicy: { policyId: gateIntegrityPolicy.policyId, version: gateIntegrityPolicy.version, authority: GATE_INTEGRITY_POLICY.authority },
     generatedAt: auditTime.toISOString(), status: gatesPass ? (parentStrings.status === "APPROVED" ? (shippable ? "PASS" : "PUBLICATION_BLOCKED") : "PENDING_PARENT_APPROVAL") : "FAIL",
-    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, outcomeSummary, engine, semantic, coverage, mutation, generator, browser, playwright,
+    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, outcomeSummary, auditOrchestration, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,
   };
   const publicReport = sanitizeHostDetails(report);

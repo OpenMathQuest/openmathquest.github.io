@@ -137,13 +137,14 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
     }
   }
   const requiredFamilyIds = [
-    "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
+    "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
     "gate.github-pr", "gate.launcher", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
     "gate.publication-evidence", "gate.semantic",
   ];
   if (!same(familyIds, requiredFamilyIds)) issues.push("gateFamilies do not equal the closed required family set");
   if (policy.metricFloors.engineBranchCoverage.minimumPercent !== 88) issues.push("engine branch coverage floor drifted from 88 percent");
   if (policy.metricFloors.representativeMutationFamilies.minimumKilled !== 11) issues.push("representative mutation floor drifted from eleven families");
+  if (policy.executionPolicy.automaticRetries !== 0) issues.push("audit lane retries drifted from zero");
   return Object.freeze(issues);
 }
 
