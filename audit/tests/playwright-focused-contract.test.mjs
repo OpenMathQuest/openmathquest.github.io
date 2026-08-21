@@ -54,7 +54,7 @@ const validReport = () => ({
   }),
 });
 
-test("focused Playwright report accepts only the exact clean project/case matrix", () => {
+test("[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report accepts only the exact clean project/case matrix", () => {
   const expected = { expectedExecutableSha256: digest, expectedRootId: digest, expectedServedPayloadSha256: digest };
   assert.deepEqual(playwrightFocusedReportFindings(validReport(), expected), []);
   for (const mutate of [

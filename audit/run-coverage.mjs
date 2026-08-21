@@ -4,10 +4,11 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractEngine } from "./lib/engine-loader.mjs";
+import { ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT } from "./lib/gate-integrity-policy.mjs";
 import { calibrateNativeCoverage, findCoverageRow, runNativeCoverage } from "./lib/native-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const MINIMUM_ENGINE_BRANCH_COVERAGE_PCT = 88;
+export const MINIMUM_ENGINE_BRANCH_COVERAGE_PCT = ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT;
 
 function probeNode24(nodePath) {
   const probe = spawnSync(nodePath, ["--version"], { encoding: "utf8", windowsHide: true, timeout: 10_000 });

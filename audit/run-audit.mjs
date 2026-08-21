@@ -29,13 +29,18 @@ import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidenc
 import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
 import { AI_READER_CONTRACT_REF } from "./lib/repository-code-map.mjs";
-import { summarizeGateOutcomes } from "./lib/gate-integrity-policy.mjs";
+import {
+  GATE_INTEGRITY_POLICY,
+  loadGateIntegrityPolicy,
+  REPRESENTATIVE_MUTATION_FAMILY_COUNT,
+  summarizeGateOutcomes,
+} from "./lib/gate-integrity-policy.mjs";
 import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT, runCoverage } from "./run-coverage.mjs";
 import { runMutations } from "./mutation-runner.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED_SEMANTIC = Object.freeze({ assertions: 130, skills: 126, taskTypes: 166, questions: 6_048 });
-const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, mutationFamilies: 11, coverageGates: 1, generatorGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
+const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, mutationFamilies: REPRESENTATIVE_MUTATION_FAMILY_COUNT, coverageGates: 1, generatorGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
 const EXPECTED = Object.freeze({ ...EXPECTED_COMPONENTS, total: Object.values(EXPECTED_COMPONENTS).reduce((sum, value) => sum + value, 0) });
 const execFileAsync = promisify(execFile);
 
@@ -478,6 +483,7 @@ function markdown(report, { final = false } = {}) {
 
 export async function runAudit({ browserPath = null } = {}) {
   const auditTime = new Date();
+  const gateIntegrityPolicy = await loadGateIntegrityPolicy();
   const indexPath = path.join(root, "index.html");
   const publicCandidateBefore = await runPublicCandidateGuard();
   const [meta, curriculumManifest] = await Promise.all([
@@ -575,6 +581,7 @@ export async function runAudit({ browserPath = null } = {}) {
     interrupted: "CANCELLED",
     passed: "PASS",
     skipped: "SKIPPED",
+    SKIP: "SKIPPED",
     timedOut: "TIMEOUT",
     OPTIONAL: "OPTIONAL_NOT_RUN",
   }[status] || status);
@@ -629,6 +636,7 @@ export async function runAudit({ browserPath = null } = {}) {
   });
   const report = {
     schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF,
+    gateIntegrityPolicy: { policyId: gateIntegrityPolicy.policyId, version: gateIntegrityPolicy.version, authority: GATE_INTEGRITY_POLICY.authority },
     generatedAt: auditTime.toISOString(), status: gatesPass ? (parentStrings.status === "APPROVED" ? (shippable ? "PASS" : "PUBLICATION_BLOCKED") : "PENDING_PARENT_APPROVAL") : "FAIL",
     technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, outcomeSummary, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,

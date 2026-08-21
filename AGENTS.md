@@ -105,7 +105,9 @@ on pull requests. It must not require the dispatch-only `full-audit` job.
 Every semantic-version tag matching `refs/tags/v*` must be protected against
 update and deletion with no bypass actors. Repository tests verify the local
 workflow contract and a read-only GitHub preflight verifies the remote
-configuration.
+configuration. Run `node audit/verify-github-gate-enforcement.mjs` before a
+release mutation; an unreadable setting, missing credential, missing required
+check, prohibited required check, absent tag rule, or bypass actor fails closed.
 
 ## Owner interaction and identity-placeholder policy
 

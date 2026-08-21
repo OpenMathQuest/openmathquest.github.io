@@ -3096,7 +3096,7 @@ test("every declared skill preserves its mathematical task across CPA representa
   assert.equal(generated > engine.SKILLS.length * 3 * 2, true);
 });
 
-test("question generation and contract APIs fail closed with effect-specific reasons", async (t) => {
+test("[NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS] question generation and contract APIs fail closed with effect-specific reasons", async (t) => {
   const { engine } = await sharedEngineSuite();
 
   await t.test("GEN-API rejects invalid public generation domains", () => {

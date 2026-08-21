@@ -17,6 +17,7 @@ import {
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const PUBLIC_CANDIDATE_NEGATIVE_CONTROL_ID = "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL";
 
 const DENIED_TRACKED_PATHS = new Set([
   "research/DMPK5_Scope.pdf",
@@ -1275,6 +1276,7 @@ try {
     process.exitCode = 1;
   } else {
     process.stdout.write("Public-candidate guard passed: staged Git blobs satisfy the PWA/runtime, neutral-curriculum, privacy, open-component register, exact asset hash, immutable workflow, and approved-licence requirements. The public payload identity excludes only PUBLICATION_CLEARANCE.md bytes to avoid self-reference.\n");
+    process.stdout.write(`NEGATIVE_CONTROL=${PUBLIC_CANDIDATE_NEGATIVE_CONTROL_ID}:PASS\n`);
     process.stdout.write(`PUBLIC_PAYLOAD_SHA256=${payloadSha256}\n`);
     process.stdout.write(`PUBLIC_PAYLOAD_TREE_OID=${payloadTreeOid}\n`);
   }

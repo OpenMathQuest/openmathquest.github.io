@@ -2015,7 +2015,7 @@ test("install manifest preserves the Beta 1 app identity for an in-place update"
   );
 });
 
-test("Windows launcher snapshots only the reviewed runtime and rejects a foreign Host", async () => {
+test("[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed runtime and rejects a foreign Host", async () => {
   const [server, manifestText, pagesWorkflow] = await Promise.all([
     readFile(path.join(root, "Serve-MathQuest.ps1"), "utf8"),
     readFile(path.join(root, "release-shell-v1.json"), "utf8"),
@@ -2097,7 +2097,7 @@ test("Pages upload is an immutable, canonical snapshot of the verified tagged bl
   );
 });
 
-test("Pages snapshot ignores a worktree mutation after the release commit", async () => {
+test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit", async () => {
   const fixture = await mkdtemp(path.join(os.tmpdir(), "mq-pages-snapshot-"));
   const pagesWorkflow = await readFile(
     path.join(root, ".github", "workflows", "pages.yml"),

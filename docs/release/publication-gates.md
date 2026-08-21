@@ -184,6 +184,13 @@ itself is not evidence. The canary binding is the exact sanitized
 `audit/trusted-https-canary-beta7-v1.json` artifact; optional-not-run records
 remain absence records and make no pass claim.
 
+Before release mutation, run
+`node audit/verify-github-gate-enforcement.mjs`. Its live GitHub snapshot must
+show `development-checks` as the required `main` check, must not show the
+dispatch-only `full-audit` job as required, and must show an active no-bypass
+`refs/tags/v*` ruleset prohibiting update and deletion. Synthetic fixtures
+test the evaluator but never substitute for this live preflight.
+
 Before qualification and independent review, create `PUBLICATION_CLEARANCE.md` with
 `Status: PENDING`, then synchronize the public-file manifest and component
 register. The pending record makes its path part of the candidate without

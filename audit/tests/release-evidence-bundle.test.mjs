@@ -39,7 +39,7 @@ test("publication clearance digests exactly match the validated bundle bindings"
   for (const [id, digest] of pairs) assert.equal(loaded.bindings[id].digest, digest, id);
 });
 
-test("a syntactically valid arbitrary digest cannot satisfy publication evidence", async () => {
+test("[NC-PUBLICATION-ARBITRARY-HEX-DIGEST] a syntactically valid arbitrary digest cannot satisfy publication evidence", async () => {
   const [loaded, clearanceText] = await Promise.all([
     loadReleaseEvidenceBundle(),
     readFile(path.join(root, "PUBLICATION_CLEARANCE.md"), "utf8"),
@@ -93,4 +93,21 @@ test("artifact-byte drift invalidates the bundle instead of accepting its declar
   } finally {
     await rm(bundlePath, { force: true });
   }
+});
+
+test("cross-record release identity contradictions fail closed", async () => {
+  const bundlePath = path.join(root, "audit", ".tmp-release-evidence-cross-record-mutant.json");
+  const baseline = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+  for (const mutate of [
+    (bundle) => { bundle.records.ownerAuthorization.releaseTag = "v9.9.9-beta.9"; },
+    (bundle) => { bundle.records.canaryReconciliation.candidateSha = "0".repeat(40); },
+  ]) {
+    const bundle = structuredClone(baseline);
+    mutate(bundle);
+    await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+    const loaded = await loadReleaseEvidenceBundle(bundlePath);
+    assert.equal(loaded.valid, false);
+    assert.ok(loaded.issues.some((issue) => /does not match the evidence bundle/u.test(issue)), loaded.issues.join("; "));
+  }
+  await rm(bundlePath, { force: true });
 });

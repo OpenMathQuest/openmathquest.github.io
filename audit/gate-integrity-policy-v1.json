@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -13,6 +13,7 @@
   "orderingContract": [
     { "jsonPointer": "/rules", "policy": "LEXICOGRAPHIC_BY_ID" },
     { "jsonPointer": "/gateFamilies", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/gateFamilies/*/negativeControl", "policy": "CLOSED_EXECUTABLE_BINDING" },
     { "jsonPointer": "/gateFamilies/*/implementationPaths", "policy": "LEXICOGRAPHIC" },
     { "jsonPointer": "/gateFamilies/*/validatorPaths", "policy": "LEXICOGRAPHIC" },
     { "jsonPointer": "/acceptanceCriteria", "policy": "LEXICOGRAPHIC_BY_ID" }
@@ -20,6 +21,7 @@
   "statusSemantics": {
     "PASS": "RAN_COMPLETE_AND_ORACLE_ASSERTED_TRUE",
     "FAIL": "RAN_COMPLETE_AND_ORACLE_ASSERTED_FALSE",
+    "BLOCKED": "PRECONDITION_AUTHORITY_OR_REQUIRED_EVIDENCE_BLOCKED_FAIL_CLOSED",
     "ERROR": "GATE_EXECUTION_FAILED_FAIL_CLOSED",
     "TIMEOUT": "GATE_EXCEEDED_MEASURED_BOUND_FAIL_CLOSED",
     "CANCELLED": "GATE_CANCELLED_FAIL_CLOSED",
@@ -122,6 +124,8 @@
     }
   },
   "enforcement": {
+    "repository": "OpenMathQuest/openmathquest.github.io",
+    "protectedBranch": "main",
     "requiredPullRequestCheck": "development-checks",
     "prohibitedRequiredPullRequestChecks": ["full-audit"],
     "requiredTagPattern": "refs/tags/v*",
@@ -130,7 +134,8 @@
     "protectedPathWeakeningPolicy": "EXPLICIT_OWNER_APPROVAL_REQUIRED",
     "protectedPathStrengtheningPolicy": "AUTHORIZED_WITH_EXECUTED_NEGATIVE_CONTROL",
     "detectorRepairPolicy": "AUTHORIZED_AFTER_PROVEN_FALSE_POSITIVE_OR_FALSE_NEGATIVE_WITH_EQUAL_OR_STRONGER_EFFECT_PROTECTION",
-    "remoteConfigurationVerification": "READ_ONLY_GITHUB_PREFLIGHT_AND_FOCUSED_STATIC_WORKFLOW_CONTRACT"
+    "remoteConfigurationVerification": "READ_ONLY_GITHUB_PREFLIGHT_AND_FOCUSED_STATIC_WORKFLOW_CONTRACT",
+    "remotePreflightCommand": "node audit/verify-github-gate-enforcement.mjs"
   },
   "retryPolicy": {
     "automaticRetries": 0,
@@ -151,7 +156,14 @@
       "skippedCount"
     ],
     "inventoryMatchMayBeCalledPass": false,
-    "acceptedNonPassStates": ["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"]
+    "acceptedNonPassStates": ["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"],
+    "statusClasses": {
+      "passed": ["PASS"],
+      "failed": ["BLOCKED", "CANCELLED", "ERROR", "FAIL", "TIMEOUT"],
+      "missing": ["MISSING_ARTIFACT"],
+      "notRun": ["NOT_RUN"],
+      "skipped": ["SKIPPED"]
+    }
   },
   "gateFamilies": [
     {
@@ -160,7 +172,7 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "DOES_NOT_PROVE_CHILD_COMPREHENSION_OR_REAL_DEVICE_BEHAVIOR",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-BROWSER-MISSING_OR_SKIPPED_RESULT",
+      "negativeControl": { "id": "NC-BROWSER-MISSING_OR_SKIPPED_RESULT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-orchestration.test.mjs", "testName": "[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence" },
       "implementationPaths": ["audit/lib/browser-smoke.mjs", "audit/run-browser-smoke.mjs"],
       "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
     },
@@ -170,7 +182,7 @@
       "proofClass": "EFFECT_SENSITIVE_HOSTED_BROWSER",
       "independenceBoundary": "TECHNICAL_LOOPBACK_CANARY_NOT_HOST_PRIVACY_OR_RELEASE_CERTIFICATION",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN",
+      "negativeControl": { "id": "NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN", "executionMode": "NODE_TEST", "executionPath": "audit/tests/trusted-https-canary.test.mjs", "testName": "[NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN] FAILED canary evidence cannot disguise an all-green result" },
       "implementationPaths": [".github/workflows/trusted-https-canary.yml", "audit/lib/trusted-https-canary.mjs", "audit/validate-trusted-https-canary.mjs"],
       "validatorPaths": ["audit/tests/trusted-https-canary.test.mjs"]
     },
@@ -180,7 +192,7 @@
       "proofClass": "INSTRUMENTED_MEASUREMENT",
       "independenceBoundary": "COVERAGE_IS_EXECUTION_EVIDENCE_NOT_CORRECTNESS",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL",
+      "negativeControl": { "id": "NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-orchestration.test.mjs", "testName": "[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence" },
       "implementationPaths": ["audit/lib/native-coverage.mjs", "audit/run-coverage.mjs"],
       "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
     },
@@ -190,7 +202,7 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "NOT_REQUIRED_BY_CADENCE_IS_VISIBLE_AND_NOT_A_PASS",
       "nonRunPolicy": "CADENCE_ENUM",
-      "negativeControlId": "NC-DEEP-UX-MISSING-CELL-OR-RETRY",
+      "negativeControl": { "id": "NC-DEEP-UX-MISSING-CELL-OR-RETRY", "executionMode": "NODE_TEST", "executionPath": "audit/tests/playwright-deep-ux-census.test.mjs", "testName": "[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing cells, retries-by-proxy, forged identity, pass artifacts, or cadence claims" },
       "implementationPaths": ["audit/lib/playwright-deep-ux-census.mjs", "audit/run-playwright-deep-ux-census.mjs", "playwright.deep-ux.config.mjs"],
       "validatorPaths": ["audit/tests/playwright-deep-ux-census.test.mjs"]
     },
@@ -200,7 +212,7 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "SELECTED_CRITICAL_BEHAVIORS_HAVE_MUTATION_WITNESSES_NOT_EVERY_ASSERTION",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-ENGINE-REPRESENTATIVE-MUTANTS",
+      "negativeControl": { "id": "NC-ENGINE-REPRESENTATIVE-MUTANTS", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-ENGINE-REPRESENTATIVE-MUTANTS.status=PASS" },
       "implementationPaths": ["audit/tests/engine-suite.mjs", "audit/tests/node-engine.test.mjs"],
       "validatorPaths": ["audit/mutation-runner.mjs"]
     },
@@ -210,9 +222,9 @@
       "proofClass": "EXHAUSTIVE_INTERNAL_CONSISTENCY",
       "independenceBoundary": "SELF_GRADING_DOES_NOT_INDEPENDENTLY_PROVE_MATHEMATICAL_TRUTH",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS",
+      "negativeControl": { "id": "NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS", "executionMode": "NODE_TEST", "executionPath": "audit/tests/node-engine.test.mjs", "testName": "[NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS] question generation and contract APIs fail closed with effect-specific reasons" },
       "implementationPaths": ["audit/exhaustive-generator-audit.mjs"],
-      "validatorPaths": ["audit/tests/manifest-semantic-suite.mjs"]
+      "validatorPaths": ["audit/tests/manifest-semantic-suite.mjs", "audit/tests/node-engine.test.mjs"]
     },
     {
       "id": "gate.github-pr",
@@ -220,9 +232,19 @@
       "proofClass": "EXTERNAL_ENFORCEMENT",
       "independenceBoundary": "REMOTE_SETTINGS_REQUIRE_READ_ONLY_GITHUB_PREFLIGHT_BECAUSE_REPOSITORY_BYTES_CANNOT_ENFORCE_THEM",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK",
-      "implementationPaths": [".github/workflows/audit.yml", "audit/gate-integrity-policy-v1.json"],
+      "negativeControl": { "id": "NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK", "executionMode": "NODE_TEST", "executionPath": "audit/tests/gate-integrity-policy.test.mjs", "testName": "[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration" },
+      "implementationPaths": [".github/workflows/audit.yml", "audit/gate-integrity-policy-v1.json", "audit/verify-github-gate-enforcement.mjs"],
       "validatorPaths": ["audit/tests/gate-integrity-policy.test.mjs"]
+    },
+    {
+      "id": "gate.launcher",
+      "claim": "FIXED_PORT_LAUNCHER_SERVES_EXACT_REVIEWED_BYTES_AND_REJECTS_FOREIGN_HOSTS",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "LOCAL_LAUNCHER_PREFLIGHT_DOES_NOT_PROVE_HOSTED_DEPLOYMENT",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-LAUNCHER-FOREIGN-HOST", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed runtime and rejects a foreign Host" },
+      "implementationPaths": ["Serve-MathQuest.ps1", "audit/test-launcher-identity.ps1"],
+      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
     },
     {
       "id": "gate.mutation",
@@ -230,7 +252,7 @@
       "proofClass": "REPRESENTATIVE_MUTATION",
       "independenceBoundary": "NOT_A_GLOBAL_MUTATION_SCORE_AND_NOT_PROOF_FOR_BROWSER_OR_INFRASTRUCTURE_GATES",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS",
+      "negativeControl": { "id": "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS.status=PASS" },
       "implementationPaths": ["audit/mutation-runner.mjs"],
       "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
     },
@@ -240,7 +262,7 @@
       "proofClass": "EXTERNAL_ENFORCEMENT",
       "independenceBoundary": "DOES_NOT_PREVENT_A_SEPARATE_GITHUB_RELEASE_FROM_BEING_CREATED_OUTSIDE_THE_DEPLOYMENT_WORKFLOW",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION",
+      "negativeControl": { "id": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit" },
       "implementationPaths": [".github/workflows/pages.yml"],
       "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
     },
@@ -250,7 +272,7 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "DOES_NOT_REPLACE_HUMAN_PLAY_TESTING_REAL_DEVICE_OR_SCREEN_READER_EVIDENCE",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT",
+      "negativeControl": { "id": "NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/playwright-focused-contract.test.mjs", "testName": "[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report accepts only the exact clean project/case matrix" },
       "implementationPaths": ["audit/lib/playwright-focused-contract.mjs", "audit/run-playwright-focused.mjs", "playwright.config.mjs"],
       "validatorPaths": ["audit/tests/playwright-focused-contract.test.mjs"]
     },
@@ -260,7 +282,7 @@
       "proofClass": "STATIC_AND_BYTE_IDENTITY",
       "independenceBoundary": "STATIC_SCANS_DO_NOT_PROVE_ABSENCE_OF_EVERY_SEMANTIC_PRIVACY_DEFECT",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL",
+      "negativeControl": { "id": "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL", "executionMode": "SELF_TEST", "executionPath": "audit/public-candidate-guard.mjs", "passEvidence": "STDOUT:NEGATIVE_CONTROL=NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL:PASS" },
       "implementationPaths": ["audit/public-candidate-guard.mjs"],
       "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
     },
@@ -270,7 +292,7 @@
       "proofClass": "BOUND_EVIDENCE",
       "independenceBoundary": "STRUCTURED_ASSERTIONS_BIND_THE_DECISION_RECORD_BUT_DO_NOT_IMPERSONATE_EXTERNAL_OBSERVATION",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST",
+      "negativeControl": { "id": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST", "executionMode": "NODE_TEST", "executionPath": "audit/tests/release-evidence-bundle.test.mjs", "testName": "[NC-PUBLICATION-ARBITRARY-HEX-DIGEST] a syntactically valid arbitrary digest cannot satisfy publication evidence" },
       "implementationPaths": ["PUBLICATION_CLEARANCE.md", "audit/lib/publication-clearance.mjs", "audit/lib/release-evidence-bundle.mjs", "audit/release-evidence-bundle-v1.json"],
       "validatorPaths": ["audit/tests/publication-clearance.test.mjs", "audit/tests/release-evidence-bundle.test.mjs"]
     },
@@ -280,8 +302,8 @@
       "proofClass": "INDEPENDENT_SEMANTIC_ORACLE",
       "independenceBoundary": "REPRESENTATIVE_DETERMINISTIC_QUESTIONS_NOT_EVERY_POSSIBLE_RANDOM_SEED",
       "nonRunPolicy": "FAIL",
-      "negativeControlId": "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION",
-      "implementationPaths": ["audit/tests/manifest-semantic-suite.mjs", "audit/tests/strategy-build-oracle.mjs"],
+      "negativeControl": { "id": "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION.status=PASS" },
+      "implementationPaths": ["audit/mutation-runner.mjs", "audit/tests/manifest-semantic-suite.mjs", "audit/tests/strategy-build-oracle.mjs"],
       "validatorPaths": ["audit/tests/node-engine.test.mjs"]
     }
   ],

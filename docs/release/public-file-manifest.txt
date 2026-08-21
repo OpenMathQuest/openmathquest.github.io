@@ -125,6 +125,7 @@ audit/trusted-https-canary-beta7-v1.json
 audit/validate-hosted-windows-observation.mjs
 audit/validate-publication-clearance.mjs
 audit/validate-trusted-https-canary.mjs
+audit/verify-github-gate-enforcement.mjs
 curriculum/PROVENANCE.md
 curriculum/math-quest-feature-map-v1.json
 curriculum/math-quest-manifest-v1.json

@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { readFile as readFileAsync } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -7,6 +8,20 @@ export const GATE_INTEGRITY_POLICY_PATH = "audit/gate-integrity-policy-v1.json";
 export const GATE_INTEGRITY_POLICY_SCHEMA_PATH = "audit/schemas/gate-integrity-policy-v1.schema.json";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
+const canonicalPolicyUrl = new URL("../gate-integrity-policy-v1.json", import.meta.url);
+const freezeDeep = (value) => {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freezeDeep(child);
+    Object.freeze(value);
+  }
+  return value;
+};
+
+// Runtime gates consume these values from the canonical policy. There is no
+// second executable copy of the metric floors or status classes.
+export const GATE_INTEGRITY_POLICY = freezeDeep(JSON.parse(readFileSync(canonicalPolicyUrl, "utf8")));
+export const ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT = GATE_INTEGRITY_POLICY.metricFloors.engineBranchCoverage.minimumPercent;
+export const REPRESENTATIVE_MUTATION_FAMILY_COUNT = GATE_INTEGRITY_POLICY.metricFloors.representativeMutationFamilies.denominator;
 const canonical = (values, key) => [...values].sort((left, right) => key(left).localeCompare(key(right), "en"));
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 const schemaIssue = (error) => `${error.instancePath || "/"} ${error.message || "is invalid"}`;
@@ -37,12 +52,14 @@ export function evaluateGithubEnforcementSnapshot(snapshot, policy) {
 
 export function summarizeGateOutcomes(statuses, { inventoryExpected, runId }) {
   const values = [...statuses];
-  const accepted = new Set(["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"]);
-  const failed = new Set(["BLOCKED", "CANCELLED", "ERROR", "FAIL", "TIMEOUT"]);
-  const missing = new Set(["MISSING_ARTIFACT"]);
-  const notRun = new Set(["NOT_RUN"]);
-  const skipped = new Set(["SKIP", "SKIPPED"]);
-  const known = new Set(["PASS", ...accepted, ...failed, ...missing, ...notRun, ...skipped]);
+  const classes = GATE_INTEGRITY_POLICY.outcomeReporting.statusClasses;
+  const accepted = new Set(GATE_INTEGRITY_POLICY.outcomeReporting.acceptedNonPassStates);
+  const failed = new Set(classes.failed);
+  const missing = new Set(classes.missing);
+  const notRun = new Set(classes.notRun);
+  const skipped = new Set(classes.skipped);
+  const passed = new Set(classes.passed);
+  const known = new Set([...passed, ...accepted, ...failed, ...missing, ...notRun, ...skipped]);
   const unknown = values.filter((value) => !known.has(value));
   return Object.freeze({
     acceptedNonPassCount: values.filter((value) => accepted.has(value)).length,
@@ -51,14 +68,14 @@ export function summarizeGateOutcomes(statuses, { inventoryExpected, runId }) {
     inventoryExpected,
     missingCount: values.filter((value) => missing.has(value)).length,
     notRunCount: values.filter((value) => notRun.has(value)).length,
-    passedCount: values.filter((value) => value === "PASS").length,
+    passedCount: values.filter((value) => passed.has(value)).length,
     runId,
     skippedCount: values.filter((value) => skipped.has(value)).length,
   });
 }
 
 export async function validateGateIntegrityPolicySchema(policy, schemaPathOrUrl = new URL("../schemas/gate-integrity-policy-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFile(schemaPathOrUrl, "utf8"));
+  const schema = JSON.parse(await readFileAsync(schemaPathOrUrl, "utf8"));
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
   return Object.freeze(validate(policy) ? [] : (validate.errors || []).map(schemaIssue));
 }
@@ -73,7 +90,7 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
   }
   const ruleIds = policy.rules.map((record) => record.id);
   const familyIds = policy.gateFamilies.map((record) => record.id);
-  const negativeControlIds = policy.gateFamilies.map((record) => record.negativeControlId);
+  const negativeControlIds = policy.gateFamilies.map((record) => record.negativeControl.id);
   const acceptanceIds = policy.acceptanceCriteria.map((record) => record.id);
   if (new Set(ruleIds).size !== ruleIds.length) issues.push("rules contain duplicate ids");
   if (new Set(familyIds).size !== familyIds.length) issues.push("gateFamilies contain duplicate ids");
@@ -88,10 +105,24 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
     for (const entry of [...family.implementationPaths, ...family.validatorPaths]) {
       if (!tracked.has(entry)) issues.push(`${family.id} references untracked path ${entry}`);
     }
+    const control = family.negativeControl;
+    if (![...family.implementationPaths, ...family.validatorPaths].includes(control.executionPath)) {
+      issues.push(`${family.id} negative control executionPath is not a declared family path`);
+      continue;
+    }
+    try {
+      const source = await readFileAsync(path.join(root, ...control.executionPath.split("/")), "utf8");
+      if (!source.includes(control.id)) issues.push(`${family.id} negative control id is not bound to executable source`);
+      if (control.executionMode === "NODE_TEST" && !source.includes(`test("${control.testName}"`)) {
+        issues.push(`${family.id} negative control testName is not present in its executable test`);
+      }
+    } catch (error) {
+      issues.push(`${family.id} negative control executable is unreadable: ${error.message}`);
+    }
   }
   const requiredFamilyIds = [
     "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
-    "gate.github-pr", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
+    "gate.github-pr", "gate.launcher", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
     "gate.publication-evidence", "gate.semantic",
   ];
   if (!same(familyIds, requiredFamilyIds)) issues.push("gateFamilies do not equal the closed required family set");
@@ -100,8 +131,8 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
   return Object.freeze(issues);
 }
 
-export async function loadGateIntegrityPolicy(pathOrUrl = new URL("../gate-integrity-policy-v1.json", import.meta.url), options = {}) {
-  const policy = JSON.parse(await readFile(pathOrUrl, "utf8"));
+export async function loadGateIntegrityPolicy(pathOrUrl = canonicalPolicyUrl, options = {}) {
+  const policy = JSON.parse(await readFileAsync(pathOrUrl, "utf8"));
   const issues = await validateGateIntegrityPolicy(policy, options);
   if (issues.length) throw new Error(`Invalid gate-integrity policy:\n- ${issues.join("\n- ")}`);
   return Object.freeze(policy);

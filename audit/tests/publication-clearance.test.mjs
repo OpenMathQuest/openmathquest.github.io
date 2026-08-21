@@ -40,12 +40,13 @@ import {
 } from "../lib/release-evidence-successor.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const testBinding = (digest, state) => Object.freeze({
+const testBinding = (digest, state, metadata = {}) => Object.freeze({
   claimBoundary: "TEST_FIXTURE_EXACT_BINDING",
   digest,
   evidenceClass: "TEST_FIXTURE",
   state,
   valid: true,
+  ...metadata,
 });
 const testReleaseEvidenceBindings = Object.freeze({
   "EXT-HOST": [testBinding("8".repeat(64), "APPROVED"), testBinding("8".repeat(64), "DEFERRED_PRERELEASE"), testBinding("e".repeat(64), "WAIVED_BETA3")],
@@ -55,7 +56,10 @@ const testReleaseEvidenceBindings = Object.freeze({
   "EXT-ADJUDICATION": [testBinding("c".repeat(64), "APPROVED"), testBinding("e".repeat(64), "WAIVED_BETA3")],
   "EXT-FINDINGS": [testBinding("d".repeat(64), "COMPLETE"), testBinding("e".repeat(64), "AUTOMATED_ONLY")],
   "EXT-HOSTED-WINDOWS": testBinding("7".repeat(64), "REVIEWED"),
-  "EXT-OWNER": [testBinding("e".repeat(64), "PR_PUSH_AUTHORIZED"), testBinding("e".repeat(64), "EMERGENCY_BETA3_AUTHORIZED")],
+  "EXT-OWNER": [
+    testBinding("e".repeat(64), "PR_PUSH_AUTHORIZED", { releaseTag: CURRENT_RELEASE_TAG, protectedRef: "refs/heads/main" }),
+    testBinding("e".repeat(64), "EMERGENCY_BETA3_AUTHORIZED", { releaseTag: EMERGENCY_BETA3_RELEASE_TAG, protectedRef: "refs/heads/main" }),
+  ],
   "REVIEW-BUNDLE": testBinding("f".repeat(64), "VALIDATED"),
 });
 const expected = Object.freeze({

@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -396,7 +396,11 @@
         },
         {
           "path": "audit/run-audit.mjs",
-          "relationship": "VALIDATION_EXPECTATION"
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/verify-github-gate-enforcement.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
         }
       ],
       "validators": [
@@ -815,6 +819,12 @@
       "id": "gate-integrity.audit",
       "source": "audit/gate-integrity-policy-v1.json",
       "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "gate-integrity.remote-preflight",
+      "source": "audit/gate-integrity-policy-v1.json",
+      "target": "audit/verify-github-gate-enforcement.mjs",
       "kind": "CONSUMES"
     },
     {

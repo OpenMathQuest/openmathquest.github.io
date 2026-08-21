@@ -71,7 +71,7 @@ test("browser shard aggregation accepts exactly one complete identity-bound part
   assert.equal(Object.hasOwn(aggregate, "shardReports"), false);
 });
 
-test("browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence", () => {
+test("[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence", () => {
   assert.throws(() => aggregateBrowserShardReports([shardReport("core")]), /exactly one report/u);
   assert.throws(() => aggregateBrowserShardReports([shardReport("core"), shardReport("core")]), /missing, duplicated, or unknown/u);
   const mixed = shardReport("visual"); mixed.evidence.browserExecutableSha256 = "b".repeat(64);
@@ -128,7 +128,7 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 3);
 });
 
-test("canonical coverage artifact rejects count-correct but internally failed evidence", () => {
+test("[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence", () => {
   assert.equal(validateStructuredAudit(structuredAudit(), "c".repeat(64)).valid, true);
   for (const mutate of [
     (artifact) => { artifact.engine.summary.requiredFailures = 1; },

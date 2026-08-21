@@ -4,23 +4,30 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT,
   evaluateGithubEnforcementSnapshot,
+  GATE_INTEGRITY_POLICY,
   loadGateIntegrityPolicy,
+  REPRESENTATIVE_MUTATION_FAMILY_COUNT,
   summarizeGateOutcomes,
   validateGateIntegrityPolicy,
   validateGateIntegrityPolicySchema,
 } from "../lib/gate-integrity-policy.mjs";
+import { normalizeGithubEnforcementSnapshot } from "../verify-github-gate-enforcement.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = async (relative) => JSON.parse(await readFile(path.join(root, relative), "utf8"));
 
 test("the gate-integrity policy is closed, ordered, and complete", async () => {
   const policy = await loadGateIntegrityPolicy();
-  assert.equal(policy.gateFamilies.length, 13);
-  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControlId)).size, 13);
+  assert.equal(policy.gateFamilies.length, 14);
+  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 14);
   assert.equal(policy.enforcement.requiredPullRequestCheck, "development-checks");
   assert.deepEqual(policy.enforcement.prohibitedRequiredPullRequestChecks, ["full-audit"]);
   assert.equal(policy.retryPolicy.automaticRetries, 0);
+  assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
+  assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
+  assert.equal(GATE_INTEGRITY_POLICY.version, policy.version);
   assert.deepEqual(await validateGateIntegrityPolicySchema(policy), []);
 });
 
@@ -31,7 +38,8 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.metricFloors.engineBranchCoverage.minimumPercent = 0; },
     (value) => { value.metricFloors.representativeMutationFamilies.minimumKilled = 0; },
     (value) => { value.retryPolicy.automaticRetries = 1; },
-    (value) => { value.gateFamilies[0].negativeControlId = value.gateFamilies[1].negativeControlId; },
+    (value) => { value.gateFamilies[0].negativeControl.id = value.gateFamilies[1].negativeControl.id; },
+    (value) => { value.gateFamilies.forEach((family, index) => { family.negativeControl.id = `NC-NONEXISTENT-${String(index + 1).padStart(2, "0")}`; }); },
   ]) {
     const mutant = structuredClone(baseline);
     mutate(mutant);
@@ -53,12 +61,18 @@ test("the PR workflow runs the required check on pull requests and reserves full
   assert.match(full, /^    if: github\.event_name == 'workflow_dispatch'$/mu);
 });
 
-test("the external GitHub enforcement oracle rejects the formerly vacuous configuration", async () => {
+test("[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration", async () => {
   const policy = await loadGateIntegrityPolicy();
-  const good = {
-    requiredPullRequestChecks: ["development-checks"],
-    tagRules: [{ pattern: "refs/tags/v*", rules: ["DELETION_PROHIBITED", "UPDATE_PROHIBITED"], bypassActorCount: 0 }],
-  };
+  const good = normalizeGithubEnforcementSnapshot(
+    { checks: [{ context: "development-checks", app_id: 15368 }], contexts: [] },
+    [{
+      target: "tag",
+      enforcement: "active",
+      conditions: { ref_name: { include: ["refs/tags/v*"], exclude: [] } },
+      rules: [{ type: "update" }, { type: "deletion" }],
+      bypass_actors: [],
+    }],
+  );
   assert.equal(evaluateGithubEnforcementSnapshot(good, policy).valid, true);
   const former = {
     requiredPullRequestChecks: ["full-audit"],

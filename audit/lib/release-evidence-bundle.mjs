@@ -21,13 +21,14 @@ export async function validateReleaseEvidenceBundleSchema(bundle, schemaPathOrUr
   return Object.freeze(validate(bundle) ? [] : (validate.errors || []).map(schemaIssue));
 }
 
-function binding(record, digest, valid = true) {
+function binding(record, digest, valid = true, metadata = {}) {
   return Object.freeze({
     claimBoundary: record.claimBoundary,
     digest,
     evidenceClass: record.evidenceClass,
     state: record.state,
     valid,
+    ...metadata,
   });
 }
 
@@ -40,6 +41,10 @@ export async function loadReleaseEvidenceBundle(pathOrUrl = new URL("../release-
   if (!Number.isFinite(reviewedAt) || !Number.isFinite(expiresAt) || expiresAt <= reviewedAt) {
     issues.push("evidence timestamps are invalid or reversed");
   }
+  const ownerReleaseMatches = bundle.records?.ownerAuthorization?.releaseTag === bundle.releaseTag;
+  const canaryCandidateMatches = bundle.records?.canaryReconciliation?.candidateSha === bundle.qualificationCommitSha;
+  if (!ownerReleaseMatches) issues.push("EXT-OWNER releaseTag does not match the evidence bundle releaseTag");
+  if (!canaryCandidateMatches) issues.push("EXT-CANARY candidateSha does not match the evidence bundle qualificationCommitSha");
   const artifact = async (record, parser) => {
     try {
       const bytes = await readFile(path.join(root, ...record.artifactPath.split("/")));
@@ -59,7 +64,12 @@ export async function loadReleaseEvidenceBundle(pathOrUrl = new URL("../release-
     workflowRunAttempt: String(bundle.records.canaryReconciliation.workflowRunAttempt),
     requireReconciled: true,
   }));
-  const hostedWindows = await artifact(bundle.records.hostedWindows, parseReviewedBrowserRunnerEvidence);
+  const hostedWindows = await artifact(bundle.records.hostedWindows, (text) => {
+    const parsed = parseReviewedBrowserRunnerEvidence(text);
+    return parsed.status === bundle.records.hostedWindows.state
+      ? parsed
+      : { ...parsed, valid: false, issues: [...parsed.issues, `review state ${parsed.status || "MISSING"} does not match ${bundle.records.hostedWindows.state}`] };
+  });
   const bindings = Object.freeze({
     "EXT-HOST": binding(bundle.records.hostQualification, recordDigest(bundle.records.hostQualification)),
     "EXT-CANARY": canary,
@@ -68,7 +78,12 @@ export async function loadReleaseEvidenceBundle(pathOrUrl = new URL("../release-
     "EXT-ADJUDICATION": binding(bundle.records.adjudication, recordDigest(bundle.records.adjudication)),
     "EXT-FINDINGS": binding(bundle.records.findingDisposition, recordDigest(bundle.records.findingDisposition)),
     "EXT-HOSTED-WINDOWS": hostedWindows,
-    "EXT-OWNER": binding(bundle.records.ownerAuthorization, recordDigest(bundle.records.ownerAuthorization)),
+    "EXT-OWNER": binding(
+      bundle.records.ownerAuthorization,
+      recordDigest(bundle.records.ownerAuthorization),
+      ownerReleaseMatches,
+      { protectedRef: bundle.records.ownerAuthorization.protectedRef, releaseTag: bundle.records.ownerAuthorization.releaseTag },
+    ),
     "REVIEW-BUNDLE": Object.freeze({
       claimBoundary: "BINDS_THE_COMPLETE_CLOSED_RELEASE_EVIDENCE_BUNDLE",
       digest: sha256(bundleBytes),

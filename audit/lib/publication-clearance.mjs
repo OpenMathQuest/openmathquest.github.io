@@ -548,6 +548,11 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       binding?.state === state ? null : `${id} state does not match the validated evidence record`,
     ];
   };
+  const ownerBinding = resolvedBinding(
+    "EXT-OWNER",
+    parsed?.ownerAuthorizationEvidenceSha256,
+    parsed?.ownerAuthorizationState,
+  );
   const definitions = [
     [
       "EXT-HOST",
@@ -663,7 +668,9 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
         && sha256(parsed?.ownerAuthorizationEvidenceSha256)
         && sha256(parsed?.reviewBundleSha256)
         && parsed?.authorizedReleaseTag === expectedReleaseTag
-        && parsed?.authorizedProtectedRef === "refs/heads/main",
+        && parsed?.authorizedProtectedRef === "refs/heads/main"
+        && ownerBinding?.releaseTag === expectedReleaseTag
+        && ownerBinding?.protectedRef === "refs/heads/main",
       parsed?.ownerAuthorizationState === (emergency ? "EMERGENCY_BETA3_AUTHORIZED" : "PR_PUSH_AUTHORIZED")
         ? null
         : `owner authorization is ${parsed?.ownerAuthorizationState || "UNKNOWN"}`,
@@ -671,6 +678,12 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       sha256(parsed?.reviewBundleSha256) ? null : "review-bundle digest is missing or malformed",
       parsed?.authorizedReleaseTag === expectedReleaseTag ? null : "owner authorization names a different release tag",
       parsed?.authorizedProtectedRef === "refs/heads/main" ? null : "owner authorization names a different protected ref",
+      ownerBinding?.releaseTag === expectedReleaseTag
+        ? null
+        : "bound owner-authorization record names a different release tag",
+      ownerBinding?.protectedRef === "refs/heads/main"
+        ? null
+        : "bound owner-authorization record names a different protected ref",
       ...bindingReasons("EXT-OWNER", parsed?.ownerAuthorizationEvidenceSha256, parsed?.ownerAuthorizationState),
       evidenceBindings["REVIEW-BUNDLE"]?.valid === true ? null : "review bundle did not validate",
       evidenceBindings["REVIEW-BUNDLE"]?.digest === parsed?.reviewBundleSha256
