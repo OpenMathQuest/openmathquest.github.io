@@ -470,7 +470,7 @@ function artifactIdentityMatches(parsed, expected = {}) {
   );
 }
 
-function gate(id, title, status, reasons) {
+function gate(id, title, status, reasons, evidenceBinding = null) {
   return Object.freeze({
     id,
     title,
@@ -479,7 +479,7 @@ function gate(id, title, status, reasons) {
       ? "VERIFIED"
       : status === "OWNER_SKIPPED"
         ? "OWNER_AUTHORIZED_BETA4_CANARY_SKIP"
-      : status === "OPTIONAL"
+      : status === "OPTIONAL_NOT_RUN"
         ? "OPTIONAL_REVIEW_NOT_RUN"
       : status === "DEFERRED"
         ? "OWNER_DIRECTED_PRERELEASE_DEFERRAL"
@@ -487,10 +487,10 @@ function gate(id, title, status, reasons) {
         ? "OWNER_AUTHORIZED_EMERGENCY_BETA3_WAIVER"
         : "PENDING_EVIDENCE_APPROVAL_GATE",
     details: status === "PASS"
-      ? "Exact current evidence is present and bound to the reviewed candidate."
+      ? `${evidenceBinding?.evidenceClass || "UNKNOWN_EVIDENCE_CLASS"}: ${evidenceBinding?.claimBoundary || "claim boundary unavailable"}.`
       : status === "OWNER_SKIPPED"
         ? "The project owner directed that the trusted-HTTPS canary not run for Beta 4; no canary, reconciliation, secure-update, offline-relaunch, or privacy-clearance pass is claimed."
-      : status === "OPTIONAL"
+      : status === "OPTIONAL_NOT_RUN"
         ? "This optional evidence cycle was offered but not selected; no pass or release-readiness claim is made for it."
       : status === "DEFERRED"
         ? "The project owner deferred external host privacy/legal qualification for prerelease builds until the first stable release; no host approval or privacy-clearance claim is made."
@@ -514,6 +514,8 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
     && parsed?.canaryReconciliationState === BETA4_CANARY_OWNER_SKIP_STATE
     && parsed?.canaryReconciliationEvidenceSha256 === "NONE";
   const commonReasons = [];
+  const evidenceBindings = expected.releaseEvidenceBindings || {};
+  const bundleBinding = evidenceBindings["REVIEW-BUNDLE"];
   if (emergencyRequested && !emergency) {
     commonReasons.push(`the emergency Beta 3 exception cannot authorize ${expectedReleaseTag}`);
   }
@@ -525,8 +527,27 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
   if (!Number.isFinite(currentTime)) commonReasons.push("audit time is invalid");
   if (!Number.isFinite(reviewedTime) || reviewedTime > currentTime) commonReasons.push("external evidence review timestamp is missing or in the future");
   if (!Number.isFinite(expiresTime) || expiresTime <= currentTime) commonReasons.push("external evidence is missing an expiry or is stale");
+  if (bundleBinding?.evidenceClass === "CANONICAL_BUNDLE") {
+    if (bundleBinding.releaseTag !== expectedReleaseTag) commonReasons.push("release evidence bundle names a different release tag");
+    if (bundleBinding.qualificationCommitSha !== parsed?.qualificationCommitSha) commonReasons.push("release evidence bundle names a different qualification commit");
+    if (bundleBinding.reviewedAtUtc !== parsed?.externalEvidenceReviewedAt) commonReasons.push("release evidence bundle names a different review timestamp");
+    if (bundleBinding.expiresAtUtc !== parsed?.externalEvidenceExpiresAt) commonReasons.push("release evidence bundle names a different expiry timestamp");
+  }
 
   const buildReasons = (...specific) => [...commonReasons, ...specific.filter(Boolean)];
+  const resolvedBinding = (id, digest, state) => {
+    const candidates = Array.isArray(evidenceBindings[id]) ? evidenceBindings[id] : [evidenceBindings[id]];
+    return candidates.find((binding) => binding?.digest === digest && binding?.state === state) || candidates[0] || null;
+  };
+  const bindingReasons = (id, digest, state) => {
+    const binding = resolvedBinding(id, digest, state);
+    return [
+      binding ? null : `${id} validated evidence binding is missing`,
+      binding?.valid === true ? null : `${id} evidence binding did not validate`,
+      binding?.digest === digest ? null : `${id} digest does not match validated evidence bytes or canonical record`,
+      binding?.state === state ? null : `${id} state does not match the validated evidence record`,
+    ];
+  };
   const definitions = [
     [
       "EXT-HOST",
@@ -539,6 +560,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
         ? null
         : `host qualification is ${parsed?.hostQualificationState || "UNKNOWN"}`,
       sha256(parsed?.hostQualificationEvidenceSha256) ? null : "host qualification evidence digest is missing or malformed",
+      ...bindingReasons("EXT-HOST", parsed?.hostQualificationEvidenceSha256, parsed?.hostQualificationState),
     ],
     [
       "EXT-CANARY",
@@ -546,6 +568,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.canaryReconciliationState === "RECONCILED" && sha256(parsed?.canaryReconciliationEvidenceSha256),
       parsed?.canaryReconciliationState === "RECONCILED" || beta4CanaryOwnerSkipped ? null : `canary reconciliation is ${parsed?.canaryReconciliationState || "UNKNOWN"}`,
       sha256(parsed?.canaryReconciliationEvidenceSha256) || beta4CanaryOwnerSkipped ? null : "canary evidence digest is missing or malformed",
+      ...bindingReasons("EXT-CANARY", parsed?.canaryReconciliationEvidenceSha256, parsed?.canaryReconciliationState),
     ],
     [
       "EXT-DEVICE",
@@ -570,6 +593,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
         || sha256(parsed?.physicalDeviceEvidenceSha256)
         ? null
         : "physical-device evidence digest is missing or malformed",
+      ...bindingReasons("EXT-DEVICE", parsed?.physicalDeviceEvidenceSha256, parsed?.physicalDeviceEvidenceState),
     ],
     [
       "EXT-REVIEWERS",
@@ -589,6 +613,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
         || sha256(parsed?.independentReviewerEvidenceSha256)
         ? null
         : "independent-reviewer evidence digest is missing or malformed",
+      ...bindingReasons("EXT-REVIEWERS", parsed?.independentReviewerEvidenceSha256, parsed?.independentReviewerEvidenceState),
     ],
     [
       "EXT-ADJUDICATION",
@@ -599,6 +624,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.adjudicationState === "APPROVED" ? null : `adjudication is ${parsed?.adjudicationState || "UNKNOWN"}`,
       parsed?.adjudicationRecommendation === "RELEASE" ? null : "adjudication does not recommend release",
       sha256(parsed?.adjudicationEvidenceSha256) ? null : "adjudication evidence digest is missing or malformed",
+      ...bindingReasons("EXT-ADJUDICATION", parsed?.adjudicationEvidenceSha256, parsed?.adjudicationState),
     ],
     [
       "EXT-FINDINGS",
@@ -615,6 +641,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       parsed?.unacceptedMediumFindings === "0" ? null : "medium findings remain without exact owner acceptance",
       parsed?.unrecordedLowFindings === "0" ? null : "low findings remain unrecorded",
       sha256(parsed?.findingDispositionEvidenceSha256) ? null : "finding-disposition evidence digest is missing or malformed",
+      ...bindingReasons("EXT-FINDINGS", parsed?.findingDispositionEvidenceSha256, parsed?.findingDispositionState),
     ],
     [
       "EXT-HOSTED-WINDOWS",
@@ -627,6 +654,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       sha256(parsed?.hostedWindowsEvidenceSha256) ? null : "hosted-Windows evidence digest is missing or malformed",
       parsed?.hostedWindowsEvidenceSha256 === expected.browserRunnerEvidenceSha256 ? null : "hosted-Windows evidence digest does not match the reviewed browser/runner record",
       expected.browserRunnerEvidenceReviewed === true ? null : "the reviewed qualification record or final hosted browser observation is invalid",
+      ...bindingReasons("EXT-HOSTED-WINDOWS", parsed?.hostedWindowsEvidenceSha256, parsed?.hostedWindowsEvidenceState),
     ],
     [
       "EXT-OWNER",
@@ -643,43 +671,75 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       sha256(parsed?.reviewBundleSha256) ? null : "review-bundle digest is missing or malformed",
       parsed?.authorizedReleaseTag === expectedReleaseTag ? null : "owner authorization names a different release tag",
       parsed?.authorizedProtectedRef === "refs/heads/main" ? null : "owner authorization names a different protected ref",
+      ...bindingReasons("EXT-OWNER", parsed?.ownerAuthorizationEvidenceSha256, parsed?.ownerAuthorizationState),
+      evidenceBindings["REVIEW-BUNDLE"]?.valid === true ? null : "review bundle did not validate",
+      evidenceBindings["REVIEW-BUNDLE"]?.digest === parsed?.reviewBundleSha256
+        ? null
+        : "review-bundle digest does not match the validated canonical bundle bytes",
     ],
   ];
   const gates = definitions.map(([id, title, specificPass, ...specificReasons]) => {
     const reasons = buildReasons(...specificReasons);
-    if (emergency && EMERGENCY_BETA3_WAIVED_GATE_IDS.includes(id) && commonReasons.length === 0) {
-      return gate(id, title, "WAIVED", reasons);
+    const evidenceDigest = {
+      "EXT-HOST": parsed?.hostQualificationEvidenceSha256,
+      "EXT-CANARY": parsed?.canaryReconciliationEvidenceSha256,
+      "EXT-DEVICE": parsed?.physicalDeviceEvidenceSha256,
+      "EXT-REVIEWERS": parsed?.independentReviewerEvidenceSha256,
+      "EXT-ADJUDICATION": parsed?.adjudicationEvidenceSha256,
+      "EXT-FINDINGS": parsed?.findingDispositionEvidenceSha256,
+      "EXT-HOSTED-WINDOWS": parsed?.hostedWindowsEvidenceSha256,
+      "EXT-OWNER": parsed?.ownerAuthorizationEvidenceSha256,
+    }[id];
+    const evidenceState = {
+      "EXT-HOST": parsed?.hostQualificationState,
+      "EXT-CANARY": parsed?.canaryReconciliationState,
+      "EXT-DEVICE": parsed?.physicalDeviceEvidenceState,
+      "EXT-REVIEWERS": parsed?.independentReviewerEvidenceState,
+      "EXT-ADJUDICATION": parsed?.adjudicationState,
+      "EXT-FINDINGS": parsed?.findingDispositionState,
+      "EXT-HOSTED-WINDOWS": parsed?.hostedWindowsEvidenceState,
+      "EXT-OWNER": parsed?.ownerAuthorizationState,
+    }[id];
+    const evidenceBinding = resolvedBinding(id, evidenceDigest, evidenceState);
+    const evidenceBindingValid = bindingReasons(id, evidenceDigest, evidenceState).every((reason) => !reason);
+    if (
+      emergency
+      && EMERGENCY_BETA3_WAIVED_GATE_IDS.includes(id)
+      && commonReasons.length === 0
+      && evidenceBindingValid
+    ) {
+      return gate(id, title, "WAIVED", reasons, evidenceBinding);
     }
     if (
       beta4CanaryOwnerSkipped
       && BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS.includes(id)
-      && commonReasons.length === 0
+      && reasons.length === 0
     ) {
-      return gate(id, title, "OWNER_SKIPPED", reasons);
+      return gate(id, title, "OWNER_SKIPPED", reasons, evidenceBinding);
     }
     if (
       !emergency
       && prerelease
       && PRERELEASE_DEFERRED_EXTERNAL_RELEASE_GATE_IDS.includes(id)
-      && commonReasons.length === 0
+      && reasons.length === 0
       && parsed?.hostQualificationState === PRERELEASE_HOST_QUALIFICATION_STATE
       && sha256(parsed?.hostQualificationEvidenceSha256)
     ) {
-      return gate(id, title, "DEFERRED", reasons);
+      return gate(id, title, "DEFERRED", reasons, evidenceBinding);
     }
     if (
       !emergency
       && OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(id)
-      && commonReasons.length === 0
+      && reasons.length === 0
       && (
         id === "EXT-DEVICE"
           ? parsed?.physicalDeviceEvidenceState === "OPTIONAL_NOT_RUN"
           : parsed?.independentReviewerEvidenceState === "OPTIONAL_NOT_RUN"
       )
     ) {
-      return gate(id, title, "OPTIONAL", reasons);
+      return gate(id, title, "OPTIONAL_NOT_RUN", reasons, evidenceBinding);
     }
-    return gate(id, title, commonReasons.length === 0 && specificPass ? "PASS" : "BLOCKED", reasons);
+    return gate(id, title, reasons.length === 0 && specificPass ? "PASS" : "BLOCKED", reasons, evidenceBinding);
   });
   const standardPattern = gates.every((item, index) => (
     item.id === EXTERNAL_RELEASE_GATE_IDS[index]
@@ -687,7 +747,7 @@ export function evaluateExternalReleaseEvidence(parsed, expected = {}, now = new
       item.status === "PASS"
       || (beta4CanaryOwnerSkipped && item.id === "EXT-CANARY" && item.status === "OWNER_SKIPPED")
       || (prerelease && item.id === "EXT-HOST" && item.status === "DEFERRED")
-      || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL")
+      || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL_NOT_RUN")
     )
   ));
   const emergencyPattern = gates.every((item, index) => (
@@ -755,7 +815,7 @@ export function computeReleaseDecision({ technicalShippable, publicationStatus, 
           && item.status === "DEFERRED"
           && externalReleaseEvidence?.prereleaseHostDeferralEligible === true
         )
-        || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL")
+        || (OPTIONAL_EXTERNAL_RELEASE_GATE_IDS.includes(item.id) && item.status === "OPTIONAL_NOT_RUN")
       )
     ));
   const emergency = publicationStatus === "EMERGENCY_APPROVED"

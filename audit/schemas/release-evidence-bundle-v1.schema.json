@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/release-evidence-bundle-v1.schema.json",
+  "title": "Math Quest release evidence bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundleId", "version", "schemaVersion", "authority", "releaseTag", "qualificationCommitSha", "reviewedAtUtc", "expiresAtUtc", "evidenceSuccessorPolicy", "licence", "records"],
+  "properties": {
+    "bundleId": { "const": "math-quest-release-evidence" },
+    "version": { "const": "1.0.0" },
+    "schemaVersion": { "const": 1 },
+    "authority": { "const": "THIS_FILE" },
+    "releaseTag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" },
+    "qualificationCommitSha": { "$ref": "#/$defs/sha40" },
+    "reviewedAtUtc": { "$ref": "#/$defs/utc" },
+    "expiresAtUtc": { "$ref": "#/$defs/utc" },
+    "evidenceSuccessorPolicy": { "const": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "scope": { "type": "string", "minLength": 1 },
+        "originalWork": { "const": true }
+      }
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostQualification", "canaryReconciliation", "physicalDevice", "independentReviewers", "adjudication", "findingDisposition", "hostedWindows", "ownerAuthorization"],
+      "properties": {
+        "hostQualification": { "$ref": "#/$defs/hostQualification" },
+        "canaryReconciliation": { "$ref": "#/$defs/canaryReconciliation" },
+        "physicalDevice": { "$ref": "#/$defs/physicalDevice" },
+        "independentReviewers": { "$ref": "#/$defs/independentReviewers" },
+        "adjudication": { "$ref": "#/$defs/adjudication" },
+        "findingDisposition": { "$ref": "#/$defs/findingDisposition" },
+        "hostedWindows": { "$ref": "#/$defs/hostedWindows" },
+        "ownerAuthorization": { "$ref": "#/$defs/ownerAuthorization" }
+      }
+    }
+  },
+  "$defs": {
+    "sha40": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha64": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "path": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+    "utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "hostQualification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "releaseClass", "residualRisk", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-HOST" },
+        "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
+        "state": { "const": "DEFERRED_PRERELEASE" },
+        "digestMode": { "const": "CANONICAL_RECORD" },
+        "releaseClass": { "const": "PRERELEASE" },
+        "residualRisk": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "claimBoundary": { "const": "BINDS_THE_RECORDED_DEFERRAL_NOT_EXTERNAL_HOST_APPROVAL" }
+      }
+    },
+    "canaryReconciliation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "artifactPath", "artifactSha256", "candidateSha", "workflowRunId", "workflowRunAttempt", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-CANARY" },
+        "evidenceClass": { "const": "CANONICAL_ARTIFACT" },
+        "state": { "const": "RECONCILED" },
+        "digestMode": { "const": "RAW_FILE_BYTES" },
+        "artifactPath": { "$ref": "#/$defs/path" },
+        "artifactSha256": { "$ref": "#/$defs/sha64" },
+        "candidateSha": { "$ref": "#/$defs/sha40" },
+        "workflowRunId": { "type": "integer", "minimum": 1 },
+        "workflowRunAttempt": { "type": "integer", "minimum": 1 },
+        "claimBoundary": { "const": "BINDS_VALIDATED_SANITIZED_CANARY_BYTES_FOR_THE_EXACT_CANDIDATE" }
+      }
+    },
+    "physicalDevice": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "requiredLanes", "passedLanes", "primaryIPadJourneyResult", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-DEVICE" },
+        "evidenceClass": { "const": "ABSENCE_RECORD" },
+        "state": { "const": "OPTIONAL_NOT_RUN" },
+        "digestMode": { "const": "NONE" },
+        "requiredLanes": { "const": 0 },
+        "passedLanes": { "const": 0 },
+        "primaryIPadJourneyResult": { "const": "NOT_RUN" },
+        "claimBoundary": { "const": "RECORDS_THAT_NO_PHYSICAL_DEVICE_PASS_IS_CLAIMED" }
+      }
+    },
+    "independentReviewers": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "requiredReports", "sealedReports", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-REVIEWERS" },
+        "evidenceClass": { "const": "ABSENCE_RECORD" },
+        "state": { "const": "OPTIONAL_NOT_RUN" },
+        "digestMode": { "const": "NONE" },
+        "requiredReports": { "const": 0 },
+        "sealedReports": { "const": 0 },
+        "claimBoundary": { "const": "RECORDS_THAT_NO_OPTIONAL_SIX_REVIEWER_PASS_IS_CLAIMED" }
+      }
+    },
+    "adjudication": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "recommendation", "decisionBasis", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-ADJUDICATION" },
+        "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
+        "state": { "const": "APPROVED" },
+        "digestMode": { "const": "CANONICAL_RECORD" },
+        "recommendation": { "const": "RELEASE" },
+        "decisionBasis": { "const": "RECORDED_BETA7_CLEARANCE" },
+        "claimBoundary": { "const": "BINDS_THE_RECORDED_ADJUDICATION_DECISION_NOT_REVIEWER_IDENTITY" }
+      }
+    },
+    "findingDisposition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "openCritical", "openHigh", "unacceptedMedium", "unrecordedLow", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-FINDINGS" },
+        "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
+        "state": { "const": "COMPLETE" },
+        "digestMode": { "const": "CANONICAL_RECORD" },
+        "openCritical": { "const": 0 },
+        "openHigh": { "const": 0 },
+        "unacceptedMedium": { "const": 0 },
+        "unrecordedLow": { "const": 0 },
+        "claimBoundary": { "const": "BINDS_THE_RECORDED_FINDING_COUNTS_NOT_UNDISCOVERED_DEFECT_ABSENCE" }
+      }
+    },
+    "hostedWindows": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "artifactPath", "artifactSha256", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-HOSTED-WINDOWS" },
+        "evidenceClass": { "const": "EXTERNAL_CANONICAL_ARTIFACT" },
+        "state": { "const": "REVIEWED" },
+        "digestMode": { "const": "RAW_FILE_BYTES" },
+        "artifactPath": { "$ref": "#/$defs/path" },
+        "artifactSha256": { "$ref": "#/$defs/sha64" },
+        "claimBoundary": { "const": "BINDS_THE_REVIEWED_BROWSER_AND_RUNNER_IDENTITY_RECORD" }
+      }
+    },
+    "ownerAuthorization": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "evidenceClass", "state", "digestMode", "releaseTag", "protectedRef", "authorizationScope", "claimBoundary"],
+      "properties": {
+        "id": { "const": "EXT-OWNER" },
+        "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
+        "state": { "const": "PR_PUSH_AUTHORIZED" },
+        "digestMode": { "const": "CANONICAL_RECORD" },
+        "releaseTag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" },
+        "protectedRef": { "const": "refs/heads/main" },
+        "authorizationScope": { "const": "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS" },
+        "claimBoundary": { "const": "BINDS_THE_RECORDED_OWNER_DECISION_NOT_GITHUB_AUTHENTICATION" }
+      }
+    }
+  }
+}

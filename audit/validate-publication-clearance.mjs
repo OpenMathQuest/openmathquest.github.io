@@ -17,6 +17,7 @@ import {
   parseReviewedBrowserRunnerEvidence,
 } from "./lib/browser-runner-evidence.mjs";
 import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const payloadSha256 = String(process.env.MQ_PUBLIC_PAYLOAD_SHA256 || "");
@@ -26,18 +27,22 @@ try {
   if (!/^[a-f0-9]{64}$/u.test(payloadSha256) || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u.test(payloadTreeOid)) {
     throw new Error("Validated public-payload environment values are missing or malformed.");
   }
-  const [text, browserEvidenceText, engine, manifest, rightsSha256] = await Promise.all([
+  const [text, browserEvidenceText, engine, manifest, rightsSha256, releaseEvidenceBundle] = await Promise.all([
     readFile(path.join(root, PUBLICATION_CLEARANCE_PATH), "utf8"),
     readFile(path.join(root, BROWSER_RUNNER_EVIDENCE_PATH), "utf8"),
     loadShippedEngine(path.join(root, "index.html")),
     loadManifest(path.join(root, CURRICULUM_PATH)),
     rightsStateSha256(root),
+    loadReleaseEvidenceBundle(),
   ]);
   const parsed = parsePublicationClearance(text);
   if (!parsed.valid) throw new Error(`Publication clearance schema failed: ${parsed.issues.join("; ")}`);
   const browserEvidence = parseReviewedBrowserRunnerEvidence(browserEvidenceText);
   if (!browserEvidence.valid || browserEvidence.status !== "REVIEWED") {
     throw new Error(`Reviewed browser/runner evidence is not approved: ${browserEvidence.issues.join("; ") || browserEvidence.status}`);
+  }
+  if (!releaseEvidenceBundle.valid) {
+    throw new Error(`Release evidence bundle is invalid: ${releaseEvidenceBundle.issues.join("; ")}`);
   }
   const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
     ? { valid: true, issues: [] }
@@ -64,12 +69,13 @@ try {
     qualificationPayloadSha256: evidenceSuccessor.qualificationPayloadSha256,
     qualificationPayloadTreeOid: evidenceSuccessor.qualificationPayloadTreeOid,
     releaseTag: CURRENT_RELEASE_TAG,
+    releaseEvidenceBindings: releaseEvidenceBundle.bindings,
     now: new Date(),
   };
   if (!clearanceMatches(parsed, expected)) throw new Error("Publication clearance does not match the exact reviewed artifacts.");
   const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
   if (!["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)) {
-    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => !["PASS", "WAIVED", "DEFERRED", "OPTIONAL", "OWNER_SKIPPED"].includes(item.status)).map((item) => `${item.id}: ${item.details}`).join("; ")}`);
+    throw new Error(`External release evidence is blocked: ${externalReleaseEvidence.gates.filter((item) => !["PASS", "WAIVED", "DEFERRED", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED"].includes(item.status)).map((item) => `${item.id}: ${item.details}`).join("; ")}`);
   }
   process.stdout.write(`${JSON.stringify({
     status: parsed.status,

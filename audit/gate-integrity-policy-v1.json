@@ -1,0 +1,299 @@
+{
+  "policyId": "math-quest-gate-integrity",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "status": "ACTIVE",
+  "primaryConsumer": "AI_AGENT",
+  "authority": "THIS_FILE",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest gate-integrity policy and gate-family registry.",
+    "originalWork": true
+  },
+  "orderingContract": [
+    { "jsonPointer": "/rules", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/gateFamilies", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/gateFamilies/*/implementationPaths", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/gateFamilies/*/validatorPaths", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/acceptanceCriteria", "policy": "LEXICOGRAPHIC_BY_ID" }
+  ],
+  "statusSemantics": {
+    "PASS": "RAN_COMPLETE_AND_ORACLE_ASSERTED_TRUE",
+    "FAIL": "RAN_COMPLETE_AND_ORACLE_ASSERTED_FALSE",
+    "ERROR": "GATE_EXECUTION_FAILED_FAIL_CLOSED",
+    "TIMEOUT": "GATE_EXCEEDED_MEASURED_BOUND_FAIL_CLOSED",
+    "CANCELLED": "GATE_CANCELLED_FAIL_CLOSED",
+    "SKIPPED": "REQUIRED_EXECUTION_WAS_SKIPPED_FAIL_CLOSED",
+    "MISSING_ARTIFACT": "REQUIRED_EVIDENCE_ABSENT_FAIL_CLOSED",
+    "NOT_RUN": "REQUIRED_EXECUTION_DID_NOT_START_FAIL_CLOSED",
+    "NOT_REQUIRED_BY_CADENCE": "PREDECLARED_CADENCE_EXCLUSION_NOT_A_PASS",
+    "DEFERRED": "EXPLICIT_OWNER_DECISION_WITH_RESIDUAL_RISK_NOT_A_PASS",
+    "OPTIONAL_NOT_RUN": "PREDECLARED_OPTION_NOT_SELECTED_NOT_A_PASS",
+    "OWNER_SKIPPED": "EXPLICIT_RELEASE_SCOPED_OWNER_DECISION_NOT_A_PASS",
+    "WAIVED": "EXPLICIT_EMERGENCY_RELEASE_SCOPED_OWNER_DECISION_NOT_A_PASS"
+  },
+  "rules": [
+    {
+      "id": "GI-R01",
+      "directive": "REPAIR_PRODUCT_DEFECTS_WITHOUT_WEAKENING_THE_ORACLE",
+      "rationale": "The game is the target; a green indicator is only evidence about it.",
+      "falsePassPrevented": "SPECIFICATION_GAMING"
+    },
+    {
+      "id": "GI-R02",
+      "directive": "EVERY_GATE_FAMILY_REQUIRES_AN_EXECUTED_NEGATIVE_CONTROL",
+      "rationale": "A passing path carries no information unless a representative prohibited state is shown to fail.",
+      "falsePassPrevented": "VACUOUS_GATE"
+    },
+    {
+      "id": "GI-R03",
+      "directive": "REQUIRED_ERROR_TIMEOUT_CANCEL_SKIP_MISSING_ARTIFACT_AND_NOT_RUN_STATES_FAIL_CLOSED",
+      "rationale": "Missing execution or evidence cannot establish the claimed property.",
+      "falsePassPrevented": "ABSENCE_AS_SUCCESS"
+    },
+    {
+      "id": "GI-R04",
+      "directive": "PREDECLARED_NOT_REQUIRED_DEFERRED_AND_OPTIONAL_STATES_REMAIN_NON_PASSING_AND_VISIBLE",
+      "rationale": "A legitimate cadence or owner decision must not be misreported as successful evidence.",
+      "falsePassPrevented": "NON_APPLICABILITY_AS_SUCCESS"
+    },
+    {
+      "id": "GI-R05",
+      "directive": "DETECTOR_REPAIR_REQUIRES_PROVEN_DETECTOR_DEFECT_AND_EQUAL_OR_STRONGER_EFFECT_SENSITIVE_PROTECTION",
+      "rationale": "A detector can be wrong, but repairing it must not become a route around a real product failure.",
+      "falsePassPrevented": "ORACLE_DEGRADATION_DISGUISED_AS_MAINTENANCE"
+    },
+    {
+      "id": "GI-R06",
+      "directive": "RERUNS_MAY_DIAGNOSE_OR_VERIFY_A_CHANGE_BUT_MUST_PRESERVE_THE_FIRST_RESULT",
+      "rationale": "A later green result cannot erase nondeterminism or the failure that motivated a correction.",
+      "falsePassPrevented": "RETRY_TO_GREEN"
+    },
+    {
+      "id": "GI-R07",
+      "directive": "METRIC_FLOORS_ARE_VERSIONED_WITH_EXACT_NUMERATOR_DENOMINATOR_AND_MEASUREMENT_SEMANTICS",
+      "rationale": "An observed percentage is not automatically a permanent specification and denominator drift must remain visible.",
+      "falsePassPrevented": "METRIC_BASELINE_AMBIGUITY"
+    },
+    {
+      "id": "GI-R08",
+      "directive": "ONLY_WEAKENING_SUPPRESSION_PRODUCT_CONTRACT_CHANGE_OR_MATERIAL_NEW_DECISION_REQUIRES_OWNER_SELECTION",
+      "rationale": "Authorized root-cause repairs and stronger checks should proceed without repeated approval loops.",
+      "falsePassPrevented": "APPROVAL_FATIGUE_AND_UNBOUNDED_BLOCKAGE"
+    },
+    {
+      "id": "GI-R09",
+      "directive": "EVIDENCE_DIGESTS_MUST_BIND_VALIDATED_CANONICAL_BYTES_OR_EXPLICITLY_LABEL_A_STRUCTURED_ASSERTION",
+      "rationale": "A syntactically valid digest is not proof that any evidence exists or was inspected.",
+      "falsePassPrevented": "UNBOUND_EVIDENCE_DIGEST"
+    },
+    {
+      "id": "GI-R10",
+      "directive": "REPORT_INVENTORY_PASS_FAIL_AND_ACCEPTED_NON_PASS_COUNTS_SEPARATELY",
+      "rationale": "Record completeness and successful verification are different claims.",
+      "falsePassPrevented": "COUNTED_AS_PASSED"
+    },
+    {
+      "id": "GI-R11",
+      "directive": "TIMEOUT_CHANGES_REQUIRE_MEASURED_JUSTIFICATION_AND_MUST_NOT_CONCEAL_NONTERMINATION_OR_REGRESSION",
+      "rationale": "Legitimate workload growth can change duration while an arbitrary increase can hide a broken loop.",
+      "falsePassPrevented": "TIMEOUT_AS_SUPPRESSION"
+    },
+    {
+      "id": "GI-R12",
+      "directive": "UNRESOLVED_MATERIAL_FAILURES_USE_THE_EXISTING_AUTHORITATIVE_RECORD_INSTEAD_OF_AUTOMATIC_NEW_ISSUES",
+      "rationale": "Durable evidence matters; duplicate paperwork does not improve the product or the detector.",
+      "falsePassPrevented": "STATUS_ARTIFACT_SPRAWL"
+    }
+  ],
+  "metricFloors": {
+    "engineBranchCoverage": {
+      "version": 1,
+      "minimumPercent": 88,
+      "numerator": "COVERED_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
+      "denominator": "ALL_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
+      "changePolicy": "OWNER_APPROVAL_ONLY_WHEN_MEASUREMENT_SEMANTICS_OR_PRODUCT_CONTRACT_CHANGES"
+    },
+    "representativeMutationFamilies": {
+      "version": 1,
+      "minimumKilled": 11,
+      "denominator": 11,
+      "claimBoundary": "CURATED_CRITICAL_ENGINE_FAMILIES_NOT_GLOBAL_MUTATION_SCORE"
+    }
+  },
+  "enforcement": {
+    "requiredPullRequestCheck": "development-checks",
+    "prohibitedRequiredPullRequestChecks": ["full-audit"],
+    "requiredTagPattern": "refs/tags/v*",
+    "requiredTagRules": ["DELETION_PROHIBITED", "UPDATE_PROHIBITED"],
+    "codeOwnerReview": "NOT_PRIMARY_CONTROL_FOR_SINGLE_OPERATIONAL_ACTOR",
+    "protectedPathWeakeningPolicy": "EXPLICIT_OWNER_APPROVAL_REQUIRED",
+    "protectedPathStrengtheningPolicy": "AUTHORIZED_WITH_EXECUTED_NEGATIVE_CONTROL",
+    "detectorRepairPolicy": "AUTHORIZED_AFTER_PROVEN_FALSE_POSITIVE_OR_FALSE_NEGATIVE_WITH_EQUAL_OR_STRONGER_EFFECT_PROTECTION",
+    "remoteConfigurationVerification": "READ_ONLY_GITHUB_PREFLIGHT_AND_FOCUSED_STATIC_WORKFLOW_CONTRACT"
+  },
+  "retryPolicy": {
+    "automaticRetries": 0,
+    "diagnosticRerun": "ALLOWED_WITH_FIRST_RESULT_RETAINED",
+    "postCorrectionRerun": "REQUIRED_AND_LINKED_TO_CORRECTION",
+    "unchangedRerunForGreen": "PROHIBITED"
+  },
+  "outcomeReporting": {
+    "requiredFields": [
+      "acceptedNonPassCount",
+      "failedCount",
+      "inventoryActual",
+      "inventoryExpected",
+      "missingCount",
+      "notRunCount",
+      "passedCount",
+      "runId",
+      "skippedCount"
+    ],
+    "inventoryMatchMayBeCalledPass": false,
+    "acceptedNonPassStates": ["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"]
+  },
+  "gateFamilies": [
+    {
+      "id": "gate.browser",
+      "claim": "RENDERED_BROWSER_ASSERTIONS_EXECUTED_WITH_ZERO_FAILURES_ZERO_SKIPS_AND_EXPECTED_RESULT_IDENTITIES",
+      "proofClass": "EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "DOES_NOT_PROVE_CHILD_COMPREHENSION_OR_REAL_DEVICE_BEHAVIOR",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-BROWSER-MISSING_OR_SKIPPED_RESULT",
+      "implementationPaths": ["audit/lib/browser-smoke.mjs", "audit/run-browser-smoke.mjs"],
+      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+    },
+    {
+      "id": "gate.canary",
+      "claim": "TRUSTED_HTTPS_UPDATE_OFFLINE_PRIVACY_AND_TEARDOWN_ARTIFACT_VALIDATES_FOR_EXACT_CANDIDATE",
+      "proofClass": "EFFECT_SENSITIVE_HOSTED_BROWSER",
+      "independenceBoundary": "TECHNICAL_LOOPBACK_CANARY_NOT_HOST_PRIVACY_OR_RELEASE_CERTIFICATION",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN",
+      "implementationPaths": [".github/workflows/trusted-https-canary.yml", "audit/lib/trusted-https-canary.mjs", "audit/validate-trusted-https-canary.mjs"],
+      "validatorPaths": ["audit/tests/trusted-https-canary.test.mjs"]
+    },
+    {
+      "id": "gate.coverage",
+      "claim": "EXACT_STAGED_ENGINE_BYTES_MEET_VERSIONED_NATIVE_BRANCH_FLOOR_WITH_CALIBRATED_RANGE_ACCOUNTING",
+      "proofClass": "INSTRUMENTED_MEASUREMENT",
+      "independenceBoundary": "COVERAGE_IS_EXECUTION_EVIDENCE_NOT_CORRECTNESS",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL",
+      "implementationPaths": ["audit/lib/native-coverage.mjs", "audit/run-coverage.mjs"],
+      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+    },
+    {
+      "id": "gate.deep-ux",
+      "claim": "CADENCE_SELECTED_RENDERED_CELL_PLAN_EXECUTES_EXACTLY_WITH_ZERO_RETRIES_SKIPS_DUPLICATES_OR_UNKNOWN_CELLS",
+      "proofClass": "EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "NOT_REQUIRED_BY_CADENCE_IS_VISIBLE_AND_NOT_A_PASS",
+      "nonRunPolicy": "CADENCE_ENUM",
+      "negativeControlId": "NC-DEEP-UX-MISSING-CELL-OR-RETRY",
+      "implementationPaths": ["audit/lib/playwright-deep-ux-census.mjs", "audit/run-playwright-deep-ux-census.mjs", "playwright.deep-ux.config.mjs"],
+      "validatorPaths": ["audit/tests/playwright-deep-ux-census.test.mjs"]
+    },
+    {
+      "id": "gate.engine",
+      "claim": "EXACT_ENGINE_BEHAVIORAL_ASSERTIONS_PASS_WITH_ZERO_REQUIRED_FAILURES_OR_SKIPS",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "SELECTED_CRITICAL_BEHAVIORS_HAVE_MUTATION_WITNESSES_NOT_EVERY_ASSERTION",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-ENGINE-REPRESENTATIVE-MUTANTS",
+      "implementationPaths": ["audit/tests/engine-suite.mjs", "audit/tests/node-engine.test.mjs"],
+      "validatorPaths": ["audit/mutation-runner.mjs"]
+    },
+    {
+      "id": "gate.generator",
+      "claim": "ALL_DECLARED_DETERMINISTIC_GENERATOR_COMBINATIONS_ARE_COMPLETE_REACHABLE_AND_INTERNALLY_SELF_CONSISTENT",
+      "proofClass": "EXHAUSTIVE_INTERNAL_CONSISTENCY",
+      "independenceBoundary": "SELF_GRADING_DOES_NOT_INDEPENDENTLY_PROVE_MATHEMATICAL_TRUTH",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS",
+      "implementationPaths": ["audit/exhaustive-generator-audit.mjs"],
+      "validatorPaths": ["audit/tests/manifest-semantic-suite.mjs"]
+    },
+    {
+      "id": "gate.github-pr",
+      "claim": "PROTECTED_MAIN_REQUIRES_A_PULL_REQUEST_CHECK_THAT_ACTUALLY_RUNS_ON_PULL_REQUESTS",
+      "proofClass": "EXTERNAL_ENFORCEMENT",
+      "independenceBoundary": "REMOTE_SETTINGS_REQUIRE_READ_ONLY_GITHUB_PREFLIGHT_BECAUSE_REPOSITORY_BYTES_CANNOT_ENFORCE_THEM",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK",
+      "implementationPaths": [".github/workflows/audit.yml", "audit/gate-integrity-policy-v1.json"],
+      "validatorPaths": ["audit/tests/gate-integrity-policy.test.mjs"]
+    },
+    {
+      "id": "gate.mutation",
+      "claim": "ELEVEN_CURATED_CRITICAL_ENGINE_MUTATION_FAMILIES_ARE_KILLED",
+      "proofClass": "REPRESENTATIVE_MUTATION",
+      "independenceBoundary": "NOT_A_GLOBAL_MUTATION_SCORE_AND_NOT_PROOF_FOR_BROWSER_OR_INFRASTRUCTURE_GATES",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS",
+      "implementationPaths": ["audit/mutation-runner.mjs"],
+      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+    },
+    {
+      "id": "gate.pages",
+      "claim": "DEPLOYMENT_REQUIRES_A_SUCCESSFUL_COMPLETE_CERTIFICATION_WORKFLOW_FOR_THE_EXACT_TAGGED_COMMIT",
+      "proofClass": "EXTERNAL_ENFORCEMENT",
+      "independenceBoundary": "DOES_NOT_PREVENT_A_SEPARATE_GITHUB_RELEASE_FROM_BEING_CREATED_OUTSIDE_THE_DEPLOYMENT_WORKFLOW",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION",
+      "implementationPaths": [".github/workflows/pages.yml"],
+      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
+    },
+    {
+      "id": "gate.playwright",
+      "claim": "DIRECT_NATIVE_INPUT_JOURNEYS_EXECUTE_THE_EXACT_CLOSED_RESULT_SET_WITH_ZERO_FAILURES_SKIPS_RETRIES_DUPLICATES_OR_UNKNOWN_RESULTS",
+      "proofClass": "EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "DOES_NOT_REPLACE_HUMAN_PLAY_TESTING_REAL_DEVICE_OR_SCREEN_READER_EVIDENCE",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT",
+      "implementationPaths": ["audit/lib/playwright-focused-contract.mjs", "audit/run-playwright-focused.mjs", "playwright.config.mjs"],
+      "validatorPaths": ["audit/tests/playwright-focused-contract.test.mjs"]
+    },
+    {
+      "id": "gate.public-candidate",
+      "claim": "TRACKED_PUBLIC_CANDIDATE_PASSES_PRIVACY_PROVENANCE_LICENCE_WORKFLOW_PIN_AND_ARTIFACT_CLASSIFICATION_GUARDS",
+      "proofClass": "STATIC_AND_BYTE_IDENTITY",
+      "independenceBoundary": "STATIC_SCANS_DO_NOT_PROVE_ABSENCE_OF_EVERY_SEMANTIC_PRIVACY_DEFECT",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL",
+      "implementationPaths": ["audit/public-candidate-guard.mjs"],
+      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
+    },
+    {
+      "id": "gate.publication-evidence",
+      "claim": "EVERY_RELEASE_EVIDENCE_STATUS_BINDS_VALIDATED_CANONICAL_BYTES_OR_AN_EXPLICITLY_TYPED_STRUCTURED_ASSERTION",
+      "proofClass": "BOUND_EVIDENCE",
+      "independenceBoundary": "STRUCTURED_ASSERTIONS_BIND_THE_DECISION_RECORD_BUT_DO_NOT_IMPERSONATE_EXTERNAL_OBSERVATION",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST",
+      "implementationPaths": ["PUBLICATION_CLEARANCE.md", "audit/lib/publication-clearance.mjs", "audit/lib/release-evidence-bundle.mjs", "audit/release-evidence-bundle-v1.json"],
+      "validatorPaths": ["audit/tests/publication-clearance.test.mjs", "audit/tests/release-evidence-bundle.test.mjs"]
+    },
+    {
+      "id": "gate.semantic",
+      "claim": "DECLARED_TASK_TYPES_AND_DETERMINISTIC_QUESTIONS_SATISFY_INDEPENDENT_MATHEMATICAL_AND_CONTRACT_ORACLES",
+      "proofClass": "INDEPENDENT_SEMANTIC_ORACLE",
+      "independenceBoundary": "REPRESENTATIVE_DETERMINISTIC_QUESTIONS_NOT_EVERY_POSSIBLE_RANDOM_SEED",
+      "nonRunPolicy": "FAIL",
+      "negativeControlId": "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION",
+      "implementationPaths": ["audit/tests/manifest-semantic-suite.mjs", "audit/tests/strategy-build-oracle.mjs"],
+      "validatorPaths": ["audit/tests/node-engine.test.mjs"]
+    }
+  ],
+  "acceptanceCriteria": [
+    { "id": "GI-A01", "predicate": "POLICY_SCHEMA_VALID_AND_CLOSED" },
+    { "id": "GI-A02", "predicate": "EVERY_GATE_FAMILY_HAS_EXECUTED_NEGATIVE_CONTROL" },
+    { "id": "GI-A03", "predicate": "PUBLICATION_ARBITRARY_HEX_MUTATION_BLOCKS" },
+    { "id": "GI-A04", "predicate": "REQUIRED_PULL_REQUEST_CHECK_RUNS_ON_PULL_REQUEST_EVENT" },
+    { "id": "GI-A05", "predicate": "REMOTE_MAIN_PROTECTION_REQUIRES_DEVELOPMENT_CHECKS_NOT_FULL_AUDIT" },
+    { "id": "GI-A06", "predicate": "REMOTE_TAG_RULE_PROTECTS_ALL_VERSION_TAGS_FROM_UPDATE_AND_DELETION" },
+    { "id": "GI-A07", "predicate": "REPORT_SEPARATES_INVENTORY_PASS_FAIL_AND_ACCEPTED_NON_PASS_COUNTS" },
+    { "id": "GI-A08", "predicate": "FOCUSED_GOVERNANCE_DRIFTLESS_CANARY_PWA_PLAYWRIGHT_AND_GUARD_CHECKS_PASS" },
+    { "id": "GI-A09", "predicate": "ONE_INDEPENDENT_REVIEW_AND_CORRECTION_VERIFICATION_COMPLETE" }
+  ]
+}

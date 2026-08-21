@@ -26,8 +26,10 @@ import {
   PUBLICATION_CLEARANCE_PATH,
 } from "./lib/publication-clearance.mjs";
 import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
 import { AI_READER_CONTRACT_REF } from "./lib/repository-code-map.mjs";
+import { summarizeGateOutcomes } from "./lib/gate-integrity-policy.mjs";
 import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT, runCoverage } from "./run-coverage.mjs";
 import { runMutations } from "./mutation-runner.mjs";
 
@@ -218,6 +220,8 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
   try {
     const clearance = await readFile(clearancePath, "utf8");
     const parsed = parsePublicationClearance(clearance);
+    const releaseEvidenceBundle = await loadReleaseEvidenceBundle();
+    expected.releaseEvidenceBindings = releaseEvidenceBundle.bindings;
     const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
       ? { valid: true, issues: [] }
       : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
@@ -230,6 +234,7 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     const approved = curriculumManifest.status === "PASS"
       && publicCandidate.status === "PASS"
       && browserEvidenceReady
+      && releaseEvidenceBundle.valid
       && ["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)
       && clearanceMatches(parsed, expected);
     return {
@@ -239,6 +244,10 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
       requiredFailures: parsed.requiredFailures,
       requiredSkips: parsed.requiredSkips,
       residualRisks: parsed.residualRisks,
+      releaseEvidenceBundle: {
+        status: releaseEvidenceBundle.valid ? "VALIDATED" : "BLOCKED",
+        issues: releaseEvidenceBundle.issues,
+      },
       reviewedEngineSha256: parsed.reviewedEngineSha256,
       reviewedManifestVersion: parsed.reviewedManifestVersion,
       reviewedManifestSha256: parsed.reviewedManifestSha256,
@@ -420,6 +429,17 @@ function markdown(report, { final = false } = {}) {
     `| Launcher/server gates | ${EXPECTED.launcherGates} | ${report.actual.launcherGates} | ${report.actual.launcherGates === EXPECTED.launcherGates ? "MATCH" : "MISMATCH"} |`,
     `| External release-evidence gates | ${EXPECTED.externalEvidenceGates} | ${report.actual.externalEvidenceGates} | ${report.actual.externalEvidenceGates === EXPECTED.externalEvidenceGates ? "MATCH" : "MISMATCH"} |`,
     `| **Total** | **${EXPECTED.total}** | **${report.actual.total}** | **${report.actual.total === EXPECTED.total ? "MATCH" : "MISMATCH"}** |`, "",
+    "Inventory equality proves only that every expected record was emitted. It is not a pass count.", "",
+    "## Outcome summary", "",
+    "| Outcome class | Count |", "|---|---:|",
+    `| Literal PASS | ${report.outcomeSummary.passedCount} |`,
+    `| Failure or blocked | ${report.outcomeSummary.failedCount} |`,
+    `| Skipped required execution | ${report.outcomeSummary.skippedCount} |`,
+    `| Missing artifact | ${report.outcomeSummary.missingCount} |`,
+    `| Required but not run | ${report.outcomeSummary.notRunCount} |`,
+    `| Accepted non-pass | ${report.outcomeSummary.acceptedNonPassCount} |`,
+    `| Inventory | ${report.outcomeSummary.inventoryActual}/${report.outcomeSummary.inventoryExpected} |`,
+    `| Run ID | ${esc(report.outcomeSummary.runId)} |`, "",
     "## Gate results", "",
     "| Gate | Result | Evidence |", "|---|---|---|",
     `| Exact engine bytes | ${report.coverage.exactBytes ? "PASS" : "FAIL"} | ${esc(report.coverage.engineSha256 || "unavailable")} |`,
@@ -550,6 +570,29 @@ export async function runAudit({ browserPath = null } = {}) {
   };
   actual.total = actual.engineAssertions + actual.semanticAssertions + actual.browserAssertions + actual.playwrightAssertions + actual.mutationFamilies + actual.coverageGates + actual.generatorGates + actual.launcherGates + actual.externalEvidenceGates;
   const countsMatch = Object.entries(EXPECTED).every(([key, value]) => actual[key] === value);
+  const normalizedOutcomeStatus = (status) => ({
+    failed: "FAIL",
+    interrupted: "CANCELLED",
+    passed: "PASS",
+    skipped: "SKIPPED",
+    timedOut: "TIMEOUT",
+    OPTIONAL: "OPTIONAL_NOT_RUN",
+  }[status] || status);
+  const outcomeStatuses = [
+    ...engine.results.map((record) => normalizedOutcomeStatus(record.status)),
+    ...semantic.assertions.map((record) => normalizedOutcomeStatus(record.status)),
+    ...browser.results.map((record) => normalizedOutcomeStatus(record.status)),
+    ...playwright.results.map((record) => normalizedOutcomeStatus(record.status)),
+    ...mutation.families.map((record) => normalizedOutcomeStatus(record.status)),
+    normalizedOutcomeStatus(coverage.status),
+    normalizedOutcomeStatus(generator.status),
+    process.env.MQ_LAUNCHER_PREFLIGHT?.startsWith("PASS_") ? "PASS" : "FAIL",
+    ...externalReleaseEvidence.gates.map((record) => normalizedOutcomeStatus(record.status)),
+  ];
+  const outcomeSummary = summarizeGateOutcomes(outcomeStatuses, {
+    inventoryExpected: EXPECTED.total,
+    runId: process.env.GITHUB_RUN_ID || "LOCAL",
+  });
   const delivered = await deliveredFiles();
   const residualRisks = [];
   const unverifiedClaims = [];
@@ -587,7 +630,7 @@ export async function runAudit({ browserPath = null } = {}) {
   const report = {
     schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF,
     generatedAt: auditTime.toISOString(), status: gatesPass ? (parentStrings.status === "APPROVED" ? (shippable ? "PASS" : "PUBLICATION_BLOCKED") : "PENDING_PARENT_APPROVAL") : "FAIL",
-    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, engine, semantic, coverage, mutation, generator, browser, playwright,
+    technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, outcomeSummary, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,
   };
   const publicReport = sanitizeHostDetails(report);
@@ -626,6 +669,7 @@ process.stdout.write(`${JSON.stringify({
   },
   shippable: report.shippable,
   countsMatch: report.countsMatch,
+  outcomeSummary: report.outcomeSummary,
   publicCandidate: {
     status: report.publicCandidate.status,
     payloadSha256: report.publicCandidate.payloadSha256,

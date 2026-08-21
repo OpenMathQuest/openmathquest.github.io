@@ -1,0 +1,97 @@
+{
+  "bundleId": "math-quest-release-evidence",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "authority": "THIS_FILE",
+  "releaseTag": "v1.0.0-beta.7",
+  "qualificationCommitSha": "84e36f51ae1be3c0c496751b1a405d012c0a213c",
+  "reviewedAtUtc": "2026-08-20T23:07:08Z",
+  "expiresAtUtc": "2026-09-19T23:07:08Z",
+  "evidenceSuccessorPolicy": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest release evidence binding record.",
+    "originalWork": true
+  },
+  "records": {
+    "hostQualification": {
+      "id": "EXT-HOST",
+      "evidenceClass": "STRUCTURED_ASSERTION",
+      "state": "DEFERRED_PRERELEASE",
+      "digestMode": "CANONICAL_RECORD",
+      "releaseClass": "PRERELEASE",
+      "residualRisk": "GitHub Pages may receive ordinary request metadata, and its under-13 terms remain unqualified until the first stable release.",
+      "claimBoundary": "BINDS_THE_RECORDED_DEFERRAL_NOT_EXTERNAL_HOST_APPROVAL"
+    },
+    "canaryReconciliation": {
+      "id": "EXT-CANARY",
+      "evidenceClass": "CANONICAL_ARTIFACT",
+      "state": "RECONCILED",
+      "digestMode": "RAW_FILE_BYTES",
+      "artifactPath": "audit/trusted-https-canary-beta7-v1.json",
+      "artifactSha256": "d0870c3f8d9d610d0c7afb9ac39b2efc039298860ede2dac071e75299b02d4ed",
+      "candidateSha": "84e36f51ae1be3c0c496751b1a405d012c0a213c",
+      "workflowRunId": 32427209010,
+      "workflowRunAttempt": 1,
+      "claimBoundary": "BINDS_VALIDATED_SANITIZED_CANARY_BYTES_FOR_THE_EXACT_CANDIDATE"
+    },
+    "physicalDevice": {
+      "id": "EXT-DEVICE",
+      "evidenceClass": "ABSENCE_RECORD",
+      "state": "OPTIONAL_NOT_RUN",
+      "digestMode": "NONE",
+      "requiredLanes": 0,
+      "passedLanes": 0,
+      "primaryIPadJourneyResult": "NOT_RUN",
+      "claimBoundary": "RECORDS_THAT_NO_PHYSICAL_DEVICE_PASS_IS_CLAIMED"
+    },
+    "independentReviewers": {
+      "id": "EXT-REVIEWERS",
+      "evidenceClass": "ABSENCE_RECORD",
+      "state": "OPTIONAL_NOT_RUN",
+      "digestMode": "NONE",
+      "requiredReports": 0,
+      "sealedReports": 0,
+      "claimBoundary": "RECORDS_THAT_NO_OPTIONAL_SIX_REVIEWER_PASS_IS_CLAIMED"
+    },
+    "adjudication": {
+      "id": "EXT-ADJUDICATION",
+      "evidenceClass": "STRUCTURED_ASSERTION",
+      "state": "APPROVED",
+      "digestMode": "CANONICAL_RECORD",
+      "recommendation": "RELEASE",
+      "decisionBasis": "RECORDED_BETA7_CLEARANCE",
+      "claimBoundary": "BINDS_THE_RECORDED_ADJUDICATION_DECISION_NOT_REVIEWER_IDENTITY"
+    },
+    "findingDisposition": {
+      "id": "EXT-FINDINGS",
+      "evidenceClass": "STRUCTURED_ASSERTION",
+      "state": "COMPLETE",
+      "digestMode": "CANONICAL_RECORD",
+      "openCritical": 0,
+      "openHigh": 0,
+      "unacceptedMedium": 0,
+      "unrecordedLow": 0,
+      "claimBoundary": "BINDS_THE_RECORDED_FINDING_COUNTS_NOT_UNDISCOVERED_DEFECT_ABSENCE"
+    },
+    "hostedWindows": {
+      "id": "EXT-HOSTED-WINDOWS",
+      "evidenceClass": "EXTERNAL_CANONICAL_ARTIFACT",
+      "state": "REVIEWED",
+      "digestMode": "RAW_FILE_BYTES",
+      "artifactPath": "audit/browser-runner-evidence-v1.json",
+      "artifactSha256": "23d118738265f4e3cddfa36d90e40abf88f296014241b74a9cfbf2f28cc4adc3",
+      "claimBoundary": "BINDS_THE_REVIEWED_BROWSER_AND_RUNNER_IDENTITY_RECORD"
+    },
+    "ownerAuthorization": {
+      "id": "EXT-OWNER",
+      "evidenceClass": "STRUCTURED_ASSERTION",
+      "state": "PR_PUSH_AUTHORIZED",
+      "digestMode": "CANONICAL_RECORD",
+      "releaseTag": "v1.0.0-beta.7",
+      "protectedRef": "refs/heads/main",
+      "authorizationScope": "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS",
+      "claimBoundary": "BINDS_THE_RECORDED_OWNER_DECISION_NOT_GITHUB_AUTHENTICATION"
+    }
+  }
+}
