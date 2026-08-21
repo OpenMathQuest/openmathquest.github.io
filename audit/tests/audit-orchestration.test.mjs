@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { BROWSER_AUDIT_SHARDS, aggregateBrowserShardReports } from "../lib/browser-smoke.mjs";
+import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
 import { validateStructuredAudit } from "../run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -126,7 +127,7 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.match(nodeEngine, /MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1/u);
   assert.match(auditPage, /AUDIT_SHARD !== "visual"/u);
   assert.match(auditPage, /AUDIT_SHARD !== "core"/u);
-  assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 3);
+  assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 4);
 });
 
 test("[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence", () => {
@@ -158,6 +159,8 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
   assert.equal(policy.executionPolicy.automaticRetries, 0);
+  assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximum, Object.keys(BROWSER_AUDIT_SHARDS).length);
+  assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);
 });
 
 test("watcher omits an empty changed-path parameter and preserves rename sources", async () => {

@@ -5,7 +5,7 @@ import { performance } from "node:perf_hooks";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { runBrowserSmoke } from "./lib/browser-smoke.mjs";
-import { createAuditLaneEnvelope, failedAuditLaneResult, AUDIT_LANE_IDS } from "./lib/bounded-audit-lanes.mjs";
+import { createAuditLaneEnvelope, failedAuditLaneResult, interpretJsonChildCompletion, AUDIT_LANE_IDS } from "./lib/bounded-audit-lanes.mjs";
 import { PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS, playwrightFocusedReportFindings } from "./lib/playwright-focused-contract.mjs";
 import { runMutations } from "./mutation-runner.mjs";
 import { runCoverage } from "./run-coverage.mjs";
@@ -18,21 +18,27 @@ const arg = (name) => {
   return entry ? entry.slice(prefix.length) : null;
 };
 
-async function runJsonChild(script, args = [], timeoutMs = 360_000) {
+async function runJsonChild(script, args = []) {
   try {
     const { stdout, stderr } = await execFileAsync(process.execPath, [script, ...args], {
       cwd: root,
       encoding: "utf8",
-      timeout: timeoutMs,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
     });
-    return { report: JSON.parse(stdout), processStatus: 0, stderr: String(stderr || "").slice(-4_000) };
+    return {
+      report: interpretJsonChildCompletion({ stdout, stderr, exitCode: 0 }),
+      processStatus: 0,
+      stderr: String(stderr || "").slice(-4_000),
+    };
   } catch (error) {
-    let report = null;
-    try { report = JSON.parse(String(error.stdout || "")); } catch {}
-    if (report) return { report, processStatus: error.code ?? 1, stderr: String(error.stderr || "").slice(-4_000) };
-    throw error;
+    interpretJsonChildCompletion({
+      stdout: error.stdout,
+      stderr: error.stderr,
+      exitCode: typeof error.code === "number" ? error.code : 1,
+      signal: error.signal,
+      timedOut: error.killed === true && error.signal === "SIGTERM",
+    });
   }
 }
 
@@ -45,7 +51,6 @@ async function runPlaywrightFocusedAudit() {
     const result = await execFileAsync(process.execPath, [path.join(root, "audit", "run-playwright-focused.mjs")], {
       cwd: root,
       encoding: "utf8",
-      timeout: 180_000,
       windowsHide: true,
       maxBuffer: 4 * 1024 * 1024,
     });
@@ -95,11 +100,11 @@ try {
   if (laneId === "playwright") result = await runPlaywrightFocusedAudit();
   if (laneId === "mutation") result = await runMutations({ indexPath });
   if (laneId === "generator") {
-    const child = await runJsonChild(path.join(root, "audit", "exhaustive-generator-audit.mjs"), [], 300_000);
+    const child = await runJsonChild(path.join(root, "audit", "exhaustive-generator-audit.mjs"));
     result = { ...child.report, processStatus: child.processStatus, stderr: child.stderr };
   }
 } catch (caught) {
-  executionStatus = "ERROR";
+  executionStatus = caught?.executionStatus === "TIMEOUT" ? "TIMEOUT" : "ERROR";
   error = String(caught?.stack || caught);
   result = failedAuditLaneResult(laneId, error, executionStatus);
 }

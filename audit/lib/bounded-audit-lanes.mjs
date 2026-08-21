@@ -106,94 +106,187 @@ export function auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds
   return [...new Set(issues)];
 }
 
-function terminateProcessTree(child) {
-  if (!Number.isInteger(child.pid) || child.pid <= 0) return;
-  if (process.platform !== "win32") {
-    try { child.kill("SIGKILL"); } catch {}
-    return;
-  }
-  const systemRoot = process.env.SystemRoot || "C:\\Windows";
-  spawnSync(path.join(systemRoot, "System32", "taskkill.exe"), ["/PID", String(child.pid), "/T", "/F"], {
-    windowsHide: true,
-    stdio: "ignore",
-    timeout: 5_000,
-  });
+export function auditCandidateStabilityIssues({ before, after, revisionBefore, revisionAfter } = {}) {
+  const issues = [];
+  if (before?.status !== "PASS" || after?.status !== "PASS") issues.push("public-candidate guard did not pass twice");
+  if (!/^[a-f0-9]{40}$/u.test(String(revisionBefore || ""))) issues.push("starting repository revision is invalid");
+  if (revisionBefore !== revisionAfter) issues.push("repository revision changed during audit");
+  if (!before?.payloadSha256 || before.payloadSha256 !== after?.payloadSha256) issues.push("public payload changed during audit");
+  if (!before?.payloadTreeOid || before.payloadTreeOid !== after?.payloadTreeOid) issues.push("public payload tree changed during audit");
+  return issues;
 }
 
-function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs, nodePath, browserPath, indexPath }) {
-  return new Promise((resolve) => {
-    const args = [
-      path.join(root, "audit", "run-audit-lane.mjs"),
-      `--lane=${laneId}`,
-      `--run-id=${runId}`,
-      `--candidate-id=${candidateId}`,
-      `--index-path=${indexPath}`,
-    ];
-    if (browserPath) args.push(`--browser=${browserPath}`);
-    const child = spawn(nodePath, args, {
-      cwd: root,
-      env: process.env,
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function processExists(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+async function terminateProcessTree(child, closePromise, graceMs = 10_000) {
+  if (!Number.isInteger(child.pid) || child.pid <= 0) {
+    return { attempted: false, cleanupVerified: true, detail: "process did not start" };
+  }
+  let detail;
+  if (process.platform === "win32") {
+    const systemRoot = process.env.SystemRoot || "C:\\Windows";
+    const killed = spawnSync(path.join(systemRoot, "System32", "taskkill.exe"), ["/PID", String(child.pid), "/T", "/F"], {
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8",
+      timeout: 5_000,
     });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    let timedOut = false;
-    let overflow = false;
-    const maximumOutputBytes = 32 * 1024 * 1024;
-    const finish = (envelope) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(envelope);
-    };
-    const fail = (executionStatus, message, durationMs) => finish(createAuditLaneEnvelope({
-      candidateId,
-      durationMs,
-      error: message,
-      executionStatus,
-      laneId,
-      result: failedAuditLaneResult(laneId, message, executionStatus),
-      runId,
-    }));
-    const startedAt = performance.now();
-    const append = (current, chunk) => {
-      const next = `${current}${chunk}`;
-      if (Buffer.byteLength(next, "utf8") > maximumOutputBytes) {
-        overflow = true;
-        terminateProcessTree(child);
-        return next.slice(-maximumOutputBytes);
-      }
-      return next;
-    };
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => { stdout = append(stdout, chunk); });
-    child.stderr.on("data", (chunk) => { stderr = append(stderr, chunk); });
-    child.once("error", (error) => fail("ERROR", String(error), performance.now() - startedAt));
-    child.once("exit", (code, signal) => {
-      const durationMs = performance.now() - startedAt;
-      if (timedOut) return fail("TIMEOUT", `lane exceeded ${timeoutMs} ms`, durationMs);
-      if (overflow) return fail("ERROR", "lane output exceeded 32 MiB", durationMs);
-      if (code !== 0 || signal) return fail("ERROR", `lane process ended with code ${code ?? "null"} and signal ${signal ?? "null"}: ${stderr.slice(-4_000)}`, durationMs);
-      try {
-        finish(JSON.parse(stdout));
-      } catch (error) {
-        fail("ERROR", `lane emitted invalid JSON: ${String(error)}; stderr: ${stderr.slice(-4_000)}`, durationMs);
-      }
-    });
-    const timer = setTimeout(() => {
-      timedOut = true;
-      terminateProcessTree(child);
-    }, timeoutMs);
+    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}`;
+  } else {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+      detail = "SIGKILL sent to process group";
+    } catch {
+      try { child.kill("SIGKILL"); } catch {}
+      detail = "SIGKILL sent to direct process";
+    }
+  }
+  await Promise.race([closePromise, wait(graceMs)]);
+  if (processExists(child.pid)) {
+    try { child.kill("SIGKILL"); } catch {}
+    await Promise.race([closePromise, wait(1_000)]);
+  }
+  return { attempted: true, cleanupVerified: !processExists(child.pid), detail };
+}
+
+export async function runTreeSupervisedProcess({
+  args = [], command, cwd, env = process.env,
+  maximumOutputBytes = 32 * 1024 * 1024, timeoutMs,
+} = {}) {
+  const startedAt = performance.now();
+  const child = spawn(command, args, {
+    cwd,
+    detached: process.platform !== "win32",
+    env,
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  let stdout = "";
+  let stderr = "";
+  let outputBytes = 0;
+  let spawnError = null;
+  let terminationRequested = false;
+  let requestTermination;
+  const terminationPromise = new Promise((resolve) => { requestTermination = resolve; });
+  const triggerTermination = (record) => {
+    if (terminationRequested) return;
+    terminationRequested = true;
+    requestTermination(record);
+  };
+  const append = (current, chunk) => {
+    const text = String(chunk);
+    outputBytes += Buffer.byteLength(text, "utf8");
+    if (outputBytes > maximumOutputBytes) {
+      triggerTermination({ kind: "OUTPUT_LIMIT", message: `process output exceeded ${maximumOutputBytes} bytes` });
+    }
+    return `${current}${text}`.slice(-maximumOutputBytes);
+  };
+  child.stdout?.setEncoding("utf8");
+  child.stderr?.setEncoding("utf8");
+  child.stdout?.on("data", (chunk) => { stdout = append(stdout, chunk); });
+  child.stderr?.on("data", (chunk) => { stderr = append(stderr, chunk); });
+  child.once("error", (error) => { spawnError = error; });
+  const closePromise = new Promise((resolve) => {
+    child.once("close", (exitCode, signal) => resolve({ exitCode, signal }));
+  });
+  const timer = setTimeout(() => triggerTermination({ kind: "TIMEOUT", message: `process exceeded ${timeoutMs} ms` }), timeoutMs);
+  const first = await Promise.race([
+    closePromise.then((closed) => ({ kind: "CLOSED", closed })),
+    terminationPromise,
+  ]);
+  clearTimeout(timer);
+  let cleanup = { attempted: false, cleanupVerified: null, detail: "not required" };
+  let closed = first.closed ?? null;
+  if (first.kind !== "CLOSED") {
+    cleanup = await terminateProcessTree(child, closePromise);
+    closed ??= await Promise.race([closePromise, wait(100).then(() => ({ exitCode: null, signal: null }))]);
+  }
+  return {
+    stdout,
+    stderr,
+    exitCode: closed?.exitCode ?? null,
+    signal: closed?.signal ?? null,
+    spawnError: spawnError ? String(spawnError.stack || spawnError) : null,
+    timedOut: first.kind === "TIMEOUT",
+    outputOverflow: first.kind === "OUTPUT_LIMIT",
+    cleanupVerified: cleanup.cleanupVerified,
+    cleanupDetail: cleanup.detail,
+    durationMs: roundMs(performance.now() - startedAt),
+  };
+}
+
+export function interpretJsonChildCompletion({ stdout = "", stderr = "", exitCode = 0, signal = null, timedOut = false } = {}) {
+  let parsed = null;
+  try { parsed = JSON.parse(String(stdout || "")); } catch {}
+  if (timedOut) {
+    const error = new Error(`JSON child timed out${parsed ? " after emitting diagnostic JSON" : ""}: ${String(stderr || "").slice(-4_000)}`);
+    error.executionStatus = "TIMEOUT";
+    throw error;
+  }
+  if (exitCode !== 0 || signal) {
+    const error = new Error(`JSON child ended with code ${String(exitCode)} and signal ${String(signal || "none")}${parsed ? " after emitting diagnostic JSON" : ""}: ${String(stderr || "").slice(-4_000)}`);
+    error.executionStatus = "ERROR";
+    throw error;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    const error = new Error("JSON child emitted no valid object report.");
+    error.executionStatus = "ERROR";
+    throw error;
+  }
+  return parsed;
+}
+
+async function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs, nodePath, browserPath, indexPath }) {
+  const args = [
+    path.join(root, "audit", "run-audit-lane.mjs"),
+    `--lane=${laneId}`,
+    `--run-id=${runId}`,
+    `--candidate-id=${candidateId}`,
+    `--index-path=${indexPath}`,
+  ];
+  if (browserPath) args.push(`--browser=${browserPath}`);
+  const processResult = await runTreeSupervisedProcess({ command: nodePath, args, cwd: root, env: process.env, timeoutMs });
+  const fail = (executionStatus, message) => createAuditLaneEnvelope({
+    candidateId,
+    durationMs: processResult.durationMs,
+    error: message,
+    executionStatus,
+    laneId,
+    result: failedAuditLaneResult(laneId, message, executionStatus),
+    runId,
+  });
+  if (processResult.timedOut) {
+    const cleanup = processResult.cleanupVerified ? "descendant cleanup verified" : `descendant cleanup unverified (${processResult.cleanupDetail})`;
+    return fail("TIMEOUT", `lane exceeded ${timeoutMs} ms; ${cleanup}`);
+  }
+  if (processResult.outputOverflow) return fail("ERROR", `lane output exceeded 32 MiB; cleanup verified=${String(processResult.cleanupVerified)}`);
+  if (processResult.spawnError) return fail("ERROR", processResult.spawnError);
+  if (processResult.exitCode !== 0 || processResult.signal) {
+    return fail("ERROR", `lane process ended with code ${processResult.exitCode ?? "null"} and signal ${processResult.signal ?? "null"}: ${processResult.stderr.slice(-4_000)}`);
+  }
+  try {
+    return JSON.parse(processResult.stdout);
+  } catch (error) {
+    return fail("ERROR", `lane emitted invalid JSON: ${String(error)}; stderr: ${processResult.stderr.slice(-4_000)}`);
+  }
 }
 
 function executionConfiguration(policy, environment) {
   const requested = String(environment.MQ_AUDIT_EXECUTION_MODE || "");
   const hosted = environment.GITHUB_ACTIONS === "true";
-  const selected = requested || (hosted ? policy.githubHosted.mode : policy.local.mode);
+  const hostedDefault = policy.githubHosted.adoptionStatus === "QUALIFIED"
+    ? policy.githubHosted.mode
+    : policy.githubHosted.defaultBeforeQualification;
+  const selected = requested || (hosted ? hostedDefault : policy.local.mode);
   const allowed = new Set([policy.local.mode, policy.githubHosted.mode]);
   if (!allowed.has(selected)) throw new TypeError(`Unknown audit execution mode ${selected}.`);
   if (selected === policy.githubHosted.mode && !hosted && requested) {
@@ -314,24 +407,37 @@ export async function runBoundedAuditLanes({
   };
 }
 
-const VOLATILE_EVIDENCE_KEYS = new Set([
-  "auditOrchestration",
-  "browserPath",
-  "debugPort",
-  "dumpTail",
-  "durationMs",
-  "generatedAt",
-  "stderr",
-  "stdout",
-  "testOutput",
-]);
+const removeKeys = (record, keys) => {
+  if (!record || typeof record !== "object" || Array.isArray(record)) return;
+  for (const key of keys) delete record[key];
+};
 
-function timingFreeProjection(value, parentKey = "") {
-  if (Array.isArray(value)) return value.map((entry) => timingFreeProjection(entry, parentKey));
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value)
-    .filter(([key]) => !VOLATILE_EVIDENCE_KEYS.has(key) && !(parentKey === "outcomeSummary" && key === "runId"))
-    .map(([key, entry]) => [key, timingFreeProjection(entry, key)]));
+function timingFreeProjection(report) {
+  const projected = structuredClone(report);
+  removeKeys(projected, ["auditOrchestration", "generatedAt"]);
+  removeKeys(projected.outcomeSummary, ["runId"]);
+  removeKeys(projected.coverage, ["testOutput"]);
+  removeKeys(projected.coverage?.calibration, ["output"]);
+  for (const result of projected.engine?.results ?? []) removeKeys(result, ["durationMs"]);
+  for (const family of projected.mutation?.families ?? []) {
+    removeKeys(family.target, ["durationMs"]);
+    for (const item of family.cases ?? []) removeKeys(item.target, ["durationMs"]);
+  }
+  removeKeys(projected.generator, ["stderr"]);
+  removeKeys(projected.browser, ["dumpTail"]);
+  removeKeys(projected.browser?.process, ["browserPath", "debugPort", "durationMs", "stderr", "stdout"]);
+  removeKeys(projected.playwright?.process, ["durationMs", "stderr", "stdout"]);
+  for (const key of ["requests", "unexpectedRequests"]) {
+    if (Array.isArray(projected.browser?.[key])) {
+      projected.browser[key] = projected.browser[key].map((request) => ({
+        method: request.method,
+        pathname: request.pathname,
+      }));
+    }
+  }
+  removeKeys(projected.publicCandidate?.before, ["stderr"]);
+  removeKeys(projected.publicCandidate?.after, ["stderr"]);
+  return projected;
 }
 
 export function canonicalAuditEvidenceBytes(report) {

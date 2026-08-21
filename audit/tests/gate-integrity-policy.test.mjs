@@ -27,6 +27,8 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.retryPolicy.automaticRetries, 0);
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
+  assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
+  assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, 1);
   assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
   assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
@@ -72,7 +74,7 @@ test("the PR workflow runs the required check on pull requests and reserves full
     .split(/\n  (?=[a-z][a-z0-9-]+:\n)/u)[0];
   assert.match(development, /^    if: github\.event_name != 'workflow_dispatch'$/mu);
   assert.doesNotMatch(development, /pull_request[^\n]*==\s*false/u);
-  assert.match(full, /^    if: github\.event_name == 'workflow_dispatch'$/mu);
+  assert.match(full, /^    if: github\.event_name == 'workflow_dispatch' && inputs\.execution_qualification != true$/mu);
 });
 
 test("[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration", async () => {

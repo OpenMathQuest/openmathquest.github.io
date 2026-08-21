@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 export const PLAYWRIGHT_FOCUSED_SCHEMA_VERSION = 1;
 export const PLAYWRIGHT_FOCUSED_CONTRACT_ID = "math-quest-playwright-focused-v1";
+export const PLAYWRIGHT_FOCUSED_WORKERS = 1;
 export const PLAYWRIGHT_TEST_VERSION = "1.62.1";
 export const PLAYWRIGHT_FOCUSED_PROJECT_IDS = Object.freeze([
   "edge-desktop",

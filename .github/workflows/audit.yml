@@ -12,9 +12,14 @@ on:
         required: true
         type: string
       release_tag:
-        description: Public beta or release tag that will be created after certification
+        description: Public release tag, or audit-execution-qualification for the non-release execution benchmark
         required: true
         type: string
+      execution_qualification:
+        description: Run one non-release serial-versus-bounded execution qualification
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -67,7 +72,7 @@ jobs:
           & .\audit\run-audit.ps1 -NodePath $nodePath -DevelopmentOnly -ChangedPath $changedPaths
 
   full-audit:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true
     runs-on: windows-latest
     timeout-minutes: 45
     env:
@@ -193,7 +198,7 @@ jobs:
           retention-days: 90
 
   deep-ux-census:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true
     runs-on: windows-latest
     timeout-minutes: 120
     env:
@@ -266,5 +271,84 @@ jobs:
             audit/.tmp-playwright-deep-ux-report.json
             audit/.tmp-playwright-deep-ux-artifacts
           include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  audit-execution-qualification:
+    if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification == true
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      MQ_AUDIT_RUNNER_LABEL: windows-latest
+    steps:
+      - name: Check out exact qualification candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify non-release qualification boundary
+        shell: powershell
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/main' -or
+              $env:GITHUB_REF_TYPE -cne 'branch' -or
+              $env:GITHUB_REF_NAME -cne 'main' -or
+              $env:CANDIDATE_SHA -cnotmatch '^[a-f0-9]{40}$' -or
+              $env:CANDIDATE_SHA -cne $env:GITHUB_SHA) {
+            throw 'Execution qualification must use the exact protected-main candidate in the public Math Quest repository.'
+          }
+          if ($env:RELEASE_TAG_INPUT -cne 'audit-execution-qualification') {
+            throw 'The non-release qualification requires the audit-execution-qualification sentinel and never creates a tag or release.'
+          }
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Install reviewed browser-test dependencies
+        shell: powershell
+        run: .\audit\install-reviewed-ci-dependencies.ps1
+
+      - name: Run serial reference once
+        shell: powershell
+        env:
+          MQ_AUDIT_EXECUTION_MODE: SERIAL_REFERENCE
+        run: |
+          $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+          Copy-Item -LiteralPath 'audit/last-report.json' -Destination 'audit/execution-qualification-serial.json'
+
+      - name: Run bounded candidate once
+        shell: powershell
+        env:
+          MQ_AUDIT_EXECUTION_MODE: BOUNDED_PARALLEL
+        run: |
+          $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+          Copy-Item -LiteralPath 'audit/last-report.json' -Destination 'audit/execution-qualification-parallel.json'
+
+      - name: Require equivalent evidence and measured improvement
+        shell: powershell
+        run: |
+          $comparison = & node .\audit\compare-audit-execution-modes.mjs --serial=audit/execution-qualification-serial.json --parallel=audit/execution-qualification-parallel.json
+          $comparisonExit = $LASTEXITCODE
+          $comparison | Set-Content -LiteralPath 'audit/execution-qualification-comparison.json' -Encoding utf8
+          if ($comparisonExit -ne 0) { throw 'Bounded audit execution did not qualify.' }
+
+      - name: Upload qualification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-audit-execution-qualification-${{ github.sha }}
+          path: |
+            audit/execution-qualification-serial.json
+            audit/execution-qualification-parallel.json
+            audit/execution-qualification-comparison.json
           if-no-files-found: error
           retention-days: 90

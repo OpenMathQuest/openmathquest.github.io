@@ -34,6 +34,7 @@ import {
 } from "./lib/gate-integrity-policy.mjs";
 import {
   AUDIT_LANE_IDS,
+  auditCandidateStabilityIssues,
   failedAuditLaneResult,
   runBoundedAuditLanes,
 } from "./lib/bounded-audit-lanes.mjs";
@@ -41,7 +42,7 @@ import { MINIMUM_ENGINE_BRANCH_COVERAGE_PCT } from "./run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECTED_SEMANTIC = Object.freeze({ assertions: 130, skills: 126, taskTypes: 166, questions: 6_048 });
-const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, mutationFamilies: REPRESENTATIVE_MUTATION_FAMILY_COUNT, coverageGates: 1, generatorGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
+const EXPECTED_COMPONENTS = Object.freeze({ engineAssertions: 43, semanticAssertions: EXPECTED_SEMANTIC.assertions, browserAssertions: EXPECTED_BROWSER_RESULT_IDS.length, playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length, mutationFamilies: REPRESENTATIVE_MUTATION_FAMILY_COUNT, coverageGates: 1, generatorGates: 1, auditOrchestrationGates: 1, launcherGates: 1, externalEvidenceGates: EXTERNAL_RELEASE_GATE_IDS.length });
 const EXPECTED = Object.freeze({ ...EXPECTED_COMPONENTS, total: Object.values(EXPECTED_COMPONENTS).reduce((sum, value) => sum + value, 0) });
 const execFileAsync = promisify(execFile);
 
@@ -393,6 +394,7 @@ function markdown(report, { final = false } = {}) {
     `| Mutation families | ${EXPECTED.mutationFamilies} | ${report.actual.mutationFamilies} | ${report.actual.mutationFamilies === EXPECTED.mutationFamilies ? "MATCH" : "MISMATCH"} |`,
     `| Coverage gates | ${EXPECTED.coverageGates} | ${report.actual.coverageGates} | ${report.actual.coverageGates === EXPECTED.coverageGates ? "MATCH" : "MISMATCH"} |`,
     `| Exhaustive generator gates | ${EXPECTED.generatorGates} | ${report.actual.generatorGates} | ${report.actual.generatorGates === EXPECTED.generatorGates ? "MATCH" : "MISMATCH"} |`,
+    `| Audit orchestration gates | ${EXPECTED.auditOrchestrationGates} | ${report.actual.auditOrchestrationGates} | ${report.actual.auditOrchestrationGates === EXPECTED.auditOrchestrationGates ? "MATCH" : "MISMATCH"} |`,
     `| Launcher/server gates | ${EXPECTED.launcherGates} | ${report.actual.launcherGates} | ${report.actual.launcherGates === EXPECTED.launcherGates ? "MATCH" : "MISMATCH"} |`,
     `| External release-evidence gates | ${EXPECTED.externalEvidenceGates} | ${report.actual.externalEvidenceGates} | ${report.actual.externalEvidenceGates === EXPECTED.externalEvidenceGates ? "MATCH" : "MISMATCH"} |`,
     `| **Total** | **${EXPECTED.total}** | **${report.actual.total}** | **${report.actual.total === EXPECTED.total ? "MATCH" : "MISMATCH"}** |`, "",
@@ -412,7 +414,7 @@ function markdown(report, { final = false } = {}) {
     `| Exact engine bytes | ${report.coverage.exactBytes ? "PASS" : "FAIL"} | ${esc(report.coverage.engineSha256 || "unavailable")} |`,
     `| Canonical curriculum manifest | ${report.curriculumManifest.status} | ${esc(report.curriculumManifest.manifestId || "invalid")} v${esc(report.curriculumManifest.version || "unavailable")}; ${esc(report.curriculumManifest.sha256 || "unavailable")}; ${report.curriculumManifest.canonicalBytes} canonical bytes |`,
     `| Open-component rights state | ${/^[a-f0-9]{64}$/u.test(String(report.rightsStateSha256)) ? "PASS" : "FAIL"} | ${esc(report.rightsStateSha256 || "unavailable")} |`,
-    `| Stable staged privacy and open-component guard | ${report.publicCandidate.status} | before and after: ${esc(report.publicCandidate.payloadSha256 || "unavailable")}; payload tree ${esc(report.publicCandidate.payloadTreeOid || "unavailable")} |`,
+    `| Stable staged privacy and open-component guard | ${report.publicCandidate.status} | revision ${esc(report.publicCandidate.revisionBefore || "unavailable")} → ${esc(report.publicCandidate.revisionAfter || "unavailable")}; before and after payload ${esc(report.publicCandidate.payloadSha256 || "unavailable")}; payload tree ${esc(report.publicCandidate.payloadTreeOid || "unavailable")} |`,
     `| Restricted VM and behavioral suite | ${report.engine.summary.requiredFailures === 0 ? "PASS" : "FAIL"} | ${report.engine.summary.PASS} pass, ${report.engine.summary.FAIL} fail, ${report.engine.summary.SKIP} skip |`,
     `| Manifest-to-generator semantic suite | ${report.semantic.contractPass ? "PASS" : "FAIL"} | ${report.semantic.summary.PASS ?? 0} pass, ${report.semantic.summary.FAIL ?? report.semantic.failures.length} fail, ${report.semantic.summary.SKIP ?? 0} skip; ${report.semantic.summary.taskTypes ?? 0}/${EXPECTED_SEMANTIC.taskTypes} task types; ${report.semantic.summary.questions ?? 0}/${EXPECTED_SEMANTIC.questions} deterministic questions |`,
     `| Required Node major | ${report.coverage.node24 ? "PASS" : "FAIL"} | ${esc(report.coverage.nodeVersion || "unavailable")} |`,
@@ -448,12 +450,13 @@ export async function runAudit({ browserPath = null } = {}) {
   const auditTime = new Date();
   const gateIntegrityPolicy = await loadGateIntegrityPolicy();
   const indexPath = path.join(root, "index.html");
+  const revisionBefore = await repositoryRevision();
   const publicCandidateBefore = await runPublicCandidateGuard();
   const [meta, curriculumManifest] = await Promise.all([
     metadata(),
     curriculumManifestStatus(),
   ]);
-  const candidateId = `${await repositoryRevision()}:${publicCandidateBefore.payloadSha256 || "UNAVAILABLE"}`;
+  const candidateId = `${revisionBefore}:${publicCandidateBefore.payloadSha256 || "UNAVAILABLE"}`;
   const runId = process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_RUN_ID}:${process.env.GITHUB_RUN_ATTEMPT || "1"}`
     : `LOCAL:${process.pid}:${auditTime.toISOString()}`;
@@ -515,19 +518,26 @@ export async function runAudit({ browserPath = null } = {}) {
   };
   const reviewedBrowserEvidence = await reviewedBrowserRunnerEvidence();
   const publicCandidateAfter = await runPublicCandidateGuard();
-  const publicCandidateStable = publicCandidateBefore.status === "PASS"
-    && publicCandidateAfter.status === "PASS"
-    && publicCandidateBefore.payloadSha256 === publicCandidateAfter.payloadSha256
-    && publicCandidateBefore.payloadTreeOid === publicCandidateAfter.payloadTreeOid;
+  const revisionAfter = await repositoryRevision();
+  const publicCandidateStability = auditCandidateStabilityIssues({
+    before: publicCandidateBefore,
+    after: publicCandidateAfter,
+    revisionBefore,
+    revisionAfter,
+  });
+  const publicCandidateStable = publicCandidateStability.length === 0;
   const publicCandidate = {
     status: publicCandidateStable ? "PASS" : "FAIL",
     payloadSha256: publicCandidateBefore.payloadSha256,
     payloadTreeOid: publicCandidateBefore.payloadTreeOid,
+    revisionBefore,
+    revisionAfter,
     before: publicCandidateBefore,
     after: publicCandidateAfter,
+    stabilityIssues: publicCandidateStability,
     reason: publicCandidateStable
-      ? "The independently invoked guard reported identical public-payload and payload-tree identities before and after the audit."
-      : "The public-candidate guard failed or the public payload changed during the audit.",
+      ? "The repository revision, public payload, and payload tree remained identical before and after the audit."
+      : "The public-candidate guard failed, the repository revision was invalid or changed, or the public payload changed during the audit.",
   };
   const stringResult = engine.results.find((item) => item.id === "BEH-25");
   const stringTechnicalPass = Boolean(stringResult && stringResult.status !== "FAIL");
@@ -553,10 +563,11 @@ export async function runAudit({ browserPath = null } = {}) {
     mutationFamilies: mutation.families.length,
     coverageGates: coverage.branchPct === null ? 0 : 1,
     generatorGates: generator && typeof generator.status === "string" ? 1 : 0,
+    auditOrchestrationGates: auditOrchestration && typeof auditOrchestration.status === "string" ? 1 : 0,
     launcherGates: process.env.MQ_LAUNCHER_PREFLIGHT ? 1 : 0,
     externalEvidenceGates: externalReleaseEvidence.gates.length,
   };
-  actual.total = actual.engineAssertions + actual.semanticAssertions + actual.browserAssertions + actual.playwrightAssertions + actual.mutationFamilies + actual.coverageGates + actual.generatorGates + actual.launcherGates + actual.externalEvidenceGates;
+  actual.total = Object.values(actual).reduce((sum, value) => sum + value, 0);
   const countsMatch = Object.entries(EXPECTED).every(([key, value]) => actual[key] === value);
   const normalizedOutcomeStatus = (status) => ({
     failed: "FAIL",
@@ -575,6 +586,7 @@ export async function runAudit({ browserPath = null } = {}) {
     ...mutation.families.map((record) => normalizedOutcomeStatus(record.status)),
     normalizedOutcomeStatus(coverage.status),
     normalizedOutcomeStatus(generator.status),
+    normalizedOutcomeStatus(auditOrchestration.status),
     process.env.MQ_LAUNCHER_PREFLIGHT?.startsWith("PASS_") ? "PASS" : "FAIL",
     ...externalReleaseEvidence.gates.map((record) => normalizedOutcomeStatus(record.status)),
   ];
@@ -664,6 +676,8 @@ process.stdout.write(`${JSON.stringify({
     status: report.publicCandidate.status,
     payloadSha256: report.publicCandidate.payloadSha256,
     payloadTreeOid: report.publicCandidate.payloadTreeOid,
+    revisionBefore: report.publicCandidate.revisionBefore,
+    revisionAfter: report.publicCandidate.revisionAfter,
   },
   actual: report.actual,
   curriculumManifest: {

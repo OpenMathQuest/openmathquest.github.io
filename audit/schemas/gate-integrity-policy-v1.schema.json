@@ -129,7 +129,13 @@
           "const": { "mode": "SERIAL_REFERENCE", "maximumConcurrentLanes": 1 }
         },
         "githubHosted": {
-          "const": { "mode": "BOUNDED_PARALLEL", "maximumConcurrentLanes": 2 }
+          "const": {
+            "mode": "BOUNDED_PARALLEL",
+            "maximumConcurrentLanes": 2,
+            "adoptionStatus": "PENDING_MEASURED_QUALIFICATION",
+            "defaultBeforeQualification": "SERIAL_REFERENCE",
+            "qualificationWorkflowInput": "execution_qualification"
+          }
         },
         "laneTimeoutMs": {
           "const": { "browser": 2400000, "coverage": 240000, "generator": 360000, "mutation": 180000, "playwright": 240000 }

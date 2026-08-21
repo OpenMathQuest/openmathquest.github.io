@@ -7,6 +7,7 @@ import {
   PLAYWRIGHT_FOCUSED_CONTRACT_ID,
   PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS,
   PLAYWRIGHT_FOCUSED_SCHEMA_VERSION,
+  PLAYWRIGHT_FOCUSED_WORKERS,
   PLAYWRIGHT_TEST_VERSION,
   playwrightChildProcessRunning,
   playwrightFocusedExpectedServerIdentity,
@@ -75,7 +76,8 @@ test("[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report a
 
 test("Playwright configuration preserves one-worker, zero-retry, installed-Edge and failure-only artifact policy", async () => {
   const config = await readFile(path.join(root, "playwright.config.mjs"), "utf8");
-  assert.match(config, /workers:\s*1/u);
+  assert.match(config, /workers:\s*PLAYWRIGHT_FOCUSED_WORKERS/u);
+  assert.equal(PLAYWRIGHT_FOCUSED_WORKERS, 1);
   assert.match(config, /retries:\s*0/u);
   assert.match(config, /executablePath/u);
   assert.match(config, /serviceWorkers:\s*"block"/u);

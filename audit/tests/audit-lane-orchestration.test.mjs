@@ -1,20 +1,33 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   AUDIT_LANE_IDS,
+  auditCandidateStabilityIssues,
   auditLaneEnvelopeIssues,
   canonicalAuditEvidenceBytes,
   compareAuditExecutionReports,
   createAuditLaneEnvelope,
+  interpretJsonChildCompletion,
   runBoundedAuditLanes,
+  runTreeSupervisedProcess,
 } from "../lib/bounded-audit-lanes.mjs";
 
 const candidateId = `${"f".repeat(40)}:${"a".repeat(64)}`;
 const runId = "fixture-run";
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const policy = Object.freeze({
   laneOrder: AUDIT_LANE_IDS,
   local: { mode: "SERIAL_REFERENCE", maximumConcurrentLanes: 1 },
-  githubHosted: { mode: "BOUNDED_PARALLEL", maximumConcurrentLanes: 2 },
+  githubHosted: {
+    mode: "BOUNDED_PARALLEL",
+    maximumConcurrentLanes: 2,
+    adoptionStatus: "PENDING_MEASURED_QUALIFICATION",
+    defaultBeforeQualification: "SERIAL_REFERENCE",
+    qualificationWorkflowInput: "execution_qualification",
+  },
   laneTimeoutMs: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, 1_000])),
   minimumMeasuredWallTimeReductionPercent: 20,
 });
@@ -44,7 +57,7 @@ test("bounded execution preserves declared result order and never exceeds two to
   };
   const parallel = await runBoundedAuditLanes({
     candidateId,
-    environment: { GITHUB_ACTIONS: "true" },
+    environment: { GITHUB_ACTIONS: "true", MQ_AUDIT_EXECUTION_MODE: "BOUNDED_PARALLEL" },
     execute,
     indexPath: "index.html",
     policy,
@@ -54,6 +67,9 @@ test("bounded execution preserves declared result order and never exceeds two to
   assert.equal(observed, 2);
   assert.equal(parallel.report.maximumObservedConcurrency, 2);
   assert.deepEqual(parallel.report.laneExecutions.map((entry) => entry.laneId), AUDIT_LANE_IDS);
+  const pendingHostedDefault = await runBoundedAuditLanes({ candidateId, environment: { GITHUB_ACTIONS: "true" }, execute, indexPath: "index.html", policy, root: ".", runId });
+  assert.equal(pendingHostedDefault.report.executionMode, "SERIAL_REFERENCE");
+  assert.equal(pendingHostedDefault.report.maximumObservedConcurrency, 1);
   const serial = await runBoundedAuditLanes({ candidateId, environment: {}, execute, indexPath: "index.html", policy, root: ".", runId });
   assert.equal(serial.report.maximumObservedConcurrency, 1);
 });
@@ -79,7 +95,7 @@ test("lane crashes and timeouts remain explicit orchestration failures without r
       : envelopeFor(laneId);
   const value = await runBoundedAuditLanes({
     candidateId,
-    environment: { GITHUB_ACTIONS: "true" },
+    environment: { GITHUB_ACTIONS: "true", MQ_AUDIT_EXECUTION_MODE: "BOUNDED_PARALLEL" },
     execute,
     indexPath: "index.html",
     policy,
@@ -92,24 +108,80 @@ test("lane crashes and timeouts remain explicit orchestration failures without r
   assert.ok(value.report.issues.some((issue) => issue.includes("mutation execution ended ERROR")));
 });
 
+test("candidate stability fails closed when the repository revision or public payload changes", () => {
+  const revision = "a".repeat(40);
+  const guard = { status: "PASS", payloadSha256: "b".repeat(64), payloadTreeOid: "c".repeat(40) };
+  assert.deepEqual(auditCandidateStabilityIssues({ before: guard, after: guard, revisionBefore: revision, revisionAfter: revision }), []);
+  assert.match(auditCandidateStabilityIssues({ before: guard, after: guard, revisionBefore: revision, revisionAfter: "d".repeat(40) }).join("; "), /revision changed/u);
+  assert.match(auditCandidateStabilityIssues({ before: guard, after: { ...guard, payloadSha256: "e".repeat(64) }, revisionBefore: revision, revisionAfter: revision }).join("; "), /payload changed/u);
+});
+
 test("serial and parallel timing-free evidence is byte-for-byte identical and semantic drift is detected", () => {
   const baseline = {
     generatedAt: "first",
     auditOrchestration: { executionMode: "SERIAL_REFERENCE", wallDurationMs: 100 },
     outcomeSummary: { runId: "serial", passedCount: 2 },
-    coverage: { status: "PASS", durationMs: 90, engineSha256: "d".repeat(64), testOutput: "slow" },
-    browser: { status: "PASS", process: { stdout: "one", stderr: "" } },
+    coverage: {
+      status: "PASS",
+      engineSha256: "d".repeat(64),
+      calibration: { status: "PASS", fullBranchPct: 100, output: "ok 1 - fixture 94.123ms" },
+      testOutput: "slow 22.1ms",
+    },
+    engine: { results: [{ id: "A", status: "PASS", durationMs: 90 }] },
+    browser: {
+      status: "PASS",
+      requests: [{ method: "GET", pathname: "/engine.js", host: "127.0.0.1:51321" }],
+      process: { debugPort: 51320, stdout: "one", stderr: "" },
+    },
   };
   const parallel = structuredClone(baseline);
   parallel.generatedAt = "second";
   parallel.auditOrchestration = { executionMode: "BOUNDED_PARALLEL", wallDurationMs: 50 };
   parallel.outcomeSummary.runId = "parallel";
-  parallel.coverage.durationMs = 45;
   parallel.coverage.testOutput = "fast";
+  parallel.coverage.calibration.output = "ok 1 - fixture 4.2ms";
+  parallel.engine.results[0].durationMs = 4;
+  parallel.browser.requests[0].host = "127.0.0.1:61119";
+  parallel.browser.process.debugPort = 61118;
   parallel.browser.process.stdout = "two";
   assert.deepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
   parallel.coverage.status = "FAIL";
   assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
+});
+
+test("JSON child failures cannot become passes from diagnostic PASS output", () => {
+  const stdout = JSON.stringify({ status: "PASS" });
+  assert.throws(
+    () => interpretJsonChildCompletion({ stdout, exitCode: 9 }),
+    /ended with code 9.*diagnostic JSON/u,
+  );
+  assert.throws(
+    () => interpretJsonChildCompletion({ stdout, timedOut: true }),
+    /timed out.*diagnostic JSON/u,
+  );
+  assert.deepEqual(interpretJsonChildCompletion({ stdout, exitCode: 0 }), { status: "PASS" });
+});
+
+test("Windows lane timeout terminates the full descendant process tree", { skip: process.platform !== "win32" }, async () => {
+  const source = [
+    "const {spawn}=require('node:child_process');",
+    "const child=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{windowsHide:true});",
+    "process.stdout.write(String(child.pid)+'\\n');",
+    "setInterval(()=>{},1000);",
+  ].join("");
+  const result = await runTreeSupervisedProcess({
+    command: process.execPath,
+    args: ["-e", source],
+    cwd: process.cwd(),
+    timeoutMs: 500,
+  });
+  assert.equal(result.timedOut, true);
+  assert.equal(result.cleanupVerified, true);
+  const descendantPid = Number(result.stdout.trim().split(/\s+/u)[0]);
+  assert.ok(Number.isInteger(descendantPid) && descendantPid > 0);
+  let descendantAlive = true;
+  try { process.kill(descendantPid, 0); } catch { descendantAlive = false; }
+  assert.equal(descendantAlive, false);
 });
 
 test("adoption requires exact evidence equivalence and at least twenty percent measured reduction", () => {
@@ -129,4 +201,14 @@ test("adoption requires exact evidence equivalence and at least twenty percent m
   parallel.auditOrchestration.wallDurationMs = 75;
   parallel.gate.status = "FAIL";
   assert.equal(compareAuditExecutionReports(serial, parallel).status, "FAIL");
+});
+
+test("hosted bounded execution has one explicit non-release qualification path and is not the pre-qualification default", async () => {
+  const workflow = await readFile(path.join(repositoryRoot, ".github", "workflows", "audit.yml"), "utf8");
+  assert.match(workflow, /execution_qualification:[\s\S]*type: boolean/u);
+  assert.match(workflow, /audit-execution-qualification:[\s\S]*MQ_AUDIT_EXECUTION_MODE: SERIAL_REFERENCE[\s\S]*MQ_AUDIT_EXECUTION_MODE: BOUNDED_PARALLEL/u);
+  assert.match(workflow, /audit-execution-qualification[\s\S]*compare-audit-execution-modes\.mjs/u);
+  assert.match(workflow, /full-audit:[\s\S]*inputs\.execution_qualification != true/u);
+  assert.equal(policy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
+  assert.equal(policy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
 });
