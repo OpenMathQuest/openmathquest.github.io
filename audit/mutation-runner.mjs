@@ -13,6 +13,11 @@ export const MUTATION_NEGATIVE_CONTROL_IDS = Object.freeze([
   "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS",
   "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION",
 ]);
+export const MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE = Object.freeze({
+  "NC-ENGINE-REPRESENTATIVE-MUTANTS": "REPORT_FIELD:negativeControls.NC-ENGINE-REPRESENTATIVE-MUTANTS.status=PASS",
+  "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS": "REPORT_FIELD:negativeControls.NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS.status=PASS",
+  "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION": "REPORT_FIELD:negativeControls.NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION.status=PASS",
+});
 
 const FAMILIES = Object.freeze([
   {
@@ -196,12 +201,15 @@ export async function runMutations({ indexPath = path.join(root, "index.html") }
     const semanticMutantsKilled = ["strategy method independence", "strategy result independence"]
       .every((name) => report.families.find((item) => item.family === name)?.status === "PASS");
     report.negativeControls = Object.freeze({
-      [MUTATION_NEGATIVE_CONTROL_IDS[0]]: { status: everyFamilyKilled ? "PASS" : "FAIL" },
-      [MUTATION_NEGATIVE_CONTROL_IDS[1]]: { status: everyFamilyKilled ? "PASS" : "FAIL" },
-      [MUTATION_NEGATIVE_CONTROL_IDS[2]]: { status: semanticMutantsKilled ? "PASS" : "FAIL" },
+      [MUTATION_NEGATIVE_CONTROL_IDS[0]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[0]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+      [MUTATION_NEGATIVE_CONTROL_IDS[1]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[1]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+      [MUTATION_NEGATIVE_CONTROL_IDS[2]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[2]], status: semanticMutantsKilled ? "PASS" : "FAIL" },
     });
     report.status = everyFamilyKilled
-      && Object.values(report.negativeControls).every((control) => control.status === "PASS") ? "PASS" : "FAIL";
+      && Object.entries(report.negativeControls).every(([id, control]) => (
+        control.passEvidence === MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[id]
+        && control.status === "PASS"
+      )) ? "PASS" : "FAIL";
     return report;
   } finally {
     await rm(tempRoot, { recursive: true, force: true });

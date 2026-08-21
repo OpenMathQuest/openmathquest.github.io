@@ -40,6 +40,14 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.retryPolicy.automaticRetries = 1; },
     (value) => { value.gateFamilies[0].negativeControl.id = value.gateFamilies[1].negativeControl.id; },
     (value) => { value.gateFamilies.forEach((family, index) => { family.negativeControl.id = `NC-NONEXISTENT-${String(index + 1).padStart(2, "0")}`; }); },
+    (value) => {
+      const browser = value.gateFamilies.find((family) => family.id === "gate.browser");
+      const coverage = value.gateFamilies.find((family) => family.id === "gate.coverage");
+      [browser.negativeControl.id, coverage.negativeControl.id] = [coverage.negativeControl.id, browser.negativeControl.id];
+    },
+    (value) => {
+      value.gateFamilies.find((family) => family.negativeControl.executionMode === "SELF_TEST").negativeControl.passEvidence = "REPORT_FIELD:negativeControls.NC-WRONG-CONTROL.status=PASS";
+    },
   ]) {
     const mutant = structuredClone(baseline);
     mutate(mutant);
@@ -74,6 +82,20 @@ test("[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforceme
     }],
   );
   assert.equal(evaluateGithubEnforcementSnapshot(good, policy).valid, true);
+  const bypassEvidenceMissing = normalizeGithubEnforcementSnapshot(
+    { checks: [{ context: "development-checks", app_id: 15368 }], contexts: [] },
+    [{
+      target: "tag",
+      enforcement: "active",
+      conditions: { ref_name: { include: ["refs/tags/v*"], exclude: [] } },
+      rules: [{ type: "update" }, { type: "deletion" }],
+    }],
+  );
+  assert.equal(bypassEvidenceMissing.tagRules[0].bypassActorsObserved, false);
+  assert.equal(bypassEvidenceMissing.tagRules[0].bypassActorCount, null);
+  const withheldResult = evaluateGithubEnforcementSnapshot(bypassEvidenceMissing, policy);
+  assert.equal(withheldResult.valid, false);
+  assert.ok(withheldResult.issues.some((issue) => issue.includes("bypass actors were not observable")));
   const former = {
     requiredPullRequestChecks: ["full-audit"],
     tagRules: [{ pattern: "refs/tags/v1.0.0-beta.5", rules: ["DELETION_PROHIBITED", "UPDATE_PROHIBITED"], bypassActorCount: 0 }],

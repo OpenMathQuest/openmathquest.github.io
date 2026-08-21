@@ -158,7 +158,10 @@
         "executionMode": { "enum": ["NODE_TEST", "SELF_TEST"] },
         "executionPath": { "$ref": "#/$defs/path" },
         "testName": { "type": "string", "pattern": "^\\[NC-[A-Z0-9_-]+\\] .+$" },
-        "passEvidence": { "type": "string", "minLength": 24 }
+        "passEvidence": {
+          "type": "string",
+          "pattern": "^(?:REPORT_FIELD:negativeControls\\.NC-[A-Z0-9_-]+\\.status=PASS|STDOUT:NEGATIVE_CONTROL=NC-[A-Z0-9_-]+:PASS)$"
+        }
       },
       "allOf": [
         {

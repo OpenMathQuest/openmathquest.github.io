@@ -45,7 +45,8 @@ export function evaluateGithubEnforcementSnapshot(snapshot, policy) {
     for (const required of policy.enforcement.requiredTagRules) {
       if (!tagRule.rules?.includes(required)) issues.push(`tag rule lacks ${required}`);
     }
-    if (tagRule.bypassActorCount !== 0) issues.push("tag rule must not have bypass actors");
+    if (tagRule.bypassActorsObserved !== true) issues.push("tag rule bypass actors were not observable");
+    else if (tagRule.bypassActorCount !== 0) issues.push("tag rule must not have bypass actors");
   }
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
 }
@@ -113,8 +114,23 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
     try {
       const source = await readFileAsync(path.join(root, ...control.executionPath.split("/")), "utf8");
       if (!source.includes(control.id)) issues.push(`${family.id} negative control id is not bound to executable source`);
-      if (control.executionMode === "NODE_TEST" && !source.includes(`test("${control.testName}"`)) {
-        issues.push(`${family.id} negative control testName is not present in its executable test`);
+      if (control.executionMode === "NODE_TEST") {
+        if (!control.testName.startsWith(`[${control.id}] `)) {
+          issues.push(`${family.id} negative control testName is bound to a different control id`);
+        }
+        if (!source.includes(`test("${control.testName}"`)) {
+          issues.push(`${family.id} negative control testName is not present in its executable test`);
+        }
+      } else {
+        const allowedBindings = new Set([
+          `REPORT_FIELD:negativeControls.${control.id}.status=PASS`,
+          `STDOUT:NEGATIVE_CONTROL=${control.id}:PASS`,
+        ]);
+        if (!allowedBindings.has(control.passEvidence)) {
+          issues.push(`${family.id} negative control passEvidence is bound to a different control id or unknown evidence channel`);
+        } else if (!source.includes(JSON.stringify(control.passEvidence))) {
+          issues.push(`${family.id} negative control passEvidence is not declared by its executable source`);
+        }
       }
     } catch (error) {
       issues.push(`${family.id} negative control executable is unreadable: ${error.message}`);

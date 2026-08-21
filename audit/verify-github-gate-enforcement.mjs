@@ -49,7 +49,8 @@ export function normalizeGithubEnforcementSnapshot(requiredStatusChecks, ruleset
           ...(types.has("deletion") ? ["DELETION_PROHIBITED"] : []),
           ...(types.has("update") ? ["UPDATE_PROHIBITED"] : []),
         ],
-        bypassActorCount: Array.isArray(ruleset.bypass_actors) ? ruleset.bypass_actors.length : 0,
+        bypassActorsObserved: Array.isArray(ruleset.bypass_actors),
+        bypassActorCount: Array.isArray(ruleset.bypass_actors) ? ruleset.bypass_actors.length : null,
       });
     }
   }
