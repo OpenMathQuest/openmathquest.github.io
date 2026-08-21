@@ -40,6 +40,28 @@ import {
 } from "../lib/release-evidence-successor.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const testBinding = (digest, state, metadata = {}) => Object.freeze({
+  claimBoundary: "TEST_FIXTURE_EXACT_BINDING",
+  digest,
+  evidenceClass: "TEST_FIXTURE",
+  state,
+  valid: true,
+  ...metadata,
+});
+const testReleaseEvidenceBindings = Object.freeze({
+  "EXT-HOST": [testBinding("8".repeat(64), "APPROVED"), testBinding("8".repeat(64), "DEFERRED_PRERELEASE"), testBinding("e".repeat(64), "WAIVED_BETA3")],
+  "EXT-CANARY": [testBinding("9".repeat(64), "RECONCILED"), testBinding("e".repeat(64), "WAIVED_BETA3"), testBinding("NONE", "OWNER_SKIPPED_BETA4")],
+  "EXT-DEVICE": [testBinding("a".repeat(64), "COMPLETE"), testBinding("NONE", "OPTIONAL_NOT_RUN"), testBinding("e".repeat(64), "WAIVED_BETA3")],
+  "EXT-REVIEWERS": [testBinding("b".repeat(64), "COMPLETE"), testBinding("NONE", "OPTIONAL_NOT_RUN"), testBinding("e".repeat(64), "WAIVED_BETA3")],
+  "EXT-ADJUDICATION": [testBinding("c".repeat(64), "APPROVED"), testBinding("e".repeat(64), "WAIVED_BETA3")],
+  "EXT-FINDINGS": [testBinding("d".repeat(64), "COMPLETE"), testBinding("e".repeat(64), "AUTOMATED_ONLY")],
+  "EXT-HOSTED-WINDOWS": testBinding("7".repeat(64), "REVIEWED"),
+  "EXT-OWNER": [
+    testBinding("e".repeat(64), "PR_PUSH_AUTHORIZED", { releaseTag: CURRENT_RELEASE_TAG, protectedRef: "refs/heads/main" }),
+    testBinding("e".repeat(64), "EMERGENCY_BETA3_AUTHORIZED", { releaseTag: EMERGENCY_BETA3_RELEASE_TAG, protectedRef: "refs/heads/main" }),
+  ],
+  "REVIEW-BUNDLE": testBinding("f".repeat(64), "VALIDATED"),
+});
 const expected = Object.freeze({
   engineSha256: "1".repeat(64),
   manifestVersion: "1.0.0",
@@ -58,6 +80,7 @@ const expected = Object.freeze({
   runnerImageVersion: "20260720.1.0",
   browserRunnerEvidenceSha256: "7".repeat(64),
   browserRunnerEvidenceReviewed: true,
+  releaseEvidenceBindings: testReleaseEvidenceBindings,
   releaseTag: CURRENT_RELEASE_TAG,
   now: new Date("2026-07-29T12:00:00Z"),
 });
@@ -531,7 +554,7 @@ test("declining the offered six-reviewer cycle is nonblocking but cannot conceal
   assert.equal(evidence.passCount, 5);
   assert.equal(evidence.ownerSkippedCount, 0);
   assert.equal(evidence.optionalCompletedCount, 1);
-  assert.equal(evidence.gates.find((item) => item.id === "EXT-REVIEWERS")?.status, "OPTIONAL");
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-REVIEWERS")?.status, "OPTIONAL_NOT_RUN");
   assert.equal(computeReleaseDecision({
     technicalShippable: true,
     publicationStatus: "APPROVED",
@@ -565,7 +588,7 @@ test("declining the offered six-lane device cycle is nonblocking but cannot conc
   assert.equal(evidence.passCount, 5);
   assert.equal(evidence.ownerSkippedCount, 0);
   assert.equal(evidence.optionalCompletedCount, 1);
-  assert.equal(evidence.gates.find((item) => item.id === "EXT-DEVICE")?.status, "OPTIONAL");
+  assert.equal(evidence.gates.find((item) => item.id === "EXT-DEVICE")?.status, "OPTIONAL_NOT_RUN");
   assert.equal(computeReleaseDecision({
     technicalShippable: true,
     publicationStatus: "APPROVED",

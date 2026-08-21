@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/gate-integrity-policy-v1.schema.json",
+  "title": "Math Quest gate-integrity policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "orderingContract", "statusSemantics", "rules", "metricFloors", "enforcement", "retryPolicy", "outcomeReporting", "gateFamilies", "acceptanceCriteria"],
+  "properties": {
+    "policyId": { "const": "math-quest-gate-integrity" },
+    "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "primaryConsumer": { "const": "AI_AGENT" },
+    "authority": { "const": "THIS_FILE" },
+    "licence": { "$ref": "#/$defs/licence" },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/rules", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/gateFamilies", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/gateFamilies/*/negativeControl", "policy": "CLOSED_EXECUTABLE_BINDING" },
+        { "jsonPointer": "/gateFamilies/*/implementationPaths", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/gateFamilies/*/validatorPaths", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/acceptanceCriteria", "policy": "LEXICOGRAPHIC_BY_ID" }
+      ]
+    },
+    "statusSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["PASS", "FAIL", "BLOCKED", "ERROR", "TIMEOUT", "CANCELLED", "SKIPPED", "MISSING_ARTIFACT", "NOT_RUN", "NOT_REQUIRED_BY_CADENCE", "DEFERRED", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"],
+      "properties": {
+        "PASS": { "const": "RAN_COMPLETE_AND_ORACLE_ASSERTED_TRUE" },
+        "FAIL": { "const": "RAN_COMPLETE_AND_ORACLE_ASSERTED_FALSE" },
+        "BLOCKED": { "const": "PRECONDITION_AUTHORITY_OR_REQUIRED_EVIDENCE_BLOCKED_FAIL_CLOSED" },
+        "ERROR": { "const": "GATE_EXECUTION_FAILED_FAIL_CLOSED" },
+        "TIMEOUT": { "const": "GATE_EXCEEDED_MEASURED_BOUND_FAIL_CLOSED" },
+        "CANCELLED": { "const": "GATE_CANCELLED_FAIL_CLOSED" },
+        "SKIPPED": { "const": "REQUIRED_EXECUTION_WAS_SKIPPED_FAIL_CLOSED" },
+        "MISSING_ARTIFACT": { "const": "REQUIRED_EVIDENCE_ABSENT_FAIL_CLOSED" },
+        "NOT_RUN": { "const": "REQUIRED_EXECUTION_DID_NOT_START_FAIL_CLOSED" },
+        "NOT_REQUIRED_BY_CADENCE": { "const": "PREDECLARED_CADENCE_EXCLUSION_NOT_A_PASS" },
+        "DEFERRED": { "const": "EXPLICIT_OWNER_DECISION_WITH_RESIDUAL_RISK_NOT_A_PASS" },
+        "OPTIONAL_NOT_RUN": { "const": "PREDECLARED_OPTION_NOT_SELECTED_NOT_A_PASS" },
+        "OWNER_SKIPPED": { "const": "EXPLICIT_RELEASE_SCOPED_OWNER_DECISION_NOT_A_PASS" },
+        "WAIVED": { "const": "EXPLICIT_EMERGENCY_RELEASE_SCOPED_OWNER_DECISION_NOT_A_PASS" }
+      }
+    },
+    "rules": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rule" } },
+    "metricFloors": { "$ref": "#/$defs/metricFloors" },
+    "enforcement": { "$ref": "#/$defs/enforcement" },
+    "retryPolicy": { "$ref": "#/$defs/retryPolicy" },
+    "outcomeReporting": { "$ref": "#/$defs/outcomeReporting" },
+    "gateFamilies": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gateFamily" } },
+    "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/acceptance" } }
+  },
+  "$defs": {
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+    "id": { "type": "string", "pattern": "^[A-Z]+-[A-Z0-9-]+$" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": { "spdx": { "const": "MIT" }, "scope": { "type": "string", "minLength": 1 }, "originalWork": { "const": true } }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "directive", "rationale", "falsePassPrevented"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^GI-R(?:0[1-9]|1[0-2])$" },
+        "directive": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "rationale": { "type": "string", "minLength": 24 },
+        "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    },
+    "metricFloors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engineBranchCoverage", "representativeMutationFamilies"],
+      "properties": {
+        "engineBranchCoverage": {
+          "type": "object", "additionalProperties": false,
+          "required": ["version", "minimumPercent", "numerator", "denominator", "changePolicy"],
+          "properties": { "version": { "const": 1 }, "minimumPercent": { "const": 88 }, "numerator": { "type": "string", "minLength": 1 }, "denominator": { "type": "string", "minLength": 1 }, "changePolicy": { "type": "string", "minLength": 1 } }
+        },
+        "representativeMutationFamilies": {
+          "type": "object", "additionalProperties": false,
+          "required": ["version", "minimumKilled", "denominator", "claimBoundary"],
+          "properties": { "version": { "const": 1 }, "minimumKilled": { "const": 11 }, "denominator": { "const": 11 }, "claimBoundary": { "const": "CURATED_CRITICAL_ENGINE_FAMILIES_NOT_GLOBAL_MUTATION_SCORE" } }
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "protectedBranch", "requiredPullRequestCheck", "prohibitedRequiredPullRequestChecks", "requiredTagPattern", "requiredTagRules", "codeOwnerReview", "protectedPathWeakeningPolicy", "protectedPathStrengtheningPolicy", "detectorRepairPolicy", "remoteConfigurationVerification", "remotePreflightCommand"],
+      "properties": {
+        "repository": { "const": "OpenMathQuest/openmathquest.github.io" },
+        "protectedBranch": { "const": "main" },
+        "requiredPullRequestCheck": { "const": "development-checks" },
+        "prohibitedRequiredPullRequestChecks": { "const": ["full-audit"] },
+        "requiredTagPattern": { "const": "refs/tags/v*" },
+        "requiredTagRules": { "const": ["DELETION_PROHIBITED", "UPDATE_PROHIBITED"] },
+        "codeOwnerReview": { "const": "NOT_PRIMARY_CONTROL_FOR_SINGLE_OPERATIONAL_ACTOR" },
+        "protectedPathWeakeningPolicy": { "const": "EXPLICIT_OWNER_APPROVAL_REQUIRED" },
+        "protectedPathStrengtheningPolicy": { "const": "AUTHORIZED_WITH_EXECUTED_NEGATIVE_CONTROL" },
+        "detectorRepairPolicy": { "const": "AUTHORIZED_AFTER_PROVEN_FALSE_POSITIVE_OR_FALSE_NEGATIVE_WITH_EQUAL_OR_STRONGER_EFFECT_PROTECTION" },
+        "remoteConfigurationVerification": { "const": "READ_ONLY_GITHUB_PREFLIGHT_AND_FOCUSED_STATIC_WORKFLOW_CONTRACT" },
+        "remotePreflightCommand": { "const": "node audit/verify-github-gate-enforcement.mjs" }
+      }
+    },
+    "retryPolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["automaticRetries", "diagnosticRerun", "postCorrectionRerun", "unchangedRerunForGreen"],
+      "properties": {
+        "automaticRetries": { "const": 0 },
+        "diagnosticRerun": { "const": "ALLOWED_WITH_FIRST_RESULT_RETAINED" },
+        "postCorrectionRerun": { "const": "REQUIRED_AND_LINKED_TO_CORRECTION" },
+        "unchangedRerunForGreen": { "const": "PROHIBITED" }
+      }
+    },
+    "outcomeReporting": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requiredFields", "inventoryMatchMayBeCalledPass", "acceptedNonPassStates", "statusClasses"],
+      "properties": {
+        "requiredFields": { "const": ["acceptedNonPassCount", "failedCount", "inventoryActual", "inventoryExpected", "missingCount", "notRunCount", "passedCount", "runId", "skippedCount"] },
+        "inventoryMatchMayBeCalledPass": { "const": false },
+        "acceptedNonPassStates": { "const": ["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"] },
+        "statusClasses": {
+          "const": {
+            "passed": ["PASS"],
+            "failed": ["BLOCKED", "CANCELLED", "ERROR", "FAIL", "TIMEOUT"],
+            "missing": ["MISSING_ARTIFACT"],
+            "notRun": ["NOT_RUN"],
+            "skipped": ["SKIPPED"]
+          }
+        }
+      }
+    },
+    "gateFamily": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "claim", "proofClass", "independenceBoundary", "nonRunPolicy", "negativeControl", "implementationPaths", "validatorPaths"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^gate\\.[a-z][a-z0-9-]+$" },
+        "claim": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "proofClass": { "enum": ["BOUND_EVIDENCE", "EFFECT_SENSITIVE_BROWSER", "EFFECT_SENSITIVE_HOSTED_BROWSER", "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION", "EXHAUSTIVE_INTERNAL_CONSISTENCY", "EXTERNAL_ENFORCEMENT", "INDEPENDENT_SEMANTIC_ORACLE", "INSTRUMENTED_MEASUREMENT", "REPRESENTATIVE_MUTATION", "STATIC_AND_BYTE_IDENTITY"] },
+        "independenceBoundary": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "nonRunPolicy": { "enum": ["FAIL", "CADENCE_ENUM"] },
+        "negativeControl": { "$ref": "#/$defs/negativeControl" },
+        "implementationPaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+        "validatorPaths": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/path" } }
+      }
+    },
+    "negativeControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "executionMode", "executionPath"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^NC-[A-Z0-9_-]+$" },
+        "executionMode": { "enum": ["NODE_TEST", "SELF_TEST"] },
+        "executionPath": { "$ref": "#/$defs/path" },
+        "testName": { "type": "string", "pattern": "^\\[NC-[A-Z0-9_-]+\\] .+$" },
+        "passEvidence": {
+          "type": "string",
+          "pattern": "^(?:REPORT_FIELD:negativeControls\\.NC-[A-Z0-9_-]+\\.status=PASS|STDOUT:NEGATIVE_CONTROL=NC-[A-Z0-9_-]+:PASS)$"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "executionMode": { "const": "NODE_TEST" } }, "required": ["executionMode"] },
+          "then": { "properties": { "testName": { "type": "string" } }, "required": ["testName"] }
+        },
+        {
+          "if": { "properties": { "executionMode": { "const": "SELF_TEST" } }, "required": ["executionMode"] },
+          "then": { "properties": { "passEvidence": { "type": "string" } }, "required": ["passEvidence"] }
+        }
+      ]
+    },
+    "acceptance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "predicate"],
+      "properties": { "id": { "type": "string", "pattern": "^GI-A0[1-9]$" }, "predicate": { "type": "string", "pattern": "^[A-Z0-9_]+$" } }
+    }
+  }
+}

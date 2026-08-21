@@ -266,7 +266,7 @@ test("canonical trusted-HTTPS evidence accepts only the exact reconciled candida
   assert.equal(parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence), { workflowRunAttempt: "2" }).valid, false, "stale workflow attempt");
 });
 
-test("FAILED canary evidence cannot disguise an all-green result", () => {
+test("[NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN] FAILED canary evidence cannot disguise an all-green result", () => {
   const evidence = validEvidence();
   evidence.reconciliationState = "FAILED";
   assert.equal(parseTrustedHttpsCanaryEvidence(canonicalCanaryEvidence(evidence)).valid, false);

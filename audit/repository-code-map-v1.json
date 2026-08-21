@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.3.1",
+  "version": "1.5.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -266,8 +266,8 @@
       "owner": "audit/run-audit.mjs",
       "owns": [
         "certification.gates.aggregation",
-        "certification.gates.report-identity",
-        "certification.gates.status-semantics"
+        "certification.gates.outcome-counts",
+        "certification.gates.report-identity"
       ],
       "copyPolicy": "REFERENCES_ONLY",
       "copyDiscovery": "NONE",
@@ -372,6 +372,42 @@
       ]
     },
     {
+      "id": "policy.gate-integrity",
+      "owner": "audit/gate-integrity-policy-v1.json",
+      "owns": [
+        "policy.gate-integrity.evidence-binding",
+        "policy.gate-integrity.family-registry",
+        "policy.gate-integrity.github-enforcement",
+        "policy.gate-integrity.metric-floors",
+        "policy.gate-integrity.negative-controls",
+        "policy.gate-integrity.retry-policy",
+        "policy.gate-integrity.status-semantics"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/audit.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "AGENTS.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "audit/run-audit.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/verify-github-gate-enforcement.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/gate-integrity-policy.test.mjs"
+      ]
+    },
+    {
       "id": "product.version",
       "owner": "VERSION",
       "owns": [
@@ -413,6 +449,10 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
+          "path": "audit/release-evidence-bundle-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "audit/run-audit.ps1",
           "relationship": "OPERATIONAL_CONFIG"
         },
@@ -446,6 +486,10 @@
         },
         {
           "path": "audit/tests/trusted-https-canary.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/trusted-https-canary-beta7-v1.json",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
@@ -508,6 +552,35 @@
       "validators": [
         "audit/tests/engine-suite.mjs",
         "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "release.evidence-bindings",
+      "owner": "audit/release-evidence-bundle-v1.json",
+      "owns": [
+        "release.evidence.artifact-byte-bindings",
+        "release.evidence.claim-boundaries",
+        "release.evidence.structured-assertions"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/run-audit.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/trusted-https-canary-beta7-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "PUBLICATION_CLEARANCE.md",
+          "relationship": "STATE_DEPENDENT_DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
       ]
     },
     {
@@ -743,6 +816,24 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "gate-integrity.audit",
+      "source": "audit/gate-integrity-policy-v1.json",
+      "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "gate-integrity.remote-preflight",
+      "source": "audit/gate-integrity-policy-v1.json",
+      "target": "audit/verify-github-gate-enforcement.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "gate-integrity.test",
+      "source": "audit/lib/gate-integrity-policy.mjs",
+      "target": "audit/tests/gate-integrity-policy.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "playwright.deep-ux",
       "source": "index.html",
       "target": "audit/playwright/deep-ux-census.spec.mjs",
@@ -752,6 +843,18 @@
       "id": "playwright.product",
       "source": "index.html",
       "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "release-evidence.clearance",
+      "source": "audit/release-evidence-bundle-v1.json",
+      "target": "PUBLICATION_CLEARANCE.md",
+      "kind": "DOCUMENTS"
+    },
+    {
+      "id": "release-evidence.test",
+      "source": "audit/lib/release-evidence-bundle.mjs",
+      "target": "audit/tests/release-evidence-bundle.test.mjs",
       "kind": "TESTS"
     },
     {
@@ -817,7 +920,7 @@
   ],
   "dataArtifactPatterns": [
     "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
-    "^audit/(?:agent-collaboration-policy-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|repository-code-map-v1)\\.json$",
+    "^audit/(?:agent-collaboration-policy-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
     "^curriculum/.*\\.json$",
     "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
   ],

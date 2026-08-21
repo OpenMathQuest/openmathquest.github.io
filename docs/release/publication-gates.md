@@ -175,6 +175,22 @@ unavailable, and cannot satisfy publication clearance.
 
 ## Publication-clearance record
 
+The closed machine authority for gate semantics is
+`audit/gate-integrity-policy-v1.json`. The closed current evidence binding is
+`audit/release-evidence-bundle-v1.json`. Clearance digests are accepted only
+when the bundle validator proves their exact canonical artifact bytes or their
+explicitly typed structured assertion. A 64-character hexadecimal value by
+itself is not evidence. The canary binding is the exact sanitized
+`audit/trusted-https-canary-beta7-v1.json` artifact; optional-not-run records
+remain absence records and make no pass claim.
+
+Before release mutation, run
+`node audit/verify-github-gate-enforcement.mjs`. Its live GitHub snapshot must
+show `development-checks` as the required `main` check, must not show the
+dispatch-only `full-audit` job as required, and must show an active no-bypass
+`refs/tags/v*` ruleset prohibiting update and deletion. Synthetic fixtures
+test the evaluator but never substitute for this live preflight.
+
 Before qualification and independent review, create `PUBLICATION_CLEARANCE.md` with
 `Status: PENDING`, then synchronize the public-file manifest and component
 register. The pending record makes its path part of the candidate without
@@ -304,14 +320,15 @@ The deployment validator rejects missing, reordered, duplicate, additional,
 empty, pending, malformed, or mismatched fields.
 
 The eight external records are counted release-audit inputs, not narrative
-claims. For Beta 7, five are mandatory PASS gates: `EXT-CANARY`,
+claims. Inventory equality proves record completeness, not successful
+verification. For Beta 7, five are mandatory PASS gates: `EXT-CANARY`,
 `EXT-ADJUDICATION`, `EXT-FINDINGS`, `EXT-HOSTED-WINDOWS`, and `EXT-OWNER`.
 `EXT-HOST` is visibly `DEFERRED_PRERELEASE`/`DEFERRED`, while `EXT-DEVICE` and
 `EXT-REVIEWERS` retain their exact optional states. The host deferral is not a
 pass or privacy-clearance claim. A stable release requires all six ordinarily
 mandatory gates to PASS.
 Each optional cycle either passes exact completed evidence or retains exact
-`OPTIONAL_NOT_RUN`, reported as `OPTIONAL`, never `PASS`. Selecting an optional
+`OPTIONAL_NOT_RUN`, reported as `OPTIONAL_NOT_RUN`, never `PASS`. Selecting an optional
 cycle makes every declared lane/report and digest fail-closed. The common
 review window must have started, must not have expired, and must remain bound
 to the exact candidate and reviewed hosted-Windows tuple. Missing, unknown,

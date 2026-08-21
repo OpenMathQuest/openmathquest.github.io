@@ -3,9 +3,21 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluateEngine, extractEngine } from "./lib/engine-loader.mjs";
+import { REPRESENTATIVE_MUTATION_FAMILY_COUNT } from "./lib/gate-integrity-policy.mjs";
 import { runEngineSuite } from "./tests/engine-suite.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+export const MUTATION_NEGATIVE_CONTROL_IDS = Object.freeze([
+  "NC-ENGINE-REPRESENTATIVE-MUTANTS",
+  "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS",
+  "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION",
+]);
+export const MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE = Object.freeze({
+  "NC-ENGINE-REPRESENTATIVE-MUTANTS": "REPORT_FIELD:negativeControls.NC-ENGINE-REPRESENTATIVE-MUTANTS.status=PASS",
+  "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS": "REPORT_FIELD:negativeControls.NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS.status=PASS",
+  "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION": "REPORT_FIELD:negativeControls.NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION.status=PASS",
+});
 
 const FAMILIES = Object.freeze([
   {
@@ -126,7 +138,7 @@ function taskTypeMasteryOutcome(engine) {
 export async function runMutations({ indexPath = path.join(root, "index.html") } = {}) {
   const extracted = await extractEngine(indexPath);
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "math-quest-mutants-"));
-  const report = { status: "FAIL", engineSha256: extracted.sha256, families: [] };
+  const report = { status: "FAIL", engineSha256: extracted.sha256, families: [], negativeControls: {} };
   try {
     for (const family of FAMILIES) {
       const selected = new Set([family.testId]);
@@ -184,7 +196,20 @@ export async function runMutations({ indexPath = path.join(root, "index.html") }
         target: target ?? null,
       });
     }
-    report.status = report.families.length === 11 && report.families.every((item) => item.status === "PASS") ? "PASS" : "FAIL";
+    const everyFamilyKilled = report.families.length === REPRESENTATIVE_MUTATION_FAMILY_COUNT
+      && report.families.every((item) => item.status === "PASS");
+    const semanticMutantsKilled = ["strategy method independence", "strategy result independence"]
+      .every((name) => report.families.find((item) => item.family === name)?.status === "PASS");
+    report.negativeControls = Object.freeze({
+      [MUTATION_NEGATIVE_CONTROL_IDS[0]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[0]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+      [MUTATION_NEGATIVE_CONTROL_IDS[1]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[1]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+      [MUTATION_NEGATIVE_CONTROL_IDS[2]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[2]], status: semanticMutantsKilled ? "PASS" : "FAIL" },
+    });
+    report.status = everyFamilyKilled
+      && Object.entries(report.negativeControls).every(([id, control]) => (
+        control.passEvidence === MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[id]
+        && control.status === "PASS"
+      )) ? "PASS" : "FAIL";
     return report;
   } finally {
     await rm(tempRoot, { recursive: true, force: true });

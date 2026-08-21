@@ -79,6 +79,36 @@ automation predict impact; they do not replace independent mathematical
 oracles, rendered-browser evidence, accessibility review, human play testing,
 or the single frozen-candidate certification run.
 
+## Gate integrity
+
+`audit/gate-integrity-policy-v1.json` is the sole machine authority for gate
+status semantics, gate-family claim boundaries, versioned metric floors,
+retry rules, negative controls, GitHub enforcement expectations, and honest
+outcome reporting. `audit/release-evidence-bundle-v1.json` is the sole
+machine authority for the current release-evidence bindings.
+
+Every gate family must name and execute an effect-sensitive negative control.
+A syntactically valid digest proves nothing unless it matches validated
+canonical artifact bytes or an explicitly typed structured assertion whose
+claim boundary is recorded. Inventory equality is never a pass count. Reports
+must separately state literal passes, failures, skips, missing evidence,
+required non-runs, and accepted non-pass states.
+
+Required errors, timeouts, cancellations, skips, missing artifacts, and
+unstarted executions fail closed. Predeclared cadence exclusions, optional
+cycles not selected, owner-directed deferrals, historical owner skips, and
+emergency waivers remain visible non-passes. They may be release-eligible only
+under their exact scoped policy; they may never be relabelled as passes.
+
+The protected `main` branch must require `development-checks`, which runs
+on pull requests. It must not require the dispatch-only `full-audit` job.
+Every semantic-version tag matching `refs/tags/v*` must be protected against
+update and deletion with no bypass actors. Repository tests verify the local
+workflow contract and a read-only GitHub preflight verifies the remote
+configuration. Run `node audit/verify-github-gate-enforcement.mjs` before a
+release mutation; an unreadable setting, missing credential, missing required
+check, prohibited required check, absent tag rule, or bypass actor fails closed.
+
 ## Owner interaction and identity-placeholder policy
 
 All communication addressed to the project owner—not child-facing game copy

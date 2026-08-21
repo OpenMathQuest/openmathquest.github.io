@@ -21,7 +21,7 @@ Reviewed runner ImageVersion: 20260810.198.2
 External evidence reviewed at: 2026-08-20T23:07:08Z
 External evidence expires at: 2026-09-19T23:07:08Z
 Host qualification state: DEFERRED_PRERELEASE
-Host qualification evidence SHA-256: ad0b024c088f6188bf01f0993f2549cdfbc37c72d185f02f0833656a9ff52c32
+Host qualification evidence SHA-256: 90cbadf7d01d2dbcb4870b5b1ce1d267aa86d377877812baddc971d9d9b42ea6
 Canary reconciliation state: RECONCILED
 Canary reconciliation evidence SHA-256: d0870c3f8d9d610d0c7afb9ac39b2efc039298860ede2dac071e75299b02d4ed
 Physical-device evidence state: OPTIONAL_NOT_RUN
@@ -34,10 +34,10 @@ Independent-reviewer evidence SHA-256: NONE
 Required independent-reviewer reports: 0
 Sealed independent-reviewer reports: 0
 Adjudication state: APPROVED
-Adjudication evidence SHA-256: 9c252b889b23343c61890fc4593ce22df2ed22e10ad7bd8431bb2b9bbeab64fd
+Adjudication evidence SHA-256: dc359bfe0966969b30905c3a31483b7738dcab80de3404b6760a927dcab0de32
 Adjudication recommendation: RELEASE
 Finding-disposition state: COMPLETE
-Finding-disposition evidence SHA-256: cacde29776c5054d9ae82142ec536ff4c01bb5d1e267e4ad4bf69306dc20e841
+Finding-disposition evidence SHA-256: 29cdd5ebe2bee10e54e046af95ed089bb8b27316c4e82c26464804a4608687c8
 Open critical findings: 0
 Open high findings: 0
 Unaccepted medium findings: 0
@@ -45,7 +45,7 @@ Unrecorded low findings: 0
 Hosted-Windows evidence state: REVIEWED
 Hosted-Windows evidence SHA-256: 23d118738265f4e3cddfa36d90e40abf88f296014241b74a9cfbf2f28cc4adc3
 Owner authorization state: PR_PUSH_AUTHORIZED
-Owner authorization evidence SHA-256: 8331ce655c90cba2ab5f3b4bd11bfc13f604bc099a8401f6fb245095c0892c7c
+Owner authorization evidence SHA-256: cf2c8b3d30911281ff4175d388912371cacbfce7f68bd80328e1a9989dcc1b15
 Authorized release tag: v1.0.0-beta.7
 Authorized protected ref: refs/heads/main
-Review-bundle SHA-256: 448e26612a6f6d40b65ead9d326ae96a4a21efaa6b0283d32c4fd397a8295e73
+Review-bundle SHA-256: ad42d3ac5078e7cc326be15a3fb0594e49255e8620bcfc6cffbdc28ebedd60e7

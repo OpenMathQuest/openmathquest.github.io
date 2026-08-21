@@ -175,7 +175,7 @@ test("100-cell benchmark is balanced, exact, and explicitly non-certifying", () 
   assert.throws(() => buildDeepUxCensusPlan(fakeEngine(), { engineSha256: digest, executionMode: "BENCHMARK", requestedCellLimit: 99 }), /exactly 100 cells/u);
 });
 
-test("compact report fails closed on missing cells, retries-by-proxy, forged identity, pass artifacts, or cadence claims", () => {
+test("[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing cells, retries-by-proxy, forged identity, pass artifacts, or cadence claims", () => {
   const plan = buildDeepUxCensusPlan(fakeEngine(), { engineSha256: digest, executionMode: "FULL" });
   const expected = { expectedPlan: plan, expectedExecutableSha256: digest, expectedRootId: digest, expectedServedPayloadSha256: digest };
   assert.deepEqual(deepUxCensusReportFindings(cleanReport(plan), expected), []);

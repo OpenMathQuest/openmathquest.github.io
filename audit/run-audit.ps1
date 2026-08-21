@@ -399,6 +399,13 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The finished-work authority, machine-readable mirror, and anti-weakening tests failed.'
     }
+    & $node.Path --test @(
+        (Join-Path $auditDirectory 'tests\gate-integrity-policy.test.mjs'),
+        (Join-Path $auditDirectory 'tests\release-evidence-bundle.test.mjs')
+    )
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The gate-integrity policy, GitHub enforcement contract, evidence bindings, and negative controls failed.'
+    }
     & $node.Path --test (Join-Path $auditDirectory 'tests\publication-clearance.test.mjs')
     if ($LASTEXITCODE -ne 0) {
         throw 'The publication, external release-evidence, and browser/runner fail-closed schema tests failed.'
