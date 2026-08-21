@@ -26,6 +26,17 @@ const canonical = (values, key) => [...values].sort((left, right) => key(left).l
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 const schemaIssue = (error) => `${error.instancePath || "/"} ${error.message || "is invalid"}`;
 
+export function releaseCertificationRunEligible(run, jobs, releaseCommit) {
+  return run?.event === "workflow_dispatch"
+    && run?.status === "completed"
+    && run?.conclusion === "success"
+    && run?.head_sha === releaseCommit
+    && Array.isArray(jobs)
+    && jobs.filter((job) => job?.name === "full-audit"
+      && job?.status === "completed"
+      && job?.conclusion === "success").length === 1;
+}
+
 export function evaluateGithubEnforcementSnapshot(snapshot, policy) {
   const requiredContexts = Array.isArray(snapshot?.requiredPullRequestChecks)
     ? snapshot.requiredPullRequestChecks
@@ -137,13 +148,14 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
     }
   }
   const requiredFamilyIds = [
-    "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
+    "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
     "gate.github-pr", "gate.launcher", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
     "gate.publication-evidence", "gate.semantic",
   ];
   if (!same(familyIds, requiredFamilyIds)) issues.push("gateFamilies do not equal the closed required family set");
   if (policy.metricFloors.engineBranchCoverage.minimumPercent !== 88) issues.push("engine branch coverage floor drifted from 88 percent");
   if (policy.metricFloors.representativeMutationFamilies.minimumKilled !== 11) issues.push("representative mutation floor drifted from eleven families");
+  if (policy.executionPolicy.automaticRetries !== 0) issues.push("audit lane retries drifted from zero");
   return Object.freeze(issues);
 }
 

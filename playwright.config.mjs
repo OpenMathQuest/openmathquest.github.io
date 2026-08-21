@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { PLAYWRIGHT_FOCUSED_WORKERS } from "./audit/lib/playwright-focused-contract.mjs";
 
 const executablePath = process.env.MQ_PLAYWRIGHT_EDGE_EXECUTABLE;
 if (!executablePath) throw new Error("MQ_PLAYWRIGHT_EDGE_EXECUTABLE must name the reviewed installed Edge executable.");
@@ -9,7 +10,7 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,
-  workers: 1,
+  workers: PLAYWRIGHT_FOCUSED_WORKERS,
   timeout: 30_000,
   expect: { timeout: 7_500 },
   outputDir: "audit/.tmp-playwright-results",

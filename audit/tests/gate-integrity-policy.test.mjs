@@ -20,11 +20,16 @@ const readJson = async (relative) => JSON.parse(await readFile(path.join(root, r
 
 test("the gate-integrity policy is closed, ordered, and complete", async () => {
   const policy = await loadGateIntegrityPolicy();
-  assert.equal(policy.gateFamilies.length, 14);
-  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 14);
+  assert.equal(policy.gateFamilies.length, 15);
+  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 15);
   assert.equal(policy.enforcement.requiredPullRequestCheck, "development-checks");
   assert.deepEqual(policy.enforcement.prohibitedRequiredPullRequestChecks, ["full-audit"]);
   assert.equal(policy.retryPolicy.automaticRetries, 0);
+  assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
+  assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
+  assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
+  assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
+  assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, 1);
   assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
   assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
   assert.equal(GATE_INTEGRITY_POLICY.version, policy.version);
@@ -38,6 +43,9 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.metricFloors.engineBranchCoverage.minimumPercent = 0; },
     (value) => { value.metricFloors.representativeMutationFamilies.minimumKilled = 0; },
     (value) => { value.retryPolicy.automaticRetries = 1; },
+    (value) => { value.executionPolicy.githubHosted.maximumConcurrentLanes = 5; },
+    (value) => { value.executionPolicy.automaticRetries = 1; },
+    (value) => { value.executionPolicy.laneOrder.reverse(); },
     (value) => { value.gateFamilies[0].negativeControl.id = value.gateFamilies[1].negativeControl.id; },
     (value) => { value.gateFamilies.forEach((family, index) => { family.negativeControl.id = `NC-NONEXISTENT-${String(index + 1).padStart(2, "0")}`; }); },
     (value) => {
@@ -66,7 +74,7 @@ test("the PR workflow runs the required check on pull requests and reserves full
     .split(/\n  (?=[a-z][a-z0-9-]+:\n)/u)[0];
   assert.match(development, /^    if: github\.event_name != 'workflow_dispatch'$/mu);
   assert.doesNotMatch(development, /pull_request[^\n]*==\s*false/u);
-  assert.match(full, /^    if: github\.event_name == 'workflow_dispatch'$/mu);
+  assert.match(full, /^    if: github\.event_name == 'workflow_dispatch' && inputs\.execution_qualification != true$/mu);
 });
 
 test("[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration", async () => {

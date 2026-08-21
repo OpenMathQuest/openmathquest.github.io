@@ -387,7 +387,10 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The alternating-beta Playwright Deep UX Census planner, cadence, privacy, and evidence contract tests failed.'
     }
-    & $node.Path --test (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs')
+    & $node.Path --test @(
+        (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs'),
+        (Join-Path $auditDirectory 'tests\audit-lane-orchestration.test.mjs')
+    )
     if ($LASTEXITCODE -ne 0) {
         throw 'The deduplicated, instrumented, and sharded audit orchestration tests failed.'
     }

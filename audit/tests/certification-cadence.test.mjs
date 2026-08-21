@@ -120,7 +120,8 @@ test("ordinary automation cannot invoke complete certification", async () => {
     read("audit/on-change-audit.ps1"),
   ]);
   const developmentJob = workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "";
-  const releaseJob = workflow.split(/^  full-audit:\s*$/mu)[1] || "";
+  const releaseJob = workflow.split(/^  full-audit:\s*$/mu)[1]?.split(/^  deep-ux-census:\s*$/mu)[0] || "";
+  const qualificationJob = workflow.split(/^  audit-execution-qualification:\s*$/mu)[1] || "";
   assert.match(workflow, /^\s{2}pull_request:\s*$/mu);
   assert.match(workflow, /^\s{2}push:\s*[\r\n]+\s{4}branches:\s*[\r\n]+\s{6}- main\s*$/mu);
   assert.match(developmentJob, /if:\s*github\.event_name != 'workflow_dispatch'/u);
@@ -132,6 +133,9 @@ test("ordinary automation cannot invoke complete certification", async () => {
   assert.match(releaseJob, /actions\/checkout@[a-f0-9]{40}[\s\S]*fetch-depth:\s*0/iu);
   assert.match(releaseJob, /run-audit\.ps1 -NodePath \$nodePath\s*$/mu);
   assert.doesNotMatch(releaseJob, /run-audit\.ps1[^\r\n]*-TechnicalOnly/iu);
+  assert.match(qualificationJob, /if:\s*github\.event_name == 'workflow_dispatch' && inputs\.execution_qualification == true/u);
+  assert.match(qualificationJob, /audit-execution-qualification sentinel/iu);
+  assert.equal((qualificationJob.match(/run-audit\.ps1[^\r\n]*-TechnicalOnly/giu) || []).length, 2);
   assert.match(watcher, /Invoke-DevelopmentChecks/iu);
   assert.match(watcher, /\$runner[^\r\n]*-DevelopmentOnly/iu);
   assert.doesNotMatch(watcher, /Invoke-FullAudit|-TechnicalOnly/iu);
@@ -148,7 +152,9 @@ test("deployment requires exact-commit certification and does not repeat the gau
   assert.match(pages, /^\s{6}actions:\s*read\s*$/mu);
   assert.match(pages, /Require successful certification of the exact frozen commit/u);
   assert.match(pages, /actions\/workflows\/audit\.yml\/runs\?head_sha=\$\{RELEASE_COMMIT\}&event=workflow_dispatch/iu);
-  assert.match(pages, /\.head_sha == \$sha and \.conclusion == "success"/u);
+  assert.match(pages, /select\(\.head_sha == \$sha and \.event == "workflow_dispatch" and \.status == "completed" and \.conclusion == "success"\)/u);
+  assert.match(pages, /actions\/runs\/\$\{run_id\}\/jobs\?filter=all/iu);
+  assert.match(pages, /select\(\.name == "full-audit" and \.status == "completed" and \.conclusion == "success"\)/u);
   assert.doesNotMatch(pages, /node audit\/run-coverage\.mjs|node audit\/mutation-runner\.mjs|node audit\/exhaustive-generator-audit\.mjs|node --test audit\/tests\/node-engine\.test\.mjs/u);
   assert.ok(
     pages.indexOf("Require successful certification of the exact frozen commit")

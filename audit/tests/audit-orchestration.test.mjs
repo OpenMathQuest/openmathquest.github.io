@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { BROWSER_AUDIT_SHARDS, aggregateBrowserShardReports } from "../lib/browser-smoke.mjs";
+import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
 import { validateStructuredAudit } from "../run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -113,7 +114,8 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   const runAuditBody = runner.split(/export async function runAudit/u)[1] || "";
   assert.doesNotMatch(runAuditBody, /runEngineSuite|runManifestSemanticAudit/u);
   assert.match(runAuditBody, /structuredAuditValid/iu);
-  assert.match(runAuditBody, /playwright = await runPlaywrightFocusedAudit\(\)/u);
+  assert.match(runAuditBody, /runBoundedAuditLanes\(/u);
+  assert.match(runAuditBody, /const playwright = laneExecution\.results\.playwright/u);
   assert.match(runAuditBody, /playwright\.status === "PASS"/u);
   assert.match(runner, /playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS\.length/u);
   assert.match(runner, /actual\.playwrightAssertions/u);
@@ -125,7 +127,7 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.match(nodeEngine, /MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1/u);
   assert.match(auditPage, /AUDIT_SHARD !== "visual"/u);
   assert.match(auditPage, /AUDIT_SHARD !== "core"/u);
-  assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 3);
+  assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 4);
 });
 
 test("[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence", () => {
@@ -148,10 +150,17 @@ test("[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejec
 test("hosted parallelism is bounded while local execution remains sequential", async () => {
   const browserRunner = await read("audit/lib/browser-smoke.mjs");
   const auditRunner = await read("audit/run-audit.mjs");
+  const boundedRunner = await read("audit/lib/bounded-audit-lanes.mjs");
+  const policy = JSON.parse(await read("audit/gate-integrity-policy-v1.json"));
   assert.match(browserRunner, /GITHUB_ACTIONS === "true"[\s\S]*Promise\.all/iu);
   assert.match(browserRunner, /SEQUENTIAL_LOCAL/u);
-  assert.match(auditRunner, /GITHUB_ACTIONS === "true"[\s\S]*coverage = await coverageTask\(\)[\s\S]*browser = await browserTask\(\)/iu);
-  assert.match(auditRunner, /coverage = await coverageTask\(\)[\s\S]*browser = await browserTask\(\)/iu);
+  assert.match(auditRunner, /policy: gateIntegrityPolicy\.executionPolicy/u);
+  assert.match(boundedRunner, /Array\.from\(\{ length: configuration\.maximumConcurrentLanes \}, worker\)/u);
+  assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
+  assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
+  assert.equal(policy.executionPolicy.automaticRetries, 0);
+  assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximum, Object.keys(BROWSER_AUDIT_SHARDS).length);
+  assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);
 });
 
 test("watcher omits an empty changed-path parameter and preserves rename sources", async () => {

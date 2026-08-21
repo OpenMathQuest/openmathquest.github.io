@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.2.0",
+  "version": "1.3.2",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -143,6 +143,38 @@
     "postCorrectionRerun": "REQUIRED_AND_LINKED_TO_CORRECTION",
     "unchangedRerunForGreen": "PROHIBITED"
   },
+  "executionPolicy": {
+    "schemaVersion": 1,
+    "laneOrder": ["coverage", "browser", "playwright", "mutation", "generator"],
+    "local": {
+      "mode": "SERIAL_REFERENCE",
+      "maximumConcurrentLanes": 1
+    },
+    "githubHosted": {
+      "mode": "BOUNDED_PARALLEL",
+      "maximumConcurrentLanes": 2,
+      "adoptionStatus": "PENDING_MEASURED_QUALIFICATION",
+      "defaultBeforeQualification": "SERIAL_REFERENCE",
+      "qualificationWorkflowInput": "execution_qualification"
+    },
+    "laneTimeoutMs": {
+      "browser": 2400000,
+      "coverage": 240000,
+      "generator": 360000,
+      "mutation": 180000,
+      "playwright": 240000
+    },
+    "nestedConcurrency": {
+      "browserShardMaximum": 2,
+      "playwrightWorkers": 1
+    },
+    "automaticRetries": 0,
+    "resultOrdering": "DECLARED_LANE_ORDER",
+    "reportWriter": "PARENT_ONLY",
+    "identityBinding": "RUN_ID_REVISION_PUBLIC_CANDIDATE_AND_CROSS_LANE_ENGINE_SHA256",
+    "equivalenceProjection": "TIMING_FREE_CANONICAL_GATE_EVIDENCE",
+    "minimumMeasuredWallTimeReductionPercent": 20
+  },
   "outcomeReporting": {
     "requiredFields": [
       "acceptedNonPassCount",
@@ -166,6 +198,16 @@
     }
   },
   "gateFamilies": [
+    {
+      "id": "gate.audit-orchestration",
+      "claim": "AUDIT_LANES_EXECUTE_WITH_BOUNDED_CONCURRENCY_EXACT_IDENTITY_DETERMINISTIC_ORDER_AND_ZERO_RETRIES",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "TOP_LEVEL_LANE_BOUND_DOES_NOT_CLAIM_AN_OS_WIDE_PROCESS_COUNT",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-AUDIT-LANE-FOREIGN-CANDIDATE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-lane-orchestration.test.mjs", "testName": "[NC-AUDIT-LANE-FOREIGN-CANDIDATE] aggregation rejects missing, duplicate, unknown, and foreign-candidate lane evidence" },
+      "implementationPaths": ["audit/lib/bounded-audit-lanes.mjs", "audit/run-audit-lane.mjs", "audit/run-audit.mjs"],
+      "validatorPaths": ["audit/tests/audit-lane-orchestration.test.mjs"]
+    },
     {
       "id": "gate.browser",
       "claim": "RENDERED_BROWSER_ASSERTIONS_EXECUTED_WITH_ZERO_FAILURES_ZERO_SKIPS_AND_EXPECTED_RESULT_IDENTITIES",
@@ -263,7 +305,7 @@
       "independenceBoundary": "DOES_NOT_PREVENT_A_SEPARATE_GITHUB_RELEASE_FROM_BEING_CREATED_OUTSIDE_THE_DEPLOYMENT_WORKFLOW",
       "nonRunPolicy": "FAIL",
       "negativeControl": { "id": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit" },
-      "implementationPaths": [".github/workflows/pages.yml"],
+      "implementationPaths": [".github/workflows/pages.yml", "audit/lib/gate-integrity-policy.mjs"],
       "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
     },
     {

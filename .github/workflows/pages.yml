@@ -115,13 +115,27 @@ jobs:
         run: |
           set -euo pipefail
           runs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/audit.yml/runs?head_sha=${RELEASE_COMMIT}&event=workflow_dispatch&status=completed&per_page=100")"
-          if ! jq -e --arg sha "$RELEASE_COMMIT" '
-            [.workflow_runs[] | select(.head_sha == $sha and .conclusion == "success")] | length >= 1
-          ' <<< "$runs_json" >/dev/null
-          then
+          mapfile -t successful_run_ids < <(jq -r --arg sha "$RELEASE_COMMIT" '
+            .workflow_runs[] |
+            select(.head_sha == $sha and .event == "workflow_dispatch" and .status == "completed" and .conclusion == "success") |
+            .id
+          ' <<< "$runs_json")
+          certified_run_id=""
+          for run_id in "${successful_run_ids[@]}"; do
+            jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?filter=all&per_page=100")"
+            if jq -e '
+              [.jobs[] | select(.name == "full-audit" and .status == "completed" and .conclusion == "success")] | length == 1
+            ' <<< "$jobs_json" >/dev/null
+            then
+              certified_run_id="$run_id"
+              break
+            fi
+          done
+          if [[ -z "$certified_run_id" ]]; then
             echo "::error::No successful release-certification run is bound to commit $RELEASE_COMMIT."
             exit 1
           fi
+          printf 'Certified by audit workflow run %s.\n' "$certified_run_id"
 
       - name: Set up Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6

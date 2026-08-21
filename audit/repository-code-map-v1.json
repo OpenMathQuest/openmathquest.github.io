@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -273,6 +273,7 @@
       "copyDiscovery": "NONE",
       "projections": [],
       "validators": [
+        "audit/tests/audit-lane-orchestration.test.mjs",
         "audit/tests/audit-orchestration.test.mjs"
       ]
     },
@@ -375,6 +376,7 @@
       "id": "policy.gate-integrity",
       "owner": "audit/gate-integrity-policy-v1.json",
       "owns": [
+        "policy.gate-integrity.audit-execution",
         "policy.gate-integrity.evidence-binding",
         "policy.gate-integrity.family-registry",
         "policy.gate-integrity.github-enforcement",
@@ -404,6 +406,7 @@
         }
       ],
       "validators": [
+        "audit/tests/audit-lane-orchestration.test.mjs",
         "audit/tests/gate-integrity-policy.test.mjs"
       ]
     },
@@ -743,6 +746,30 @@
     }
   ],
   "artifactRelations": [
+    {
+      "id": "audit-lane.audit",
+      "source": "audit/lib/bounded-audit-lanes.mjs",
+      "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane.comparator",
+      "source": "audit/lib/bounded-audit-lanes.mjs",
+      "target": "audit/compare-audit-execution-modes.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane.runner",
+      "source": "audit/lib/bounded-audit-lanes.mjs",
+      "target": "audit/run-audit-lane.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane.test",
+      "source": "audit/lib/bounded-audit-lanes.mjs",
+      "target": "audit/tests/audit-lane-orchestration.test.mjs",
+      "kind": "TESTS"
+    },
     {
       "id": "blast-radius.development-plan",
       "source": "audit/lib/development-suite-plan.mjs",

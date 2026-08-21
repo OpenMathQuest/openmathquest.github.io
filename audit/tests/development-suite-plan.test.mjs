@@ -62,7 +62,11 @@ test("driftless maps and blast-radius controls select their shared focused gate"
   for (const file of [
     "AGENTS.md",
     "audit/repository-code-map-v1.json",
+    "audit/compare-audit-execution-modes.mjs",
+    "audit/lib/bounded-audit-lanes.mjs",
+    "audit/run-audit-lane.mjs",
     "audit/run-audit.mjs",
+    "audit/tests/audit-lane-orchestration.test.mjs",
     "audit/verify-github-gate-enforcement.mjs",
     "audit/tests/audit-orchestration.test.mjs",
     "curriculum/math-quest-feature-map-v1.json",
