@@ -304,6 +304,14 @@ jobs:
           if ($env:RELEASE_TAG_INPUT -cne 'audit-execution-qualification') {
             throw 'The non-release qualification requires the audit-execution-qualification sentinel and never creates a tag or release.'
           }
+          $workspacePrefix = ([IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd([char[]]@('\', '/'))) + [IO.Path]::DirectorySeparatorChar
+          $qualificationDirectory = [IO.Path]::GetFullPath((Join-Path $env:RUNNER_TEMP 'math-quest-audit-execution-qualification'))
+          $qualificationPrefix = $qualificationDirectory.TrimEnd([char[]]@('\', '/')) + [IO.Path]::DirectorySeparatorChar
+          if ($qualificationPrefix.StartsWith($workspacePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Execution qualification evidence must remain outside the audited repository checkout.'
+          }
+          [IO.Directory]::CreateDirectory($qualificationDirectory) | Out-Null
+          "MQ_AUDIT_QUALIFICATION_DIRECTORY=$qualificationDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set up Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -322,7 +330,7 @@ jobs:
         run: |
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
           & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
-          Copy-Item -LiteralPath 'audit/last-report.json' -Destination 'audit/execution-qualification-serial.json'
+          Copy-Item -LiteralPath 'audit/last-report.json' -Destination (Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial.json')
 
       - name: Run bounded candidate once
         shell: powershell
@@ -331,14 +339,17 @@ jobs:
         run: |
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
           & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
-          Copy-Item -LiteralPath 'audit/last-report.json' -Destination 'audit/execution-qualification-parallel.json'
+          Copy-Item -LiteralPath 'audit/last-report.json' -Destination (Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel.json')
 
       - name: Require equivalent evidence and measured improvement
         shell: powershell
         run: |
-          $comparison = & node .\audit\compare-audit-execution-modes.mjs --serial=audit/execution-qualification-serial.json --parallel=audit/execution-qualification-parallel.json
+          $serialPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial.json'
+          $parallelPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel.json'
+          $comparisonPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-comparison.json'
+          $comparison = & node .\audit\compare-audit-execution-modes.mjs "--serial=$serialPath" "--parallel=$parallelPath"
           $comparisonExit = $LASTEXITCODE
-          $comparison | Set-Content -LiteralPath 'audit/execution-qualification-comparison.json' -Encoding utf8
+          $comparison | Set-Content -LiteralPath $comparisonPath -Encoding utf8
           if ($comparisonExit -ne 0) { throw 'Bounded audit execution did not qualify.' }
 
       - name: Upload qualification evidence
@@ -347,8 +358,8 @@ jobs:
         with:
           name: math-quest-audit-execution-qualification-${{ github.sha }}
           path: |
-            audit/execution-qualification-serial.json
-            audit/execution-qualification-parallel.json
-            audit/execution-qualification-comparison.json
+            ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-serial.json
+            ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-parallel.json
+            ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-comparison.json
           if-no-files-found: error
           retention-days: 90

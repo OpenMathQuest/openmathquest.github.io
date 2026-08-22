@@ -233,10 +233,18 @@ test("adoption requires exact evidence equivalence and at least twenty percent m
 
 test("hosted bounded execution has one explicit non-release qualification path and is not the pre-qualification default", async () => {
   const workflow = await readFile(path.join(repositoryRoot, ".github", "workflows", "audit.yml"), "utf8");
+  const qualificationJob = workflow.slice(workflow.indexOf("  audit-execution-qualification:\n"));
   assert.match(workflow, /execution_qualification:[\s\S]*type: boolean/u);
   assert.match(workflow, /audit-execution-qualification:[\s\S]*MQ_AUDIT_EXECUTION_MODE: SERIAL_REFERENCE[\s\S]*MQ_AUDIT_EXECUTION_MODE: BOUNDED_PARALLEL/u);
   assert.match(workflow, /audit-execution-qualification[\s\S]*compare-audit-execution-modes\.mjs/u);
   assert.match(workflow, /full-audit:[\s\S]*inputs\.execution_qualification != true/u);
+  assert.match(qualificationJob, /Join-Path \$env:RUNNER_TEMP 'math-quest-audit-execution-qualification'/u);
+  assert.match(qualificationJob, /MQ_AUDIT_QUALIFICATION_DIRECTORY=\$qualificationDirectory[^\n]+\$env:GITHUB_ENV/u);
+  assert.match(qualificationJob, /Execution qualification evidence must remain outside the audited repository checkout\./u);
+  assert.match(qualificationJob, /Copy-Item[^\n]+Join-Path \$env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial\.json'/u);
+  assert.match(qualificationJob, /Copy-Item[^\n]+Join-Path \$env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel\.json'/u);
+  assert.match(qualificationJob, /\$\{\{ runner\.temp \}\}\/math-quest-audit-execution-qualification\/execution-qualification-comparison\.json/u);
+  assert.doesNotMatch(qualificationJob, /(?:Destination|--serial=|--parallel=|Set-Content -LiteralPath) ['"]?audit\/execution-qualification-/u);
   assert.equal(policy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
   assert.equal(policy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
 });

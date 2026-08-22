@@ -134,7 +134,8 @@
             "maximumConcurrentLanes": 2,
             "adoptionStatus": "PENDING_MEASURED_QUALIFICATION",
             "defaultBeforeQualification": "SERIAL_REFERENCE",
-            "qualificationWorkflowInput": "execution_qualification"
+            "qualificationWorkflowInput": "execution_qualification",
+            "qualificationEvidenceLocation": "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT"
           }
         },
         "laneTimeoutMs": {
