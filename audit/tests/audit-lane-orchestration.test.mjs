@@ -160,6 +160,41 @@ test("lane crashes and timeouts remain explicit orchestration failures without r
   assert.ok(value.report.issues.some((issue) => issue.includes("mutation execution ended ERROR")));
 });
 
+test("unverified nested coverage cleanup withholds every subsequent lane", async () => {
+  for (const environment of [
+    {},
+    { GITHUB_ACTIONS: "true", MQ_AUDIT_EXECUTION_MODE: "BOUNDED_PARALLEL" },
+  ]) {
+    const started = [];
+    const execute = async ({ laneId }) => {
+      started.push(laneId);
+      return laneId === "coverage"
+        ? envelopeFor(laneId, {
+          result: {
+            status: "FAIL",
+            calibration: { processCleanupVerified: null },
+            testProcessCleanupVerified: false,
+          },
+        })
+        : envelopeFor(laneId);
+    };
+    const value = await runBoundedAuditLanes({
+      candidateId,
+      environment,
+      execute,
+      indexPath: "index.html",
+      policy,
+      root: ".",
+      runId,
+    });
+    assert.deepEqual(started, ["coverage"]);
+    assert.equal(value.report.status, "FAIL");
+    assert.equal(value.report.automaticRetries, 0);
+    assert.equal(value.report.laneExecutions.slice(1).every((lane) => lane.executionStatus === "ERROR"), true);
+    assert.equal(value.report.issues.some((issue) => issue.includes("subsequent lanes were not started")), true);
+  }
+});
+
 test("candidate stability fails closed when the repository revision or public payload changes", () => {
   const revision = "a".repeat(40);
   const guard = { status: "PASS", payloadSha256: "b".repeat(64), payloadTreeOid: "c".repeat(40) };

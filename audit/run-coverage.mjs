@@ -23,6 +23,15 @@ export const DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS = coverageProcessTimeoutMs(
   GATE_INTEGRITY_POLICY.executionPolicy.nestedProcessFinalizationReserveMs.coverage,
 );
 
+export function coverageProcessCompletedCleanly(run) {
+  return run?.status === 0
+    && !run.signal
+    && !run.error
+    && !run.timedOut
+    && !run.outputOverflow
+    && run.cleanupVerified !== false;
+}
+
 function probeNode24(nodePath) {
   const probe = spawnSync(nodePath, ["--version"], { encoding: "utf8", windowsHide: true, timeout: 10_000 });
   const version = String(probe.stdout || "").trim();
@@ -196,7 +205,7 @@ export async function runCoverage({
 } = {}) {
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new RangeError("coverage process timeout must be a positive safe integer");
   const node = probeNode24(nodePath);
-  const calibration = calibrateNativeCoverage(nodePath, root);
+  const calibration = await calibrateNativeCoverage(nodePath, root);
   const report = {
     status: "FAIL", provider: "node:test native V8 coverage", calibrated: calibration.ok,
     nodeVersion: node.version, node24: node.ok, nodeProbeStatus: node.status, nodeProbeError: node.error,
@@ -206,12 +215,17 @@ export async function runCoverage({
       partialBranchPct: calibration.partial?.branchPct ?? null,
       aggregateBranchPct: calibration.aggregate?.branchPct ?? null,
       processStatus: calibration.run.status,
+      processTimedOut: calibration.run.timedOut,
+      processCleanupVerified: calibration.run.cleanupVerified,
+      processCleanupDetail: calibration.run.cleanupDetail,
       output: `${calibration.run.stdout}\n${calibration.run.stderr}`.slice(-8_000),
     },
     fallbackAttempts: [], engineSha256: null, stagedSha256: null, exactBytes: false,
     branchPct: null, branchTotal: 0, branchCovered: 0, branchMetric: "native V8 non-root block ranges", virtualFilenameObserved: false, virtualFilename: null,
     linePct: null, functionPct: null, engineRow: null,
-    testProcessStatus: null, testProcessSignal: null, testProcessError: null, testProcessTimedOut: false, testProcessTimeoutMs: timeoutMs, testOutput: "",
+    testProcessStatus: null, testProcessSignal: null, testProcessError: null, testProcessTimedOut: false,
+    testProcessOutputOverflow: false, testProcessCleanupVerified: null, testProcessCleanupDetail: null,
+    testProcessTimeoutMs: timeoutMs, testOutput: "",
     structuredAuditValid: false, structuredAuditIssues: [], structuredAuditSha256: null, structuredAudit: null,
     coveredSuites: [
       "exact shipped engine behavioral audit",
@@ -243,7 +257,7 @@ export async function runCoverage({
     const structuredAuditPath = path.join(tempRoot, "instrumented-engine-semantic-v1.json");
     const rawCoverageDir = path.join(tempRoot, "v8-raw");
     await mkdir(rawCoverageDir);
-    const run = runNativeCoverage(nodePath, testFile, {
+    const run = await runNativeCoverage(nodePath, testFile, {
       cwd: tempRoot,
       env: { MQ_ENGINE_COVERAGE_FILE: enginePath, MQ_INDEX_PATH: indexPath, MQ_STRUCTURED_AUDIT_FILE: structuredAuditPath, NODE_V8_COVERAGE: rawCoverageDir },
       timeoutMs,
@@ -255,6 +269,9 @@ export async function runCoverage({
     report.testProcessSignal = run.signal;
     report.testProcessError = run.error;
     report.testProcessTimedOut = run.timedOut;
+    report.testProcessOutputOverflow = run.outputOverflow;
+    report.testProcessCleanupVerified = run.cleanupVerified;
+    report.testProcessCleanupDetail = run.cleanupDetail;
     report.testOutput = `${run.stdout}\n${run.stderr}`.slice(-30_000);
     report.engineRow = row?.raw ?? null;
     report.nativeReportedBranchPct = row?.branchPct ?? null;
@@ -270,6 +287,8 @@ export async function runCoverage({
       report.structuredAuditIssues.push(`structured audit could not be read: ${String(error)}`);
     }
     if (run.timedOut) report.structuredAuditIssues.unshift(`native coverage process exceeded ${timeoutMs} ms`);
+    if (run.outputOverflow) report.structuredAuditIssues.unshift("native coverage process exceeded its output limit");
+    if (run.cleanupVerified === false) report.structuredAuditIssues.unshift(`native coverage process-tree cleanup was not verified (${run.cleanupDetail})`);
     Object.assign(report, totals);
     report.rawBlockRangePct = totals.branchTotal > 0
       ? Math.round((totals.branchCovered / totals.branchTotal) * 10_000) / 100
@@ -278,8 +297,7 @@ export async function runCoverage({
     report.linePct = row?.linePct ?? null;
     report.functionPct = row?.functionPct ?? null;
     report.status = node.ok
-      && run.status === 0
-      && !run.timedOut
+      && coverageProcessCompletedCleanly(run)
       && row
       && report.structuredAuditValid
       && report.branchPct >= MINIMUM_ENGINE_BRANCH_COVERAGE_PCT

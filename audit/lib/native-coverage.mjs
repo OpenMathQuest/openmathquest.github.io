@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
 import path from "node:path";
+import { runTreeSupervisedProcess } from "./bounded-audit-lanes.mjs";
 
 function parseNumber(cell) {
   const value = Number(String(cell).replace(/[^0-9.]/gu, ""));
@@ -30,7 +30,7 @@ function findRow(rows, suffix) {
   return [...rows.values()].find((row) => row.file.replace(/\\/gu, "/").toLowerCase().endsWith(normalized));
 }
 
-export function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 120_000, env } = {}) {
+export async function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 120_000, env } = {}) {
   const args = [
     "--test",
     "--experimental-test-coverage",
@@ -39,27 +39,44 @@ export function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 120_000
     "--test-coverage-branches=0",
     path.resolve(testFile),
   ];
-  const child = spawnSync(nodePath, args, { cwd, encoding: "utf8", timeout: timeoutMs, windowsHide: true, env: { ...process.env, ...env } });
+  const child = await runTreeSupervisedProcess({
+    command: nodePath,
+    args,
+    cwd,
+    env: { ...process.env, ...env },
+    timeoutMs,
+  });
+  const errors = [];
+  if (child.spawnError) errors.push(child.spawnError);
+  if (child.timedOut) errors.push(`ETIMEDOUT: native coverage process exceeded ${timeoutMs} ms`);
+  if (child.outputOverflow) errors.push("native coverage process exceeded its output limit");
+  if (child.cleanupVerified === false) errors.push(`process-tree cleanup was not verified (${child.cleanupDetail})`);
   return {
     command: [nodePath, ...args],
-    status: child.status,
+    status: child.exitCode,
     signal: child.signal,
-    error: child.error ? String(child.error) : null,
-    timedOut: child.error?.code === "ETIMEDOUT",
+    error: errors.length ? errors.join("; ") : null,
+    timedOut: child.timedOut,
+    outputOverflow: child.outputOverflow,
+    cleanupVerified: child.cleanupVerified,
+    cleanupDetail: child.cleanupDetail,
     stdout: child.stdout || "",
     stderr: child.stderr || "",
     rows: parseNativeCoverage(`${child.stdout || ""}\n${child.stderr || ""}`),
   };
 }
 
-export function calibrateNativeCoverage(nodePath, root) {
+export async function calibrateNativeCoverage(nodePath, root) {
   const fixture = path.join(root, "audit", "fixtures", "coverage-calibration.test.mjs");
-  const run = runNativeCoverage(nodePath, fixture, { cwd: root });
+  const run = await runNativeCoverage(nodePath, fixture, { cwd: root });
   const full = findRow(run.rows, "mq-coverage-calibration-full.js");
   const partial = findRow(run.rows, "mq-coverage-calibration-partial.js");
   const aggregate = findRow(run.rows, "mq-coverage-calibration-aggregate.js");
   const reasons = [];
   if (run.status !== 0) reasons.push(`calibration process exited ${run.status ?? run.signal ?? "without status"}`);
+  if (run.timedOut) reasons.push("calibration process timed out");
+  if (run.outputOverflow) reasons.push("calibration process exceeded its output limit");
+  if (run.cleanupVerified === false) reasons.push(`calibration process-tree cleanup was not verified (${run.cleanupDetail})`);
   if (!full) reasons.push("native report omitted the full vm.Script filename");
   if (!partial) reasons.push("native report omitted the partial vm.Script filename");
   if (!aggregate) reasons.push("native report omitted the repeated-filename aggregation fixture");

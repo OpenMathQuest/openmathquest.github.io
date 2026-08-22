@@ -121,7 +121,7 @@
     "executionPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "laneOrder", "boundedExecutionStartOrder", "laneSchedulingClass", "local", "githubHosted", "laneTimeoutMs", "nestedProcessFinalizationReserveMs", "nestedConcurrency", "automaticRetries", "resultOrdering", "reportWriter", "identityBinding", "equivalenceProjection", "minimumMeasuredWallTimeReductionPercent"],
+      "required": ["schemaVersion", "laneOrder", "boundedExecutionStartOrder", "laneSchedulingClass", "local", "githubHosted", "laneTimeoutMs", "nestedProcessFinalizationReserveMs", "nestedProcessTimeoutCleanup", "nestedConcurrency", "automaticRetries", "resultOrdering", "reportWriter", "identityBinding", "equivalenceProjection", "minimumMeasuredWallTimeReductionPercent"],
       "properties": {
         "schemaVersion": { "const": 1 },
         "laneOrder": { "const": ["coverage", "browser", "playwright", "mutation", "generator"] },
@@ -147,6 +147,9 @@
         },
         "nestedProcessFinalizationReserveMs": {
           "const": { "coverage": 15000 }
+        },
+        "nestedProcessTimeoutCleanup": {
+          "const": { "coverage": "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES" }
         },
         "nestedConcurrency": {
           "const": { "browserShardMaximum": 2, "playwrightWorkers": 1 }

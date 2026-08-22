@@ -146,7 +146,8 @@ async function terminateProcessTree(child, closePromise, graceMs = 2_000) {
       timeout: 5_000,
     });
     treeTerminationSucceeded = killed.status === 0 && !killed.signal && !killed.error;
-    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}`;
+    const taskkillDetail = `${killed.stdout || ""} ${killed.stderr || ""}`.trim().replace(/\s+/gu, " ").slice(-1_000);
+    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}${taskkillDetail ? ` output=${taskkillDetail}` : ""}`;
   } else {
     try {
       process.kill(-child.pid, "SIGKILL");
@@ -405,22 +406,57 @@ export async function runBoundedAuditLanes({
     await Promise.all(Array.from({ length: Math.min(maximumConcurrent, indexes.length) }, worker));
   };
   const allIndexes = laneIds.map((_, index) => index);
+  const cleanupBlockerFor = (index) => {
+    const result = envelopes[index]?.result;
+    if (result?.testProcessCleanupVerified === false) return "coverage test process-tree cleanup was not verified";
+    if (result?.calibration?.processCleanupVerified === false) return "coverage calibration process-tree cleanup was not verified";
+    return null;
+  };
+  const withholdUnstartedLanes = (reason) => {
+    for (const index of allIndexes) {
+      if (envelopes[index]) continue;
+      const laneId = laneIds[index];
+      envelopes[index] = createAuditLaneEnvelope({
+        candidateId,
+        durationMs: 0,
+        error: reason,
+        executionStatus: "ERROR",
+        laneId,
+        result: failedAuditLaneResult(laneId, reason, "ERROR"),
+        runId,
+      });
+    }
+  };
   if (configuration.mode === policy.local.mode) {
-    await runIndexes(allIndexes, 1);
+    for (const index of allIndexes) {
+      await runIndexes([index], 1);
+      const cleanupBlocker = cleanupBlockerFor(index);
+      if (cleanupBlocker) {
+        withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
+        break;
+      }
+    }
   } else {
     const boundedIndexes = policy.boundedExecutionStartOrder.map((laneId) => laneIds.indexOf(laneId));
     let boundedSegment = [];
+    let cleanupBlocked = false;
     for (const index of boundedIndexes) {
       const laneId = laneIds[index];
       if (policy.laneSchedulingClass[laneId] === "EXCLUSIVE") {
         await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
         boundedSegment = [];
         await runIndexes([index], 1);
+        const cleanupBlocker = cleanupBlockerFor(index);
+        if (cleanupBlocker) {
+          withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
+          cleanupBlocked = true;
+          break;
+        }
       } else {
         boundedSegment.push(index);
       }
     }
-    await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
+    if (!cleanupBlocked) await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
   }
   const wallDurationMs = roundMs(performance.now() - startedAt);
   const envelopeIssues = auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds });

@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -175,6 +175,9 @@
     },
     "nestedProcessFinalizationReserveMs": {
       "coverage": 15000
+    },
+    "nestedProcessTimeoutCleanup": {
+      "coverage": "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES"
     },
     "nestedConcurrency": {
       "browserShardMaximum": 2,
