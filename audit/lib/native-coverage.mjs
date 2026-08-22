@@ -45,6 +45,7 @@ export function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 120_000
     status: child.status,
     signal: child.signal,
     error: child.error ? String(child.error) : null,
+    timedOut: child.error?.code === "ETIMEDOUT",
     stdout: child.stdout || "",
     stderr: child.stderr || "",
     rows: parseNativeCoverage(`${child.stdout || ""}\n${child.stderr || ""}`),

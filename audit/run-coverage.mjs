@@ -4,11 +4,24 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractEngine } from "./lib/engine-loader.mjs";
-import { ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT } from "./lib/gate-integrity-policy.mjs";
+import { ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, GATE_INTEGRITY_POLICY } from "./lib/gate-integrity-policy.mjs";
 import { calibrateNativeCoverage, findCoverageRow, runNativeCoverage } from "./lib/native-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const MINIMUM_ENGINE_BRANCH_COVERAGE_PCT = ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT;
+
+export function coverageProcessTimeoutMs(laneTimeoutMs, finalizationReserveMs) {
+  if (!Number.isSafeInteger(laneTimeoutMs) || laneTimeoutMs <= 0) throw new RangeError("coverage lane timeout must be a positive safe integer");
+  if (!Number.isSafeInteger(finalizationReserveMs) || finalizationReserveMs <= 0 || finalizationReserveMs >= laneTimeoutMs) {
+    throw new RangeError("coverage finalization reserve must be a positive safe integer below the lane timeout");
+  }
+  return laneTimeoutMs - finalizationReserveMs;
+}
+
+export const DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS = coverageProcessTimeoutMs(
+  GATE_INTEGRITY_POLICY.executionPolicy.laneTimeoutMs.coverage,
+  GATE_INTEGRITY_POLICY.executionPolicy.nestedProcessFinalizationReserveMs.coverage,
+);
 
 function probeNode24(nodePath) {
   const probe = spawnSync(nodePath, ["--version"], { encoding: "utf8", windowsHide: true, timeout: 10_000 });
@@ -176,7 +189,12 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
   };
 }
 
-export async function runCoverage({ nodePath = process.execPath, indexPath = path.join(root, "index.html") } = {}) {
+export async function runCoverage({
+  nodePath = process.execPath,
+  indexPath = path.join(root, "index.html"),
+  timeoutMs = DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS,
+} = {}) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new RangeError("coverage process timeout must be a positive safe integer");
   const node = probeNode24(nodePath);
   const calibration = calibrateNativeCoverage(nodePath, root);
   const report = {
@@ -192,7 +210,8 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
     },
     fallbackAttempts: [], engineSha256: null, stagedSha256: null, exactBytes: false,
     branchPct: null, branchTotal: 0, branchCovered: 0, branchMetric: "native V8 non-root block ranges", virtualFilenameObserved: false, virtualFilename: null,
-    linePct: null, functionPct: null, engineRow: null, testProcessStatus: null, testOutput: "",
+    linePct: null, functionPct: null, engineRow: null,
+    testProcessStatus: null, testProcessSignal: null, testProcessError: null, testProcessTimedOut: false, testProcessTimeoutMs: timeoutMs, testOutput: "",
     structuredAuditValid: false, structuredAuditIssues: [], structuredAuditSha256: null, structuredAudit: null,
     coveredSuites: [
       "exact shipped engine behavioral audit",
@@ -227,12 +246,15 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
     const run = runNativeCoverage(nodePath, testFile, {
       cwd: tempRoot,
       env: { MQ_ENGINE_COVERAGE_FILE: enginePath, MQ_INDEX_PATH: indexPath, MQ_STRUCTURED_AUDIT_FILE: structuredAuditPath, NODE_V8_COVERAGE: rawCoverageDir },
-      timeoutMs: 180_000,
+      timeoutMs,
     });
     const row = findCoverageRow(run.rows, "math-quest.engine.js");
     const evaluatedSource = `(\n${extracted.source}\n)`;
     const totals = await nativeBranchRangeTotals(rawCoverageDir, "math-quest.engine.js", evaluatedSource);
     report.testProcessStatus = run.status;
+    report.testProcessSignal = run.signal;
+    report.testProcessError = run.error;
+    report.testProcessTimedOut = run.timedOut;
     report.testOutput = `${run.stdout}\n${run.stderr}`.slice(-30_000);
     report.engineRow = row?.raw ?? null;
     report.nativeReportedBranchPct = row?.branchPct ?? null;
@@ -245,8 +267,9 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
       report.structuredAuditSha256 = createHash("sha256").update(structuredBytes).digest("hex");
       report.structuredAudit = validation.valid ? structured : null;
     } catch (error) {
-      report.structuredAuditIssues = [`structured audit could not be read: ${String(error)}`];
+      report.structuredAuditIssues.push(`structured audit could not be read: ${String(error)}`);
     }
+    if (run.timedOut) report.structuredAuditIssues.unshift(`native coverage process exceeded ${timeoutMs} ms`);
     Object.assign(report, totals);
     report.rawBlockRangePct = totals.branchTotal > 0
       ? Math.round((totals.branchCovered / totals.branchTotal) * 10_000) / 100
@@ -256,6 +279,7 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
     report.functionPct = row?.functionPct ?? null;
     report.status = node.ok
       && run.status === 0
+      && !run.timedOut
       && row
       && report.structuredAuditValid
       && report.branchPct >= MINIMUM_ENGINE_BRANCH_COVERAGE_PCT
@@ -266,7 +290,13 @@ export async function runCoverage({ nodePath = process.execPath, indexPath = pat
       && !totals.aggregationError
       ? "PASS"
       : "FAIL";
-    if (!row) report.fallbackAttempts.push({ provider: "native V8 coverage", status: "FAIL", reason: "Report omitted the exact staged engine filename." });
+    if (!row) report.fallbackAttempts.push({
+      provider: "native V8 coverage",
+      status: "FAIL",
+      reason: run.timedOut
+        ? `Instrumented coverage exceeded its governed ${timeoutMs} ms nested-process budget.`
+        : "Report omitted the exact staged engine filename.",
+    });
     return report;
   } finally {
     await rm(tempRoot, { recursive: true, force: true });

@@ -11,6 +11,7 @@ import {
   compareAuditExecutionReports,
   createAuditLaneEnvelope,
   interpretJsonChildCompletion,
+  nestedProcessTimeoutForLane,
   processTreeCleanupVerified,
   runBoundedAuditLanes,
   runTreeSupervisedProcess,
@@ -21,6 +22,10 @@ const runId = "fixture-run";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const policy = Object.freeze({
   laneOrder: AUDIT_LANE_IDS,
+  boundedExecutionStartOrder: ["coverage", "generator", "browser", "playwright", "mutation"],
+  laneSchedulingClass: {
+    browser: "BOUNDED", coverage: "EXCLUSIVE", generator: "BOUNDED", mutation: "BOUNDED", playwright: "BOUNDED",
+  },
   local: { mode: "SERIAL_REFERENCE", maximumConcurrentLanes: 1 },
   githubHosted: {
     mode: "BOUNDED_PARALLEL",
@@ -30,6 +35,7 @@ const policy = Object.freeze({
     qualificationWorkflowInput: "execution_qualification",
   },
   laneTimeoutMs: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, 1_000])),
+  nestedProcessFinalizationReserveMs: { coverage: 100 },
   minimumMeasuredWallTimeReductionPercent: 20,
 });
 const resultFor = (laneId) => ({
@@ -49,11 +55,21 @@ const envelopeFor = (laneId, overrides = {}) => createAuditLaneEnvelope({
 test("bounded execution preserves declared result order and never exceeds two top-level lanes", async () => {
   let active = 0;
   let observed = 0;
-  const execute = async ({ laneId }) => {
+  const activeLaneIds = new Set();
+  const overlapViolations = [];
+  const nestedBudgets = new Map();
+  const starts = [];
+  const execute = async ({ laneId, nestedProcessTimeoutMs }) => {
+    if (laneId === "coverage" && activeLaneIds.size > 0) overlapViolations.push(`coverage overlapped ${[...activeLaneIds].join(",")}`);
+    if (laneId !== "coverage" && activeLaneIds.has("coverage")) overlapViolations.push(`${laneId} overlapped coverage`);
     active += 1;
+    activeLaneIds.add(laneId);
+    starts.push(laneId);
     observed = Math.max(observed, active);
+    nestedBudgets.set(laneId, nestedProcessTimeoutMs);
     await new Promise((resolve) => setTimeout(resolve, laneId === "coverage" ? 20 : 2));
     active -= 1;
+    activeLaneIds.delete(laneId);
     return envelopeFor(laneId);
   };
   const parallel = await runBoundedAuditLanes({
@@ -66,13 +82,48 @@ test("bounded execution preserves declared result order and never exceeds two to
     runId,
   });
   assert.equal(observed, 2);
+  assert.deepEqual(overlapViolations, []);
+  assert.equal(nestedBudgets.get("coverage"), 900);
+  assert.equal(nestedBudgets.get("browser"), null);
+  assert.deepEqual(starts.slice(0, 3), ["coverage", "generator", "browser"]);
   assert.equal(parallel.report.maximumObservedConcurrency, 2);
+  assert.deepEqual(parallel.report.boundedExecutionStartOrder, policy.boundedExecutionStartOrder);
+  assert.equal(parallel.report.laneSchedulingClass.coverage, "EXCLUSIVE");
   assert.deepEqual(parallel.report.laneExecutions.map((entry) => entry.laneId), AUDIT_LANE_IDS);
   const pendingHostedDefault = await runBoundedAuditLanes({ candidateId, environment: { GITHUB_ACTIONS: "true" }, execute, indexPath: "index.html", policy, root: ".", runId });
   assert.equal(pendingHostedDefault.report.executionMode, "SERIAL_REFERENCE");
   assert.equal(pendingHostedDefault.report.maximumObservedConcurrency, 1);
   const serial = await runBoundedAuditLanes({ candidateId, environment: {}, execute, indexPath: "index.html", policy, root: ".", runId });
   assert.equal(serial.report.maximumObservedConcurrency, 1);
+});
+
+test("nested process budgets derive from the sole lane timeout authority and fail closed", () => {
+  assert.equal(nestedProcessTimeoutForLane(policy, "coverage"), 900);
+  assert.equal(nestedProcessTimeoutForLane(policy, "browser"), null);
+  assert.throws(
+    () => nestedProcessTimeoutForLane({ ...policy, nestedProcessFinalizationReserveMs: { coverage: 1_000 } }, "coverage"),
+    /finalization reserve is invalid/u,
+  );
+});
+
+test("bounded execution rejects an incomplete or duplicated start order", async () => {
+  for (const boundedExecutionStartOrder of [
+    ["coverage", "generator", "browser", "playwright"],
+    ["coverage", "generator", "browser", "playwright", "playwright"],
+  ]) {
+    await assert.rejects(
+      runBoundedAuditLanes({
+        candidateId,
+        environment: { GITHUB_ACTIONS: "true", MQ_AUDIT_EXECUTION_MODE: "BOUNDED_PARALLEL" },
+        execute: async ({ laneId }) => envelopeFor(laneId),
+        indexPath: "index.html",
+        policy: { ...policy, boundedExecutionStartOrder },
+        root: ".",
+        runId,
+      }),
+      /exact lane permutation/u,
+    );
+  }
 });
 
 test("[NC-AUDIT-LANE-FOREIGN-CANDIDATE] aggregation rejects missing, duplicate, unknown, and foreign-candidate lane evidence", () => {

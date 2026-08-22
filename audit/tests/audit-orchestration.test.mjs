@@ -5,8 +5,9 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { BROWSER_AUDIT_SHARDS, aggregateBrowserShardReports } from "../lib/browser-smoke.mjs";
+import { runNativeCoverage } from "../lib/native-coverage.mjs";
 import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
-import { validateStructuredAudit } from "../run-coverage.mjs";
+import { coverageProcessTimeoutMs, DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS, validateStructuredAudit } from "../run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
@@ -22,6 +23,22 @@ const shardReport = (shard) => ({
   results: BROWSER_AUDIT_SHARDS[shard].map((id) => ({ id, title: id, status: "PASS", details: "" })),
   payloadValidation: { valid: true, errors: [] }, cleanupError: null,
   requests: [], unexpectedRequests: [], parseError: null, dumpTail: "",
+});
+
+test("coverage reserves finalization time inside its policy-owned lane timeout", () => {
+  assert.equal(coverageProcessTimeoutMs(240_000, 15_000), 225_000);
+  assert.equal(DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS, 225_000);
+  assert.throws(() => coverageProcessTimeoutMs(240_000, 240_000), /reserve/u);
+});
+
+test("native coverage reports a real subprocess timeout explicitly", () => {
+  const result = runNativeCoverage(
+    process.execPath,
+    path.join(root, "audit", "fixtures", "coverage-calibration.test.mjs"),
+    { cwd: root, timeoutMs: 1 },
+  );
+  assert.equal(result.timedOut, true);
+  assert.match(result.error || "", /ETIMEDOUT/u);
 });
 
 test("the current build contract digest is bound before complete certification", async () => {
@@ -155,9 +172,13 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   assert.match(browserRunner, /GITHUB_ACTIONS === "true"[\s\S]*Promise\.all/iu);
   assert.match(browserRunner, /SEQUENTIAL_LOCAL/u);
   assert.match(auditRunner, /policy: gateIntegrityPolicy\.executionPolicy/u);
-  assert.match(boundedRunner, /Array\.from\(\{ length: configuration\.maximumConcurrentLanes \}, worker\)/u);
+  assert.match(boundedRunner, /policy\.laneSchedulingClass\[laneId\] === "EXCLUSIVE"/u);
+  assert.match(boundedRunner, /runIndexes\(boundedSegment, configuration\.maximumConcurrentLanes\)/u);
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
+  assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
+  assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
+  assert.equal(policy.executionPolicy.nestedProcessFinalizationReserveMs.coverage, 15_000);
   assert.equal(policy.executionPolicy.automaticRetries, 0);
   assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximum, Object.keys(BROWSER_AUDIT_SHARDS).length);
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);

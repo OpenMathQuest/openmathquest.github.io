@@ -483,6 +483,8 @@ export async function runAudit({ browserPath = null } = {}) {
         maximumConcurrentLanes: 0,
         maximumObservedConcurrency: 0,
         laneOrder: [...AUDIT_LANE_IDS],
+        boundedExecutionStartOrder: [...gateIntegrityPolicy.executionPolicy.boundedExecutionStartOrder],
+        laneSchedulingClass: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, gateIntegrityPolicy.executionPolicy.laneSchedulingClass[laneId]])),
         wallDurationMs: 0,
         serialEquivalentDurationMs: 0,
         observedOverlapReductionPercent: 0,

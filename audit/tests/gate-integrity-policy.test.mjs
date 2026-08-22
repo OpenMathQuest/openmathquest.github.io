@@ -30,6 +30,9 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
   assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.githubHosted.qualificationEvidenceLocation, "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT");
+  assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
+  assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
+  assert.equal(policy.executionPolicy.nestedProcessFinalizationReserveMs.coverage, 15_000);
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, 1);
   assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
   assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
@@ -46,6 +49,9 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.retryPolicy.automaticRetries = 1; },
     (value) => { value.executionPolicy.githubHosted.maximumConcurrentLanes = 5; },
     (value) => { value.executionPolicy.githubHosted.qualificationEvidenceLocation = "REPOSITORY_CHECKOUT"; },
+    (value) => { value.executionPolicy.boundedExecutionStartOrder.reverse(); },
+    (value) => { value.executionPolicy.laneSchedulingClass.coverage = "BOUNDED"; },
+    (value) => { value.executionPolicy.nestedProcessFinalizationReserveMs.coverage = 0; },
     (value) => { value.executionPolicy.automaticRetries = 1; },
     (value) => { value.executionPolicy.laneOrder.reverse(); },
     (value) => { value.gateFamilies[0].negativeControl.id = value.gateFamilies[1].negativeControl.id; },
