@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
+import { canonicalBrowserRequestSignatures } from "./browser-smoke.mjs";
 
 export const AUDIT_LANE_IDS = Object.freeze([
   "coverage",
@@ -509,12 +510,43 @@ const removeKeys = (record, keys) => {
   for (const key of keys) delete record[key];
 };
 
+const VOLATILE_BROWSER_DETAIL_KEYS = new Set([
+  "checkedAt",
+  "completedRouteElapsedMs",
+  "interruptedReplayMs",
+  "reloadElapsedMs",
+  "reloadedRouteElapsedMs",
+  "volumeElapsedMs",
+]);
+
+function timingFreeBrowserDetailValue(value, key = "") {
+  if (VOLATILE_BROWSER_DETAIL_KEYS.has(key)) return undefined;
+  if (Array.isArray(value)) return value.map((item) => timingFreeBrowserDetailValue(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).flatMap(([name, item]) => {
+      const normalized = timingFreeBrowserDetailValue(item, name);
+      return normalized === undefined ? [] : [[name, normalized]];
+    }));
+  }
+  if (key === "registrationScope" && typeof value === "string") {
+    try { return new URL(value).pathname; } catch { return value; }
+  }
+  return value;
+}
+
+function timingFreeBrowserDetails(details) {
+  if (typeof details !== "string" || !details.trim()) return details;
+  try { return JSON.stringify(timingFreeBrowserDetailValue(JSON.parse(details))); }
+  catch { return details; }
+}
+
 function timingFreeProjection(report) {
   const projected = structuredClone(report);
   removeKeys(projected, ["auditOrchestration", "generatedAt"]);
   removeKeys(projected.outcomeSummary, ["runId"]);
-  removeKeys(projected.coverage, ["testOutput"]);
+  removeKeys(projected.coverage, ["rawVirtualUrl", "structuredAuditSha256", "testOutput"]);
   removeKeys(projected.coverage?.calibration, ["output"]);
+  for (const result of projected.coverage?.structuredAudit?.engine?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const result of projected.engine?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const family of projected.mutation?.families ?? []) {
     removeKeys(family.target, ["durationMs"]);
@@ -523,17 +555,30 @@ function timingFreeProjection(report) {
   removeKeys(projected.generator, ["stderr"]);
   removeKeys(projected.browser, ["dumpTail"]);
   removeKeys(projected.browser?.process, ["browserPath", "debugPort", "durationMs", "stderr", "stdout"]);
+  for (const result of projected.browser?.results ?? []) result.details = timingFreeBrowserDetails(result.details);
+  if (Array.isArray(projected.browser?.requests)) {
+    projected.browser.requests = canonicalBrowserRequestSignatures(projected.browser.requests, { includeShard: true });
+  }
+  if (Array.isArray(projected.browser?.unexpectedRequests)) {
+    projected.browser.unexpectedRequests = canonicalBrowserRequestSignatures(projected.browser.unexpectedRequests, { includeShard: true });
+  }
+  for (const evidence of projected.browser?.shardEvidence ?? []) {
+    removeKeys(evidence, ["canonicalEvidenceSha256"]);
+    const shard = evidence?.projection?.shard ?? null;
+    const payload = evidence?.projection?.payload;
+    removeKeys(payload, ["requestCount", "unexpectedRequestCount"]);
+    if (payload) {
+      payload.requestSignatures = canonicalBrowserRequestSignatures(
+        (projected.browser?.requests ?? []).filter((request) => request.shard === shard),
+      );
+      payload.unexpectedRequestSignatures = canonicalBrowserRequestSignatures(
+        (projected.browser?.unexpectedRequests ?? []).filter((request) => request.shard === shard),
+      );
+    }
+  }
   removeKeys(projected.playwright?.process, ["durationMs", "stderr", "stdout"]);
   removeKeys(projected.playwright, ["generatedAt"]);
   for (const result of projected.playwright?.results ?? []) removeKeys(result, ["durationMs"]);
-  for (const key of ["requests", "unexpectedRequests"]) {
-    if (Array.isArray(projected.browser?.[key])) {
-      projected.browser[key] = projected.browser[key].map((request) => ({
-        method: request.method,
-        pathname: request.pathname,
-      }));
-    }
-  }
   removeKeys(projected.publicCandidate?.before, ["stderr"]);
   removeKeys(projected.publicCandidate?.after, ["stderr"]);
   return projected;

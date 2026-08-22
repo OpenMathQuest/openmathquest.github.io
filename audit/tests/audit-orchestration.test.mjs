@@ -5,7 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { BROWSER_AUDIT_SHARDS, aggregateBrowserShardReports } from "../lib/browser-smoke.mjs";
+import {
+  BROWSER_AUDIT_SHARDS,
+  aggregateBrowserShardReports,
+  browserShardEvidenceProjection,
+} from "../lib/browser-smoke.mjs";
 import { runNativeCoverage } from "../lib/native-coverage.mjs";
 import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
 import { coverageProcessCompletedCleanly, coverageProcessTimeoutMs, DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS, validateStructuredAudit } from "../run-coverage.mjs";
@@ -122,6 +126,62 @@ test("browser shard aggregation accepts exactly one complete identity-bound part
     );
   }
   assert.equal(Object.hasOwn(aggregate, "shardReports"), false);
+});
+
+test("browser shard evidence ignores request order and duplicate multiplicity but preserves request identity", () => {
+  const baseline = shardReport("core");
+  baseline.requests = [
+    { method: "GET", pathname: "/index.html", host: "127.0.0.1:51001" },
+    { method: "GET", pathname: "/sw.js", host: "127.0.0.1:51001" },
+    { method: "GET", pathname: "/index.html", host: "127.0.0.1:51001" },
+  ];
+  const reordered = shardReport("core");
+  reordered.requests = [
+    { method: "GET", pathname: "/sw.js", host: "127.0.0.1:62002" },
+    { method: "GET", pathname: "/index.html", host: "127.0.0.1:62002" },
+  ];
+  assert.deepEqual(browserShardEvidenceProjection(reordered), browserShardEvidenceProjection(baseline));
+  reordered.requests[0].pathname = "/manifest.webmanifest";
+  assert.notDeepEqual(browserShardEvidenceProjection(reordered), browserShardEvidenceProjection(baseline));
+});
+
+test("browser geometry evidence waits fail-closed for fonts and consecutive stable rendered frames", async () => {
+  const [auditPage, visualRegression] = await Promise.all([
+    read("audit.html"),
+    read("audit/approved-visual-regression.js"),
+  ]);
+  const contractIssues = (pageSource, visualSource) => [
+    [/scenario\.doc\.fonts\.ready\.then\(\(\) => "READY"\)/u, pageSource, "font readiness is not awaited"],
+    [/scenario\.doc\.fonts\.status !== "loaded"/u, pageSource, "font readiness does not fail closed"],
+    [/identicalTransitions >= 2/u, pageSource, "consecutive geometry equality is not required"],
+    [/requireStableRenderedGeometry\(scenario, frame\.title\)/u, pageSource, "new scenario frames are sampled before settlement"],
+    [/requireStableRenderedGeometry\(installScenario, "Grown-up install dialog"\)/u, pageSource, "the install dialog is sampled before settlement"],
+    [/settle: requireStableRenderedGeometry/u, pageSource, "the visual regression helper lacks the settlement oracle"],
+    [/await settleLabRender\(`Manifest visual-regression viewport \$\{width\}x\$\{height\}`\)/u, visualSource, "resized visual fixtures are sampled before settlement"],
+    [/await settleLabRender\(`\$\{name\} manifest visual-regression fixture`\)/u, visualSource, "reloaded visual fixtures are sampled before settlement"],
+  ].flatMap(([pattern, source, issue]) => pattern.test(source) ? [] : [issue]);
+  assert.deepEqual(contractIssues(auditPage, visualRegression), []);
+  assert.ok(contractIssues(
+    auditPage.replace("scenario.doc.fonts.ready.then(() => \"READY\")", "Promise.resolve(\"READY\")"),
+    visualRegression,
+  ).includes("font readiness is not awaited"));
+  assert.ok(contractIssues(
+    auditPage,
+    visualRegression.replace("await settleLabRender(`${name} manifest visual-regression fixture`);", "await pause();"),
+  ).includes("reloaded visual fixtures are sampled before settlement"));
+});
+
+test("interrupted replay exclusion uses a controlled clock and an exact effect oracle", async () => {
+  const auditPage = await read("audit.html");
+  const contractIssues = (source) => [
+    [/scenarioFrameAtClock\(\s*engine,\s*"speech-replay-confirm-interruption",\s*interruptedReplayState,\s*playDay/um, "the replay interruption scenario uses wall-clock time"],
+    [/__setMathQuestAuditNow\(playDay \+ 4_000\)/u, "the replay interval is not advanced deterministically"],
+    [/attempt\?\.elapsed === 0\s*&& replayMs === 4_000/u, "the exclusion oracle does not require the exact controlled effect"],
+  ].flatMap(([pattern, issue]) => pattern.test(source) ? [] : [issue]);
+  assert.deepEqual(contractIssues(auditPage), []);
+  assert.ok(contractIssues(
+    auditPage.replace("attempt?.elapsed === 0", "attempt?.elapsed < replayMs"),
+  ).includes("the exclusion oracle does not require the exact controlled effect"));
 });
 
 test("[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence", () => {

@@ -838,6 +838,13 @@ test("browser scenarios await settled Home and release the writer lease before i
       assert.equal(candidate, bootFrame);
       bootEffects.push("ready");
     },
+    requireStableRenderedGeometry: async (scenario, label) => {
+      assert.equal(scenario.frame, bootFrame);
+      assert.equal(scenario.doc, bootFrame.contentDocument);
+      assert.equal(scenario.win, bootFrame.contentWindow);
+      assert.equal(label, bootFrame.title);
+      bootEffects.push("settled");
+    },
   };
   const scenarioFrameBytes = vm.runInNewContext(
     `(${scenarioFrameSource})`,
@@ -856,6 +863,7 @@ test("browser scenarios await settled Home and release the writer lease before i
       "waited-while-painted",
       "paused",
       "ready",
+      "settled",
     ],
   );
   failBoot = true;

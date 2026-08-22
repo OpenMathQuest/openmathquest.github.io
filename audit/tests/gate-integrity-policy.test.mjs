@@ -28,9 +28,24 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.retryPolicy.automaticRetries, 0);
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
-  assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
+  assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
   assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.githubHosted.qualificationEvidenceLocation, "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT");
+  assert.deepEqual(policy.executionPolicy.githubHosted.qualificationResult, {
+    workflowRunId: 32557129231,
+    candidateId: "1259a58b55a8954addda13151e0e1df3b2067452:803f72f99a3084f0187e39794a0997e6d38fd84ee3fdd47e2efe76456823d6fc",
+    evidenceArtifactId: 9471938142,
+    serialWallDurationMs: 410960,
+    boundedWallDurationMs: 331017,
+    measuredWallTimeReductionPercent: 19.45,
+    minimumRequiredWallTimeReductionPercent: 20,
+    evidenceEquivalent: false,
+    outcome: "FAIL",
+    issues: [
+      "TIMING_FREE_CANONICAL_GATE_EVIDENCE_DIFFERED",
+      "MEASURED_REDUCTION_BELOW_MINIMUM",
+    ],
+  });
   assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
   assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
   assert.equal(policy.executionPolicy.nestedProcessFinalizationReserveMs.coverage, 15_000);
@@ -50,6 +65,8 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.metricFloors.representativeMutationFamilies.minimumKilled = 0; },
     (value) => { value.retryPolicy.automaticRetries = 1; },
     (value) => { value.executionPolicy.githubHosted.maximumConcurrentLanes = 5; },
+    (value) => { value.executionPolicy.githubHosted.adoptionStatus = "QUALIFIED"; },
+    (value) => { value.executionPolicy.githubHosted.qualificationResult.measuredWallTimeReductionPercent = 20; },
     (value) => { value.executionPolicy.githubHosted.qualificationEvidenceLocation = "REPOSITORY_CHECKOUT"; },
     (value) => { value.executionPolicy.boundedExecutionStartOrder.reverse(); },
     (value) => { value.executionPolicy.laneSchedulingClass.coverage = "BOUNDED"; },

@@ -31,7 +31,7 @@ const policy = Object.freeze({
   githubHosted: {
     mode: "BOUNDED_PARALLEL",
     maximumConcurrentLanes: 2,
-    adoptionStatus: "PENDING_MEASURED_QUALIFICATION",
+    adoptionStatus: "DISQUALIFIED_MEASURED_QUALIFICATION",
     defaultBeforeQualification: "SERIAL_REFERENCE",
     qualificationWorkflowInput: "execution_qualification",
   },
@@ -262,6 +262,81 @@ test("serial and parallel timing-free evidence is byte-for-byte identical and se
   assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
 });
 
+test("timing-free equivalence removes measured volatility but keeps request and rendered-geometry semantics", () => {
+  const baseline = {
+    generatedAt: "one",
+    auditOrchestration: { executionMode: "SERIAL_REFERENCE", wallDurationMs: 410_960 },
+    outcomeSummary: { runId: "serial", passedCount: 2 },
+    coverage: {
+      status: "PASS",
+      rawVirtualUrl: "file:///repo/audit/.tmp-engine-coverage-first/math-quest.engine.js",
+      structuredAuditSha256: "1".repeat(64),
+      structuredAudit: { engine: { results: [{ id: "BND-10", status: "PASS", durationMs: 50_150 }] } },
+    },
+    browser: {
+      status: "PASS",
+      requests: [
+        { shard: "core", method: "GET", pathname: "/index.html", host: "127.0.0.1:51001" },
+        { shard: "core", method: "GET", pathname: "/sw.js", host: "127.0.0.1:51001" },
+        { shard: "core", method: "GET", pathname: "/index.html", host: "127.0.0.1:51001" },
+      ],
+      unexpectedRequests: [],
+      results: [{
+        id: "VIS-PLACEMENT-LAYOUT",
+        status: "PASS",
+        details: JSON.stringify({
+          interruptedReplayMs: 46,
+          completedRouteElapsedMs: 140.9,
+          registrationScope: "http://127.0.0.1:51001/",
+          readiness: { checkedAt: "2026-08-22T06:34:24.603Z", ready: true },
+          minControl: 47,
+          confirmBottom: 583,
+        }),
+      }],
+      shardEvidence: [{
+        canonicalEvidenceSha256: "2".repeat(64),
+        projection: { shard: "core", payload: { requestCount: 3, unexpectedRequestCount: 0, valid: true } },
+      }],
+    },
+  };
+  const parallel = structuredClone(baseline);
+  parallel.generatedAt = "two";
+  parallel.auditOrchestration = { executionMode: "BOUNDED_PARALLEL", wallDurationMs: 331_017 };
+  parallel.outcomeSummary.runId = "parallel";
+  parallel.coverage.rawVirtualUrl = "file:///repo/audit/.tmp-engine-coverage-second/math-quest.engine.js";
+  parallel.coverage.structuredAuditSha256 = "3".repeat(64);
+  parallel.coverage.structuredAudit.engine.results[0].durationMs = 50_728;
+  parallel.browser.requests = [
+    { shard: "core", method: "GET", pathname: "/sw.js", host: "127.0.0.1:62002" },
+    { shard: "core", method: "GET", pathname: "/index.html", host: "127.0.0.1:62002" },
+  ];
+  parallel.browser.results[0].details = JSON.stringify({
+    interruptedReplayMs: 46.1,
+    completedRouteElapsedMs: 171,
+    registrationScope: "http://127.0.0.1:62002/",
+    readiness: { checkedAt: "2026-08-22T06:41:55.112Z", ready: true },
+    minControl: 47,
+    confirmBottom: 583,
+  });
+  parallel.browser.shardEvidence[0].canonicalEvidenceSha256 = "4".repeat(64);
+  parallel.browser.shardEvidence[0].projection.payload.requestCount = 2;
+  assert.deepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
+
+  parallel.browser.results[0].details = JSON.stringify({
+    interruptedReplayMs: 46.1,
+    completedRouteElapsedMs: 171,
+    registrationScope: "http://127.0.0.1:62002/",
+    readiness: { checkedAt: "2026-08-22T06:41:55.112Z", ready: true },
+    minControl: 50,
+    confirmBottom: 583,
+  });
+  assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
+
+  parallel.browser.results[0].details = baseline.browser.results[0].details;
+  parallel.browser.requests[0].pathname = "/manifest.webmanifest";
+  assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
+});
+
 test("JSON child failures cannot become passes from diagnostic PASS output", () => {
   const stdout = JSON.stringify({ status: "PASS" });
   assert.throws(
@@ -350,6 +425,6 @@ test("hosted bounded execution has one explicit non-release qualification path a
   assert.match(qualificationJob, /Copy-Item[^\n]+Join-Path \$env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel\.json'/u);
   assert.match(qualificationJob, /\$\{\{ runner\.temp \}\}\/math-quest-audit-execution-qualification\/execution-qualification-comparison\.json/u);
   assert.doesNotMatch(qualificationJob, /(?:Destination|--serial=|--parallel=|Set-Content -LiteralPath) ['"]?audit\/execution-qualification-/u);
-  assert.equal(policy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
+  assert.equal(policy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
   assert.equal(policy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
 });

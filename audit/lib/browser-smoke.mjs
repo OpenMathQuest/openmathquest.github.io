@@ -825,6 +825,21 @@ const browserEvidenceIdentity = (evidence) => JSON.stringify({
   runnerImageVersion: evidence?.runnerImageVersion,
 });
 
+export function canonicalBrowserRequestSignatures(requests, { includeShard = false } = {}) {
+  const signatures = new Map();
+  for (const request of Array.isArray(requests) ? requests : []) {
+    const signature = {
+      ...(includeShard ? { shard: request?.shard ?? null } : {}),
+      method: request?.method ?? null,
+      pathname: request?.pathname ?? null,
+    };
+    signatures.set(JSON.stringify(signature), signature);
+  }
+  return [...signatures.entries()]
+    .sort(([left], [right]) => left.localeCompare(right, "en"))
+    .map(([, signature]) => signature);
+}
+
 export function browserShardEvidenceProjection(report) {
   const identity = JSON.parse(browserEvidenceIdentity(report?.evidence || {}));
   for (const key of Object.keys(identity)) identity[key] ??= null;
@@ -848,8 +863,8 @@ export function browserShardEvidenceProjection(report) {
       resultStatuses: [...(report?.results || [])]
         .map((result) => ({ id: result?.id ?? null, status: result?.status ?? null }))
         .sort((left, right) => String(left.id).localeCompare(String(right.id))),
-      requestCount: report?.requests?.length ?? 0,
-      unexpectedRequestCount: report?.unexpectedRequests?.length ?? 0,
+      requestSignatures: canonicalBrowserRequestSignatures(report?.requests),
+      unexpectedRequestSignatures: canonicalBrowserRequestSignatures(report?.unexpectedRequests),
       parseErrorPresent: report?.parseError != null,
       cleanupErrorPresent: report?.cleanupError != null,
     },

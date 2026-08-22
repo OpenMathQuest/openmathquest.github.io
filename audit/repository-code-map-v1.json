@@ -747,6 +747,18 @@
   ],
   "artifactRelations": [
     {
+      "id": "audit-browser.evidence-canonicalization",
+      "source": "audit/lib/browser-smoke.mjs",
+      "target": "audit/lib/bounded-audit-lanes.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-browser.visual-settlement",
+      "source": "audit.html",
+      "target": "audit/approved-visual-regression.js",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "audit-lane.audit",
       "source": "audit/lib/bounded-audit-lanes.mjs",
       "target": "audit/run-audit.mjs",

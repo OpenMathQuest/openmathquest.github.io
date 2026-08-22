@@ -136,10 +136,25 @@
           "const": {
             "mode": "BOUNDED_PARALLEL",
             "maximumConcurrentLanes": 2,
-            "adoptionStatus": "PENDING_MEASURED_QUALIFICATION",
+            "adoptionStatus": "DISQUALIFIED_MEASURED_QUALIFICATION",
             "defaultBeforeQualification": "SERIAL_REFERENCE",
             "qualificationWorkflowInput": "execution_qualification",
-            "qualificationEvidenceLocation": "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT"
+            "qualificationEvidenceLocation": "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT",
+            "qualificationResult": {
+              "workflowRunId": 32557129231,
+              "candidateId": "1259a58b55a8954addda13151e0e1df3b2067452:803f72f99a3084f0187e39794a0997e6d38fd84ee3fdd47e2efe76456823d6fc",
+              "evidenceArtifactId": 9471938142,
+              "serialWallDurationMs": 410960,
+              "boundedWallDurationMs": 331017,
+              "measuredWallTimeReductionPercent": 19.45,
+              "minimumRequiredWallTimeReductionPercent": 20,
+              "evidenceEquivalent": false,
+              "outcome": "FAIL",
+              "issues": [
+                "TIMING_FREE_CANONICAL_GATE_EVIDENCE_DIFFERED",
+                "MEASURED_REDUCTION_BELOW_MINIMUM"
+              ]
+            }
           }
         },
         "laneTimeoutMs": {

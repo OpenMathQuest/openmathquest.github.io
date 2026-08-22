@@ -532,6 +532,7 @@
         await waitFrame(frame);
         await pause();
         await requireScenarioAppReady(frame, frame.title, { allowFailClosedScreen });
+        await requireStableRenderedGeometry(scenario, frame.title);
         auditProgressMarker = `scenario:${name}:ready`;
         return scenario;
       } catch (error) {
@@ -551,6 +552,7 @@
       await loaded;
       await pause();
       await requireScenarioAppReady(scenario.frame);
+      await requireStableRenderedGeometry(scenario, `Reloaded browser audit ${name}`);
       return scenario;
     }
 
@@ -726,7 +728,9 @@
       await loaded;
       await pause();
       await requireScenarioAppReady(frame);
-      return { frame, doc: frame.contentDocument, win: frame.contentWindow };
+      const scenario = { frame, doc: frame.contentDocument, win: frame.contentWindow };
+      await requireStableRenderedGeometry(scenario, `Controlled-clock browser audit ${name}`);
+      return scenario;
     }
 
     async function resizeScenario(scenario, width, height) {
@@ -1307,6 +1311,60 @@
         new Promise((resolve) => scenario.win.requestAnimationFrame(() => resolve(true))),
         new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs)),
       ]);
+    }
+    function stableRenderedGeometryProjection(scenario) {
+      const selector = [
+        "html", "body", "#app",
+        "h1", "h2", "h3", "p", "label", "strong", "b", "button", "input", "select", "textarea", "output",
+        ".prompt", ".small", ".model-label", ".direct-status", ".tutorial-stepper li",
+        ".placement-shell", ".placement-screen", ".placement-question", ".question-response", ".answer-controls", ".question-submit",
+      ].join(",");
+      const rounded = (value) => Math.round(Number(value) * 1_000) / 1_000;
+      const elements = [...scenario.doc.querySelectorAll(selector)].flatMap((element) => {
+        const style = scenario.win.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        if (style.display === "none" || style.visibility === "hidden" || rect.width <= 0 || rect.height <= 0) return [];
+        return [{
+          node: `${element.localName}${element.id ? `#${element.id}` : ""}.${[...element.classList].join(".")}`,
+          rect: [rect.x, rect.y, rect.width, rect.height].map(rounded),
+          client: [element.clientWidth, element.clientHeight],
+          scroll: [element.scrollWidth, element.scrollHeight],
+          fontSize: rounded(Number.parseFloat(style.fontSize) || 0),
+        }];
+      });
+      return JSON.stringify({
+        fontsStatus: scenario.doc.fonts?.status ?? null,
+        viewport: [scenario.win.innerWidth, scenario.win.innerHeight],
+        document: [
+          scenario.doc.documentElement.clientWidth,
+          scenario.doc.documentElement.clientHeight,
+          scenario.doc.documentElement.scrollWidth,
+          scenario.doc.documentElement.scrollHeight,
+        ],
+        elements,
+      });
+    }
+    async function requireStableRenderedGeometry(scenario, label, { fontTimeoutMs = 5_000, maximumFrames = 12 } = {}) {
+      if (!scenario?.doc?.fonts?.ready || typeof scenario?.win?.requestAnimationFrame !== "function") {
+        throw new Error(`${label} cannot prove font and rendered-geometry settlement.`);
+      }
+      const fontOutcome = await Promise.race([
+        scenario.doc.fonts.ready.then(() => "READY"),
+        new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), fontTimeoutMs)),
+      ]);
+      if (fontOutcome !== "READY" || scenario.doc.fonts.status !== "loaded") {
+        throw new Error(`${label} fonts did not settle within ${fontTimeoutMs} ms.`);
+      }
+      let previous = null;
+      let identicalTransitions = 0;
+      for (let frame = 0; frame < maximumFrames; frame += 1) {
+        if (!await awaitNextPaint(scenario, 2_500)) throw new Error(`${label} did not produce a rendered frame.`);
+        const current = stableRenderedGeometryProjection(scenario);
+        identicalTransitions = current === previous ? identicalTransitions + 1 : 0;
+        if (identicalTransitions >= 2) return current;
+        previous = current;
+      }
+      throw new Error(`${label} geometry did not remain identical across consecutive rendered frames.`);
     }
     function installDeterministicFrameClock(scenario) {
       let sequence = 0;
@@ -5729,6 +5787,7 @@
           reteachReplayPositionsSpoken: false,
           interruptedReplayHeldOpen: false,
           interruptedReplayMs: 0,
+          interruptedAttemptElapsed: null,
           interruptedReplayTelemetryValid: false,
           interruptedReplayExcludedFromElapsed: false,
           interruptedReplayReachedFeedback: false,
@@ -6027,10 +6086,11 @@
         try {
           const interruptedReplayState = activeStateFor(engine, playDay, selectionCase.question);
           const interruptedReplayQuestion = interruptedReplayState.activeSession.uiState.question;
-          interruptedReplayScenario = await scenarioFrame(
+          interruptedReplayScenario = await scenarioFrameAtClock(
             engine,
             "speech-replay-confirm-interruption",
             interruptedReplayState,
+            playDay,
             1024,
             768,
           );
@@ -6052,7 +6112,7 @@
           speechAudit.interruptedReplayHeldOpen = Boolean(
             replay && heldUtterance && interruptedHarness.calls.length === 1,
           );
-          await new Promise((resolve) => setTimeout(resolve, 30));
+          interruptedReplayScenario.win.__setMathQuestAuditNow(playDay + 4_000);
           const option = interruptedReplayQuestion.options[interruptedReplayQuestion.correctIndex];
           interruptedReplayScenario.doc.querySelector(
             `[data-action="select"][data-id="${CSS.escape(option.optionId)}"]`,
@@ -6066,9 +6126,10 @@
           const replayMs = Number(interruptedSave?.activeSession?.uiState?.replayMs || 0);
           const attempt = interruptedSave?.activeSession?.uiState?.lastAttempt;
           speechAudit.interruptedReplayMs = replayMs;
+          speechAudit.interruptedAttemptElapsed = Number(attempt?.elapsed);
           speechAudit.interruptedReplayTelemetryValid = attempt?.validTelemetry === true;
-          speechAudit.interruptedReplayExcludedFromElapsed = Number.isFinite(attempt?.elapsed)
-            && attempt.elapsed >= 0 && attempt.elapsed < replayMs;
+          speechAudit.interruptedReplayExcludedFromElapsed = attempt?.elapsed === 0
+            && replayMs === 4_000;
           speechAudit.interruptedReplayReachedFeedback = Boolean(
             confirm && interruptedSave?.activeSession?.uiState?.phase === "feedback"
             && interruptedReplayScenario.doc.querySelector(".feedback-state"),
@@ -7891,6 +7952,7 @@
           launch?.focus();
           launch?.click();
           await waitUntil(() => installScenario.doc.activeElement?.id === "pwa-dialog-title");
+          await requireStableRenderedGeometry(installScenario, "Grown-up install dialog");
           const dialog = installScenario.doc.querySelector('.pwa-dialog[role="dialog"][aria-modal="true"]');
           const dialogText = normalized(dialog?.textContent);
           const metrics = visibleMetrics(installScenario, ".pwa-dialog");
@@ -8154,6 +8216,7 @@
             childNameKey: TEST_CHILD_NAME_KEY,
             placementDraftKey: TEST_PLACEMENT_DRAFT_KEY,
             pause,
+            settle: requireStableRenderedGeometry,
             activeStateFactory: activeStateFor,
           });
           for (const [id, title] of Object.entries(visual.titles)) {
