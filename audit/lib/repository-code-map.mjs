@@ -200,7 +200,7 @@ export async function validateRepositoryCodeMap(map, {
       const allowedRoles = {
         EXACT_MIRROR: null,
         RUNTIME_EMBED: new Set(["runtime"]),
-        OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool"]),
+        OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool", "toolchain"]),
         VALIDATION_EXPECTATION: new Set(["audit", "runtime", "test"]),
         GENERATED_METADATA: new Set(["runtime"]),
         STATE_DEPENDENT_DOCUMENTED_REFERENCE: new Set(["documentation", "governance", "research"]),

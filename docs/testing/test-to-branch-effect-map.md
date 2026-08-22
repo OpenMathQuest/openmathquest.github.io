@@ -346,6 +346,29 @@ and disposable-server cleanup. This automation is rendered-browser evidence,
 not physical iPhone/iPad, Safari, VoiceOver, software-keyboard, pronunciation,
 or child-comprehension evidence.
 
+## Seeded Playwright interaction-fuzz effect map
+
+`audit/lib/playwright-interaction-fuzz.mjs` owns a bounded, diagnostic-only
+stateful interaction lane. It uses fast-check 4.9.0 and its pure-rand 8.4.2
+dependency to generate reproducible command sequences, then uses the existing
+Playwright fixture's native click or tap. It cannot satisfy or enlarge a
+release gate.
+
+| Contract | Protected effect |
+|---|---|
+| Closed resources | Exactly two reviewed Edge profiles each run 12 fixed-seed properties with at most 16 generated commands, one worker, zero retries, and a 180-second Playwright timeout. |
+| Synthetic isolation | Every generated sequence clears browser storage, reloads the real app, and enters through **Continue without a name**. A named identity, invalid save, escaped route, missing app root, unexpected request, page error, or console error fails the property. |
+| Safe action model | Only approved child controls for world choice, start, answer construction, confirm, tutorial traversal, advance, and Home may be selected. Grown-up, import, export, reset, name, placement, preview, and other destructive or identity-bearing controls are excluded by a fail-closed allowlist. |
+| Native effect oracle | Playwright actionability remains active and `force` is forbidden. After every activation, the rendered app plus local-storage digest must change. A visible button that accepts input but produces no observable effect is a failure, not a pass. |
+| Shrink and replay | A failure records the fast-check seed, counterexample path, command replay path when supplied, minimized command sequence, exact action trace, state digests, and one synthetic screenshot. Passing runs retain only the compact closed summary. |
+| Negative controls | Focused Node tests prove the oracle rejects an unchanged-state no-op, the action policy rejects a destructive control, and the report rejects retries, missing projects, actionless passes, and incorrect literal totals. |
+| Claim boundary | The lane discovers state-machine and interaction defects. It does not prove curriculum completeness, mathematical correctness, visual quality, child comprehension, Safari/iOS behavior, physical touch, PWA installation, offline operation, or release readiness. |
+
+Run it explicitly with `node audit/run-playwright-interaction-fuzz.mjs`. The
+changed-path planner routes its implementation through the ordinary Playwright
+and shared policy checks, but routine focused development does not launch the
+fuzzer itself.
+
 ## Playwright Deep UX Census effect map
 
 The census is a separate alternating-beta diagnostic owned by

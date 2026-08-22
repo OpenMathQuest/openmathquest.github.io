@@ -91,6 +91,7 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 | `repository.structure` | `audit/repository-code-map-v1.json` | `docs/repository-structure.md` | `audit/tests/repository-code-map.test.mjs` |
 | `rights.components` | `licenses/component-register-v1.json` | `licenses/first-party-paths-v1.txt` | `audit/public-candidate-guard.mjs` |
 | `rights.evidence-paths` | `licenses/evidence-paths-v1.json` | — | `audit/public-candidate-guard.mjs` |
+| `testing.playwright-interaction-fuzz` | `audit/lib/playwright-interaction-fuzz.mjs` | `audit/playwright/interaction-fuzz.spec.mjs`<br>`audit/run-playwright-interaction-fuzz.mjs`<br>`docs/testing/test-to-branch-effect-map.md`<br>`playwright.interaction-fuzz.config.mjs` | `audit/tests/playwright-interaction-fuzz.test.mjs` |
 | `toolchain.dependencies` | `package.json` | `licenses/ci-toolchain.md`<br>`licenses/component-register-v1.json`<br>`package-lock.json` | `audit/tests/trusted-https-canary.test.mjs` |
 | `tutorial.linkage` | `curriculum/math-quest-tutorial-manifest-v1.json` | `curriculum/math-quest-feature-map-v1.json`<br>`docs/development/build-spec.md`<br>`index.html`<br>`release-shell-v1.json` | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/playwright/deep-ux-census.spec.mjs`<br>`audit/tests/tutorial-manifest.test.mjs` |
 

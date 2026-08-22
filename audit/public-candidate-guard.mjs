@@ -830,10 +830,10 @@ function registerFindings(register, entries, blobs, manifest) {
   const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
   const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
   const packageToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
-  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 11) {
-    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the eleven reviewed Node.js, Caddy, Playwright, and Ajv dependency records`);
+  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 13) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the thirteen reviewed Node.js, Caddy, Playwright, Ajv, fast-check, and pure-rand dependency records`);
   } else {
-    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
+    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fastCheckTool, pureRandTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
     if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
       if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
       if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
@@ -898,6 +898,36 @@ function registerFindings(register, entries, blobs, manifest) {
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
       scope: "focused and frozen-candidate browser journeys only",
+    };
+    const exactFastCheck = {
+      id: "fast-check-4.9.0",
+      kind: "ci-only-property-based-testing-library",
+      version: "4.9.0",
+      licence: "MIT",
+      sourceUrl: "https://github.com/dubzzz/fast-check/tree/0d3c2547dce556f72413607849377530d18ea283/packages/fast-check",
+      sourceCommit: "0d3c2547dce556f72413607849377530d18ea283",
+      licenceEvidence: "https://github.com/dubzzz/fast-check/blob/0d3c2547dce556f72413607849377530d18ea283/LICENSE",
+      packageName: "fast-check",
+      packageUrl: "https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz",
+      packageSri: "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "bounded seeded Playwright interaction-fuzz diagnostics only",
+    };
+    const exactPureRand = {
+      id: "pure-rand-8.4.2",
+      kind: "ci-only-transitive-pseudorandom-generator",
+      version: "8.4.2",
+      licence: "MIT",
+      sourceUrl: "https://github.com/dubzzz/pure-rand/tree/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      sourceCommit: "fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      licenceEvidence: "https://github.com/dubzzz/pure-rand/blob/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6/LICENSE",
+      packageName: "pure-rand",
+      packageUrl: "https://registry.npmjs.org/pure-rand/-/pure-rand-8.4.2.tgz",
+      packageSri: "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "fast-check transitive seeded generator for interaction-fuzz diagnostics only",
     };
     const exactFsevents = {
       id: "fsevents-2.3.2",
@@ -994,12 +1024,14 @@ function registerFindings(register, entries, blobs, manifest) {
       [playwrightCoreTool, packageToolKeys, exactPlaywright, 2],
       [playwrightTestTool, packageToolKeys, exactPlaywrightTest, 3],
       [playwrightRunnerTool, packageToolKeys, exactPlaywrightRunner, 4],
-      [fseventsTool, packageToolKeys, exactFsevents, 5],
-      [ajvTool, packageToolKeys, exactAjv, 6],
-      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 7],
-      [fastUriTool, packageToolKeys, exactFastUri, 8],
-      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 9],
-      [requireFromStringTool, packageToolKeys, exactRequireFromString, 10],
+      [fastCheckTool, packageToolKeys, exactFastCheck, 5],
+      [pureRandTool, packageToolKeys, exactPureRand, 6],
+      [fseventsTool, packageToolKeys, exactFsevents, 7],
+      [ajvTool, packageToolKeys, exactAjv, 8],
+      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 9],
+      [fastUriTool, packageToolKeys, exactFastUri, 10],
+      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 11],
+      [requireFromStringTool, packageToolKeys, exactRequireFromString, 12],
     ]) {
       const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
       if (exactKeys(tool, keys, label, findings)

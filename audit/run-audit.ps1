@@ -387,6 +387,10 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The alternating-beta Playwright Deep UX Census planner, cadence, privacy, and evidence contract tests failed.'
     }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-interaction-fuzz.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The bounded Playwright interaction-fuzz policy, negative controls, and diagnostic-only claim boundary failed.'
+    }
     & $node.Path --test @(
         (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs'),
         (Join-Path $auditDirectory 'tests\audit-lane-orchestration.test.mjs')

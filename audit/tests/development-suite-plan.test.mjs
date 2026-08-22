@@ -91,6 +91,11 @@ test("Playwright Test changes select only the focused browser and shared policy 
     "audit/playwright/deep-ux-census.spec.mjs",
     "audit/run-playwright-deep-ux-census.mjs",
     "audit/tests/playwright-deep-ux-census.test.mjs",
+    "playwright.interaction-fuzz.config.mjs",
+    "audit/lib/playwright-interaction-fuzz.mjs",
+    "audit/playwright/interaction-fuzz.spec.mjs",
+    "audit/run-playwright-interaction-fuzz.mjs",
+    "audit/tests/playwright-interaction-fuzz.test.mjs",
   ]) assert.equal(planDevelopmentSuites([file]).suites.includes("playwright"), true, file);
 });
 

@@ -23,7 +23,7 @@
       "origin": "mixed-open",
       "licenceExpression": "MIT AND OFL-1.1 AND OGL-UK-3.0 AND CC-BY-4.0",
       "purpose": "Required notices and attribution for open font and curriculum reference expression.",
-      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb"
+      "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae"
     },
     {
       "path": "curriculum/PROVENANCE.md",
@@ -55,7 +55,7 @@
       "origin": "mixed-open",
       "licenceExpression": "Apache-2.0 AND MIT AND BSD-3-Clause",
       "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser-verification tools.",
-      "sha256": "ad56c4ed74fa0fc8059873e8c73d3c19e7ef01852a1e9158361b7a8924d8e889"
+      "sha256": "3352547ed1e4cc55e2429e3801fbcfe05ad6bf3b9b1bc11be44c53739232a94c"
     },
     {
       "path": "licenses/sound-effects.md",

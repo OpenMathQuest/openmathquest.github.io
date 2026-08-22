@@ -219,6 +219,16 @@ effect-sensitive tests required by the changed behavior:
 .\audit\run-audit.ps1 -DevelopmentOnly
 ```
 
+For an explicit bounded stateful browser diagnostic, run:
+
+```powershell
+node .\audit\run-playwright-interaction-fuzz.mjs
+```
+
+This fixed-seed fast-check/Playwright lane uses only approved anonymous child
+controls and records exact replay evidence on failure. It is a supplement, not
+a release-certification gate.
+
 After all planned release work is finished, freeze the exact candidate. Only
 then, immediately before its public tag, release, and deployment, run the
 complete certification system:

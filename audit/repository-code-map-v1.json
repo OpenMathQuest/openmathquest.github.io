@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -119,7 +119,7 @@
     },
     {
       "id": "root-toolchain",
-      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.deep-ux)?\\.config\\.mjs)$",
+      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.(?:deep-ux|interaction-fuzz))?\\.config\\.mjs)$",
       "role": "toolchain",
       "releaseImpact": "DEVELOPMENT_ONLY"
     },
@@ -676,6 +676,42 @@
       ]
     },
     {
+      "id": "testing.playwright-interaction-fuzz",
+      "owner": "audit/lib/playwright-interaction-fuzz.mjs",
+      "owns": [
+        "testing.playwright-interaction-fuzz.action-allowlist",
+        "testing.playwright-interaction-fuzz.diagnostic-claim-boundary",
+        "testing.playwright-interaction-fuzz.failure-evidence",
+        "testing.playwright-interaction-fuzz.project-profiles",
+        "testing.playwright-interaction-fuzz.replay-identity",
+        "testing.playwright-interaction-fuzz.resource-bounds",
+        "testing.playwright-interaction-fuzz.seed-identity"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/playwright/interaction-fuzz.spec.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "playwright.interaction-fuzz.config.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/playwright-interaction-fuzz.test.mjs"
+      ]
+    },
+    {
       "id": "toolchain.dependencies",
       "owner": "package.json",
       "owns": [
@@ -876,6 +912,12 @@
       "id": "playwright.deep-ux",
       "source": "index.html",
       "target": "audit/playwright/deep-ux-census.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "playwright.interaction-fuzz",
+      "source": "index.html",
+      "target": "audit/playwright/interaction-fuzz.spec.mjs",
       "kind": "TESTS"
     },
     {

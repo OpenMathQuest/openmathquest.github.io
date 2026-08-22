@@ -17,6 +17,9 @@ All notable public changes to Math Quest are recorded here.
   actionability, accessibility, different-example identity, save isolation,
   and return paths. The full Deep UX Census remains governed by its even-beta
   cadence and is not required for Beta 7.
+- Added a bounded seeded Playwright interaction fuzzer for safe child controls.
+  It records exact replay data, rejects no-op actions, invalid saves, runtime
+  errors, and unexpected requests, and remains explicitly non-certifying.
 - Added AI-first Owners, Code Map, Feature Map, Tutorial Manifest, Blast Radius,
   and Gate contracts with closed schemas, stable identifiers, typed dependency
   edges, deterministic ordering, and fail-closed drift checks.
