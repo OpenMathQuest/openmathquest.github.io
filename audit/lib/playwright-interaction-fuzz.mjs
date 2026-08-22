@@ -370,9 +370,20 @@ export function playwrightInteractionFuzzShardFindings(shard) {
     }
   } else {
     if (!isPlainObject(shard.failure)) findings.push("failed shard is missing failure evidence");
-    else if (expectedProject) findings.push(...failureEvidenceFindings(shard.failure, expectedProject));
-    if (!boundedString(shard.path, 1, 500)) findings.push("failed shard is missing fast-check counterexample path");
-    if (!boundedString(shard.replayPath, 1, 500)) findings.push("failed shard is missing fast-check command replay path");
+    else if (expectedProject) {
+      findings.push(...failureEvidenceFindings(shard.failure, expectedProject));
+      if (interactionFuzzReplayPath(shard.failure.counterexample) !== shard.replayPath) {
+        findings.push("fast-check command replay path contradicts the minimized counterexample");
+      }
+    }
+    if (!boundedString(shard.path, 1, 500)
+        || !/^(?:0|[1-9][0-9]*)(?::(?:0|[1-9][0-9]*))*$/u.test(shard.path)) {
+      findings.push("failed shard has a missing or noncanonical fast-check counterexample path");
+    }
+    if (!boundedString(shard.replayPath, 1, 500)
+        || !/^[A-Za-z0-9+/]+:[A-Za-z0-9+/]+$/u.test(shard.replayPath)) {
+      findings.push("failed shard has a missing or noncanonical fast-check command replay path");
+    }
     if (shard.browserActionExecutions < 1) findings.push("failed shard exercised no randomized browser action");
   }
   return findings;
