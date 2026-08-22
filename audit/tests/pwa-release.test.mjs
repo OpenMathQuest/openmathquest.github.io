@@ -787,6 +787,45 @@ test("browser scenarios await settled Home and release the writer lease before i
     { left: "0", opacity: "0.01", zIndex: "9999" },
   );
 
+  const resizeScenarioSource = adapterFunction(browserAudit, "resizeScenario");
+  assert.match(resizeScenarioSource, /await requireStableRenderedGeometry\(scenario,/u);
+  const resizeEffects = [];
+  let releaseSettlement;
+  let markSettlementStarted;
+  const settlementGate = new Promise((resolve) => { releaseSettlement = resolve; });
+  const settlementStarted = new Promise((resolve) => { markSettlementStarted = resolve; });
+  const resizedScenario = {
+    frame: { style: {} },
+    win: {
+      Event: class { constructor(type) { this.type = type; } },
+      dispatchEvent(event) { resizeEffects.push(event.type); },
+    },
+  };
+  const resizeScenario = vm.runInNewContext(`(${resizeScenarioSource})`, {
+    pause: async () => resizeEffects.push("pause"),
+    requireStableRenderedGeometry: async (candidate, label) => {
+      assert.equal(candidate, resizedScenario);
+      assert.equal(label, "Resized browser audit 844x390");
+      resizeEffects.push("settlement-started");
+      markSettlementStarted();
+      await settlementGate;
+      resizeEffects.push("settled");
+    },
+  });
+  let resizeResolved = false;
+  const pendingResize = resizeScenario(resizedScenario, 844, 390).then(() => {
+    resizeResolved = true;
+    resizeEffects.push("resolved");
+  });
+  await settlementStarted;
+  assert.equal(resizeResolved, false, "resizeScenario must not release its caller before settlement");
+  assert.deepEqual(resizedScenario.frame.style, { width: "844px", height: "390px" });
+  assert.deepEqual(resizeEffects, ["resize", "pause", "pause", "settlement-started"]);
+  releaseSettlement();
+  await pendingResize;
+  assert.equal(resizeResolved, true);
+  assert.deepEqual(resizeEffects, ["resize", "pause", "pause", "settlement-started", "settled", "resolved"]);
+
   const scenarioFrameSource = adapterFunction(browserAudit, "scenarioFrameBytes");
   assert.match(scenarioFrameSource, /armAuditFrameRemoval\(frame\)/u);
   const bootEffects = [];
@@ -838,6 +877,13 @@ test("browser scenarios await settled Home and release the writer lease before i
       assert.equal(candidate, bootFrame);
       bootEffects.push("ready");
     },
+    requireStableRenderedGeometry: async (scenario, label) => {
+      assert.equal(scenario.frame, bootFrame);
+      assert.equal(scenario.doc, bootFrame.contentDocument);
+      assert.equal(scenario.win, bootFrame.contentWindow);
+      assert.equal(label, bootFrame.title);
+      bootEffects.push("settled");
+    },
   };
   const scenarioFrameBytes = vm.runInNewContext(
     `(${scenarioFrameSource})`,
@@ -856,6 +902,7 @@ test("browser scenarios await settled Home and release the writer lease before i
       "waited-while-painted",
       "paused",
       "ready",
+      "settled",
     ],
   );
   failBoot = true;

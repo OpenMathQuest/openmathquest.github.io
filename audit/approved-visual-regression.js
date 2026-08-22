@@ -1411,8 +1411,10 @@
     childNameKey = "math-quest:child-name:v1",
     placementDraftKey = "math-quest:placement-draft:v1",
     pause,
+    settle,
     activeStateFactory,
   }) {
+    if (typeof settle !== "function") throw new TypeError("Visual regression requires the fail-closed rendered-geometry settlement oracle.");
     const tests = Object.create(null);
     const titles = Object.create(null);
     const profiles = engine?.CURRICULUM_MANIFEST?.generatorProfileEnum;
@@ -1624,12 +1626,14 @@
 
       let labWindow = frame.contentWindow;
       let labDocument = frame.contentDocument;
+      const settleLabRender = (label) => settle({ doc: labDocument, win: labWindow }, label);
       if (labDocument.querySelector("[data-progress-protection]")) {
         throw new Error(`Parent Test Lab could not acquire the audit writer lease: ${labDocument.body.textContent.trim().slice(0, 240)}`);
       }
       if (labDocument.getElementById("app")?.inert) {
         throw new Error("Parent Test Lab remained inert while waiting for the audit writer lease.");
       }
+      await settleLabRender("Initial manifest visual-regression frame");
       labDocument.querySelector('[data-action="grown"]')?.click();
       await pause();
       const baseline = labWindow.localStorage.getItem(storageKey);
@@ -1658,6 +1662,7 @@
         labWindow.dispatchEvent(new labWindow.Event("resize"));
         await pause();
         await pause();
+        await settleLabRender(`Manifest visual-regression viewport ${width}x${height}`);
       };
       const replaceActiveFixture = async (state, name, { placementDraft = null } = {}) => {
         restoreStorageInstrumentation();
@@ -1689,6 +1694,7 @@
         }
         await pause();
         await pause();
+        await settleLabRender(`${name} manifest visual-regression fixture`);
         instrumentStorage();
       };
       const selectCase = async ({ skill, tier = "HARD/TARGET", ordinal = 0 }) => {
@@ -1710,6 +1716,7 @@
           labDocument.querySelector('[data-lab-action="next"]')?.click();
           await pause();
         }
+        await settleLabRender(`Parent Test Lab ${skill.skillId} ${tier} sample ${ordinal}`);
         return make(engine, skill, tier, ordinal);
       };
       const visible = (element) => {
@@ -1787,6 +1794,7 @@
         labDocument.querySelector('[data-lab-action="enter"]')?.click();
         await pause();
         if (!labDocument.querySelector(".lab-question")) throw new Error(`Parent Test Lab did not reopen for the ${theme} world.`);
+        await settleLabRender(`Parent Test Lab ${theme} world`);
       };
 
       const expectedPlacementMethods = PLACEMENT_REACHABLE_METHODS;

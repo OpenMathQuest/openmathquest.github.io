@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
+import { canonicalBrowserRequestSignatures } from "./browser-smoke.mjs";
 
 export const AUDIT_LANE_IDS = Object.freeze([
   "coverage",
@@ -509,12 +510,69 @@ const removeKeys = (record, keys) => {
   for (const key of keys) delete record[key];
 };
 
+const VOLATILE_BROWSER_DETAIL_KEYS = new Set([
+  "checkedAt",
+  "completedRouteElapsedMs",
+  "reloadElapsedMs",
+  "reloadedRouteElapsedMs",
+  "volumeElapsedMs",
+]);
+
+function timingFreeLoopbackScope(value) {
+  if (typeof value !== "string") return value;
+  try {
+    const parsed = new URL(value);
+    if (parsed.hostname !== "127.0.0.1") return value;
+  } catch { return value; }
+  const match = value.match(/^([A-Za-z][A-Za-z0-9+.-]*:\/\/127\.0\.0\.1):([0-9]{1,5})(.*)$/u);
+  return match ? `${match[1]}:0${match[3]}` : value;
+}
+
+function timingFreeCoverageVirtualUrl(value) {
+  if (typeof value !== "string") return value;
+  try {
+    if (new URL(value).protocol !== "file:") return value;
+  } catch { return value; }
+  const queryIndex = value.indexOf("?");
+  const hashIndex = value.indexOf("#");
+  const boundaries = [queryIndex, hashIndex].filter((index) => index >= 0);
+  const pathBoundary = boundaries.length ? Math.min(...boundaries) : value.length;
+  const pathPart = value.slice(0, pathBoundary);
+  const matches = [...pathPart.matchAll(/\/\.tmp-engine-coverage-[^/?#]+(?=\/)/gu)];
+  if (matches.length !== 1) return value;
+  const match = matches[0];
+  return `${value.slice(0, match.index)}/.tmp-engine-coverage-VOLATILE${value.slice(match.index + match[0].length)}`;
+}
+
+function timingFreeBrowserDetailValue(value, key = "") {
+  if (VOLATILE_BROWSER_DETAIL_KEYS.has(key)) return undefined;
+  if (Array.isArray(value)) return value.map((item) => timingFreeBrowserDetailValue(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).flatMap(([name, item]) => {
+      const normalized = timingFreeBrowserDetailValue(item, name);
+      return normalized === undefined ? [] : [[name, normalized]];
+    }));
+  }
+  if (key === "registrationScope") return timingFreeLoopbackScope(value);
+  return value;
+}
+
+function timingFreeBrowserDetails(details) {
+  if (typeof details !== "string" || !details.trim()) return details;
+  try { return JSON.stringify(timingFreeBrowserDetailValue(JSON.parse(details))); }
+  catch { return details; }
+}
+
 function timingFreeProjection(report) {
   const projected = structuredClone(report);
   removeKeys(projected, ["auditOrchestration", "generatedAt"]);
   removeKeys(projected.outcomeSummary, ["runId"]);
-  removeKeys(projected.coverage, ["testOutput"]);
+  removeKeys(projected.coverage, ["structuredAuditSha256", "testOutput"]);
+  if (projected.coverage && Object.hasOwn(projected.coverage, "rawVirtualUrl")) {
+    projected.coverage.rawVirtualUrl = timingFreeCoverageVirtualUrl(projected.coverage.rawVirtualUrl);
+  }
   removeKeys(projected.coverage?.calibration, ["output"]);
+  for (const result of projected.coverage?.structuredAudit?.engine?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const result of projected.engine?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const family of projected.mutation?.families ?? []) {
     removeKeys(family.target, ["durationMs"]);
@@ -523,17 +581,30 @@ function timingFreeProjection(report) {
   removeKeys(projected.generator, ["stderr"]);
   removeKeys(projected.browser, ["dumpTail"]);
   removeKeys(projected.browser?.process, ["browserPath", "debugPort", "durationMs", "stderr", "stdout"]);
+  for (const result of projected.browser?.results ?? []) result.details = timingFreeBrowserDetails(result.details);
+  if (Array.isArray(projected.browser?.requests)) {
+    projected.browser.requests = canonicalBrowserRequestSignatures(projected.browser.requests, { includeShard: true });
+  }
+  if (Array.isArray(projected.browser?.unexpectedRequests)) {
+    projected.browser.unexpectedRequests = canonicalBrowserRequestSignatures(projected.browser.unexpectedRequests, { includeShard: true });
+  }
+  for (const evidence of projected.browser?.shardEvidence ?? []) {
+    removeKeys(evidence, ["canonicalEvidenceSha256"]);
+    const shard = evidence?.projection?.shard ?? null;
+    const payload = evidence?.projection?.payload;
+    removeKeys(payload, ["requestCount", "unexpectedRequestCount"]);
+    if (payload) {
+      payload.requestSignatures = canonicalBrowserRequestSignatures(
+        (projected.browser?.requests ?? []).filter((request) => request.shard === shard),
+      );
+      payload.unexpectedRequestSignatures = canonicalBrowserRequestSignatures(
+        (projected.browser?.unexpectedRequests ?? []).filter((request) => request.shard === shard),
+      );
+    }
+  }
   removeKeys(projected.playwright?.process, ["durationMs", "stderr", "stdout"]);
   removeKeys(projected.playwright, ["generatedAt"]);
   for (const result of projected.playwright?.results ?? []) removeKeys(result, ["durationMs"]);
-  for (const key of ["requests", "unexpectedRequests"]) {
-    if (Array.isArray(projected.browser?.[key])) {
-      projected.browser[key] = projected.browser[key].map((request) => ({
-        method: request.method,
-        pathname: request.pathname,
-      }));
-    }
-  }
   removeKeys(projected.publicCandidate?.before, ["stderr"]);
   removeKeys(projected.publicCandidate?.after, ["stderr"]);
   return projected;
