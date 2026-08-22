@@ -213,6 +213,46 @@ export function interactionFuzzReplayPath(counterexampleText) {
   return match ? match[1] : null;
 }
 
+function replayBase64ToInteger(character) {
+  if (character >= "a" && character <= "z") return character.charCodeAt(0) - 97 + 26;
+  if (character >= "A" && character <= "Z") return character.charCodeAt(0) - 65;
+  if (character >= "0" && character <= "9") return character.charCodeAt(0) - 48 + 52;
+  return character === "+" ? 62 : 63;
+}
+
+function replayIntegerToBase64(value) {
+  if (value < 26) return String.fromCharCode(value + 65);
+  if (value < 52) return String.fromCharCode(value + 97 - 26);
+  if (value < 62) return String.fromCharCode(value + 48 - 52);
+  return value === 62 ? "+" : "/";
+}
+
+export function interactionFuzzCanonicalReplayPath(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9+/]+:[A-Za-z0-9+/]+$/u.test(value)) return null;
+  const [serializedCounts, serializedChanges] = value.split(":");
+  const counts = [...serializedCounts].map((character) => replayBase64ToInteger(character) + 1);
+  const changeWords = [...serializedChanges].map(replayBase64ToInteger);
+  const changes = changeWords.flatMap((word) => Array.from({ length: 6 }, (_, bit) => ((word >> bit) & 1) === 1));
+  const replay = [];
+  counts.forEach((count, index) => {
+    for (let occurrence = 0; occurrence < count; occurrence += 1) replay.push(Boolean(changes[index]));
+  });
+  const occurrences = [];
+  for (const state of replay) {
+    const previous = occurrences.at(-1);
+    if (!previous || previous.count === 64 || previous.state !== state) occurrences.push({ state, count: 1 });
+    else previous.count += 1;
+  }
+  const canonicalCounts = occurrences.map(({ count }) => replayIntegerToBase64(count - 1)).join("");
+  let canonicalChanges = "";
+  for (let index = 0; index < occurrences.length; index += 6) {
+    const word = occurrences.slice(index, index + 6)
+      .reduceRight((current, occurrence) => (current << 1) + (occurrence.state ? 1 : 0), 0);
+    canonicalChanges += replayIntegerToBase64(word);
+  }
+  return `${canonicalCounts}:${canonicalChanges}`;
+}
+
 export function interactionFuzzSafeError(error) {
   const message = error instanceof Error ? error.message : String(error || "unknown failure");
   return message.replace(/[A-Za-z]:\\(?:[^\\\r\n]+\\)*[^:\r\n]*/gu, "<local-path>").slice(0, 2_000);
@@ -383,6 +423,8 @@ export function playwrightInteractionFuzzShardFindings(shard) {
     if (!boundedString(shard.replayPath, 1, 500)
         || !/^[A-Za-z0-9+/]+:[A-Za-z0-9+/]+$/u.test(shard.replayPath)) {
       findings.push("failed shard has a missing or noncanonical fast-check command replay path");
+    } else if (interactionFuzzCanonicalReplayPath(shard.replayPath) !== shard.replayPath) {
+      findings.push("failed shard has a noncanonical fast-check command replay encoding");
     }
     if (shard.browserActionExecutions < 1) findings.push("failed shard exercised no randomized browser action");
   }

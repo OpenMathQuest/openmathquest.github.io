@@ -15,6 +15,7 @@ import {
   PLAYWRIGHT_INTERACTION_FUZZ_WORKERS,
   buildPlaywrightInteractionFuzzReport,
   interactionFuzzAllowedActionFindings,
+  interactionFuzzCanonicalReplayPath,
   interactionFuzzEffectFindings,
   interactionFuzzMinimizedFailureEvidence,
   interactionFuzzReplayPath,
@@ -133,6 +134,13 @@ test("fast-check command runner shrinks a no-op mutation to replayable evidence"
   assert.notEqual(interactionFuzzReplayPath(counterexample), null);
 });
 
+test("command replay paths use fast-check's canonical run-length and bit encoding", () => {
+  assert.equal(interactionFuzzCanonicalReplayPath("A:A"), "A:A");
+  assert.equal(interactionFuzzCanonicalReplayPath("A:C"), "A:A", "unused high bits must not survive canonicalization");
+  assert.equal(interactionFuzzCanonicalReplayPath("AA:A"), "B:A", "adjacent equal states must use one run");
+  assert.equal(interactionFuzzCanonicalReplayPath("not-a-path"), null);
+});
+
 test("minimized evidence replays the retained failure instead of trusting a later passing shrink probe", async () => {
   let mutableFinalProbe = null;
   const details = fc.check(fc.property(fc.integer({ min: 6, max: 7 }), (value) => {
@@ -232,6 +240,10 @@ test("failed shard evidence is closed, replay-bound, feasible, and artifact-boun
     { pattern: /noncanonical fast-check counterexample path/u, mutate: (value) => { value.path = "00:01"; } },
     { pattern: /contradicts the minimized counterexample/u, mutate: (value) => { value.replayPath = "B:B"; } },
     { pattern: /noncanonical fast-check command replay path/u, mutate: (value) => { value.replayPath = "WRONG"; } },
+    { pattern: /noncanonical fast-check command replay encoding/u, mutate: (value) => {
+      value.replayPath = "A:C";
+      value.failure.counterexample = 'activateAny(0) /*replayPath="A:C"*/';
+    } },
     { pattern: /failure-evidence field/u, mutate: (value) => { value.failure = {}; } },
     { pattern: /replay is not verified/u, mutate: (value) => { value.failure.replayVerified = false; } },
     { pattern: /same failure/u, mutate: (value) => { value.failure.replayMessage = "different"; } },
