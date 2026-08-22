@@ -30,6 +30,7 @@ import {
   GATE_INTEGRITY_POLICY,
   loadGateIntegrityPolicy,
   REPRESENTATIVE_MUTATION_FAMILY_COUNT,
+  requiredOutcomeStatuses,
   summarizeGateOutcomes,
 } from "./lib/gate-integrity-policy.mjs";
 import {
@@ -581,11 +582,11 @@ export async function runAudit({ browserPath = null } = {}) {
     OPTIONAL: "OPTIONAL_NOT_RUN",
   }[status] || status);
   const outcomeStatuses = [
-    ...engine.results.map((record) => normalizedOutcomeStatus(record.status)),
-    ...semantic.assertions.map((record) => normalizedOutcomeStatus(record.status)),
-    ...browser.results.map((record) => normalizedOutcomeStatus(record.status)),
-    ...playwright.results.map((record) => normalizedOutcomeStatus(record.status)),
-    ...mutation.families.map((record) => normalizedOutcomeStatus(record.status)),
+    ...requiredOutcomeStatuses(engine.results, { containerStatus: coverage.status, expectedCount: EXPECTED.engineAssertions, normalizeStatus: normalizedOutcomeStatus }),
+    ...requiredOutcomeStatuses(semantic.assertions, { containerStatus: coverage.status, expectedCount: EXPECTED.semanticAssertions, normalizeStatus: normalizedOutcomeStatus }),
+    ...requiredOutcomeStatuses(browser.results, { containerStatus: browser.status, expectedCount: EXPECTED.browserAssertions, normalizeStatus: normalizedOutcomeStatus }),
+    ...requiredOutcomeStatuses(playwright.results, { containerStatus: playwright.status, expectedCount: EXPECTED.playwrightAssertions, normalizeStatus: normalizedOutcomeStatus }),
+    ...requiredOutcomeStatuses(mutation.families, { containerStatus: mutation.status, expectedCount: EXPECTED.mutationFamilies, normalizeStatus: normalizedOutcomeStatus }),
     normalizedOutcomeStatus(coverage.status),
     normalizedOutcomeStatus(generator.status),
     normalizedOutcomeStatus(auditOrchestration.status),

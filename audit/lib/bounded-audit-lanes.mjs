@@ -32,9 +32,10 @@ const roundMs = (value) => Math.max(0, Math.round(Number(value) || 0));
 
 export function failedAuditLaneResult(laneId, message, executionStatus = "ERROR") {
   const reason = `${executionStatus}: ${message}`;
+  const resultStatus = executionStatus === "NOT_RUN" ? "NOT_RUN" : "FAIL";
   if (laneId === "coverage") {
     return {
-      status: "FAIL",
+      status: resultStatus,
       calibrated: false,
       calibration: { reasons: [reason], fullBranchPct: null, partialBranchPct: null, aggregateBranchPct: null },
       exactBytes: false,
@@ -44,18 +45,18 @@ export function failedAuditLaneResult(laneId, message, executionStatus = "ERROR"
       structuredAudit: null,
     };
   }
-  if (laneId === "mutation") return { status: "FAIL", engineSha256: null, families: [], error: reason };
-  if (laneId === "generator") return { status: "FAIL", engineSha256: null, issues: [reason], processStatus: null, error: reason };
+  if (laneId === "mutation") return { status: resultStatus, engineSha256: null, families: [], error: reason };
+  if (laneId === "generator") return { status: resultStatus, engineSha256: null, issues: [reason], processStatus: null, error: reason };
   if (laneId === "browser") {
     return {
-      status: "FAIL",
+      status: resultStatus,
       results: [],
       reason,
       process: { status: null, signal: executionStatus === "TIMEOUT" ? "TIMEOUT" : null, error: reason, timedOut: executionStatus === "TIMEOUT" },
     };
   }
   return {
-    status: "FAIL",
+    status: resultStatus,
     findings: [reason],
     summary: { expected: 0, actual: 0, passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 },
     results: [],
@@ -99,7 +100,7 @@ export function auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds
     if (envelope?.runId !== runId) issues.push(`${String(envelope?.laneId)} carries a foreign run id`);
     if (envelope?.candidateId !== candidateId) issues.push(`${String(envelope?.laneId)} carries a foreign candidate id`);
     if (!Number.isSafeInteger(envelope?.durationMs) || envelope.durationMs < 0) issues.push(`${String(envelope?.laneId)} duration is invalid`);
-    if (!new Set(["COMPLETED", "ERROR", "TIMEOUT"]).has(envelope?.executionStatus)) issues.push(`${String(envelope?.laneId)} execution status is invalid`);
+    if (!new Set(["COMPLETED", "ERROR", "NOT_RUN", "TIMEOUT"]).has(envelope?.executionStatus)) issues.push(`${String(envelope?.laneId)} execution status is invalid`);
     if (!envelope?.result || typeof envelope.result !== "object" || Array.isArray(envelope.result)) issues.push(`${String(envelope?.laneId)} result is absent`);
   }
   for (const laneId of laneIds) if (!seen.has(laneId)) issues.push(`missing lane ${laneId}`);
@@ -420,9 +421,9 @@ export async function runBoundedAuditLanes({
         candidateId,
         durationMs: 0,
         error: reason,
-        executionStatus: "ERROR",
+        executionStatus: "NOT_RUN",
         laneId,
-        result: failedAuditLaneResult(laneId, reason, "ERROR"),
+        result: failedAuditLaneResult(laneId, reason, "NOT_RUN"),
         runId,
       });
     }

@@ -16,6 +16,7 @@ import {
   runBoundedAuditLanes,
   runTreeSupervisedProcess,
 } from "../lib/bounded-audit-lanes.mjs";
+import { requiredOutcomeStatuses, summarizeGateOutcomes } from "../lib/gate-integrity-policy.mjs";
 
 const candidateId = `${"f".repeat(40)}:${"a".repeat(64)}`;
 const runId = "fixture-run";
@@ -190,8 +191,26 @@ test("unverified nested coverage cleanup withholds every subsequent lane", async
     assert.deepEqual(started, ["coverage"]);
     assert.equal(value.report.status, "FAIL");
     assert.equal(value.report.automaticRetries, 0);
-    assert.equal(value.report.laneExecutions.slice(1).every((lane) => lane.executionStatus === "ERROR"), true);
+    assert.equal(value.report.laneExecutions.slice(1).every((lane) => lane.executionStatus === "NOT_RUN"), true);
+    assert.equal(value.report.laneExecutions.slice(1).every((lane) => lane.resultStatus === "NOT_RUN"), true);
     assert.equal(value.report.issues.some((issue) => issue.includes("subsequent lanes were not started")), true);
+    const requiredNonRuns = [
+      ...requiredOutcomeStatuses(value.results.browser.results, { containerStatus: value.results.browser.status, expectedCount: 2 }),
+      ...requiredOutcomeStatuses(value.results.playwright.results, { containerStatus: value.results.playwright.status, expectedCount: 3 }),
+      ...requiredOutcomeStatuses(value.results.mutation.families, { containerStatus: value.results.mutation.status, expectedCount: 4 }),
+      ...requiredOutcomeStatuses([], { containerStatus: value.results.generator.status, expectedCount: 1 }),
+    ];
+    assert.deepEqual(summarizeGateOutcomes(requiredNonRuns, { inventoryExpected: 10, runId }), {
+      acceptedNonPassCount: 0,
+      failedCount: 0,
+      inventoryActual: 10,
+      inventoryExpected: 10,
+      missingCount: 0,
+      notRunCount: 10,
+      passedCount: 0,
+      runId,
+      skippedCount: 0,
+    });
   }
 });
 

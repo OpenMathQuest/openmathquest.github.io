@@ -9,6 +9,7 @@ import {
   GATE_INTEGRITY_POLICY,
   loadGateIntegrityPolicy,
   REPRESENTATIVE_MUTATION_FAMILY_COUNT,
+  requiredOutcomeStatuses,
   summarizeGateOutcomes,
   validateGateIntegrityPolicy,
   validateGateIntegrityPolicySchema,
@@ -142,6 +143,13 @@ test("outcome reporting separates inventory from literal passes", () => {
     skippedCount: 1,
   });
   assert.notEqual(summary.inventoryActual, summary.passedCount);
+});
+
+test("required outcome accounting preserves typed non-runs and fails missing PASS records closed", () => {
+  assert.deepEqual(requiredOutcomeStatuses([], { containerStatus: "NOT_RUN", expectedCount: 3 }), ["NOT_RUN", "NOT_RUN", "NOT_RUN"]);
+  assert.deepEqual(requiredOutcomeStatuses([{ status: "PASS" }], { containerStatus: "FAIL", expectedCount: 3 }), ["PASS", "FAIL", "FAIL"]);
+  assert.deepEqual(requiredOutcomeStatuses([], { containerStatus: "PASS", expectedCount: 2 }), ["MISSING_ARTIFACT", "MISSING_ARTIFACT"]);
+  assert.throws(() => requiredOutcomeStatuses([], { containerStatus: "NOT_RUN", expectedCount: -1 }), /expected count/u);
 });
 
 test("the canary may continue only to publish canonical failure evidence and the final step fail-closes", async () => {
