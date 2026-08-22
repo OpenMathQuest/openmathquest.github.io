@@ -285,7 +285,8 @@ test("timing-free equivalence removes measured volatility but keeps request and 
         id: "VIS-PLACEMENT-LAYOUT",
         status: "PASS",
         details: JSON.stringify({
-          interruptedReplayMs: 46,
+          interruptedReplayMs: 4_000,
+          interruptedAttemptElapsed: 0,
           completedRouteElapsedMs: 140.9,
           registrationScope: "http://127.0.0.1:51001/",
           readiness: { checkedAt: "2026-08-22T06:34:24.603Z", ready: true },
@@ -311,7 +312,8 @@ test("timing-free equivalence removes measured volatility but keeps request and 
     { shard: "core", method: "GET", pathname: "/index.html", host: "127.0.0.1:62002" },
   ];
   parallel.browser.results[0].details = JSON.stringify({
-    interruptedReplayMs: 46.1,
+    interruptedReplayMs: 4_000,
+    interruptedAttemptElapsed: 0,
     completedRouteElapsedMs: 171,
     registrationScope: "http://127.0.0.1:62002/",
     readiness: { checkedAt: "2026-08-22T06:41:55.112Z", ready: true },
@@ -322,8 +324,34 @@ test("timing-free equivalence removes measured volatility but keeps request and 
   parallel.browser.shardEvidence[0].projection.payload.requestCount = 2;
   assert.deepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
 
+  const withBrowserDetails = (mutate) => {
+    const hostile = structuredClone(parallel);
+    const details = JSON.parse(hostile.browser.results[0].details);
+    mutate(details);
+    hostile.browser.results[0].details = JSON.stringify(details);
+    return hostile;
+  };
+  for (const registrationScope of [
+    "https://127.0.0.1:62002/",
+    "http://example.invalid:62002/",
+    "http://127.0.0.1:62002/unexpected/",
+  ]) {
+    assert.notDeepEqual(
+      canonicalAuditEvidenceBytes(withBrowserDetails((details) => { details.registrationScope = registrationScope; })),
+      canonicalAuditEvidenceBytes(baseline),
+    );
+  }
+  assert.notDeepEqual(
+    canonicalAuditEvidenceBytes(withBrowserDetails((details) => { details.interruptedReplayMs = 3_999; })),
+    canonicalAuditEvidenceBytes(baseline),
+  );
+  const foreignCoverage = structuredClone(parallel);
+  foreignCoverage.coverage.rawVirtualUrl = "https://example.invalid/not-the-staged-engine.js";
+  assert.notDeepEqual(canonicalAuditEvidenceBytes(foreignCoverage), canonicalAuditEvidenceBytes(baseline));
+
   parallel.browser.results[0].details = JSON.stringify({
-    interruptedReplayMs: 46.1,
+    interruptedReplayMs: 4_000,
+    interruptedAttemptElapsed: 0,
     completedRouteElapsedMs: 171,
     registrationScope: "http://127.0.0.1:62002/",
     readiness: { checkedAt: "2026-08-22T06:41:55.112Z", ready: true },

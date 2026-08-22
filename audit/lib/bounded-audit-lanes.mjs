@@ -513,11 +513,36 @@ const removeKeys = (record, keys) => {
 const VOLATILE_BROWSER_DETAIL_KEYS = new Set([
   "checkedAt",
   "completedRouteElapsedMs",
-  "interruptedReplayMs",
   "reloadElapsedMs",
   "reloadedRouteElapsedMs",
   "volumeElapsedMs",
 ]);
+
+function timingFreeLoopbackScope(value) {
+  if (typeof value !== "string") return value;
+  try {
+    const parsed = new URL(value);
+    if (parsed.hostname !== "127.0.0.1") return value;
+  } catch { return value; }
+  const match = value.match(/^([A-Za-z][A-Za-z0-9+.-]*:\/\/127\.0\.0\.1):([0-9]{1,5})(.*)$/u);
+  return match ? `${match[1]}:0${match[3]}` : value;
+}
+
+function timingFreeCoverageVirtualUrl(value) {
+  if (typeof value !== "string") return value;
+  try {
+    if (new URL(value).protocol !== "file:") return value;
+  } catch { return value; }
+  const queryIndex = value.indexOf("?");
+  const hashIndex = value.indexOf("#");
+  const boundaries = [queryIndex, hashIndex].filter((index) => index >= 0);
+  const pathBoundary = boundaries.length ? Math.min(...boundaries) : value.length;
+  const pathPart = value.slice(0, pathBoundary);
+  const matches = [...pathPart.matchAll(/\/\.tmp-engine-coverage-[^/?#]+(?=\/)/gu)];
+  if (matches.length !== 1) return value;
+  const match = matches[0];
+  return `${value.slice(0, match.index)}/.tmp-engine-coverage-VOLATILE${value.slice(match.index + match[0].length)}`;
+}
 
 function timingFreeBrowserDetailValue(value, key = "") {
   if (VOLATILE_BROWSER_DETAIL_KEYS.has(key)) return undefined;
@@ -528,9 +553,7 @@ function timingFreeBrowserDetailValue(value, key = "") {
       return normalized === undefined ? [] : [[name, normalized]];
     }));
   }
-  if (key === "registrationScope" && typeof value === "string") {
-    try { return new URL(value).pathname; } catch { return value; }
-  }
+  if (key === "registrationScope") return timingFreeLoopbackScope(value);
   return value;
 }
 
@@ -544,7 +567,10 @@ function timingFreeProjection(report) {
   const projected = structuredClone(report);
   removeKeys(projected, ["auditOrchestration", "generatedAt"]);
   removeKeys(projected.outcomeSummary, ["runId"]);
-  removeKeys(projected.coverage, ["rawVirtualUrl", "structuredAuditSha256", "testOutput"]);
+  removeKeys(projected.coverage, ["structuredAuditSha256", "testOutput"]);
+  if (projected.coverage && Object.hasOwn(projected.coverage, "rawVirtualUrl")) {
+    projected.coverage.rawVirtualUrl = timingFreeCoverageVirtualUrl(projected.coverage.rawVirtualUrl);
+  }
   removeKeys(projected.coverage?.calibration, ["output"]);
   for (const result of projected.coverage?.structuredAudit?.engine?.results ?? []) removeKeys(result, ["durationMs"]);
   for (const result of projected.engine?.results ?? []) removeKeys(result, ["durationMs"]);

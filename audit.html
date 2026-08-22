@@ -739,6 +739,7 @@
       scenario.win.dispatchEvent(new scenario.win.Event("resize"));
       await pause();
       await pause();
+      await requireStableRenderedGeometry(scenario, `Resized browser audit ${width}x${height}`);
     }
 
     async function requireLayoutQuestionReady(scenario, skillId, label, { tutorial = false } = {}) {
