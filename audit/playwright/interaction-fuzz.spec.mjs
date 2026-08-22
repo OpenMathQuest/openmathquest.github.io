@@ -14,6 +14,7 @@ import {
   PLAYWRIGHT_INTERACTION_FUZZ_WORKERS,
   interactionFuzzAllowedActionFindings,
   interactionFuzzEffectFindings,
+  interactionFuzzMinimizedFailureEvidence,
   interactionFuzzReplayPath,
   interactionFuzzSafeError,
   interactionFuzzSha256,
@@ -58,11 +59,10 @@ async function availableCandidates(page, family) {
   );
 }
 
-async function availableCounts(page) {
-  return Object.fromEntries(await Promise.all(PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES.map(async (family) => [
-    family.id,
-    (await availableCandidates(page, family)).length,
-  ])));
+async function allAvailableCandidates(page) {
+  return (await Promise.all(
+    PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES.map((family) => availableCandidates(page, family)),
+  )).flat();
 }
 
 async function effectSnapshot(page) {
@@ -98,6 +98,11 @@ async function effectSnapshot(page) {
     }
     return {
       rootHtml: root?.innerHTML || "",
+      formValues: Array.from(root?.querySelectorAll("input, select, textarea") || [], (control) => ({
+        value: control.value,
+        checked: "checked" in control ? Boolean(control.checked) : null,
+        selectedIndex: "selectedIndex" in control ? control.selectedIndex : null,
+      })),
       storage,
       rootVisible: Boolean(root && rootBox && rootBox.width > 0 && rootBox.height > 0
         && rootStyle?.display !== "none" && rootStyle?.visibility !== "hidden"),
@@ -107,7 +112,8 @@ async function effectSnapshot(page) {
     };
   });
   return {
-    effectDigest: interactionFuzzSha256({ rootHtml: raw.rootHtml, storage: raw.storage }),
+    domDigest: interactionFuzzSha256({ rootHtml: raw.rootHtml, formValues: raw.formValues }),
+    saveDigest: interactionFuzzSha256(raw.storage),
     rootVisible: raw.rootVisible,
     locationPath: raw.locationPath,
     saveValidationError: raw.saveValidationError,
@@ -115,10 +121,10 @@ async function effectSnapshot(page) {
   };
 }
 
-async function waitForEffect(page, beforeDigest, timeoutMs = 2_000) {
+async function waitForEffect(page, beforeDomDigest, timeoutMs = 2_000) {
   const deadline = Date.now() + timeoutMs;
   let snapshot = await effectSnapshot(page);
-  while (snapshot.effectDigest === beforeDigest && Date.now() < deadline) {
+  while (snapshot.domDigest === beforeDomDigest && Date.now() < deadline) {
     await page.waitForTimeout(40);
     snapshot = await effectSnapshot(page);
   }
@@ -145,40 +151,28 @@ async function openSyntheticAnonymousHome(page) {
   await activate(anonymous, page);
   await expect(page.getByRole("button", { name: /Start/u })).toBeVisible();
   const initial = await effectSnapshot(page);
-  expect(interactionFuzzEffectFindings({ ...initial, effectDigest: "setup" }, initial)).toEqual([]);
+  expect(interactionFuzzEffectFindings({ ...initial, domDigest: "setup" }, initial)).toEqual([]);
 }
 
 class SafeActivateCommand {
-  constructor(familyId, ordinal) {
-    this.familyId = familyId;
+  constructor(ordinal) {
     this.ordinal = ordinal;
   }
 
   check(model) {
-    return Number(model.availableCounts[this.familyId] || 0) > 0;
+    return Number(model.availableActionCount || 0) > 0;
   }
 
   async run(model, real) {
-    const family = PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES.find((candidate) => candidate.id === this.familyId);
-    if (!family) throw new Error(`Unknown generated action family ${this.familyId}.`);
-    const candidates = await availableCandidates(real.page, family);
-    if (!candidates.length) throw new Error(`Model/DOM availability drift for ${this.familyId}.`);
+    const candidates = await allAvailableCandidates(real.page);
+    if (!candidates.length) throw new Error("Model/DOM availability drift left no safe action.");
     const candidate = candidates[this.ordinal % candidates.length];
-    const policyFindings = interactionFuzzAllowedActionFindings(candidate);
-    if (policyFindings.length) throw new Error(policyFindings.join("; "));
-    if (!candidate.accessibleName) throw new Error(`Safe action ${this.familyId} has no machine-visible accessible name.`);
+    const family = PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES.find((item) => item.id === candidate.familyId);
+    if (!family) throw new Error(`Unknown selected action family ${candidate.familyId}.`);
     const locator = real.page.locator(family.selector).nth(candidate.domIndex);
-    const before = await effectSnapshot(real.page);
-    await activate(locator, real.page);
-    const after = await waitForEffect(real.page, before.effectDigest);
-    const findings = [
-      ...interactionFuzzEffectFindings(before, after),
-      ...guardFindings(real.guard, real.guardBaseline),
-    ];
-    real.browserActionExecutions.value += 1;
-    real.lastTrace.push({
-      actionIndex: real.lastTrace.length,
-      familyId: this.familyId,
+    const traceRecord = {
+      actionIndex: real.trace.length,
+      familyId: candidate.familyId,
       generatedOrdinal: this.ordinal,
       selectedOrdinal: this.ordinal % candidates.length,
       dataAction: candidate.dataAction,
@@ -186,47 +180,94 @@ class SafeActivateCommand {
       key: candidate.key,
       value: candidate.value,
       accessibleName: candidate.accessibleName,
-      beforeDigest: before.effectDigest,
-      afterDigest: after.effectDigest,
-      locationPath: after.locationPath,
-      findings,
-    });
-    if (findings.length) throw new Error(findings.join("; "));
-    model.availableCounts = await availableCounts(real.page);
+      beforeDomDigest: null,
+      afterDomDigest: null,
+      beforeSaveDigest: null,
+      afterSaveDigest: null,
+      locationPath: null,
+      outcome: "failed",
+      findings: [],
+    };
+    real.trace.push(traceRecord);
+    try {
+      const policyFindings = interactionFuzzAllowedActionFindings(candidate);
+      if (policyFindings.length) throw new Error(policyFindings.join("; "));
+      if (!candidate.accessibleName) throw new Error(`Safe action ${candidate.familyId} has no machine-visible accessible name.`);
+      const before = await effectSnapshot(real.page);
+      traceRecord.beforeDomDigest = before.domDigest;
+      traceRecord.beforeSaveDigest = before.saveDigest;
+      real.browserActionExecutions.value += 1;
+      await activate(locator, real.page);
+      const after = await waitForEffect(real.page, before.domDigest);
+      traceRecord.afterDomDigest = after.domDigest;
+      traceRecord.afterSaveDigest = after.saveDigest;
+      traceRecord.locationPath = after.locationPath;
+      traceRecord.findings = [
+        ...interactionFuzzEffectFindings(before, after),
+        ...guardFindings(real.guard, real.guardBaseline),
+      ];
+      if (traceRecord.findings.length) throw new Error(traceRecord.findings.join("; "));
+      traceRecord.outcome = "passed";
+      model.availableActionCount = (await allAvailableCandidates(real.page)).length;
+    } catch (error) {
+      if (!traceRecord.findings.length) traceRecord.findings = [interactionFuzzSafeError(error)];
+      throw error;
+    }
   }
 
   toString() {
-    return `activate(${this.familyId},${this.ordinal})`;
+    return `activateAny(${this.ordinal})`;
   }
+}
+
+function guardBaseline(guard) {
+  return {
+    pageErrors: guard.pageErrors.length,
+    consoleErrors: guard.consoleErrors.length,
+    unexpectedRequests: guard.unexpectedRequests.length,
+  };
+}
+
+async function executeSequence(page, mathQuestGuard, commands, browserActionExecutions) {
+  const trace = [];
+  const baseline = guardBaseline(mathQuestGuard);
+  let error = null;
+  try {
+    await fc.asyncModelRun(async () => {
+      await openSyntheticAnonymousHome(page);
+      const setupFindings = guardFindings(mathQuestGuard, baseline);
+      if (setupFindings.length) throw new Error(setupFindings.join("; "));
+      return {
+        model: { availableActionCount: (await allAvailableCandidates(page)).length },
+        real: { page, guard: mathQuestGuard, guardBaseline: baseline, browserActionExecutions, trace },
+      };
+    }, commands);
+    await page.waitForTimeout(75);
+    const settledFindings = guardFindings(mathQuestGuard, baseline);
+    if (settledFindings.length) throw new Error(settledFindings.join("; "));
+  } catch (caught) {
+    error = caught;
+  }
+  return { trace, error };
+}
+
+function executionTreeCount(nodes) {
+  if (!Array.isArray(nodes)) return 0;
+  return nodes.reduce((count, node) => count + 1 + executionTreeCount(node?.children), 0);
 }
 
 test("seeded safe interaction sequences preserve state and produce observable effects", async ({ page, mathQuestGuard }, testInfo) => {
   const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS.find((candidate) => candidate.id === testInfo.project.name);
   expect(project, `closed fuzz profile for ${testInfo.project.name}`).toBeTruthy();
-  const commandArbitrary = fc.record({
-    familyId: fc.constantFrom(...PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES.map((family) => family.id)),
-    ordinal: fc.nat(63),
-  }).map(({ familyId, ordinal }) => new SafeActivateCommand(familyId, ordinal));
+  const commandArbitrary = fc.nat(127).map((ordinal) => new SafeActivateCommand(ordinal));
   const commandsArbitrary = fc.commands([commandArbitrary], {
     maxCommands: PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS,
     size: "medium",
-  });
+  }).filter((commands) => Array.from(commands).length > 0);
   const browserActionExecutions = { value: 0 };
-  let lastTrace = [];
   const property = fc.asyncProperty(commandsArbitrary, async (commands) => {
-    await fc.asyncModelRun(async () => {
-      await openSyntheticAnonymousHome(page);
-      lastTrace = [];
-      const guardBaseline = {
-        pageErrors: mathQuestGuard.pageErrors.length,
-        consoleErrors: mathQuestGuard.consoleErrors.length,
-        unexpectedRequests: mathQuestGuard.unexpectedRequests.length,
-      };
-      return {
-        model: { availableCounts: await availableCounts(page) },
-        real: { page, guard: mathQuestGuard, guardBaseline, browserActionExecutions, lastTrace },
-      };
-    }, commands);
+    const outcome = await executeSequence(page, mathQuestGuard, commands, browserActionExecutions);
+    if (outcome.error) throw outcome.error;
   });
   const details = await fc.check(property, {
     seed: project.seed,
@@ -234,6 +275,13 @@ test("seeded safe interaction sequences preserve state and produce observable ef
     verbose: 2,
   });
   const counterexampleText = details.counterexample === null ? null : await fc.asyncStringify(details.counterexample);
+  const minimizedEvidence = details.failed
+    ? await interactionFuzzMinimizedFailureEvidence(
+      details,
+      counterexampleText,
+      (commands) => executeSequence(page, mathQuestGuard, commands, browserActionExecutions),
+    )
+    : null;
   const relativeFailureScreenshot = details.failed
     ? `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`
     : null;
@@ -262,11 +310,10 @@ test("seeded safe interaction sequences preserve state and produce observable ef
     numRuns: details.numRuns,
     numSkips: details.numSkips,
     numShrinks: details.numShrinks,
+    propertyEvaluations: executionTreeCount(details.executionSummary),
     browserActionExecutions: browserActionExecutions.value,
     failure: details.failed ? {
-      message: interactionFuzzSafeError(details.errorInstance),
-      counterexample: counterexampleText,
-      minimizedActionTrace: lastTrace,
+      ...minimizedEvidence,
       screenshotPath: relativeFailureScreenshot,
     } : null,
   };

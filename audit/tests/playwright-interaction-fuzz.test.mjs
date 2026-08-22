@@ -5,6 +5,7 @@ import fc from "fast-check";
 import {
   PLAYWRIGHT_INTERACTION_FUZZ_CERTIFICATION_CLAIM,
   PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID,
+  PLAYWRIGHT_INTERACTION_FUZZ_ALLOWED_RESPONSE_ACTIONS,
   PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS,
   PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS,
   PLAYWRIGHT_INTERACTION_FUZZ_RETRIES,
@@ -15,7 +16,9 @@ import {
   buildPlaywrightInteractionFuzzReport,
   interactionFuzzAllowedActionFindings,
   interactionFuzzEffectFindings,
+  interactionFuzzMinimizedFailureEvidence,
   interactionFuzzReplayPath,
+  playwrightInteractionFuzzArtifactFindings,
   playwrightInteractionFuzzReportFindings,
   playwrightInteractionFuzzShardFindings,
 } from "../lib/playwright-interaction-fuzz.mjs";
@@ -43,21 +46,62 @@ function validShard(project) {
     numRuns: PLAYWRIGHT_INTERACTION_FUZZ_RUNS,
     numSkips: 0,
     numShrinks: 0,
-    browserActionExecutions: 1,
+    propertyEvaluations: PLAYWRIGHT_INTERACTION_FUZZ_RUNS,
+    browserActionExecutions: PLAYWRIGHT_INTERACTION_FUZZ_RUNS,
     failure: null,
+  };
+}
+
+function validFailedShard(project) {
+  const message = "native activation produced no visible DOM effect";
+  return {
+    ...validShard(project),
+    status: "failed",
+    path: "0:1",
+    replayPath: "A:A",
+    numRuns: 1,
+    numShrinks: 0,
+    propertyEvaluations: 1,
+    browserActionExecutions: 2,
+    failure: {
+      message,
+      replayMessage: message,
+      replayVerified: true,
+      counterexample: 'activateAny(0) /*replayPath="A:A"*/',
+      minimizedActionTrace: [{
+        actionIndex: 0,
+        familyId: "answer",
+        generatedOrdinal: 0,
+        selectedOrdinal: 0,
+        dataAction: "response",
+        responseAction: "undo",
+        key: null,
+        value: null,
+        accessibleName: "Undo",
+        beforeDomDigest: "a".repeat(64),
+        afterDomDigest: "a".repeat(64),
+        beforeSaveDigest: "b".repeat(64),
+        afterSaveDigest: "b".repeat(64),
+        locationPath: "/index.html",
+        outcome: "failed",
+        findings: [message],
+      }],
+      screenshotPath: `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`,
+    },
   };
 }
 
 test("interaction-fuzz effect oracle rejects a native no-op negative control", () => {
   const control = {
-    effectDigest: "a".repeat(64),
+    domDigest: "a".repeat(64),
+    saveDigest: "c".repeat(64),
     rootVisible: true,
     locationPath: "/index.html",
     saveValidationError: null,
     childIdentityMode: "anonymous",
   };
-  assert.deepEqual(interactionFuzzEffectFindings(control, { ...control, effectDigest: "b".repeat(64) }), []);
-  assert.match(interactionFuzzEffectFindings(control, structuredClone(control)).join("\n"), /no observable state effect/u);
+  assert.deepEqual(interactionFuzzEffectFindings(control, { ...control, domDigest: "b".repeat(64) }), []);
+  assert.match(interactionFuzzEffectFindings(control, structuredClone(control)).join("\n"), /no visible DOM effect/u);
 });
 
 test("fast-check command runner shrinks a no-op mutation to replayable evidence", () => {
@@ -65,7 +109,8 @@ test("fast-check command runner shrinks a no-op mutation to replayable evidence"
     check() { return true; }
     run() {
       const snapshot = {
-        effectDigest: "c".repeat(64),
+        domDigest: "c".repeat(64),
+        saveDigest: "d".repeat(64),
         rootVisible: true,
         locationPath: "/index.html",
         saveValidationError: null,
@@ -82,23 +127,67 @@ test("fast-check command runner shrinks a no-op mutation to replayable evidence"
   }), { seed: 123, numRuns: 1, verbose: 2 });
   assert.equal(details.failed, true);
   assert.equal(details.counterexamplePath, "0");
-  assert.match(String(details.errorInstance?.message || details.errorInstance), /no observable state effect/u);
+  assert.match(String(details.errorInstance?.message || details.errorInstance), /no visible DOM effect/u);
   const counterexample = fc.stringify(details.counterexample);
   assert.match(counterexample, /injectNoOp\(\)/u);
   assert.notEqual(interactionFuzzReplayPath(counterexample), null);
 });
 
+test("minimized evidence replays the retained failure instead of trusting a later passing shrink probe", async () => {
+  let mutableFinalProbe = null;
+  const details = fc.check(fc.property(fc.integer({ min: 6, max: 7 }), (value) => {
+    mutableFinalProbe = value;
+    if (value === 7) throw new Error("retained failure 7");
+  }), { seed: 5, numRuns: 1, verbose: 2 });
+  assert.equal(details.failed, true);
+  assert.equal(mutableFinalProbe, 6, "the final mutable probe must demonstrate the original evidence bug");
+  const evidence = await interactionFuzzMinimizedFailureEvidence(
+    details,
+    fc.stringify(details.counterexample),
+    async (retainedValue) => {
+      const trace = [retainedValue];
+      let error = null;
+      try {
+        if (retainedValue === 7) throw new Error("retained failure 7");
+      } catch (caught) {
+        error = caught;
+      }
+      return { trace, error };
+    },
+  );
+  assert.equal(evidence.replayVerified, true);
+  assert.deepEqual(evidence.minimizedActionTrace, [7]);
+  assert.equal(evidence.message, "retained failure 7");
+  assert.equal(evidence.replayMessage, evidence.message);
+});
+
 test("interaction-fuzz action policy rejects a destructive-action mutation", () => {
   assert.deepEqual(interactionFuzzAllowedActionFindings({
     familyId: "answer",
-    dataAction: "select",
-    responseAction: null,
+    dataAction: "response",
+    responseAction: "undo",
   }), []);
   assert.match(interactionFuzzAllowedActionFindings({
     familyId: "answer",
     dataAction: "reset",
     responseAction: null,
   }).join("\n"), /forbidden data-action/u);
+  assert.match(interactionFuzzAllowedActionFindings({
+    familyId: "answer",
+    dataAction: "response",
+    responseAction: "placement-start",
+  }).join("\n"), /unknown or forbidden data-response-action/u);
+  assert.match(interactionFuzzAllowedActionFindings({
+    familyId: "answer",
+    dataAction: "response",
+    responseAction: "future-unknown-action",
+  }).join("\n"), /unknown or forbidden data-response-action/u);
+});
+
+test("closed response-action allowlist matches every statically declared child response control", async () => {
+  const source = await readFile(new URL("../../index.html", import.meta.url), "utf8");
+  const declared = [...source.matchAll(/responseAction\(mode,"([^"]+)"/gu)].map((match) => match[1]);
+  assert.deepEqual([...new Set(declared)].sort(), [...PLAYWRIGHT_INTERACTION_FUZZ_ALLOWED_RESPONSE_ACTIONS].sort());
 });
 
 test("interaction-fuzz shard and aggregate reports validate literal outcomes", () => {
@@ -110,7 +199,7 @@ test("interaction-fuzz shard and aggregate reports validate literal outcomes", (
     expectedProjects: 2,
     passedProjects: 2,
     failedProjects: 0,
-    browserActionExecutions: 2,
+    browserActionExecutions: PLAYWRIGHT_INTERACTION_FUZZ_RUNS * 2,
   });
 });
 
@@ -121,10 +210,37 @@ test("interaction-fuzz contract fails closed when retries, inventory, or pass ev
 
   const actionlessMutation = validShard(PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0]);
   actionlessMutation.browserActionExecutions = 0;
-  assert.match(playwrightInteractionFuzzShardFindings(actionlessMutation).join("\n"), /no randomized browser action/u);
+  assert.match(playwrightInteractionFuzzShardFindings(actionlessMutation).join("\n"), /too few randomized browser actions/u);
 
   const missingProject = buildPlaywrightInteractionFuzzReport([validShard(PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0])]);
   assert.match(playwrightInteractionFuzzReportFindings(missingProject).join("\n"), /exactly one shard per closed project/u);
+});
+
+test("failed shard evidence is closed, replay-bound, feasible, and artifact-bound", () => {
+  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0];
+  const shard = validFailedShard(project);
+  assert.deepEqual(playwrightInteractionFuzzShardFindings(shard), []);
+  assert.deepEqual(playwrightInteractionFuzzArtifactFindings([shard], new Set([`${project.id}-failure.png`])), []);
+
+  const mutations = [
+    { pattern: /closed project seed/u, mutate: (value) => { value.seed = 999; } },
+    { pattern: /numRuns/u, mutate: (value) => { value.numRuns = 999; } },
+    { pattern: /skipped property/u, mutate: (value) => { value.numSkips = 1; } },
+    { pattern: /evaluation budget/u, mutate: (value) => { value.browserActionExecutions = 999_999; } },
+    { pattern: /command replay path/u, mutate: (value) => { value.replayPath = null; } },
+    { pattern: /failure-evidence field/u, mutate: (value) => { value.failure = {}; } },
+    { pattern: /replay is not verified/u, mutate: (value) => { value.failure.replayVerified = false; } },
+    { pattern: /same failure/u, mutate: (value) => { value.failure.replayMessage = "different"; } },
+    { pattern: /bounded nonempty minimized action trace/u, mutate: (value) => { value.failure.minimizedActionTrace = []; } },
+    { pattern: /findings are malformed/u, mutate: (value) => { value.failure.minimizedActionTrace[0].findings = null; } },
+    { pattern: /closed project path/u, mutate: (value) => { value.failure.screenshotPath = "wrong.png"; } },
+  ];
+  for (const { pattern, mutate } of mutations) {
+    const value = structuredClone(shard);
+    mutate(value);
+    assert.match(playwrightInteractionFuzzShardFindings(value).join("\n"), pattern);
+  }
+  assert.match(playwrightInteractionFuzzArtifactFindings([shard], new Set()).join("\n"), /screenshot is missing/u);
 });
 
 test("interaction-fuzz implementation uses fast-check commands and native unforced Playwright activation", async () => {

@@ -8,6 +8,7 @@ import {
   PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS,
   PLAYWRIGHT_INTERACTION_FUZZ_TOOLCHAIN,
   buildPlaywrightInteractionFuzzReport,
+  playwrightInteractionFuzzArtifactFindings,
   playwrightInteractionFuzzReportFindings,
 } from "./lib/playwright-interaction-fuzz.mjs";
 import {
@@ -157,6 +158,7 @@ for (const project of PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS) {
 const report = buildPlaywrightInteractionFuzzReport(shards);
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 const findings = playwrightInteractionFuzzReportFindings(report);
+findings.push(...playwrightInteractionFuzzArtifactFindings(shards, outputNames));
 if (exitCode !== 0) findings.unshift(`Playwright Test exited with status ${exitCode}`);
 if (findings.length) {
   throw new Error(`Playwright interaction-fuzz lane failed: ${[...new Set(findings)].join("; ")}`);

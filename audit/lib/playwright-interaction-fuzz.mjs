@@ -7,6 +7,7 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_RUNS = 12;
 export const PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS = 16;
 export const PLAYWRIGHT_INTERACTION_FUZZ_WORKERS = 1;
 export const PLAYWRIGHT_INTERACTION_FUZZ_RETRIES = 0;
+export const PLAYWRIGHT_INTERACTION_FUZZ_MIN_ACTIONS_PER_PROJECT = PLAYWRIGHT_INTERACTION_FUZZ_RUNS;
 export const PLAYWRIGHT_INTERACTION_FUZZ_TOOLCHAIN = Object.freeze({
   playwrightTest: "1.62.1",
   fastCheck: "4.9.0",
@@ -112,6 +113,46 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_FORBIDDEN_DATA_ACTIONS = Object.freeze(
   "reset",
 ]);
 
+export const PLAYWRIGHT_INTERACTION_FUZZ_ALLOWED_RESPONSE_ACTIONS = Object.freeze([
+  "action-value",
+  "area-cut",
+  "bond-deal",
+  "clear",
+  "coin-add",
+  "count-number",
+  "count-touch",
+  "deal",
+  "direct-action",
+  "expression-rule",
+  "fact-equation",
+  "fraction-denominator",
+  "fraction-region",
+  "fraction-template",
+  "graph-change",
+  "graph-interpret",
+  "group-deal",
+  "group-round",
+  "landmark-place",
+  "order-card",
+  "pair-item",
+  "pair-relation",
+  "pattern-token",
+  "place-value-action",
+  "place-value-value",
+  "route-move",
+  "scale-mark",
+  "slot-token",
+  "sort-bin",
+  "sort-item",
+  "strategy-select",
+  "strategy-value",
+  "strategy-work",
+  "symmetry-line",
+  "undo",
+  "volume-layer",
+  "volume-method",
+]);
+
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -130,7 +171,7 @@ export function interactionFuzzSha256(value) {
 export function interactionFuzzEffectFindings(before, after) {
   const findings = [];
   if (!isPlainObject(before) || !isPlainObject(after)) return ["effect snapshots must be objects"];
-  if (before.effectDigest === after.effectDigest) findings.push("native activation produced no observable state effect");
+  if (before.domDigest === after.domDigest) findings.push("native activation produced no visible DOM effect");
   if (after.rootVisible !== true) findings.push("#app is not visibly rendered after activation");
   if (after.locationPath !== "/" && after.locationPath !== "/index.html") {
     findings.push(`activation escaped the allowed app path: ${String(after.locationPath)}`);
@@ -154,7 +195,12 @@ export function interactionFuzzAllowedActionFindings(action) {
     return [`forbidden data-action selected: ${dataAction}`];
   }
   if (responseAction) {
-    return family.id === "answer" ? [] : [`data-response-action escaped answer family: ${responseAction}`];
+    if (family.id !== "answer") return [`data-response-action escaped answer family: ${responseAction}`];
+    if (dataAction !== "response") return [`data-response-action ${responseAction} lacks the closed response data-action`];
+    if (!PLAYWRIGHT_INTERACTION_FUZZ_ALLOWED_RESPONSE_ACTIONS.includes(responseAction)) {
+      return [`unknown or forbidden data-response-action selected: ${responseAction}`];
+    }
+    return [];
   }
   if (!family.allowedDataActions.includes(dataAction)) {
     return [`data-action ${String(dataAction)} is not allowed for family ${family.id}`];
@@ -172,9 +218,108 @@ export function interactionFuzzSafeError(error) {
   return message.replace(/[A-Za-z]:\\(?:[^\\\r\n]+\\)*[^:\r\n]*/gu, "<local-path>").slice(0, 2_000);
 }
 
+export async function interactionFuzzMinimizedFailureEvidence(details, counterexampleText, execute) {
+  if (!details?.failed || !Array.isArray(details.counterexample) || details.counterexample.length !== 1) {
+    throw new Error("fast-check did not supply one minimized failing counterexample.");
+  }
+  if (typeof execute !== "function") throw new Error("A minimized-counterexample executor is required.");
+  const originalMessage = interactionFuzzSafeError(details.errorInstance);
+  const replay = await execute(details.counterexample[0]);
+  const replayMessage = replay?.error
+    ? interactionFuzzSafeError(replay.error)
+    : "minimized counterexample did not reproduce its failure";
+  return {
+    message: originalMessage,
+    replayMessage,
+    replayVerified: Boolean(replay?.error) && originalMessage === replayMessage,
+    counterexample: interactionFuzzSafeError(counterexampleText),
+    minimizedActionTrace: Array.isArray(replay?.trace) ? replay.trace : [],
+  };
+}
+
 function exactKeys(value, keys) {
   return isPlainObject(value)
     && Object.keys(value).sort().join("\n") === [...keys].sort().join("\n");
+}
+
+function boundedString(value, min, max) {
+  return typeof value === "string" && value.length >= min && value.length <= max;
+}
+
+function evidenceTextFindings(value, label, min = 1, max = 2_000) {
+  const findings = [];
+  if (!boundedString(value, min, max)) return [`${label} must be a string of ${min}-${max} characters`];
+  if (/[A-Za-z]:[\\/]|file:\/\/|\/(?:Users|home)\//iu.test(value)) findings.push(`${label} contains an absolute local path`);
+  if (/\b(?:GH_TOKEN|GITHUB_TOKEN|Authorization:\s*Bearer)\b/iu.test(value)) findings.push(`${label} contains a credential marker`);
+  return findings;
+}
+
+function traceRecordFindings(record, index) {
+  const findings = [];
+  const keys = [
+    "actionIndex", "familyId", "generatedOrdinal", "selectedOrdinal", "dataAction", "responseAction",
+    "key", "value", "accessibleName", "beforeDomDigest", "afterDomDigest", "beforeSaveDigest",
+    "afterSaveDigest", "locationPath", "outcome", "findings",
+  ];
+  if (!exactKeys(record, keys)) return [`failure trace ${index} has an unknown or missing field`];
+  if (record.actionIndex !== index) findings.push(`failure trace ${index} has a non-sequential actionIndex`);
+  if (!Number.isInteger(record.generatedOrdinal) || record.generatedOrdinal < 0 || record.generatedOrdinal > 127) {
+    findings.push(`failure trace ${index} has an invalid generatedOrdinal`);
+  }
+  if (!Number.isInteger(record.selectedOrdinal) || record.selectedOrdinal < 0) {
+    findings.push(`failure trace ${index} has an invalid selectedOrdinal`);
+  }
+  findings.push(...interactionFuzzAllowedActionFindings(record).map((finding) => `failure trace ${index}: ${finding}`));
+  for (const field of ["key", "value"]) {
+    if (record[field] !== null && !boundedString(record[field], 1, 500)) findings.push(`failure trace ${index} ${field} is malformed`);
+  }
+  findings.push(...evidenceTextFindings(record.accessibleName, `failure trace ${index} accessibleName`, 1, 500));
+  for (const field of ["beforeDomDigest", "afterDomDigest", "beforeSaveDigest", "afterSaveDigest"]) {
+    if (record[field] !== null && !/^[a-f0-9]{64}$/u.test(record[field])) findings.push(`failure trace ${index} ${field} is malformed`);
+  }
+  if (record.locationPath !== null && record.locationPath !== "/" && record.locationPath !== "/index.html") {
+    findings.push(`failure trace ${index} escaped the allowed app path`);
+  }
+  if (record.outcome !== "passed" && record.outcome !== "failed") findings.push(`failure trace ${index} has an invalid outcome`);
+  const findingsAreValid = Array.isArray(record.findings)
+    && record.findings.every((finding) => boundedString(finding, 1, 2_000));
+  if (!findingsAreValid) {
+    findings.push(`failure trace ${index} findings are malformed`);
+  }
+  if (record.outcome === "passed") {
+    if (findingsAreValid && record.findings.length !== 0) findings.push(`passing failure trace ${index} contains findings`);
+    if ([record.beforeDomDigest, record.afterDomDigest, record.beforeSaveDigest, record.afterSaveDigest].includes(null)) {
+      findings.push(`passing failure trace ${index} lacks complete digests`);
+    }
+    if (record.beforeDomDigest === record.afterDomDigest) findings.push(`passing failure trace ${index} records a visible no-op`);
+  } else if (record.outcome === "failed" && findingsAreValid && record.findings.length === 0) {
+    findings.push(`failed failure trace ${index} lacks a finding`);
+  }
+  return findings;
+}
+
+function failureEvidenceFindings(failure, project) {
+  const findings = [];
+  const keys = [
+    "message", "replayMessage", "replayVerified", "counterexample", "minimizedActionTrace", "screenshotPath",
+  ];
+  if (!exactKeys(failure, keys)) return ["failed shard has an unknown or missing failure-evidence field"];
+  findings.push(...evidenceTextFindings(failure.message, "failure message"));
+  findings.push(...evidenceTextFindings(failure.replayMessage, "failure replayMessage"));
+  findings.push(...evidenceTextFindings(failure.counterexample, "failure counterexample", 1, 10_000));
+  if (failure.replayVerified !== true) findings.push("minimized counterexample replay is not verified");
+  if (failure.message !== failure.replayMessage) findings.push("minimized counterexample replay did not reproduce the same failure");
+  const expectedScreenshotPath = `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`;
+  if (failure.screenshotPath !== expectedScreenshotPath) findings.push("failure screenshot path does not match the closed project path");
+  if (!Array.isArray(failure.minimizedActionTrace)
+      || failure.minimizedActionTrace.length < 1
+      || failure.minimizedActionTrace.length > PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS) {
+    findings.push("failed shard must contain a bounded nonempty minimized action trace");
+  } else {
+    failure.minimizedActionTrace.forEach((record, index) => findings.push(...traceRecordFindings(record, index)));
+    if (failure.minimizedActionTrace.at(-1)?.outcome !== "failed") findings.push("minimized action trace does not end at the failure");
+  }
+  return findings;
 }
 
 export function playwrightInteractionFuzzShardFindings(shard) {
@@ -182,7 +327,7 @@ export function playwrightInteractionFuzzShardFindings(shard) {
   const requiredKeys = [
     "schemaVersion", "contractId", "certificationClaim", "status", "project", "toolchain",
     "seed", "path", "replayPath", "configuredRuns", "maxCommandsPerRun", "workers", "retries",
-    "numRuns", "numSkips", "numShrinks", "browserActionExecutions", "failure",
+    "numRuns", "numSkips", "numShrinks", "propertyEvaluations", "browserActionExecutions", "failure",
   ];
   if (!exactKeys(shard, requiredKeys)) return ["shard has an unknown or missing top-level field"];
   if (shard.schemaVersion !== PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION) findings.push("unexpected schemaVersion");
@@ -200,22 +345,48 @@ export function playwrightInteractionFuzzShardFindings(shard) {
   })) findings.push("project does not match the closed profile");
   if (JSON.stringify(shard.toolchain) !== JSON.stringify(PLAYWRIGHT_INTERACTION_FUZZ_TOOLCHAIN)) findings.push("toolchain identity mismatch");
   if (!Number.isInteger(shard.seed)) findings.push("seed must be an integer");
+  else if (expectedProject && shard.seed !== expectedProject.seed) findings.push("seed does not match the closed project seed");
   if (shard.configuredRuns !== PLAYWRIGHT_INTERACTION_FUZZ_RUNS) findings.push("configured run count changed");
   if (shard.maxCommandsPerRun !== PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS) findings.push("maximum command count changed");
   if (shard.workers !== PLAYWRIGHT_INTERACTION_FUZZ_WORKERS) findings.push("worker count changed");
   if (shard.retries !== PLAYWRIGHT_INTERACTION_FUZZ_RETRIES) findings.push("retry count changed");
-  for (const field of ["numRuns", "numSkips", "numShrinks", "browserActionExecutions"]) {
+  for (const field of ["numRuns", "numSkips", "numShrinks", "propertyEvaluations", "browserActionExecutions"]) {
     if (!Number.isInteger(shard[field]) || shard[field] < 0) findings.push(`${field} must be a non-negative integer`);
+  }
+  if (shard.numSkips !== 0) findings.push("shard contains unexpected skipped property runs");
+  if (shard.numRuns < 1 || shard.numRuns > shard.configuredRuns) findings.push("numRuns is outside the configured run budget");
+  if (shard.propertyEvaluations < shard.numRuns + shard.numShrinks) findings.push("propertyEvaluations is inconsistent with runs and shrinks");
+  const replayEvaluations = shard.status === "failed" ? 1 : 0;
+  if (shard.browserActionExecutions > (shard.propertyEvaluations + replayEvaluations) * shard.maxCommandsPerRun) {
+    findings.push("browserActionExecutions exceeds the measured evaluation budget");
   }
   if (shard.status === "passed") {
     if (shard.failure !== null || shard.path !== null || shard.replayPath !== null) findings.push("passing shard contains failure-only data");
     if (shard.numRuns !== shard.configuredRuns) findings.push("passing shard did not execute every configured run");
-    if (shard.numSkips !== 0) findings.push("passing shard contains skipped generated runs");
-    if (shard.browserActionExecutions < 1) findings.push("passing shard exercised no randomized browser action");
-    if (shard.browserActionExecutions > shard.configuredRuns * shard.maxCommandsPerRun) findings.push("passing shard exceeded its browser-action budget");
+    if (shard.numShrinks !== 0) findings.push("passing shard reports shrink attempts");
+    if (shard.propertyEvaluations !== shard.configuredRuns) findings.push("passing shard propertyEvaluations is not the literal run count");
+    if (shard.browserActionExecutions < PLAYWRIGHT_INTERACTION_FUZZ_MIN_ACTIONS_PER_PROJECT) {
+      findings.push("passing shard exercised too few randomized browser actions");
+    }
   } else {
     if (!isPlainObject(shard.failure)) findings.push("failed shard is missing failure evidence");
-    if (typeof shard.path !== "string" || !shard.path) findings.push("failed shard is missing fast-check counterexample path");
+    else if (expectedProject) findings.push(...failureEvidenceFindings(shard.failure, expectedProject));
+    if (!boundedString(shard.path, 1, 500)) findings.push("failed shard is missing fast-check counterexample path");
+    if (!boundedString(shard.replayPath, 1, 500)) findings.push("failed shard is missing fast-check command replay path");
+    if (shard.browserActionExecutions < 1) findings.push("failed shard exercised no randomized browser action");
+  }
+  return findings;
+}
+
+export function playwrightInteractionFuzzArtifactFindings(shards, outputNames) {
+  const findings = [];
+  const names = outputNames instanceof Set ? outputNames : new Set(outputNames || []);
+  for (const shard of Array.isArray(shards) ? shards : []) {
+    const projectId = shard?.project?.id;
+    if (!projectId) continue;
+    const screenshotName = `${projectId}-failure.png`;
+    if (shard.status === "failed" && !names.has(screenshotName)) findings.push(`${projectId}: failure screenshot is missing`);
+    if (shard.status === "passed" && names.has(screenshotName)) findings.push(`${projectId}: passing shard retained a failure screenshot`);
   }
   return findings;
 }
