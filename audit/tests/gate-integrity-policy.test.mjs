@@ -9,6 +9,7 @@ import {
   GATE_INTEGRITY_POLICY,
   loadGateIntegrityPolicy,
   REPRESENTATIVE_MUTATION_FAMILY_COUNT,
+  requiredOutcomeStatuses,
   summarizeGateOutcomes,
   validateGateIntegrityPolicy,
   validateGateIntegrityPolicySchema,
@@ -30,6 +31,10 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "PENDING_MEASURED_QUALIFICATION");
   assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.githubHosted.qualificationEvidenceLocation, "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT");
+  assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
+  assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
+  assert.equal(policy.executionPolicy.nestedProcessFinalizationReserveMs.coverage, 15_000);
+  assert.equal(policy.executionPolicy.nestedProcessTimeoutCleanup.coverage, "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES");
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, 1);
   assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
   assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
@@ -46,6 +51,10 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.retryPolicy.automaticRetries = 1; },
     (value) => { value.executionPolicy.githubHosted.maximumConcurrentLanes = 5; },
     (value) => { value.executionPolicy.githubHosted.qualificationEvidenceLocation = "REPOSITORY_CHECKOUT"; },
+    (value) => { value.executionPolicy.boundedExecutionStartOrder.reverse(); },
+    (value) => { value.executionPolicy.laneSchedulingClass.coverage = "BOUNDED"; },
+    (value) => { value.executionPolicy.nestedProcessFinalizationReserveMs.coverage = 0; },
+    (value) => { value.executionPolicy.nestedProcessTimeoutCleanup.coverage = "DIRECT_PARENT_ONLY"; },
     (value) => { value.executionPolicy.automaticRetries = 1; },
     (value) => { value.executionPolicy.laneOrder.reverse(); },
     (value) => { value.gateFamilies[0].negativeControl.id = value.gateFamilies[1].negativeControl.id; },
@@ -134,6 +143,13 @@ test("outcome reporting separates inventory from literal passes", () => {
     skippedCount: 1,
   });
   assert.notEqual(summary.inventoryActual, summary.passedCount);
+});
+
+test("required outcome accounting preserves typed non-runs and fails missing PASS records closed", () => {
+  assert.deepEqual(requiredOutcomeStatuses([], { containerStatus: "NOT_RUN", expectedCount: 3 }), ["NOT_RUN", "NOT_RUN", "NOT_RUN"]);
+  assert.deepEqual(requiredOutcomeStatuses([{ status: "PASS" }], { containerStatus: "FAIL", expectedCount: 3 }), ["PASS", "FAIL", "FAIL"]);
+  assert.deepEqual(requiredOutcomeStatuses([], { containerStatus: "PASS", expectedCount: 2 }), ["MISSING_ARTIFACT", "MISSING_ARTIFACT"]);
+  assert.throws(() => requiredOutcomeStatuses([], { containerStatus: "NOT_RUN", expectedCount: -1 }), /expected count/u);
 });
 
 test("the canary may continue only to publish canonical failure evidence and the final step fail-closes", async () => {

@@ -86,6 +86,16 @@ export function summarizeGateOutcomes(statuses, { inventoryExpected, runId }) {
   });
 }
 
+export function requiredOutcomeStatuses(records, { containerStatus, expectedCount, normalizeStatus = (status) => status } = {}) {
+  if (!Array.isArray(records)) throw new TypeError("required outcome records must be an array");
+  if (!Number.isSafeInteger(expectedCount) || expectedCount < 0) throw new RangeError("required outcome expected count must be a non-negative safe integer");
+  const statuses = records.map((record) => normalizeStatus(record?.status));
+  if (statuses.length >= expectedCount) return statuses;
+  const normalizedContainerStatus = normalizeStatus(containerStatus);
+  const fallbackStatus = normalizedContainerStatus === "PASS" ? "MISSING_ARTIFACT" : normalizedContainerStatus || "ERROR";
+  return [...statuses, ...Array(expectedCount - statuses.length).fill(fallbackStatus)];
+}
+
 export async function validateGateIntegrityPolicySchema(policy, schemaPathOrUrl = new URL("../schemas/gate-integrity-policy-v1.schema.json", import.meta.url)) {
   const schema = JSON.parse(await readFileAsync(schemaPathOrUrl, "utf8"));
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);

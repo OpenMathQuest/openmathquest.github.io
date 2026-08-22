@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { BROWSER_AUDIT_SHARDS, aggregateBrowserShardReports } from "../lib/browser-smoke.mjs";
+import { runNativeCoverage } from "../lib/native-coverage.mjs";
 import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
-import { validateStructuredAudit } from "../run-coverage.mjs";
+import { coverageProcessCompletedCleanly, coverageProcessTimeoutMs, DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS, validateStructuredAudit } from "../run-coverage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
@@ -22,6 +24,56 @@ const shardReport = (shard) => ({
   results: BROWSER_AUDIT_SHARDS[shard].map((id) => ({ id, title: id, status: "PASS", details: "" })),
   payloadValidation: { valid: true, errors: [] }, cleanupError: null,
   requests: [], unexpectedRequests: [], parseError: null, dumpTail: "",
+});
+
+test("coverage reserves finalization time inside its policy-owned lane timeout", () => {
+  assert.equal(coverageProcessTimeoutMs(240_000, 15_000), 225_000);
+  assert.equal(DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS, 225_000);
+  assert.throws(() => coverageProcessTimeoutMs(240_000, 240_000), /reserve/u);
+});
+
+test("native coverage removes its timed-out process tree or reports cleanup unverified and fails closed", async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "mq-native-coverage-cleanup-"));
+  const fixture = path.join(tempRoot, "descendant-cleanup.test.mjs");
+  const pidFile = path.join(tempRoot, "descendant.pid");
+  const inheritedTestContext = process.env.NODE_TEST_CONTEXT;
+  let descendantPid = null;
+  try {
+    await writeFile(fixture, `
+      import { spawn } from "node:child_process";
+      import { writeFile } from "node:fs/promises";
+      import test from "node:test";
+      test("long-lived descendant", async () => {
+        const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore", windowsHide: true });
+        await writeFile(process.env.MQ_DESCENDANT_PID_FILE, String(child.pid));
+        await new Promise(() => {});
+      });
+    `);
+    delete process.env.NODE_TEST_CONTEXT;
+    const result = await runNativeCoverage(process.execPath, fixture, {
+      cwd: tempRoot,
+      env: { MQ_DESCENDANT_PID_FILE: pidFile },
+      timeoutMs: 2_500,
+    });
+    assert.equal(result.timedOut, true, `${result.error || "no process error"}\n${result.stderr}\n${result.stdout}`);
+    descendantPid = Number(await readFile(pidFile, "utf8"));
+    assert.match(result.error || "", /ETIMEDOUT/u);
+    assert.equal(coverageProcessCompletedCleanly(result), false);
+    let descendantAlive = true;
+    try { process.kill(descendantPid, 0); } catch { descendantAlive = false; }
+    if (result.cleanupVerified) {
+      assert.equal(descendantAlive, false);
+    } else {
+      assert.match(result.error || "", /cleanup was not verified/u);
+    }
+  } finally {
+    if (inheritedTestContext === undefined) delete process.env.NODE_TEST_CONTEXT;
+    else process.env.NODE_TEST_CONTEXT = inheritedTestContext;
+    if (Number.isSafeInteger(descendantPid) && descendantPid > 0) {
+      try { process.kill(descendantPid, "SIGKILL"); } catch {}
+    }
+    await rm(tempRoot, { force: true, maxRetries: 10, recursive: true, retryDelay: 100 });
+  }
 });
 
 test("the current build contract digest is bound before complete certification", async () => {
@@ -155,9 +207,14 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   assert.match(browserRunner, /GITHUB_ACTIONS === "true"[\s\S]*Promise\.all/iu);
   assert.match(browserRunner, /SEQUENTIAL_LOCAL/u);
   assert.match(auditRunner, /policy: gateIntegrityPolicy\.executionPolicy/u);
-  assert.match(boundedRunner, /Array\.from\(\{ length: configuration\.maximumConcurrentLanes \}, worker\)/u);
+  assert.match(boundedRunner, /policy\.laneSchedulingClass\[laneId\] === "EXCLUSIVE"/u);
+  assert.match(boundedRunner, /runIndexes\(boundedSegment, configuration\.maximumConcurrentLanes\)/u);
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
+  assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
+  assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
+  assert.equal(policy.executionPolicy.nestedProcessFinalizationReserveMs.coverage, 15_000);
+  assert.equal(policy.executionPolicy.nestedProcessTimeoutCleanup.coverage, "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES");
   assert.equal(policy.executionPolicy.automaticRetries, 0);
   assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximum, Object.keys(BROWSER_AUDIT_SHARDS).length);
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);

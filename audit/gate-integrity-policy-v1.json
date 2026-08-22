@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.3.3",
+  "version": "1.3.5",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -146,6 +146,14 @@
   "executionPolicy": {
     "schemaVersion": 1,
     "laneOrder": ["coverage", "browser", "playwright", "mutation", "generator"],
+    "boundedExecutionStartOrder": ["coverage", "generator", "browser", "playwright", "mutation"],
+    "laneSchedulingClass": {
+      "browser": "BOUNDED",
+      "coverage": "EXCLUSIVE",
+      "generator": "BOUNDED",
+      "mutation": "BOUNDED",
+      "playwright": "BOUNDED"
+    },
     "local": {
       "mode": "SERIAL_REFERENCE",
       "maximumConcurrentLanes": 1
@@ -164,6 +172,12 @@
       "generator": 360000,
       "mutation": 180000,
       "playwright": 240000
+    },
+    "nestedProcessFinalizationReserveMs": {
+      "coverage": 15000
+    },
+    "nestedProcessTimeoutCleanup": {
+      "coverage": "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES"
     },
     "nestedConcurrency": {
       "browserShardMaximum": 2,

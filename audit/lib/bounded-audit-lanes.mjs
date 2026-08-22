@@ -32,9 +32,10 @@ const roundMs = (value) => Math.max(0, Math.round(Number(value) || 0));
 
 export function failedAuditLaneResult(laneId, message, executionStatus = "ERROR") {
   const reason = `${executionStatus}: ${message}`;
+  const resultStatus = executionStatus === "NOT_RUN" ? "NOT_RUN" : "FAIL";
   if (laneId === "coverage") {
     return {
-      status: "FAIL",
+      status: resultStatus,
       calibrated: false,
       calibration: { reasons: [reason], fullBranchPct: null, partialBranchPct: null, aggregateBranchPct: null },
       exactBytes: false,
@@ -44,18 +45,18 @@ export function failedAuditLaneResult(laneId, message, executionStatus = "ERROR"
       structuredAudit: null,
     };
   }
-  if (laneId === "mutation") return { status: "FAIL", engineSha256: null, families: [], error: reason };
-  if (laneId === "generator") return { status: "FAIL", engineSha256: null, issues: [reason], processStatus: null, error: reason };
+  if (laneId === "mutation") return { status: resultStatus, engineSha256: null, families: [], error: reason };
+  if (laneId === "generator") return { status: resultStatus, engineSha256: null, issues: [reason], processStatus: null, error: reason };
   if (laneId === "browser") {
     return {
-      status: "FAIL",
+      status: resultStatus,
       results: [],
       reason,
       process: { status: null, signal: executionStatus === "TIMEOUT" ? "TIMEOUT" : null, error: reason, timedOut: executionStatus === "TIMEOUT" },
     };
   }
   return {
-    status: "FAIL",
+    status: resultStatus,
     findings: [reason],
     summary: { expected: 0, actual: 0, passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 },
     results: [],
@@ -99,7 +100,7 @@ export function auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds
     if (envelope?.runId !== runId) issues.push(`${String(envelope?.laneId)} carries a foreign run id`);
     if (envelope?.candidateId !== candidateId) issues.push(`${String(envelope?.laneId)} carries a foreign candidate id`);
     if (!Number.isSafeInteger(envelope?.durationMs) || envelope.durationMs < 0) issues.push(`${String(envelope?.laneId)} duration is invalid`);
-    if (!new Set(["COMPLETED", "ERROR", "TIMEOUT"]).has(envelope?.executionStatus)) issues.push(`${String(envelope?.laneId)} execution status is invalid`);
+    if (!new Set(["COMPLETED", "ERROR", "NOT_RUN", "TIMEOUT"]).has(envelope?.executionStatus)) issues.push(`${String(envelope?.laneId)} execution status is invalid`);
     if (!envelope?.result || typeof envelope.result !== "object" || Array.isArray(envelope.result)) issues.push(`${String(envelope?.laneId)} result is absent`);
   }
   for (const laneId of laneIds) if (!seen.has(laneId)) issues.push(`missing lane ${laneId}`);
@@ -146,7 +147,8 @@ async function terminateProcessTree(child, closePromise, graceMs = 2_000) {
       timeout: 5_000,
     });
     treeTerminationSucceeded = killed.status === 0 && !killed.signal && !killed.error;
-    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}`;
+    const taskkillDetail = `${killed.stdout || ""} ${killed.stderr || ""}`.trim().replace(/\s+/gu, " ").slice(-1_000);
+    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}${taskkillDetail ? ` output=${taskkillDetail}` : ""}`;
   } else {
     try {
       process.kill(-child.pid, "SIGKILL");
@@ -260,7 +262,10 @@ export function interpretJsonChildCompletion({ stdout = "", stderr = "", exitCod
   return parsed;
 }
 
-async function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs, nodePath, browserPath, indexPath }) {
+async function executeLaneProcess({
+  browserPath, candidateId, indexPath, laneId, nestedProcessTimeoutMs = null,
+  nodePath, root, runId, timeoutMs,
+}) {
   const args = [
     path.join(root, "audit", "run-audit-lane.mjs"),
     `--lane=${laneId}`,
@@ -268,6 +273,7 @@ async function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs,
     `--candidate-id=${candidateId}`,
     `--index-path=${indexPath}`,
   ];
+  if (nestedProcessTimeoutMs !== null) args.push(`--nested-process-timeout-ms=${nestedProcessTimeoutMs}`);
   if (browserPath) args.push(`--browser=${browserPath}`);
   const processResult = await runTreeSupervisedProcess({ command: nodePath, args, cwd: root, env: process.env, timeoutMs });
   const fail = (executionStatus, message) => createAuditLaneEnvelope({
@@ -293,6 +299,15 @@ async function executeLaneProcess({ candidateId, laneId, runId, root, timeoutMs,
   } catch (error) {
     return fail("ERROR", `lane emitted invalid JSON: ${String(error)}; stderr: ${processResult.stderr.slice(-4_000)}`);
   }
+}
+
+export function nestedProcessTimeoutForLane(policy, laneId) {
+  const reserve = policy?.nestedProcessFinalizationReserveMs?.[laneId];
+  if (reserve === undefined) return null;
+  const timeout = policy?.laneTimeoutMs?.[laneId];
+  if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new RangeError(`${laneId} lane timeout is invalid`);
+  if (!Number.isSafeInteger(reserve) || reserve <= 0 || reserve >= timeout) throw new RangeError(`${laneId} nested-process finalization reserve is invalid`);
+  return timeout - reserve;
 }
 
 function executionConfiguration(policy, environment) {
@@ -338,47 +353,112 @@ export async function runBoundedAuditLanes({
 } = {}) {
   const laneIds = policy.laneOrder;
   if (JSON.stringify(laneIds) !== JSON.stringify(AUDIT_LANE_IDS)) throw new TypeError("Gate policy lane order does not match the closed executable lane set.");
+  if (new Set(policy.boundedExecutionStartOrder).size !== laneIds.length
+    || policy.boundedExecutionStartOrder.some((laneId) => !AUDIT_LANE_IDS.includes(laneId))) {
+    throw new TypeError("Gate policy bounded execution start order is not an exact lane permutation.");
+  }
+  if (!exactKeys(policy.laneSchedulingClass, AUDIT_LANE_IDS)) throw new TypeError("Gate policy lane scheduling classes do not match the closed executable lane set.");
+  for (const laneId of laneIds) {
+    if (!new Set(["BOUNDED", "EXCLUSIVE"]).has(policy.laneSchedulingClass[laneId])) throw new TypeError(`Unknown scheduling class for ${laneId}.`);
+  }
   const configuration = executionConfiguration(policy, environment);
   const envelopes = new Array(laneIds.length);
-  let cursor = 0;
   let active = 0;
   let maximumObservedConcurrency = 0;
   const startedAt = performance.now();
-  const worker = async () => {
-    while (true) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= laneIds.length) return;
-      const laneId = laneIds[index];
-      active += 1;
-      maximumObservedConcurrency = Math.max(maximumObservedConcurrency, active);
-      try {
-        envelopes[index] = await execute({
-          browserPath,
-          candidateId,
-          indexPath,
-          laneId,
-          nodePath,
-          root,
-          runId,
-          timeoutMs: policy.laneTimeoutMs[laneId],
-        });
-      } catch (error) {
-        envelopes[index] = createAuditLaneEnvelope({
-          candidateId,
-          durationMs: 0,
-          error: String(error),
-          executionStatus: "ERROR",
-          laneId,
-          result: failedAuditLaneResult(laneId, String(error), "ERROR"),
-          runId,
-        });
-      } finally {
-        active -= 1;
+  const runIndexes = async (indexes, maximumConcurrent) => {
+    let cursor = 0;
+    const worker = async () => {
+      while (true) {
+        const localIndex = cursor;
+        cursor += 1;
+        if (localIndex >= indexes.length) return;
+        const index = indexes[localIndex];
+        const laneId = laneIds[index];
+        active += 1;
+        maximumObservedConcurrency = Math.max(maximumObservedConcurrency, active);
+        try {
+          envelopes[index] = await execute({
+            browserPath,
+            candidateId,
+            indexPath,
+            laneId,
+            nodePath,
+            root,
+            runId,
+            timeoutMs: policy.laneTimeoutMs[laneId],
+            nestedProcessTimeoutMs: nestedProcessTimeoutForLane(policy, laneId),
+          });
+        } catch (error) {
+          envelopes[index] = createAuditLaneEnvelope({
+            candidateId,
+            durationMs: 0,
+            error: String(error),
+            executionStatus: "ERROR",
+            laneId,
+            result: failedAuditLaneResult(laneId, String(error), "ERROR"),
+            runId,
+          });
+        } finally {
+          active -= 1;
+        }
       }
+    };
+    await Promise.all(Array.from({ length: Math.min(maximumConcurrent, indexes.length) }, worker));
+  };
+  const allIndexes = laneIds.map((_, index) => index);
+  const cleanupBlockerFor = (index) => {
+    const result = envelopes[index]?.result;
+    if (result?.testProcessCleanupVerified === false) return "coverage test process-tree cleanup was not verified";
+    if (result?.calibration?.processCleanupVerified === false) return "coverage calibration process-tree cleanup was not verified";
+    return null;
+  };
+  const withholdUnstartedLanes = (reason) => {
+    for (const index of allIndexes) {
+      if (envelopes[index]) continue;
+      const laneId = laneIds[index];
+      envelopes[index] = createAuditLaneEnvelope({
+        candidateId,
+        durationMs: 0,
+        error: reason,
+        executionStatus: "NOT_RUN",
+        laneId,
+        result: failedAuditLaneResult(laneId, reason, "NOT_RUN"),
+        runId,
+      });
     }
   };
-  await Promise.all(Array.from({ length: configuration.maximumConcurrentLanes }, worker));
+  if (configuration.mode === policy.local.mode) {
+    for (const index of allIndexes) {
+      await runIndexes([index], 1);
+      const cleanupBlocker = cleanupBlockerFor(index);
+      if (cleanupBlocker) {
+        withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
+        break;
+      }
+    }
+  } else {
+    const boundedIndexes = policy.boundedExecutionStartOrder.map((laneId) => laneIds.indexOf(laneId));
+    let boundedSegment = [];
+    let cleanupBlocked = false;
+    for (const index of boundedIndexes) {
+      const laneId = laneIds[index];
+      if (policy.laneSchedulingClass[laneId] === "EXCLUSIVE") {
+        await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
+        boundedSegment = [];
+        await runIndexes([index], 1);
+        const cleanupBlocker = cleanupBlockerFor(index);
+        if (cleanupBlocker) {
+          withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
+          cleanupBlocked = true;
+          break;
+        }
+      } else {
+        boundedSegment.push(index);
+      }
+    }
+    if (!cleanupBlocked) await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
+  }
   const wallDurationMs = roundMs(performance.now() - startedAt);
   const envelopeIssues = auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds });
   if (envelopeIssues.length) throw new Error(`Audit lane envelope integrity failed: ${envelopeIssues.join("; ")}`);
@@ -404,6 +484,8 @@ export async function runBoundedAuditLanes({
       maximumConcurrentLanes: configuration.maximumConcurrentLanes,
       maximumObservedConcurrency,
       laneOrder: [...laneIds],
+      boundedExecutionStartOrder: [...policy.boundedExecutionStartOrder],
+      laneSchedulingClass: Object.fromEntries(laneIds.map((laneId) => [laneId, policy.laneSchedulingClass[laneId]])),
       wallDurationMs,
       serialEquivalentDurationMs,
       observedOverlapReductionPercent,
