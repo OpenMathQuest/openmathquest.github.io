@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -229,6 +229,16 @@
   },
   "gateFamilies": [
     {
+      "id": "gate.art-design-governance",
+      "claim": "ART_DESIGN_CONTRACTS_REJECT_UNRESOLVED_REJECTED_UNREGISTERED_STALE_CONFLICTING_UNAUTHORIZED_INCOMPLETE_RIGHTS_UNBOUND_OR_MATHEMATICALLY_UNPROVED_PROJECTIONS",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "STRUCTURAL_SEMANTIC_AND_CONTRAST_ORACLES_DO_NOT_REPLACE_RENDERED_VISUAL_OR_HUMAN_PLAY_REVIEW",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-ART-DESIGN-UNRESOLVED-PROJECTION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-design-governance.test.mjs", "testName": "[NC-ART-DESIGN-UNRESOLVED-PROJECTION] unresolved, rejected, unregistered, stale, and mathematically unproved art fails closed" },
+      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.json", "audit/art-asset-register-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-design-governance.mjs", "audit/schemas/art-asset-register-v1.schema.json", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/schemas/design-tokens-v1.schema.json", "licenses/component-register-v1.json", "licenses/evidence-paths-v1.json", "release-shell-v1.json"],
+      "validatorPaths": ["audit/tests/art-design-governance.test.mjs"]
+    },
+    {
       "id": "gate.audit-orchestration",
       "claim": "AUDIT_LANES_EXECUTE_WITH_BOUNDED_CONCURRENCY_EXACT_IDENTITY_DETERMINISTIC_ORDER_AND_ZERO_RETRIES",
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
@@ -387,7 +397,7 @@
     { "id": "GI-A05", "predicate": "REMOTE_MAIN_PROTECTION_REQUIRES_DEVELOPMENT_CHECKS_NOT_FULL_AUDIT" },
     { "id": "GI-A06", "predicate": "REMOTE_TAG_RULE_PROTECTS_ALL_VERSION_TAGS_FROM_UPDATE_AND_DELETION" },
     { "id": "GI-A07", "predicate": "REPORT_SEPARATES_INVENTORY_PASS_FAIL_AND_ACCEPTED_NON_PASS_COUNTS" },
-    { "id": "GI-A08", "predicate": "FOCUSED_GOVERNANCE_DRIFTLESS_CANARY_PWA_PLAYWRIGHT_AND_GUARD_CHECKS_PASS" },
+    { "id": "GI-A08", "predicate": "FOCUSED_ART_DESIGN_GOVERNANCE_DRIFTLESS_CANARY_PWA_PLAYWRIGHT_AND_GUARD_CHECKS_PASS" },
     { "id": "GI-A09", "predicate": "ONE_INDEPENDENT_REVIEW_AND_CORRECTION_VERIFICATION_COMPLETE" }
   ]
 }

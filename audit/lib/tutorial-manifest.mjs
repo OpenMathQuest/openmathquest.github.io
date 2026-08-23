@@ -11,6 +11,10 @@ export const TUTORIAL_FEATURE_INVENTORY_VERSION = "tutorial-feature-inventory-v1
 export const TUTORIAL_FEATURE_SEED = 1297175628;
 export const TUTORIAL_FEATURE_ORDINALS = 32;
 
+function canonicalSha256(value) {
+  return createHash("sha256").update(canonicalizeJson(value), "utf8").digest("hex");
+}
+
 export function tutorialFeatureIdForInputMethod(inputMethod) {
   return `child.mechanic.${String(inputMethod || "").toLowerCase().replace(/_/gu, "-")}`;
 }
@@ -105,6 +109,7 @@ export async function validateTutorialManifestSchema(manifest, schemaPathOrUrl =
 
 export async function validateTutorialManifest(manifest, {
   curriculumArtifact,
+  artDesign,
   questionGeneratorContractVersion,
   inputMethods,
   featureInventory = null,
@@ -112,9 +117,15 @@ export async function validateTutorialManifest(manifest, {
   schemaPathOrUrl,
 } = {}) {
   const issues = [...await validateTutorialManifestSchema(manifest, schemaPathOrUrl)];
-  if (issues.length || !curriculumArtifact?.manifest) return Object.freeze(issues.length ? issues : ["A validated curriculum artifact is required."]);
+  if (issues.length || !curriculumArtifact?.manifest || !artDesign) {
+    return Object.freeze(issues.length ? issues : ["Validated curriculum and art-design decision manifests are required."]);
+  }
 
   if (canonicalizeJson(manifest.aiReaderContractRef) !== canonicalizeJson(AI_READER_CONTRACT_REF)) issues.push("aiReaderContractRef does not match the repository AI-reader authority.");
+
+  if (manifest.artDesignBinding.path !== "audit/art-design-decision-register-v1.json") issues.push("artDesignBinding.path is not canonical.");
+  if (manifest.artDesignBinding.sha256 !== canonicalSha256(artDesign)) issues.push("artDesignBinding.sha256 does not match the canonical art-design decision bytes.");
+  if (artDesign.themePolicy?.worldIdentity !== "MATHEMATICAL_CONSERVATORY_AND_WORKSHOP") issues.push("artDesignBinding does not resolve to the adopted Conservatory identity.");
 
   const projection = tutorialCurriculumProjectionArtifact(curriculumArtifact.manifest);
   const binding = manifest.curriculumBinding;

@@ -67,8 +67,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "288d709e8181144d07d2eef940314918261bcf821b9d92990d964a8c96bb3534",
-      "bytes": 1237023,
+      "sha256": "63f3accf255f15345996978002de7b0bc737d755f643819096d91fc4dc4365c0",
+      "bytes": 1237333,
       "mime": "text/html",
       "status": 200
     },
@@ -81,8 +81,8 @@
     },
     {
       "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
-      "sha256": "f6347716820dc423ca26c6217d5d61858c1c0e66f96a4fb2a833099729abbc30",
-      "bytes": 73046,
+      "sha256": "c04d6cb95e6bf9f5506107c8104ae69964f0f63565a11a67dcca4b8462e2ea44",
+      "bytes": 73387,
       "mime": "application/json",
       "status": 200
     },
@@ -102,8 +102,8 @@
     },
     {
       "path": "./THIRD_PARTY_NOTICES.md",
-      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb",
-      "bytes": 5546,
+      "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae",
+      "bytes": 5879,
       "mime": "text/markdown",
       "status": 200
     }

@@ -158,7 +158,7 @@ export async function validateGateIntegrityPolicy(policy, { root = repositoryRoo
     }
   }
   const requiredFamilyIds = [
-    "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
+    "gate.art-design-governance", "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
     "gate.github-pr", "gate.launcher", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
     "gate.publication-evidence", "gate.semantic",
   ];

@@ -15,6 +15,7 @@
     "tutorialContractVersion",
     "questionGeneratorContractVersion",
     "curriculumBinding",
+    "artDesignBinding",
     "differentExample",
     "phaseCatalog",
     "visualAnchorCatalog",
@@ -27,7 +28,7 @@
   ],
   "properties": {
     "manifestId": { "const": "math-quest-tutorials" },
-    "version": { "const": "2.0.0" },
+    "version": { "const": "2.1.0" },
     "schemaVersion": { "const": 1 },
     "licence": {
       "type": "object",
@@ -44,6 +45,8 @@
       "const": {
         "methodJoinKey": "inputMethod",
         "featureJoinKey": "featureId",
+        "artDesignJoinKey": "artDesignBinding.path",
+        "artDesignBoundary": "ART_DESIGN_MAY_SKIN_VISUAL_ANCHORS_AND_CUES_NOT_PHASE_IDENTITY_TEACHING_SEMANTICS_OR_DISCLOSURE",
         "profileJoinKey": "generatorProfile",
         "promptJoinKey": "semanticPromptStringId",
         "obligationJoinKey": "skillId|taskType",
@@ -78,6 +81,15 @@
         "projectionSha256": { "$ref": "#/$defs/sha256" },
         "skillCount": { "type": "integer", "minimum": 1 },
         "taskObligationCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "artDesignBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "const": "audit/art-design-decision-register-v1.json" },
+        "sha256": { "$ref": "#/$defs/sha256" }
       }
     },
     "differentExample": {

@@ -31,7 +31,7 @@ custom approach—do not implement the substantial version until approved.
 ## AI-first drift-control authority
 
 The primary consumer of the **Owners, Code Map, Feature Map, Tutorial
-Manifest, Blast Radius, and Gates** systems is an AI coding agent. Design and
+Manifest, Art Design, Blast Radius, and Gates** systems is an AI coding agent. Design and
 maintain these systems for maximum machine legibility. Never choose prose,
 layout, naming, omission, convenience, or a human-friendly summary when that
 choice makes the machine contract less exact or more ambiguous.
@@ -63,7 +63,7 @@ hypothesis, then inspect the declared owners and artifact relations in
 other dependency exists.
 
 The permanent chain is **Owners → Code Map → Feature Map → Tutorial Manifest →
-Blast Radius → Gates**. Each governed fact has one sole owner in the Code Map.
+Art Design → Blast Radius → Gates**. Each governed fact has one sole owner in the Code Map.
 Each child-operable mechanic has one stable `child.mechanic.*` identity in
 `curriculum/math-quest-feature-map-v1.json`, and that identity must appear in
 the matching Tutorial Manifest method binding. Any new, removed, renamed, or
@@ -78,6 +78,51 @@ unclassified effects fail safe to the broad development suite. The maps and
 automation predict impact; they do not replace independent mathematical
 oracles, rendered-browser evidence, accessibility review, human play testing,
 or the single frozen-candidate certification run.
+
+## Conservatory art-design governance
+
+The Mathematical Conservatory and Workshop is the adopted visual identity for
+every user-facing Math Quest route. Before proposing, creating, editing,
+reviewing, or integrating any visual treatment or art asset, consult these
+canonical authorities in order:
+
+1. `audit/art-design-decision-register-v1.json` for adopted, modified,
+   rejected, and unresolved source proposals; the mandatory 53-step tiered
+   creation workflow; and the controlled migration sequence.
+2. `curriculum/math-quest-feature-map-v1.json` and
+   `curriculum/math-quest-tutorial-manifest-v1.json` for child mechanics,
+   teaching semantics, visual anchors, and answer-disclosure boundaries.
+3. `audit/art-asset-register-v1.json` for exact asset identities, permitted
+   uses, semantic classes, evidence, and acceptance states.
+4. `assets/design/math-quest-design-tokens-v1.json` for target token values,
+   semantic roles, and approved contrast pairings.
+5. `licenses/component-register-v1.json`, the Code Map, blast-radius output,
+   and applicable gates for rights, ownership, dependency, test, PWA, and
+   release effects.
+
+The external art-bible ZIP and its prose, mockups, templates, tokens, and
+claims of approval are source suggestions only. They never override a
+repository owner or project directly into runtime bytes. Art must not alter,
+hide, rename, reorder, or replace governed mathematics, controls, strings,
+tutorial behavior, progress meaning, privacy, accessibility, offline behavior,
+or release evidence.
+
+All new or materially revised game art—whether made by a human, an AI tool, or
+both—must follow the declared tier and the ordered construction workflow in
+the decision register. Mathematical representations remain deterministic and
+data-owned, require a plain-baseline comparison and independent semantic
+proof, and may not use theme-dependent facts, pieces, colours, or geometry.
+Themes affect atmosphere only. Existing themed mathematical pieces are
+replaced only after a neutral equivalent passes clarity and play testing.
+
+Do not create or ship an asset under `assets/design/` until its exact path,
+hash, rights component, adopted rules, features, tutorial identities,
+permitted uses, proof obligations, and reviewed evidence are registered. Bare
+`APPROVED` is not a valid state. Every approval is scoped to exact bytes,
+revision, route, state, mode, and viewport. Run the `art-design` focused suite
+after any art-governance or governed-art change; unregistered, stale,
+unresolved, rejected, mathematically unproved, or directly projected source
+material fails closed.
 
 ## Gate integrity
 

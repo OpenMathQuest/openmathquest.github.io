@@ -164,6 +164,36 @@ export async function validateRepositoryCodeMap(map, {
   for (const requiredRelation of ["feature.tutorial", "tutorial.build-spec", "tutorial.deep-ux"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`tutorial.linkage requires artifact relation ${requiredRelation}.`);
   }
+  const requiredArtFamilies = new Map([
+    ["art-design.asset-acceptance", [
+      "art-design.assets.acceptance-state",
+      "art-design.assets.evidence-bindings",
+      "art-design.assets.permitted-uses",
+      "art-design.assets.semantic-class",
+    ]],
+    ["art-design.runtime-tokens", [
+      "art-design.tokens.approved-text-pairings",
+      "art-design.tokens.colour-values",
+      "art-design.tokens.dimensions",
+      "art-design.tokens.motion",
+      "art-design.tokens.view-palettes",
+    ]],
+    ["art-design.source-decisions", [
+      "art-design.construction-workflow",
+      "art-design.design-rules",
+      "art-design.migration-sequence",
+      "art-design.source-dispositions",
+      "art-design.theme-policy",
+    ]],
+  ]);
+  for (const [familyId, ownedFacts] of requiredArtFamilies) {
+    const family = map.factFamilies.find((record) => record.id === familyId);
+    if (!family || !sameJson(family.owns, ownedFacts)) issues.push(`${familyId} must own its complete closed art-design fact set.`);
+    if (!family || !sameJson(family.validators, ["audit/tests/art-design-governance.test.mjs"])) issues.push(`${familyId} must bind the focused art-design governance validator.`);
+  }
+  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
+    if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
+  }
   if (!sameJson(map.artifactRelations, canonicalOrder(map.artifactRelations, (record) => record.id))) issues.push("artifactRelations must be sorted lexicographically by id.");
   if (!sameJson(map.dataArtifactPatterns, canonicalOrder(map.dataArtifactPatterns))) issues.push("dataArtifactPatterns must be sorted lexicographically.");
   if (!sameJson(map.tombstones, canonicalOrder(map.tombstones, (record) => record.path))) issues.push("tombstones must be sorted lexicographically by path.");

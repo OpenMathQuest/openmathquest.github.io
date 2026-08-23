@@ -469,6 +469,31 @@ try {
     } elseif ($DevelopmentOnly) {
         Write-Host 'Engine and semantic checks not selected by the changed-path development plan.'
     }
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'art-design') {
+        Push-Location $workspace
+        try {
+            $previousArtGovernanceMode = $env:MQ_ART_GOVERNANCE_MODE
+            try {
+                $env:MQ_ART_GOVERNANCE_MODE = if ($DevelopmentOnly) { 'DEVELOPMENT' } else { 'RELEASE' }
+                & $node.Path --test (Join-Path $auditDirectory 'tests\art-design-governance.test.mjs')
+                $artGovernanceExitCode = $LASTEXITCODE
+            } finally {
+                if ($null -eq $previousArtGovernanceMode) {
+                    Remove-Item -LiteralPath 'Env:MQ_ART_GOVERNANCE_MODE' -ErrorAction SilentlyContinue
+                } else {
+                    $env:MQ_ART_GOVERNANCE_MODE = $previousArtGovernanceMode
+                }
+            }
+            if ($artGovernanceExitCode -ne 0) {
+                throw 'The Conservatory art-design decisions, tokens, assets, and negative controls failed.'
+            }
+            Write-Host 'Conservatory art-design governance and fail-closed projection checks passed.'
+        } finally {
+            Pop-Location
+        }
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Art-design governance checks not selected by the changed-path development plan.'
+    }
     if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'tutorial') {
         Push-Location $workspace
         try {

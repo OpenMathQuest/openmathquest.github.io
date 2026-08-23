@@ -58,6 +58,14 @@
       "sha256": "3352547ed1e4cc55e2429e3801fbcfe05ad6bf3b9b1bc11be44c53739232a94c"
     },
     {
+      "path": "licenses/design-tokens.md",
+      "kind": "attribution",
+      "origin": "original-project",
+      "licenceExpression": "MIT",
+      "purpose": "Original authorship, non-runtime status, and exact hash for the canonical Conservatory design-token contract.",
+      "sha256": "1ae71d0a436cfb0e9b16e82f304b9ccff696c18339e079b186ba2d0204bd4191"
+    },
+    {
       "path": "licenses/sound-effects.md",
       "kind": "attribution",
       "origin": "original-project",

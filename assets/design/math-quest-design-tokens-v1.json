@@ -1,0 +1,115 @@
+{
+  "designSystemId": "math-quest-conservatory",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "status": "DESIGN_TARGET_NOT_RUNTIME",
+  "primaryConsumer": "AI_AGENT",
+  "authority": "THIS_FILE",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest Conservatory target tokens, semantic roles, and approved contrast pairings.",
+    "originalWork": true
+  },
+  "decisionRegisterBinding": {
+    "path": "audit/art-design-decision-register-v1.json",
+    "sha256": "3014000f3f0ad1797459110da3e3ac496b79d98750da05beb961d08c6df0c507"
+  },
+  "sourceDecisionIds": ["ART-SRC-013", "ART-SRC-023", "ART-SRC-028", "ART-SRC-042", "ART-SRC-045"],
+  "projection": {
+    "state": "NOT_ACTIVATED",
+    "runtimeCssPath": null,
+    "policy": "CSS_MUST_BE_GENERATED_FROM_THIS_FILE_WHEN_ACTIVATED",
+    "activationGate": "GATE_ART_DESIGN_GOVERNANCE_AND_VERTICAL_SLICE_REVIEW"
+  },
+  "orderingContract": [
+    { "jsonPointer": "/sourceDecisionIds", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/colours", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/approvedTextPairings", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/dimensions", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/motion", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/viewPalettes", "policy": "LEXICOGRAPHIC_BY_ID" }
+  ],
+  "contrastPolicy": {
+    "normalTextMinimumRatio": 4.5,
+    "largeTextMinimumRatio": 3,
+    "aspirationalTextRatio": 7,
+    "ratioTolerance": 0.001,
+    "pairingPolicy": "ONLY_EXPLICIT_APPROVED_TEXT_PAIRINGS",
+    "colourOnlyStatePolicy": "FORBIDDEN"
+  },
+  "colours": [
+    { "id": "colour.action.audio", "value": "#2FD5E8", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "SPEECH_ACTIVITY_ACCENT_NOT_TEXT" },
+    { "id": "colour.action.focus", "value": "#5B3CC4", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "FOCUS_OUTLINE_NOT_TEXT" },
+    { "id": "colour.action.primary", "value": "#087F8C", "usageClass": "TEXT_OR_STROKE", "semanticRole": "PRIMARY_ACTION" },
+    { "id": "colour.action.verdigris", "value": "#1B817D", "usageClass": "TEXT_OR_STROKE", "semanticRole": "SECONDARY_ACTION" },
+    { "id": "colour.ink.muted", "value": "#627783", "usageClass": "TEXT_OR_STROKE", "semanticRole": "MUTED_TEXT_RESTRICTED_PAIRING" },
+    { "id": "colour.ink.primary", "value": "#18354A", "usageClass": "TEXT_OR_STROKE", "semanticRole": "PRIMARY_TEXT" },
+    { "id": "colour.ink.structural", "value": "#24485B", "usageClass": "TEXT_OR_STROKE", "semanticRole": "STRUCTURAL_TEXT_AND_STROKE" },
+    { "id": "colour.state.correct", "value": "#3F7959", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "CORRECT_STATE" },
+    { "id": "colour.state.neutral", "value": "#58717E", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "NEUTRAL_STATE" },
+    { "id": "colour.state.revision", "value": "#B45743", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "REVISION_STATE" },
+    { "id": "colour.surface.celadon", "value": "#E4F0E9", "usageClass": "SURFACE", "semanticRole": "SOFT_PANEL_SURFACE" },
+    { "id": "colour.surface.ivory", "value": "#FFFDF7", "usageClass": "SURFACE", "semanticRole": "PRIMARY_INSTRUCTIONAL_SURFACE" },
+    { "id": "colour.surface.mineral", "value": "#F4F0E3", "usageClass": "SURFACE", "semanticRole": "SECONDARY_INSTRUCTIONAL_SURFACE" },
+    { "id": "colour.surface.pale-wood", "value": "#D9C7A0", "usageClass": "SURFACE", "semanticRole": "WORKBENCH_SURFACE" },
+    { "id": "colour.view.forest.1", "value": "#29483B", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "FOREST_ATMOSPHERE" },
+    { "id": "colour.view.forest.2", "value": "#55765A", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "FOREST_ATMOSPHERE" },
+    { "id": "colour.view.forest.3", "value": "#A8BC81", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "FOREST_ATMOSPHERE" },
+    { "id": "colour.view.forest.4", "value": "#B98C45", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "FOREST_ATMOSPHERE" },
+    { "id": "colour.view.forest.5", "value": "#775969", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "FOREST_ATMOSPHERE" },
+    { "id": "colour.view.ocean.1", "value": "#27495A", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "OCEAN_ATMOSPHERE" },
+    { "id": "colour.view.ocean.2", "value": "#6DAAB0", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "OCEAN_ATMOSPHERE" },
+    { "id": "colour.view.ocean.3", "value": "#BBDCE1", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "OCEAN_ATMOSPHERE" },
+    { "id": "colour.view.ocean.4", "value": "#F2E7CF", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "OCEAN_ATMOSPHERE" },
+    { "id": "colour.view.ocean.5", "value": "#B96D59", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "OCEAN_ATMOSPHERE" },
+    { "id": "colour.view.space.1", "value": "#1F2942", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "SPACE_ATMOSPHERE" },
+    { "id": "colour.view.space.2", "value": "#4B3C62", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "SPACE_ATMOSPHERE" },
+    { "id": "colour.view.space.3", "value": "#526A8A", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "SPACE_ATMOSPHERE" },
+    { "id": "colour.view.space.4", "value": "#F0E6CE", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "SPACE_ATMOSPHERE" },
+    { "id": "colour.view.space.5", "value": "#C6983D", "usageClass": "ATMOSPHERE_ONLY", "semanticRole": "SPACE_ATMOSPHERE" },
+    { "id": "colour.warm.brass", "value": "#B98C45", "usageClass": "DECORATIVE_ONLY", "semanticRole": "MATERIAL_ACCENT_NOT_TEXT" },
+    { "id": "colour.warm.burnt-coral", "value": "#B45743", "usageClass": "STATE_WITH_NON_COLOUR_CUE", "semanticRole": "WARM_REVISION_ACCENT" },
+    { "id": "colour.warm.coral", "value": "#C96D52", "usageClass": "DECORATIVE_ONLY", "semanticRole": "WARM_ACCENT_NOT_TEXT" },
+    { "id": "colour.warm.old-gold", "value": "#C6983D", "usageClass": "DECORATIVE_ONLY", "semanticRole": "MILESTONE_ACCENT_NOT_TEXT" }
+  ],
+  "approvedTextPairings": [
+    { "id": "pair.action-primary-on-ivory", "foregroundId": "colour.action.primary", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.666 },
+    { "id": "pair.correct-on-ivory", "foregroundId": "colour.state.correct", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 5.047 },
+    { "id": "pair.correct-on-mineral", "foregroundId": "colour.state.correct", "backgroundId": "colour.surface.mineral", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.503 },
+    { "id": "pair.ink-muted-on-ivory", "foregroundId": "colour.ink.muted", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.602 },
+    { "id": "pair.ink-primary-on-celadon", "foregroundId": "colour.ink.primary", "backgroundId": "colour.surface.celadon", "minimumClass": "NORMAL_TEXT", "measuredRatio": 10.892 },
+    { "id": "pair.ink-primary-on-ivory", "foregroundId": "colour.ink.primary", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 12.535 },
+    { "id": "pair.ink-primary-on-mineral", "foregroundId": "colour.ink.primary", "backgroundId": "colour.surface.mineral", "minimumClass": "NORMAL_TEXT", "measuredRatio": 11.184 },
+    { "id": "pair.ink-primary-on-pale-wood", "foregroundId": "colour.ink.primary", "backgroundId": "colour.surface.pale-wood", "minimumClass": "NORMAL_TEXT", "measuredRatio": 7.667 },
+    { "id": "pair.ink-structural-on-celadon", "foregroundId": "colour.ink.structural", "backgroundId": "colour.surface.celadon", "minimumClass": "NORMAL_TEXT", "measuredRatio": 8.332 },
+    { "id": "pair.ink-structural-on-ivory", "foregroundId": "colour.ink.structural", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 9.589 },
+    { "id": "pair.ink-structural-on-mineral", "foregroundId": "colour.ink.structural", "backgroundId": "colour.surface.mineral", "minimumClass": "NORMAL_TEXT", "measuredRatio": 8.555 },
+    { "id": "pair.ink-structural-on-pale-wood", "foregroundId": "colour.ink.structural", "backgroundId": "colour.surface.pale-wood", "minimumClass": "NORMAL_TEXT", "measuredRatio": 5.865 },
+    { "id": "pair.neutral-on-ivory", "foregroundId": "colour.state.neutral", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 5.062 },
+    { "id": "pair.neutral-on-mineral", "foregroundId": "colour.state.neutral", "backgroundId": "colour.surface.mineral", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.517 },
+    { "id": "pair.revision-on-ivory", "foregroundId": "colour.state.revision", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.708 },
+    { "id": "pair.verdigris-on-ivory", "foregroundId": "colour.action.verdigris", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.605 },
+    { "id": "pair.warm-burnt-coral-on-ivory", "foregroundId": "colour.warm.burnt-coral", "backgroundId": "colour.surface.ivory", "minimumClass": "NORMAL_TEXT", "measuredRatio": 4.708 }
+  ],
+  "dimensions": [
+    { "id": "dimension.body-min", "value": 16, "unit": "CSS_PX", "semanticRole": "BODY_TEXT_MINIMUM" },
+    { "id": "dimension.content-max", "value": 1180, "unit": "CSS_PX", "semanticRole": "CONTENT_MAXIMUM_WIDTH" },
+    { "id": "dimension.control-target-min", "value": 44, "unit": "CSS_PX", "semanticRole": "CONTROL_TARGET_MINIMUM" },
+    { "id": "dimension.desktop-gutter", "value": 24, "unit": "CSS_PX", "semanticRole": "DESKTOP_GUTTER" },
+    { "id": "dimension.early-essential-min", "value": 18, "unit": "CSS_PX", "semanticRole": "EARLY_ESSENTIAL_TEXT_MINIMUM" },
+    { "id": "dimension.early-target-min", "value": 64, "unit": "CSS_PX", "semanticRole": "EARLY_TARGET_MINIMUM" },
+    { "id": "dimension.instrument-rail", "value": 280, "unit": "CSS_PX", "semanticRole": "WIDE_INSTRUMENT_RAIL_TARGET" },
+    { "id": "dimension.phone-gutter", "value": 12, "unit": "CSS_PX", "semanticRole": "PHONE_GUTTER" },
+    { "id": "dimension.tablet-gutter", "value": 18, "unit": "CSS_PX", "semanticRole": "TABLET_GUTTER" }
+  ],
+  "motion": [
+    { "id": "motion.major-crossfade", "durationMs": 250, "semanticRole": "MAJOR_STATE_CROSSFADE", "reducedMotionValueMs": 0 },
+    { "id": "motion.press", "durationMs": 80, "semanticRole": "CONTROL_PRESS_FEEDBACK", "reducedMotionValueMs": 0 },
+    { "id": "motion.state-fade", "durationMs": 150, "semanticRole": "FUNCTIONAL_STATE_FADE", "reducedMotionValueMs": 0 }
+  ],
+  "viewPalettes": [
+    { "id": "FOREST", "tokenIds": ["colour.view.forest.1", "colour.view.forest.2", "colour.view.forest.3", "colour.view.forest.4", "colour.view.forest.5"], "scope": "ATMOSPHERIC_PERIMETER_ONLY" },
+    { "id": "OCEAN", "tokenIds": ["colour.view.ocean.1", "colour.view.ocean.2", "colour.view.ocean.3", "colour.view.ocean.4", "colour.view.ocean.5"], "scope": "ATMOSPHERIC_PERIMETER_ONLY" },
+    { "id": "SPACE", "tokenIds": ["colour.view.space.1", "colour.view.space.2", "colour.view.space.3", "colour.view.space.4", "colour.view.space.5"], "scope": "ATMOSPHERIC_PERIMETER_ONLY" }
+  ]
+}

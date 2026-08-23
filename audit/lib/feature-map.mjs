@@ -39,10 +39,10 @@ export async function validateFeatureMapSchema(map, schemaPathOrUrl = new URL(".
   return Object.freeze(valid ? [] : (validate.errors || []).map(schemaIssue));
 }
 
-export async function validateFeatureMap(map, { curriculum, tutorial, schemaPathOrUrl } = {}) {
+export async function validateFeatureMap(map, { curriculum, tutorial, artDesign, schemaPathOrUrl } = {}) {
   const issues = [...await validateFeatureMapSchema(map, schemaPathOrUrl)];
   if (issues.length) return Object.freeze(issues);
-  if (!curriculum || !tutorial) return Object.freeze(["Validated curriculum and tutorial manifests are required."]);
+  if (!curriculum || !tutorial || !artDesign) return Object.freeze(["Validated curriculum, tutorial, and art-design decision manifests are required."]);
 
   if (canonicalizeJson(map.aiReaderContractRef) !== canonicalizeJson(AI_READER_CONTRACT_REF)) issues.push("aiReaderContractRef does not match the repository AI-reader authority.");
 
@@ -50,6 +50,9 @@ export async function validateFeatureMap(map, { curriculum, tutorial, schemaPath
   if (map.curriculumBinding.sha256 !== sha256(curriculum)) issues.push("curriculumBinding.sha256 does not match the canonical curriculum bytes.");
   if (map.tutorialBinding.path !== "curriculum/math-quest-tutorial-manifest-v1.json") issues.push("tutorialBinding.path is not canonical.");
   if (map.tutorialBinding.sha256 !== sha256(tutorial)) issues.push("tutorialBinding.sha256 does not match the canonical tutorial bytes.");
+  if (map.artDesignBinding.path !== "audit/art-design-decision-register-v1.json") issues.push("artDesignBinding.path is not canonical.");
+  if (map.artDesignBinding.sha256 !== sha256(artDesign)) issues.push("artDesignBinding.sha256 does not match the canonical art-design decision bytes.");
+  if (artDesign.themePolicy?.worldIdentity !== "MATHEMATICAL_CONSERVATORY_AND_WORKSHOP") issues.push("artDesignBinding does not resolve to the adopted Conservatory identity.");
 
   const invariantIds = map.invariants.map((record) => record.id);
   for (const duplicate of duplicateValues(invariantIds)) issues.push(`invariants repeats ${duplicate}.`);

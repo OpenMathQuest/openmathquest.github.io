@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -15,7 +15,7 @@
       "path": "AGENTS.md",
       "startMarker": "<!-- AI-FIRST-DRIFT-CONTROL-START -->",
       "endMarker": "<!-- AI-FIRST-DRIFT-CONTROL-END -->",
-      "sha256": "6d8f0018125ed2d5a104e0e0c6aeecb94f22f0bb14069138aea1eacb3c0dc0f9"
+      "sha256": "9d310c620587d3e37d58e97a6c45222f2e6b18cb132335d0398764c6512cf8dd"
     },
     "canonicalRecordFormat": "CLOSED_JSON",
     "schemaClosure": "ADDITIONAL_PROPERTIES_FALSE",
@@ -31,6 +31,7 @@
       "CODE_MAP",
       "FEATURE_MAP",
       "TUTORIAL_MANIFEST",
+      "ART_DESIGN",
       "BLAST_RADIUS",
       "GATES"
     ]
@@ -221,6 +222,77 @@
     }
   ],
   "factFamilies": [
+    {
+      "id": "art-design.asset-acceptance",
+      "owner": "audit/art-asset-register-v1.json",
+      "owns": [
+        "art-design.assets.acceptance-state",
+        "art-design.assets.evidence-bindings",
+        "art-design.assets.permitted-uses",
+        "art-design.assets.semantic-class"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-design-governance.test.mjs"
+      ]
+    },
+    {
+      "id": "art-design.runtime-tokens",
+      "owner": "assets/design/math-quest-design-tokens-v1.json",
+      "owns": [
+        "art-design.tokens.approved-text-pairings",
+        "art-design.tokens.colour-values",
+        "art-design.tokens.dimensions",
+        "art-design.tokens.motion",
+        "art-design.tokens.view-palettes"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-design-governance.test.mjs"
+      ]
+    },
+    {
+      "id": "art-design.source-decisions",
+      "owner": "audit/art-design-decision-register-v1.json",
+      "owns": [
+        "art-design.construction-workflow",
+        "art-design.design-rules",
+        "art-design.migration-sequence",
+        "art-design.source-dispositions",
+        "art-design.theme-policy"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "AGENTS.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "audit/art-asset-register-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "curriculum/math-quest-feature-map-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "curriculum/math-quest-tutorial-manifest-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/art-design-governance.test.mjs"
+      ]
+    },
     {
       "id": "browser.reviewed-identity",
       "owner": "audit/browser-runner-evidence-v1.json",
@@ -783,6 +855,72 @@
   ],
   "artifactRelations": [
     {
+      "id": "art-assets.decision",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "audit/art-asset-register-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-assets.evidence-paths",
+      "source": "licenses/evidence-paths-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.feature",
+      "source": "curriculum/math-quest-feature-map-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.release-shell",
+      "source": "release-shell-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.rights",
+      "source": "licenses/component-register-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.schema",
+      "source": "audit/schemas/art-asset-register-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.tutorial",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-design.schema",
+      "source": "audit/schemas/art-design-decision-register-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-design.test",
+      "source": "audit/lib/art-design-governance.mjs",
+      "target": "audit/tests/art-design-governance.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-tokens.decision",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "assets/design/math-quest-design-tokens-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-tokens.schema",
+      "source": "audit/schemas/design-tokens-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
       "id": "audit-browser.evidence-canonicalization",
       "source": "audit/lib/browser-smoke.mjs",
       "target": "audit/lib/bounded-audit-lanes.mjs",
@@ -865,6 +1003,12 @@
       "source": "tools/sync-curriculum-manifest.mjs",
       "target": "index.html",
       "kind": "EMBEDS"
+    },
+    {
+      "id": "feature.art-design",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "curriculum/math-quest-feature-map-v1.json",
+      "kind": "CONSUMES"
     },
     {
       "id": "feature.gate",
@@ -957,6 +1101,12 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "tutorial.art-design",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "tutorial.build-spec",
       "source": "curriculum/math-quest-tutorial-manifest-v1.json",
       "target": "docs/development/build-spec.md",
@@ -1001,7 +1151,8 @@
   ],
   "dataArtifactPatterns": [
     "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
-    "^audit/(?:agent-collaboration-policy-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
+    "^assets/design/math-quest-design-tokens-v1\\.json$",
+    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
     "^curriculum/.*\\.json$",
     "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
   ],

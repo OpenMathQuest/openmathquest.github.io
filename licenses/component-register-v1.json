@@ -36,6 +36,8 @@
     "audit.html",
     "audit/agent-collaboration-policy-v1.json",
     "audit/approved-visual-regression.js",
+    "audit/art-asset-register-v1.json",
+    "audit/art-design-decision-register-v1.json",
     "audit/browser-runner-evidence-v1.json",
     "audit/certification-cadence-v1.json",
     "audit/compare-audit-execution-modes.mjs",
@@ -48,6 +50,7 @@
     "audit/fixtures/mq-coverage-calibration-partial.js",
     "audit/gate-integrity-policy-v1.json",
     "audit/install-reviewed-ci-dependencies.ps1",
+    "audit/lib/art-design-governance.mjs",
     "audit/lib/bounded-audit-lanes.mjs",
     "audit/lib/browser-runner-evidence.mjs",
     "audit/lib/browser-smoke.mjs",
@@ -92,7 +95,10 @@
     "audit/run-playwright-interaction-fuzz.mjs",
     "audit/run-trusted-https-canary.mjs",
     "audit/run-trusted-https-canary.ps1",
+    "audit/schemas/art-asset-register-v1.schema.json",
+    "audit/schemas/art-design-decision-register-v1.schema.json",
     "audit/schemas/blast-radius-result-v2.schema.json",
+    "audit/schemas/design-tokens-v1.schema.json",
     "audit/schemas/feature-map-v1.schema.json",
     "audit/schemas/gate-integrity-policy-v1.schema.json",
     "audit/schemas/release-evidence-bundle-v1.schema.json",
@@ -101,6 +107,7 @@
     "audit/test-launcher-identity.ps1",
     "audit/tests/adapter-syntax.test.mjs",
     "audit/tests/agent-collaboration-policy.test.mjs",
+    "audit/tests/art-design-governance.test.mjs",
     "audit/tests/audit-lane-orchestration.test.mjs",
     "audit/tests/audit-orchestration.test.mjs",
     "audit/tests/blast-radius-lookup.test.mjs",
@@ -185,6 +192,23 @@
     "tools/sync-tutorial-manifest.mjs"
   ],
   "bundledComponents": [
+    {
+      "id": "math-quest-design-tokens-v1",
+      "kind": "design-token-contract",
+      "origin": "original-project",
+      "paths": [
+        "assets/design/math-quest-design-tokens-v1.json"
+      ],
+      "sha256": "ce8731b380b7912dfc79a9acb8532bba35cc04cf74a9125dcd01869050fc01d2",
+      "licence": "MIT",
+      "version": "1.0.0",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/design/math-quest-design-tokens-v1.json",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/design-tokens.md",
+      "modified": false
+    },
     {
       "id": "inter-variable-font",
       "kind": "font",

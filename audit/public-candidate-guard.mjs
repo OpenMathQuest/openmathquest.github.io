@@ -56,10 +56,12 @@ const REQUIRED_RIGHTS_PATHS = Object.freeze([
   "licenses/Inter-OFL.txt",
   "licenses/app-icons.md",
   "licenses/ci-toolchain.md",
+  "licenses/design-tokens.md",
   "licenses/sound-effects.md",
 ]);
 const APPROVED_LICENCES = new Set(["Apache-2.0", "BSD-3-Clause", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
 const KIND_LICENCES = Object.freeze({
+  "design-token-contract": new Set(["MIT"]),
   font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
   image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
   audio: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
@@ -1151,7 +1153,7 @@ function licenceGuardMutationFindings(register, entries, blobs, manifest) {
     candidateRegister.referenceComponents[0].attributionRecord = "vendor/copied.js";
   }, /attributionRecord must be a reviewed evidence path/u);
   run("a licence incompatible with its component kind", ({ register: candidateRegister }) => {
-    candidateRegister.bundledComponents[0].kind = "audio";
+    candidateRegister.bundledComponents.find((component) => component.kind === "font").kind = "audio";
   }, /is not approved for component kind/u);
   run("an empty attribution record", ({ blobs: candidateBlobs }) => {
     candidateBlobs.set("THIRD_PARTY_NOTICES.md", Buffer.from(""));

@@ -47,7 +47,8 @@ test("owners are unique by fact id and every governed data artifact is owned or 
   assert.match((await validateRepositoryCodeMap(duplicate)).join("\n"), /factFamilies repeats repository\.structure/u);
 
   const duplicateFact = clone(map);
-  duplicateFact.factFamilies[1].owns = [duplicateFact.factFamilies[0].owns[0]];
+  const browserOwner = duplicateFact.factFamilies.find((family) => family.id === "browser.reviewed-identity");
+  duplicateFact.factFamilies.find((family) => family.id === "certification.cadence").owns = [browserOwner.owns[0]];
   assert.match((await validateRepositoryCodeMap(duplicateFact)).join("\n"), /owned fact browser\.identity\.executable-sha256 has multiple sole owners/u);
 
   const orphan = clone(map);
@@ -84,7 +85,7 @@ test("missing required ownership structure fails schema validation and human pro
   assert.match(markdown, /Edit the canonical JSON, not this projection/u);
 
   const agentPolicy = await readFile("AGENTS.md", "utf8");
-  assert.match(agentPolicy, /Owners → Code Map → Feature Map → Tutorial Manifest →[\s\S]*Blast Radius → Gates/u);
+  assert.match(agentPolicy, /Owners → Code Map → Feature Map → Tutorial Manifest →[\s\S]*Art Design → Blast Radius → Gates/u);
   assert.match(agentPolicy, /tools\/blast-radius-lookup\.mjs --self-test/u);
   assert.match(agentPolicy, /Unknown paths and[\s\S]*fail safe to the broad development suite/u);
 });
@@ -101,7 +102,10 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.aiReaderContract.humanViewPolicy, "GENERATED_NON_AUTHORITATIVE_ONLY");
   assert.equal(map.aiReaderContract.commandOutputPolicy, "MACHINE_READABLE_BY_DEFAULT");
   assert.equal(map.aiReaderContract.ambiguityPolicy, "FAIL_CLOSED");
-  assert.deepEqual(map.aiReaderContract.governedSystems, ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "BLAST_RADIUS", "GATES"]);
+  assert.deepEqual(map.aiReaderContract.governedSystems, ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "ART_DESIGN", "BLAST_RADIUS", "GATES"]);
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.source-decisions")?.owner, "audit/art-design-decision-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.asset-acceptance")?.owner, "audit/art-asset-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.owner, "assets/design/math-quest-design-tokens-v1.json");
   assert.equal(map.relationKindSemantics.CONSUMES, "TARGET_READS_SOURCE");
   assert.equal(map.relationKindSemantics.GENERATES, "SOURCE_WRITES_TARGET");
   assert.equal(map.relationKindSemantics.TESTS, "TARGET_TESTS_SOURCE");

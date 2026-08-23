@@ -14,8 +14,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const indexPath = path.join(root, "index.html");
 const curriculumPath = path.join(root, "curriculum", "math-quest-manifest-v1.json");
 const tutorialPath = path.join(root, ...TUTORIAL_PATH.split("/"));
+const artDesignPath = path.join(root, "audit", "art-design-decision-register-v1.json");
 
 const curriculumArtifact = await loadManifest(curriculumPath);
+const artDesign = JSON.parse(await readFile(artDesignPath, "utf8"));
 const { engine } = await loadShippedEngine(indexPath, { timeoutMs: 2_000 });
 const authored = JSON.parse(await readFile(tutorialPath, "utf8"));
 if (authored.tutorialContractVersion !== "tutorial-contract-v2") throw new Error("The canonical tutorial manifest must author tutorial-contract-v2 before derived fields can be refreshed.");
@@ -40,6 +42,7 @@ const manifest = {
 
 const issues = await validateTutorialManifest(manifest, {
   curriculumArtifact,
+  artDesign,
   questionGeneratorContractVersion: engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION,
   inputMethods: Object.keys(engine.CONSTANTS.INPUT_CLASS_BY_METHOD).sort(),
   featureInventory: featureBindings,

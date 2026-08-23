@@ -160,7 +160,7 @@
         "humanViewPolicy": { "const": "GENERATED_NON_AUTHORITATIVE_ONLY" },
         "commandOutputPolicy": { "const": "MACHINE_READABLE_BY_DEFAULT" },
         "ambiguityPolicy": { "const": "FAIL_CLOSED" },
-        "governedSystems": { "const": ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "BLAST_RADIUS", "GATES"] }
+        "governedSystems": { "const": ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "ART_DESIGN", "BLAST_RADIUS", "GATES"] }
       }
     },
     "coverageRule": {

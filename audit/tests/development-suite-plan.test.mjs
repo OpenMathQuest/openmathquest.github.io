@@ -23,7 +23,7 @@ test("documentation-only work avoids product and engine execution", () => {
 
 test("single-file product changes select every affected independent layer", () => {
   const plan = planDevelopmentSuites(["index.html"]);
-  for (const id of ["governance", "metadata", "product", "pwa", "engine", "tutorial", "driftless", "playwright", "guard"]) {
+  for (const id of ["governance", "metadata", "art-design", "product", "pwa", "engine", "tutorial", "driftless", "playwright", "guard"]) {
     assert.equal(plan.suites.includes(id), true, id);
   }
   assert.equal(plan.suites.includes("canary"), false);
@@ -77,6 +77,32 @@ test("driftless maps and blast-radius controls select their shared focused gate"
     assert.equal(plan.suites.includes("driftless"), true, file);
     assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
   }
+});
+
+test("art decisions, tokens, assets, and tutorial or feature joins select the focused art gate", () => {
+  for (const file of [
+    "audit/art-design-decision-register-v1.json",
+    "audit/art-asset-register-v1.json",
+    "assets/design/math-quest-design-tokens-v1.json",
+    "curriculum/math-quest-feature-map-v1.json",
+    "curriculum/math-quest-tutorial-manifest-v1.json",
+    "licenses/component-register-v1.json",
+    "licenses/evidence-paths-v1.json",
+    "release-shell-v1.json",
+  ]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+    assert.equal(plan.suites.includes("art-design"), true, file);
+    assert.equal(plan.suites.includes("driftless"), true, file);
+  }
+});
+
+test("the audit entry point executes the selected art-design suite", async () => {
+  const runner = await readFile(path.join(root, "audit", "run-audit.ps1"), "utf8");
+  assert.match(runner, /developmentPlan\.suites -contains 'art-design'/u);
+  assert.match(runner, /tests\\art-design-governance\.test\.mjs/u);
+  assert.match(runner, /MQ_ART_GOVERNANCE_MODE = if \(\$DevelopmentOnly\) \{ 'DEVELOPMENT' \} else \{ 'RELEASE' \}/u);
+  assert.match(runner, /Conservatory art-design governance and fail-closed projection checks passed/u);
 });
 
 test("Playwright Test changes select only the focused browser and shared policy layers", () => {

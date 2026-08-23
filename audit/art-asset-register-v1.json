@@ -1,0 +1,45 @@
+{
+  "registerId": "math-quest-art-assets",
+  "version": "1.1.0",
+  "schemaVersion": 1,
+  "status": "ACTIVE",
+  "primaryConsumer": "AI_AGENT",
+  "authority": "THIS_FILE",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest governed art-asset identities, exact-use permissions, and evidence bindings.",
+    "originalWork": true
+  },
+  "decisionRegisterBinding": {
+    "path": "audit/art-design-decision-register-v1.json",
+    "sha256": "3014000f3f0ad1797459110da3e3ac496b79d98750da05beb961d08c6df0c507"
+  },
+  "scope": {
+    "governedPathPattern": "^assets/design/",
+    "excludedAuthorityPath": "assets/design/math-quest-design-tokens-v1.json",
+    "legacyAssetPolicy": "EXISTING_ASSETS_OUTSIDE_GOVERNED_PATH_REMAIN_RIGHTS_GOVERNED_UNTIL_MIGRATED",
+    "unregisteredGovernedAssetPolicy": "FAIL_CLOSED"
+  },
+  "orderingContract": [
+    { "jsonPointer": "/records", "policy": "LEXICOGRAPHIC_BY_ID" },
+    { "jsonPointer": "/records/*/decisionIds", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/designRuleIds", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/featureIds", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/tutorialRefs", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/permittedUses", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/requiredProofs", "policy": "LEXICOGRAPHIC" },
+    { "jsonPointer": "/records/*/evidence/constructionEvidence", "policy": "WORKFLOW_ORDER_ASCENDING_EXACT_COVER" },
+    { "jsonPointer": "/records/*/evidence/proofEvidence", "policy": "LEXICOGRAPHIC_BY_PROOF_ID_EXACT_COVER" }
+  ],
+  "semanticClassSemantics": {
+    "DECORATIVE_ATMOSPHERE": "CANNOT_ENCODE_MATHEMATICAL_FACT_INSTRUCTION_STATE_CONTROL_OR_ANSWER",
+    "FUNCTIONAL_UI": "COMMUNICATES_CONTROL_STATE_NAVIGATION_OR_STATUS_WITH_ACCESSIBLE_EQUIVALENT",
+    "MATHEMATICAL_REPRESENTATION": "MAY_COMMUNICATE_QUANTITY_GROUPING_ORDER_OPERATION_EQUALITY_GEOMETRY_OR_ANSWER"
+  },
+  "acceptanceStateSemantics": {
+    "CANDIDATE": "NOT_AUTHORIZED_FOR_RUNTIME_OR_RELEASE",
+    "IMPLEMENTED": "EXACT_REVIEWED_USE_PRESENT_IN_RUNTIME_NOT_RELEASE_CERTIFIED",
+    "RELEASE_CERTIFIED": "EXACT_CANDIDATE_HASH_AND_PERMITTED_USE_PASSED_ALL_REQUIRED_GATES"
+  },
+  "records": []
+}

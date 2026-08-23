@@ -24,6 +24,7 @@ SECURITY.md
 Serve-MathQuest.ps1
 THIRD_PARTY_NOTICES.md
 VERSION
+assets/design/math-quest-design-tokens-v1.json
 assets/fonts/Inter-Variable.ttf
 assets/icons/apple-touch-icon.png
 assets/icons/icon-192.png
@@ -38,6 +39,8 @@ audit.bat
 audit.html
 audit/agent-collaboration-policy-v1.json
 audit/approved-visual-regression.js
+audit/art-asset-register-v1.json
+audit/art-design-decision-register-v1.json
 audit/browser-runner-evidence-v1.json
 audit/certification-cadence-v1.json
 audit/compare-audit-execution-modes.mjs
@@ -50,6 +53,7 @@ audit/fixtures/mq-coverage-calibration-full.js
 audit/fixtures/mq-coverage-calibration-partial.js
 audit/gate-integrity-policy-v1.json
 audit/install-reviewed-ci-dependencies.ps1
+audit/lib/art-design-governance.mjs
 audit/lib/bounded-audit-lanes.mjs
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
@@ -94,7 +98,10 @@ audit/run-playwright-focused.mjs
 audit/run-playwright-interaction-fuzz.mjs
 audit/run-trusted-https-canary.mjs
 audit/run-trusted-https-canary.ps1
+audit/schemas/art-asset-register-v1.schema.json
+audit/schemas/art-design-decision-register-v1.schema.json
 audit/schemas/blast-radius-result-v2.schema.json
+audit/schemas/design-tokens-v1.schema.json
 audit/schemas/feature-map-v1.schema.json
 audit/schemas/gate-integrity-policy-v1.schema.json
 audit/schemas/release-evidence-bundle-v1.schema.json
@@ -103,6 +110,7 @@ audit/schemas/tutorial-manifest-v1.schema.json
 audit/test-launcher-identity.ps1
 audit/tests/adapter-syntax.test.mjs
 audit/tests/agent-collaboration-policy.test.mjs
+audit/tests/art-design-governance.test.mjs
 audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs
@@ -164,6 +172,7 @@ licenses/Inter-OFL.txt
 licenses/app-icons.md
 licenses/ci-toolchain.md
 licenses/component-register-v1.json
+licenses/design-tokens.md
 licenses/evidence-paths-v1.json
 licenses/first-party-paths-v1.txt
 licenses/sound-effects.md

@@ -196,7 +196,7 @@
         "suites": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["governance", "metadata", "launcher", "product", "pwa", "canary", "engine", "tutorial", "driftless", "playwright", "guard"] }
+          "items": { "enum": ["governance", "metadata", "art-design", "launcher", "product", "pwa", "canary", "engine", "tutorial", "driftless", "playwright", "guard"] }
         }
       }
     },
