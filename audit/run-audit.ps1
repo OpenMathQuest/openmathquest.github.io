@@ -475,7 +475,11 @@ try {
             $previousArtGovernanceMode = $env:MQ_ART_GOVERNANCE_MODE
             try {
                 $env:MQ_ART_GOVERNANCE_MODE = if ($DevelopmentOnly) { 'DEVELOPMENT' } else { 'RELEASE' }
-                & $node.Path --test (Join-Path $auditDirectory 'tests\art-design-governance.test.mjs')
+                $artDesignTests = @(
+                    (Join-Path $auditDirectory 'tests\art-design-governance.test.mjs'),
+                    (Join-Path $auditDirectory 'tests\art-migration-baseline.test.mjs')
+                )
+                & $node.Path --test $artDesignTests
                 $artGovernanceExitCode = $LASTEXITCODE
             } finally {
                 if ($null -eq $previousArtGovernanceMode) {
@@ -487,7 +491,11 @@ try {
             if ($artGovernanceExitCode -ne 0) {
                 throw 'The Conservatory art-design decisions, tokens, assets, and negative controls failed.'
             }
-            Write-Host 'Conservatory art-design governance and fail-closed projection checks passed.'
+            & $node.Path (Join-Path $auditDirectory 'validate-art-migration-baseline.mjs')
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The ART-MIG-01 historical source, fixture joins, or sanitized render evidence failed.'
+            }
+            Write-Host 'Conservatory art-design governance, migration baseline, and fail-closed projection checks passed.'
         } finally {
             Pop-Location
         }

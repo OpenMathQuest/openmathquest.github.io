@@ -255,9 +255,9 @@ suite and PWA shell validation.
 
 ## Driftless repository-system effect map
 
-The six connected layers are Owners → Code Map → Feature Map → Tutorial
-Manifest → Blast Radius → Gates. `audit/repository-code-map-v1.json` is the
-machine owner and pointer map. Its six focused tests require every tracked
+The seven connected layers are Owners → Code Map → Feature Map → Tutorial
+Manifest → Art Design → Blast Radius → Gates. `audit/repository-code-map-v1.json` is the
+machine owner and pointer map. Its focused suite requires every tracked
 path to receive exactly one role, every governed data artifact to have one
 owner or declared projection, every dependency edge to resolve, hermetic Git
 enumeration, retired duplicate-map paths to remain absent, and the exact
@@ -736,6 +736,38 @@ truthful semantic model descriptors; and preserved task type on submission.
 | `GEN-EXHAUSTIVE` | All 126 skills generate and self-grade across both tiers, all three representations, all three themes, and 32 ordinals (72,576 questions total); 40,824 bounded question-choice searches preserve one mastery/input contract and expose only distinct reachable prompts. Selection contexts reject exploitable answer-location patterns by requiring sample-volume-appropriate position diversity and rejecting any position above a 75% share. |
 
 ## Publication and browser-evidence proof
+
+### Conservatory migration baseline
+
+`audit/tests/art-migration-baseline.test.mjs` protects `ART-MIG-01` as a
+historical reference boundary. It binds the exact pre-migration commit, parent,
+tree, runtime source bytes, 50 deterministic QA Tour fixtures, their Feature
+Map and Tutorial Manifest joins, and 36 sanitized rendered-result identities
+covering seven states across six viewports. The baseline binds the raw and
+canonical SHA-256 values of one retained, closed-schema browser-evidence file.
+That file preserves all 36 timing-free result-detail records, the exact local
+Edge identity, one accepted attempt with zero automatic retries, successful
+process teardown, and the exact 19-request set with no unexpected request. It
+also binds all 20 served files to their exact historical Git-object bytes and
+discloses the capture-only adapter as one exact source transformation: adding
+the `export` keyword to the unique visual-shard function declaration, without
+changing its body or call path. The existing browser payload validator
+revalidates the retained details, served-source set, and adapter transformation.
+Local evidence is explicitly not publication evidence, art approval,
+human-legibility proof, real-device proof, or release certification;
+screenshots, traces, video, child data, raw timing, and private paths are
+prohibited from the record.
+
+`NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE` mutates the revision, runtime
+hash, fixture ordinal and membership, method coverage, exclusion truth,
+Feature/Tutorial join, rendered-result membership and status, retry history,
+details digest, publication claim, screenshot fields, exact served-source
+provenance, and the disclosed harness adapter. Each mutation must fail closed.
+A coordinated mutant also changes retained result details and
+recomputes the result digest, aggregate digest, byte count, and both evidence
+digests; it must still fail against the independently pinned reviewed evidence
+bytes. The dedicated validator emits one compact machine-readable PASS record
+only after the same contract succeeds.
 
 `audit/tests/trusted-https-canary.test.mjs` protects the separate manual
 GitHub-hosted Windows canary. Its closed evidence schema rejects reordered,

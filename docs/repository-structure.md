@@ -84,6 +84,8 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 | Fact family | Sole owner | Declared projections | Validators |
 |---|---|---|---|
 | `art-design.asset-acceptance` | `audit/art-asset-register-v1.json` | — | `audit/tests/art-design-governance.test.mjs` |
+| `art-design.migration-baseline` | `audit/art-migration-baseline-v1.json` | — | `audit/tests/art-migration-baseline.test.mjs`<br>`audit/validate-art-migration-baseline.mjs` |
+| `art-design.migration-browser-evidence` | `audit/art-migration-browser-evidence-v1.json` | — | `audit/tests/art-migration-baseline.test.mjs`<br>`audit/validate-art-migration-baseline.mjs` |
 | `art-design.runtime-tokens` | `assets/design/math-quest-design-tokens-v1.json` | — | `audit/tests/art-design-governance.test.mjs` |
 | `art-design.source-decisions` | `audit/art-design-decision-register-v1.json` | `AGENTS.md`<br>`assets/design/math-quest-design-tokens-v1.json`<br>`audit/art-asset-register-v1.json`<br>`curriculum/math-quest-feature-map-v1.json`<br>`curriculum/math-quest-tutorial-manifest-v1.json` | `audit/tests/art-design-governance.test.mjs` |
 | `browser.reviewed-identity` | `audit/browser-runner-evidence-v1.json` | `PUBLICATION_CLEARANCE.md` | `audit/tests/publication-clearance.test.mjs` |

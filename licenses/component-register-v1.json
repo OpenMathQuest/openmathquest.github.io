@@ -38,6 +38,8 @@
     "audit/approved-visual-regression.js",
     "audit/art-asset-register-v1.json",
     "audit/art-design-decision-register-v1.json",
+    "audit/art-migration-baseline-v1.json",
+    "audit/art-migration-browser-evidence-v1.json",
     "audit/browser-runner-evidence-v1.json",
     "audit/certification-cadence-v1.json",
     "audit/compare-audit-execution-modes.mjs",
@@ -51,6 +53,7 @@
     "audit/gate-integrity-policy-v1.json",
     "audit/install-reviewed-ci-dependencies.ps1",
     "audit/lib/art-design-governance.mjs",
+    "audit/lib/art-migration-baseline.mjs",
     "audit/lib/bounded-audit-lanes.mjs",
     "audit/lib/browser-runner-evidence.mjs",
     "audit/lib/browser-smoke.mjs",
@@ -97,6 +100,8 @@
     "audit/run-trusted-https-canary.ps1",
     "audit/schemas/art-asset-register-v1.schema.json",
     "audit/schemas/art-design-decision-register-v1.schema.json",
+    "audit/schemas/art-migration-baseline-v1.schema.json",
+    "audit/schemas/art-migration-browser-evidence-v1.schema.json",
     "audit/schemas/blast-radius-result-v2.schema.json",
     "audit/schemas/design-tokens-v1.schema.json",
     "audit/schemas/feature-map-v1.schema.json",
@@ -108,6 +113,7 @@
     "audit/tests/adapter-syntax.test.mjs",
     "audit/tests/agent-collaboration-policy.test.mjs",
     "audit/tests/art-design-governance.test.mjs",
+    "audit/tests/art-migration-baseline.test.mjs",
     "audit/tests/audit-lane-orchestration.test.mjs",
     "audit/tests/audit-orchestration.test.mjs",
     "audit/tests/blast-radius-lookup.test.mjs",
@@ -135,6 +141,7 @@
     "audit/tests/trusted-https-canary.test.mjs",
     "audit/tests/tutorial-manifest.test.mjs",
     "audit/trusted-https-canary-beta7-v1.json",
+    "audit/validate-art-migration-baseline.mjs",
     "audit/validate-hosted-windows-observation.mjs",
     "audit/validate-publication-clearance.mjs",
     "audit/validate-trusted-https-canary.mjs",
@@ -624,7 +631,7 @@
       "packageSri": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "tutorial-manifest build, synchronization, and focused validation only"
+      "scope": "closed repository JSON-contract build, synchronization, and focused validation only"
     },
     {
       "id": "fast-deep-equal-3.1.3",
@@ -639,7 +646,7 @@
       "packageSri": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "fast-uri-3.1.5",
@@ -654,7 +661,7 @@
       "packageSri": "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "json-schema-traverse-1.0.0",
@@ -669,7 +676,7 @@
       "packageSri": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "require-from-string-2.0.2",
@@ -684,7 +691,7 @@
       "packageSri": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     }
   ],
   "prohibitedSources": [

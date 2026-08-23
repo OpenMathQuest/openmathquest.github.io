@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -237,6 +237,16 @@
       "negativeControl": { "id": "NC-ART-DESIGN-UNRESOLVED-PROJECTION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-design-governance.test.mjs", "testName": "[NC-ART-DESIGN-UNRESOLVED-PROJECTION] unresolved, rejected, unregistered, stale, and mathematically unproved art fails closed" },
       "implementationPaths": ["assets/design/math-quest-design-tokens-v1.json", "audit/art-asset-register-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-design-governance.mjs", "audit/schemas/art-asset-register-v1.schema.json", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/schemas/design-tokens-v1.schema.json", "licenses/component-register-v1.json", "licenses/evidence-paths-v1.json", "release-shell-v1.json"],
       "validatorPaths": ["audit/tests/art-design-governance.test.mjs"]
+    },
+    {
+      "id": "gate.art-migration-baseline",
+      "claim": "ART_MIG_01_SOURCE_REVISION_FIXTURES_FEATURE_TUTORIAL_JOINS_AND_RETAINED_SANITIZED_RENDER_EVIDENCE_ARE_EXACTLY_BOUND",
+      "proofClass": "BOUND_EVIDENCE_AND_EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "HISTORICAL_BASELINE_EVIDENCE_IS_NOT_ART_APPROVAL_HUMAN_LEGIBILITY_PROOF_REAL_DEVICE_PROOF_OR_RELEASE_CERTIFICATION",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-migration-baseline.test.mjs", "testName": "[NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE] stale, foreign, incomplete, retried, private, or arbitrary baseline evidence fails closed" },
+      "implementationPaths": ["audit/art-migration-baseline-v1.json", "audit/art-migration-browser-evidence-v1.json", "audit/lib/art-migration-baseline.mjs", "audit/schemas/art-migration-baseline-v1.schema.json", "audit/schemas/art-migration-browser-evidence-v1.schema.json", "audit/validate-art-migration-baseline.mjs", "index.html"],
+      "validatorPaths": ["audit/tests/art-migration-baseline.test.mjs"]
     },
     {
       "id": "gate.audit-orchestration",

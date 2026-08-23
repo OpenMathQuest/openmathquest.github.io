@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/art-migration-browser-evidence-v1.schema.json",
+  "title": "Math Quest art migration browser evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "documentId",
+    "version",
+    "schemaVersion",
+    "recordState",
+    "evidenceId",
+    "authority",
+    "sourceRevision",
+    "sourcePreparation",
+    "harnessAdapter",
+    "capture",
+    "browserIdentity",
+    "runIntegrity",
+    "payload",
+    "passingArtifactPolicy"
+  ],
+  "properties": {
+    "documentId": { "const": "ART_MIGRATION_BROWSER_EVIDENCE" },
+    "version": { "const": "1.0.0" },
+    "schemaVersion": { "const": 1 },
+    "recordState": { "const": "CAPTURED" },
+    "evidenceId": { "const": "ART-MIG-BROWSER-001" },
+    "authority": { "const": "audit/art-migration-baseline-v1.json" },
+    "sourceRevision": { "$ref": "#/$defs/sourceRevision" },
+    "sourcePreparation": { "$ref": "#/$defs/sourcePreparation" },
+    "harnessAdapter": { "$ref": "#/$defs/harnessAdapter" },
+    "capture": { "$ref": "#/$defs/capture" },
+    "browserIdentity": { "$ref": "#/$defs/browserIdentity" },
+    "runIntegrity": { "$ref": "#/$defs/runIntegrity" },
+    "payload": { "$ref": "#/$defs/payload" },
+    "passingArtifactPolicy": {
+      "const": {
+        "screenshots": false,
+        "traces": false,
+        "video": false,
+        "childData": false,
+        "privatePaths": false,
+        "rawTiming": false
+      }
+    }
+  },
+  "$defs": {
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sourceRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commitSha1", "treeOidSha1"],
+      "properties": {
+        "commitSha1": { "const": "cb25cf1734c0481ed0670b58137e76d312d05857" },
+        "treeOidSha1": { "const": "9e82db9f23a997fe5cd173d503274de5097c5c2e" }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "automaticRetries", "attemptCount", "acceptedAttempt"],
+      "properties": {
+        "method": { "const": "EFFECT_SENSITIVE_BROWSER_AUDIT_VISUAL_SHARD_WITH_EXPORT_ONLY_ADAPTER" },
+        "automaticRetries": { "const": 0 },
+        "attemptCount": { "const": 1 },
+        "acceptedAttempt": { "const": 1 }
+      }
+    },
+    "servedPathBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "rawByteSha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+        "rawByteSha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "sourcePreparation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "servedPathCount", "servedPathSetDigestSemantics", "servedPathSetSha256", "servedPaths"],
+      "properties": {
+        "method": { "const": "VERIFIED_WORKTREE_BYTES_EQUAL_GIT_OBJECT_BYTES_AT_SOURCE_REVISION" },
+        "servedPathCount": { "const": 20 },
+        "servedPathSetDigestSemantics": { "const": "SHA256_CANONICAL_JSON_SORTED_OBJECT_KEYS_ARRAY_ORDER_PRESERVED" },
+        "servedPathSetSha256": { "const": "8cfe3c4c826e967bf7ca60d6f81489c62ea8134e90d6fdbdcb21687775e5ad1b" },
+        "servedPaths": {
+          "type": "array",
+          "minItems": 20,
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/servedPathBinding" }
+        }
+      }
+    },
+    "harnessAdapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourcePath", "sourceRawByteSha256", "sourceBytes", "transformation", "before", "after", "replacementCount", "transformedRawByteSha256", "transformedBytes", "semanticBoundary"],
+      "properties": {
+        "sourcePath": { "const": "audit/lib/browser-smoke.mjs" },
+        "sourceRawByteSha256": { "const": "e0a7d0096fcc92c7d8cd60e06f0cfbf969a11947850b54fb28fd97d2b04f098f" },
+        "sourceBytes": { "const": 39278 },
+        "transformation": { "const": "ADD_EXPORT_KEYWORD_TO_UNIQUE_RUN_BROWSER_AUDIT_SHARD_DECLARATION_ONLY" },
+        "before": { "const": "async function runBrowserAuditShard({" },
+        "after": { "const": "export async function runBrowserAuditShard({" },
+        "replacementCount": { "const": 1 },
+        "transformedRawByteSha256": { "const": "45668e83807c74f433a99ed1cacf4b3d76371c194ed7c25f5e2229abe3517836" },
+        "transformedBytes": { "const": 39285 },
+        "semanticBoundary": { "const": "MODULE_EXPORT_VISIBILITY_ONLY_FUNCTION_BODY_AND_CALL_PATH_UNCHANGED" }
+      }
+    },
+    "browserIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productName", "fullVersion", "executableName", "executableSha256", "runnerKind", "status", "browserIdentityValid", "validForPublication"],
+      "properties": {
+        "productName": { "const": "Microsoft Edge" },
+        "fullVersion": { "const": "151.0.4129.101" },
+        "executableName": { "const": "msedge.exe" },
+        "executableSha256": { "const": "24f626e48dae3574b4d59adc8f23722f890fd0a64f78c772384b783b96bcf1a0" },
+        "runnerKind": { "const": "LOCAL" },
+        "status": { "const": "OBSERVED_LOCAL" },
+        "browserIdentityValid": { "const": true },
+        "validForPublication": { "const": false }
+      }
+    },
+    "requestSignature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "pathname"],
+      "properties": {
+        "method": { "const": "GET" },
+        "pathname": { "type": "string", "pattern": "^/[^\\\\]*$" }
+      }
+    },
+    "runIntegrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shard",
+        "status",
+        "complete",
+        "payloadValid",
+        "processExitStatus",
+        "processSignal",
+        "processErrorPresent",
+        "timedOut",
+        "forcedTermination",
+        "closeRequested",
+        "closeErrorPresent",
+        "parseErrorPresent",
+        "cleanupErrorPresent",
+        "requestSignatures",
+        "unexpectedRequestSignatures"
+      ],
+      "properties": {
+        "shard": { "const": "visual" },
+        "status": { "const": "PASS" },
+        "complete": { "const": true },
+        "payloadValid": { "const": true },
+        "processExitStatus": { "const": 0 },
+        "processSignal": { "type": "null" },
+        "processErrorPresent": { "const": false },
+        "timedOut": { "const": false },
+        "forcedTermination": { "const": false },
+        "closeRequested": { "const": true },
+        "closeErrorPresent": { "const": false },
+        "parseErrorPresent": { "const": false },
+        "cleanupErrorPresent": { "const": false },
+        "requestSignatures": {
+          "type": "array",
+          "minItems": 19,
+          "maxItems": 19,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/requestSignature" }
+        },
+        "unexpectedRequestSignatures": { "const": [] }
+      }
+    },
+    "browserResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "details"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^(?:PROFILE|VIS)-[A-Z0-9-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "status": { "const": "PASS" },
+        "details": { "type": "string", "minLength": 2, "maxLength": 1000000 }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed", "generatedAt", "shard", "results", "fail", "skipped"],
+      "properties": {
+        "completed": { "const": true },
+        "generatedAt": { "const": "2000-01-01T00:00:00.000Z" },
+        "shard": { "const": "visual" },
+        "results": {
+          "type": "array",
+          "minItems": 36,
+          "maxItems": 36,
+          "items": { "$ref": "#/$defs/browserResult" }
+        },
+        "fail": { "const": 0 },
+        "skipped": { "const": 0 }
+      }
+    }
+  }
+}

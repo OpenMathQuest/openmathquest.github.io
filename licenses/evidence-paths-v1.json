@@ -54,8 +54,8 @@
       "kind": "attribution",
       "origin": "mixed-open",
       "licenceExpression": "Apache-2.0 AND MIT AND BSD-3-Clause",
-      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser-verification tools.",
-      "sha256": "3352547ed1e4cc55e2429e3801fbcfe05ad6bf3b9b1bc11be44c53739232a94c"
+      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser and closed JSON-contract tools.",
+      "sha256": "264a58d8ef2513753a881de1bcc77e581e36eaf1cae1d360678b63a2f4af519b"
     },
     {
       "path": "licenses/design-tokens.md",

@@ -959,7 +959,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "tutorial-manifest build, synchronization, and focused validation only",
+      scope: "closed repository JSON-contract build, synchronization, and focused validation only",
     };
     const exactFastDeepEqual = {
       id: "fast-deep-equal-3.1.3",
@@ -974,7 +974,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactFastUri = {
       id: "fast-uri-3.1.5",
@@ -989,7 +989,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactSchemaTraverse = {
       id: "json-schema-traverse-1.0.0",
@@ -1004,7 +1004,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactRequireFromString = {
       id: "require-from-string-2.0.2",
@@ -1019,7 +1019,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     for (const [tool, keys, expected, index] of [
       [caddyTool, caddyToolKeys, exactCaddy, 1],

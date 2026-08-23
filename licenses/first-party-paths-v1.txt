@@ -27,6 +27,8 @@ audit/agent-collaboration-policy-v1.json
 audit/approved-visual-regression.js
 audit/art-asset-register-v1.json
 audit/art-design-decision-register-v1.json
+audit/art-migration-baseline-v1.json
+audit/art-migration-browser-evidence-v1.json
 audit/browser-runner-evidence-v1.json
 audit/certification-cadence-v1.json
 audit/compare-audit-execution-modes.mjs
@@ -40,6 +42,7 @@ audit/fixtures/mq-coverage-calibration-partial.js
 audit/gate-integrity-policy-v1.json
 audit/install-reviewed-ci-dependencies.ps1
 audit/lib/art-design-governance.mjs
+audit/lib/art-migration-baseline.mjs
 audit/lib/bounded-audit-lanes.mjs
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
@@ -86,6 +89,8 @@ audit/run-trusted-https-canary.mjs
 audit/run-trusted-https-canary.ps1
 audit/schemas/art-asset-register-v1.schema.json
 audit/schemas/art-design-decision-register-v1.schema.json
+audit/schemas/art-migration-baseline-v1.schema.json
+audit/schemas/art-migration-browser-evidence-v1.schema.json
 audit/schemas/blast-radius-result-v2.schema.json
 audit/schemas/design-tokens-v1.schema.json
 audit/schemas/feature-map-v1.schema.json
@@ -97,6 +102,7 @@ audit/test-launcher-identity.ps1
 audit/tests/adapter-syntax.test.mjs
 audit/tests/agent-collaboration-policy.test.mjs
 audit/tests/art-design-governance.test.mjs
+audit/tests/art-migration-baseline.test.mjs
 audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs
@@ -124,6 +130,7 @@ audit/tests/strategy-build-oracle.mjs
 audit/tests/trusted-https-canary.test.mjs
 audit/tests/tutorial-manifest.test.mjs
 audit/trusted-https-canary-beta7-v1.json
+audit/validate-art-migration-baseline.mjs
 audit/validate-hosted-windows-observation.mjs
 audit/validate-publication-clearance.mjs
 audit/validate-trusted-https-canary.mjs

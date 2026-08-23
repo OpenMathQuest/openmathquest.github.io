@@ -90,6 +90,52 @@ test("missing required ownership structure fails schema validation and human pro
   assert.match(agentPolicy, /Unknown paths and[\s\S]*fail safe to the broad development suite/u);
 });
 
+test("ART-MIG-01 has one exact owner, a closed fact set, and complete typed validator edges", async () => {
+  const family = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");
+  assert.equal(family.owner, "audit/art-migration-baseline-v1.json");
+  assert.deepEqual(family.owns, [
+    "art-design.migration-baseline.browser-evidence-binding",
+    "art-design.migration-baseline.claim-boundary",
+    "art-design.migration-baseline.fixture-contract",
+    "art-design.migration-baseline.source-bindings",
+    "art-design.migration-baseline.source-revision",
+    "art-design.migration-baseline.viewport-state-matrix",
+  ]);
+  assert.deepEqual(family.validators, [
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
+  ]);
+  const browserFamily = map.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence");
+  assert.equal(browserFamily.owner, "audit/art-migration-browser-evidence-v1.json");
+  assert.deepEqual(browserFamily.owns, [
+    "art-design.migration-browser-evidence.capture-contract",
+    "art-design.migration-browser-evidence.exact-browser-identity",
+    "art-design.migration-browser-evidence.exact-served-source",
+    "art-design.migration-browser-evidence.harness-adapter",
+    "art-design.migration-browser-evidence.passing-artifact-policy",
+    "art-design.migration-browser-evidence.request-integrity",
+    "art-design.migration-browser-evidence.visual-result-details",
+    "art-design.migration-browser-evidence.visual-result-set",
+  ]);
+  assert.deepEqual(browserFamily.validators, family.validators);
+
+  const missingFact = clone(map);
+  missingFact.factFamilies.find((record) => record.id === "art-design.migration-baseline").owns.pop();
+  assert.match((await validateRepositoryCodeMap(missingFact)).join("\n"), /complete closed ART-MIG-01 fact set/u);
+
+  const missingRelation = clone(map);
+  missingRelation.artifactRelations = missingRelation.artifactRelations.filter((relation) => relation.id !== "art-migration.browser-evidence-schema");
+  assert.match((await validateRepositoryCodeMap(missingRelation)).join("\n"), /requires artifact relation art-migration\.browser-evidence-schema/u);
+
+  const foreignOwner = clone(map);
+  foreignOwner.factFamilies.find((record) => record.id === "art-design.migration-baseline").owner = "audit/art-asset-register-v1.json";
+  assert.match((await validateRepositoryCodeMap(foreignOwner)).join("\n"), /sole canonical ART-MIG-01 owner/u);
+
+  const foreignEvidenceOwner = clone(map);
+  foreignEvidenceOwner.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence").owner = "audit/art-migration-baseline-v1.json";
+  assert.match((await validateRepositoryCodeMap(foreignEvidenceOwner)).join("\n"), /sole canonical retained-browser-evidence owner/u);
+});
+
 test("AI-first drift-control contract is exact, hash-bound, machine-default, and order-enforced", async () => {
   const authority = await readFile("AGENTS.md", "utf8");
   assert.deepEqual(

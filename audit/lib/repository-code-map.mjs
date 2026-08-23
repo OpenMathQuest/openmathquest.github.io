@@ -194,6 +194,62 @@ export async function validateRepositoryCodeMap(map, {
   for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
   }
+  const artMigrationFamily = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");
+  const requiredArtMigrationFacts = [
+    "art-design.migration-baseline.browser-evidence-binding",
+    "art-design.migration-baseline.claim-boundary",
+    "art-design.migration-baseline.fixture-contract",
+    "art-design.migration-baseline.source-bindings",
+    "art-design.migration-baseline.source-revision",
+    "art-design.migration-baseline.viewport-state-matrix",
+  ];
+  const artMigrationBrowserFamily = map.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence");
+  const requiredArtMigrationBrowserFacts = [
+    "art-design.migration-browser-evidence.capture-contract",
+    "art-design.migration-browser-evidence.exact-browser-identity",
+    "art-design.migration-browser-evidence.exact-served-source",
+    "art-design.migration-browser-evidence.harness-adapter",
+    "art-design.migration-browser-evidence.passing-artifact-policy",
+    "art-design.migration-browser-evidence.request-integrity",
+    "art-design.migration-browser-evidence.visual-result-details",
+    "art-design.migration-browser-evidence.visual-result-set",
+  ];
+  const requiredArtMigrationValidators = [
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
+  ];
+  if (!artMigrationFamily || artMigrationFamily.owner !== "audit/art-migration-baseline-v1.json") {
+    issues.push("art-design.migration-baseline must have the sole canonical ART-MIG-01 owner.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.owns, requiredArtMigrationFacts)) {
+    issues.push("art-design.migration-baseline must own the complete closed ART-MIG-01 fact set.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-baseline must bind the complete ART-MIG-01 validator set.");
+  }
+  if (!artMigrationBrowserFamily || artMigrationBrowserFamily.owner !== "audit/art-migration-browser-evidence-v1.json") {
+    issues.push("art-design.migration-browser-evidence must have the sole canonical retained-browser-evidence owner.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.owns, requiredArtMigrationBrowserFacts)) {
+    issues.push("art-design.migration-browser-evidence must own the complete closed retained-browser-evidence fact set.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-browser-evidence must bind the complete ART-MIG-01 validator set.");
+  }
+  for (const requiredRelation of [
+    "art-migration.browser-contract",
+    "art-migration.browser-evidence-record",
+    "art-migration.browser-evidence-schema",
+    "art-migration.engine-loader",
+    "art-migration.record",
+    "art-migration.schema",
+    "art-migration.test",
+    "art-migration.validator",
+  ]) {
+    if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) {
+      issues.push(`art-design.migration-baseline requires artifact relation ${requiredRelation}.`);
+    }
+  }
   if (!sameJson(map.artifactRelations, canonicalOrder(map.artifactRelations, (record) => record.id))) issues.push("artifactRelations must be sorted lexicographically by id.");
   if (!sameJson(map.dataArtifactPatterns, canonicalOrder(map.dataArtifactPatterns))) issues.push("dataArtifactPatterns must be sorted lexicographically.");
   if (!sameJson(map.tombstones, canonicalOrder(map.tombstones, (record) => record.path))) issues.push("tombstones must be sorted lexicographically by path.");

@@ -83,6 +83,13 @@ test("art decisions, tokens, assets, and tutorial or feature joins select the fo
   for (const file of [
     "audit/art-design-decision-register-v1.json",
     "audit/art-asset-register-v1.json",
+    "audit/art-migration-baseline-v1.json",
+    "audit/art-migration-browser-evidence-v1.json",
+    "audit/lib/art-migration-baseline.mjs",
+    "audit/schemas/art-migration-baseline-v1.schema.json",
+    "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
     "assets/design/math-quest-design-tokens-v1.json",
     "curriculum/math-quest-feature-map-v1.json",
     "curriculum/math-quest-tutorial-manifest-v1.json",
@@ -95,14 +102,19 @@ test("art decisions, tokens, assets, and tutorial or feature joins select the fo
     assert.equal(plan.suites.includes("art-design"), true, file);
     assert.equal(plan.suites.includes("driftless"), true, file);
   }
+  const engineLoader = planDevelopmentSuites(["audit/lib/engine-loader.mjs"]);
+  assert.equal(engineLoader.suites.includes("art-design"), true);
+  assert.equal(engineLoader.suites.includes("engine"), true);
 });
 
 test("the audit entry point executes the selected art-design suite", async () => {
   const runner = await readFile(path.join(root, "audit", "run-audit.ps1"), "utf8");
   assert.match(runner, /developmentPlan\.suites -contains 'art-design'/u);
   assert.match(runner, /tests\\art-design-governance\.test\.mjs/u);
+  assert.match(runner, /tests\\art-migration-baseline\.test\.mjs/u);
+  assert.match(runner, /validate-art-migration-baseline\.mjs/u);
   assert.match(runner, /MQ_ART_GOVERNANCE_MODE = if \(\$DevelopmentOnly\) \{ 'DEVELOPMENT' \} else \{ 'RELEASE' \}/u);
-  assert.match(runner, /Conservatory art-design governance and fail-closed projection checks passed/u);
+  assert.match(runner, /Conservatory art-design governance, migration baseline, and fail-closed projection checks passed/u);
 });
 
 test("Playwright Test changes select only the focused browser and shared policy layers", () => {

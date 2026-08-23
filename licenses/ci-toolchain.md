@@ -1,8 +1,8 @@
-# CI-only browser-verification toolchain
+# CI-only verification toolchain
 
 Math Quest uses the following open-source tools only for focused direct-user
-browser journeys, the alternating-beta Deep UX Census, and the disposable
-hosted-Windows trusted-HTTPS canary. They
+browser journeys, closed JSON-contract validation, the alternating-beta Deep
+UX Census, and the disposable hosted-Windows trusted-HTTPS canary. They
 are development dependencies and are not included in the child-facing Pages
 payload, service-worker shell, desktop launcher, or offline installation.
 
@@ -41,7 +41,7 @@ funding requests disabled. The focused browser suite, Deep UX Census, and canary
 Microsoft Edge binary already present on Windows; no Playwright-managed browser
 is downloaded or shipped.
 
-## Ajv 8.20.0 tutorial-manifest validator
+## Ajv 8.20.0 closed JSON-contract validator
 
 - Provider: Ajv contributors
 - Licence: MIT
@@ -50,9 +50,10 @@ is downloaded or shipped.
 - Registry artifact: <https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz>
 - Registry SRI: `sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==`
 
-Ajv validates the closed tutorial-manifest schema during development and
-release checks. It and its dependency closure are CI-only and never enter the
-Pages or service-worker payload.
+Ajv validates closed repository contracts, including tutorial, art-design, and
+art-migration baseline schemas, during development and release checks. It and
+its dependency closure are CI-only and never enter the Pages or service-worker
+payload.
 
 ## Ajv 8.20.0 transitive dependency closure
 

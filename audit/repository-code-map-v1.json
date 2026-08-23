@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.8.0",
+  "version": "1.10.1",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -236,6 +236,46 @@
       "projections": [],
       "validators": [
         "audit/tests/art-design-governance.test.mjs"
+      ]
+    },
+    {
+      "id": "art-design.migration-baseline",
+      "owner": "audit/art-migration-baseline-v1.json",
+      "owns": [
+        "art-design.migration-baseline.browser-evidence-binding",
+        "art-design.migration-baseline.claim-boundary",
+        "art-design.migration-baseline.fixture-contract",
+        "art-design.migration-baseline.source-bindings",
+        "art-design.migration-baseline.source-revision",
+        "art-design.migration-baseline.viewport-state-matrix"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-migration-baseline.test.mjs",
+        "audit/validate-art-migration-baseline.mjs"
+      ]
+    },
+    {
+      "id": "art-design.migration-browser-evidence",
+      "owner": "audit/art-migration-browser-evidence-v1.json",
+      "owns": [
+        "art-design.migration-browser-evidence.capture-contract",
+        "art-design.migration-browser-evidence.exact-browser-identity",
+        "art-design.migration-browser-evidence.exact-served-source",
+        "art-design.migration-browser-evidence.harness-adapter",
+        "art-design.migration-browser-evidence.passing-artifact-policy",
+        "art-design.migration-browser-evidence.request-integrity",
+        "art-design.migration-browser-evidence.visual-result-details",
+        "art-design.migration-browser-evidence.visual-result-set"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-migration-baseline.test.mjs",
+        "audit/validate-art-migration-baseline.mjs"
       ]
     },
     {
@@ -909,6 +949,54 @@
       "kind": "TESTS"
     },
     {
+      "id": "art-migration.browser-contract",
+      "source": "audit/lib/browser-smoke.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.browser-evidence-record",
+      "source": "audit/art-migration-browser-evidence-v1.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.browser-evidence-schema",
+      "source": "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-migration.engine-loader",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.record",
+      "source": "audit/art-migration-baseline-v1.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.schema",
+      "source": "audit/schemas/art-migration-baseline-v1.schema.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-migration.test",
+      "source": "audit/lib/art-migration-baseline.mjs",
+      "target": "audit/tests/art-migration-baseline.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-migration.validator",
+      "source": "audit/lib/art-migration-baseline.mjs",
+      "target": "audit/validate-art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "art-tokens.decision",
       "source": "audit/art-design-decision-register-v1.json",
       "target": "assets/design/math-quest-design-tokens-v1.json",
@@ -1152,7 +1240,7 @@
   "dataArtifactPatterns": [
     "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
     "^assets/design/math-quest-design-tokens-v1\\.json$",
-    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
+    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|art-migration-baseline-v1|art-migration-browser-evidence-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
     "^curriculum/.*\\.json$",
     "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
   ],
