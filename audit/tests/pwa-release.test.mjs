@@ -1204,7 +1204,11 @@ test("browser audit rejects safe-boundary navigation and opens only the bound ph
     },
   };
   const nativeButton = {
-    dispatchEvent() { throw new Error("the focused native button must not receive a synthetic default action"); },
+    dispatchEvent(event) {
+      dispatchedTarget = nativeButton;
+      assert.equal(event.key, "Enter");
+      return true;
+    },
   };
   fakeDocument.activeElement = nativeButton;
   class FakeKeyboardEvent {
@@ -1217,11 +1221,10 @@ test("browser audit rejects safe-boundary navigation and opens only the bound ph
   const shortcut = dispatchKey(
     { doc: fakeDocument, win: { KeyboardEvent: FakeKeyboardEvent } },
     "Enter",
-    { shortcutTarget: true },
   );
-  assert.equal(shortcut.target, app);
-  assert.equal(dispatchedTarget, app);
-  assert.equal(fakeDocument.activeElement, app);
+  assert.equal(shortcut.target, nativeButton);
+  assert.equal(dispatchedTarget, nativeButton);
+  assert.equal(fakeDocument.activeElement, nativeButton);
 
   const physicalCacheNames = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "pwaPhysicalCacheNames")})`,
@@ -1256,7 +1259,7 @@ test("browser audit rejects safe-boundary navigation and opens only the bound ph
   assert.match(browserAudit, /boundaryNavigationObserved = await observeScenarioNavigationQuiet\(/u);
   assert.match(browserAudit, /explicitResumeButton\s*&&\s*!boundaryNavigationObserved\s*&&\s*boundaryDraftRestored/u);
   assert.match(browserAudit, /placementScenario\.doc === boundaryDocumentBeforePause[\s\S]{0,500}\[data-question-id="\$\{boundaryQuestionId\}"\][\s\S]{0,500}=== boundaryQuestionId[\s\S]{0,500}=== boundaryDraftBeforePause/u);
-  assert.match(browserAudit, /dispatchKey\(childFlow, "Enter", \{ shortcutTarget: true \}\)/u);
+  assert.doesNotMatch(browserAudit, /physical-done|shortcutTarget/u);
   assert.match(
     browserAudit,
     /const pwaReadinessPromise = queryBrowserPwaReadiness\(win\)\.then\(/u,

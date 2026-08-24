@@ -25,6 +25,10 @@ All notable public changes to Math Quest are recorded here.
   edges, deterministic ordering, and fail-closed drift checks.
 - Kept pattern source and response tokens in one visual row, made joining and
   leaving scenes independently answerable, and centered sharing recipients.
+- Removed the generic grown-up “make this with real objects” pause so ordinary
+  questions begin directly on screen. MQ-048 retains its distinct one-time,
+  answer-free practice-token legend, and old paused sessions migrate without
+  losing their question or progress.
 
 ## 1.0.0-beta.6 — 2026-08-13
 

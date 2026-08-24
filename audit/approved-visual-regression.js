@@ -2663,12 +2663,6 @@
 
         const advanceChildToQuestion = async () => {
           for (let step = 0; step < 8; step += 1) {
-            const physical = labDocument.querySelector('[data-action="physical-done"]');
-            if (physical) {
-              physical.click();
-              await pause();
-              continue;
-            }
             const pick = labDocument.querySelector('[data-action="choose-question"]');
             if (pick) {
               pick.click();
@@ -2913,7 +2907,7 @@
 
           const guideState = JSON.parse(JSON.stringify(fixtures[0].state));
           guideState.skills["MQ-048"].acquisition = "LEARNING";
-          guideState.activeSession.uiState.phase = "physical";
+          guideState.activeSession.uiState.phase = "practice-token-guide";
           guideState.activeSession.uiState.modelTouched = false;
           const practiceTokenGuideSnapshot = (profile) => {
             const questionNode = labDocument.querySelector('.question[data-skill-id="MQ-048"]');
@@ -2931,7 +2925,7 @@
               mapping.ariaLabel
               && normalized(mapping.ariaLabel).includes(normalized(mapping.value))
             ));
-            const ready = guide?.querySelector('[data-action="physical-done"]');
+            const ready = guide?.querySelector('[data-action="practice-token-ready"]');
             const forbiddenControls = guide?.querySelectorAll('[data-action="confirm"],[data-action="select"],input,select').length || 0;
             const guideRect = guide?.getBoundingClientRect();
             const readyRect = ready?.getBoundingClientRect();
@@ -3256,7 +3250,7 @@
             practiceTokenFingerprintsDistinct,
             practiceTokenObligationsExact,
             practiceTokenFixtureError,
-            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps the separate first-use guide free of answer controls at desktop, tablet portrait, and both automated iPad-landscape viewports.",
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps its distinct nonphysical first-use legend free of answer controls at desktop, tablet portrait, and both automated iPad-landscape viewports.",
           },
         );
         tests["VIS-MOBILE-LAYOUT"] = result(
@@ -3281,7 +3275,7 @@
             practiceTokenFingerprintsDistinct,
             practiceTokenObligationsExact,
             practiceTokenFixtureError,
-            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps the separate first-use guide free of answer controls at 390x844.",
+            practiceTokenPolicy: "Every one of the exact five MQ-048 token/value fixtures renders in ordinary, different-example Notice, and real incorrect-feedback states, returns explicitly to its source question, and keeps its distinct nonphysical first-use legend free of answer controls at 390x844.",
           },
         );
         approvedChecksComplete = true;

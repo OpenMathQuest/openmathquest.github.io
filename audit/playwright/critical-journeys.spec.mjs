@@ -398,9 +398,9 @@ test("[PW-F-06] keyboard play and isolated Parent Test mechanics remain child-le
   await page.keyboard.press("Enter");
   const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
   if (await chooseQuestion.count()) await page.keyboard.press("Enter");
-  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
-  if (await physicalDone.count()) await page.keyboard.press("Enter");
+  await expect(page.locator('[data-action="physical-done"]')).toHaveCount(0);
   await expect(page.locator("section.question")).toBeVisible();
+  await expect(page.locator("section.question .question-response")).toBeVisible();
   await activate(page.getByRole("button", { name: "Home", exact: true }), page);
   await expect(page.getByRole("button", { name: /Start/u })).toBeVisible();
   await activate(page.getByRole("button", { name: "Grown-ups corner", exact: true }), page);
@@ -959,9 +959,9 @@ test("[PW-F-14] functional art keeps identity, selection, focus, and speech stat
   await activate(page.getByRole("button", { name: /Start/u }), page);
   const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
   if (await chooseQuestion.count()) await activate(chooseQuestion.first(), page);
-  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
-  if (await physicalDone.count()) await activate(physicalDone.first(), page);
+  await expect(page.locator('[data-action="physical-done"]')).toHaveCount(0);
   await expect(page.locator("section.question")).toBeVisible();
+  await expect(page.locator("section.question .question-response")).toBeVisible();
   const sessionReplayButtons = page.locator('button[data-action="replay"]');
   const sessionDiscs = page.locator("[data-resonance-disc]");
   expect(await sessionReplayButtons.count()).toBe(1);

@@ -127,7 +127,7 @@ function findActiveQuestion(engine, predicate, { preview = false, skillId = null
 
 function baseUi(question, overrides = {}) {
   return {
-    version: 2,
+    version: 3,
     screen: "session",
     phase: "question",
     question,
@@ -409,7 +409,7 @@ test("MQ-002 keeps exact quantities while each world uses its own countable obje
 test("screen-native early activities expose exact visible sources without revealing their answers", async () => {
   const { engine } = await sharedEngineSuite();
   assert.equal(engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION, "question-generator-v6");
-  assert.equal(engine.CONSTANTS.ACTIVE_UI_VERSION, 2);
+  assert.equal(engine.CONSTANTS.ACTIVE_UI_VERSION, 3);
   const seen = new Set();
   for (let seed = 1; seed <= 12; seed += 1) {
     for (const [skillId, ordinals] of Object.entries({
@@ -607,18 +607,49 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
   await accept("valid preview and minimum time cap", configuredState);
   assert.equal(engine.loadState(clone(validState), 22_000).ok, true, "object-form save loads through defensive clone");
   await accept("construction question", stateWithUi(engine, baseUi(construction)));
-  await accept("physical phase", stateWithUi(engine, baseUi(selection, { phase: "physical" })));
-  const practiceTokenQuestion = findActiveQuestion(
+  const guideQuestion = findActiveQuestion(
     engine,
-    (question) => question.skillId === "MQ-048" && question.preview === false && question.scaffolded === false,
+    (question) => question.skillId === "MQ-048" && !question.preview && !question.scaffolded,
     { skillId: "MQ-048" },
   );
-  const practiceTokenGuideState = stateWithUi(
-    engine,
-    baseUi(practiceTokenQuestion, { phase: "physical" }),
+  await accept(
+    "MQ-048 practice-token guide",
+    stateWithUi(engine, baseUi(guideQuestion, { phase: "practice-token-guide" })),
   );
-  practiceTokenGuideState.skills["MQ-048"].acquisition = "LEARNING";
-  await accept("MQ-048 first-use visual guide resumes without changing the question", practiceTokenGuideState);
+  await rejectUi(
+    "non-MQ-048 practice-token guide",
+    baseUi(selection, { phase: "practice-token-guide" }),
+  );
+
+  const assertV2Migration = (label, state, expectedPhase) => {
+    const before = clone(state.activeSession);
+    const loaded = engine.loadState(JSON.stringify(state), 22_000);
+    assert.equal(loaded.ok, true, `${label} must load`);
+    assert.equal(loaded.migrated, true, `${label} must report migration`);
+    const expected = clone(before);
+    expected.uiState.version = engine.CONSTANTS.ACTIVE_UI_VERSION;
+    expected.uiState.phase = expectedPhase;
+    assert.deepEqual(
+      JSON.parse(JSON.stringify(loaded.state.activeSession)),
+      JSON.parse(JSON.stringify(expected)),
+      `${label} must preserve the exact active session`,
+    );
+  };
+  assertV2Migration(
+    "v2 generic physical checkpoint",
+    stateWithUi(engine, baseUi(selection, { version: 2, phase: "physical" })),
+    "question",
+  );
+  assertV2Migration(
+    "v2 MQ-048 physical checkpoint",
+    stateWithUi(engine, baseUi(guideQuestion, { version: 2, phase: "physical" })),
+    "practice-token-guide",
+  );
+  assertV2Migration(
+    "v2 ordinary question checkpoint",
+    stateWithUi(engine, baseUi(selection, { version: 2, phase: "question" })),
+    "question",
+  );
   const reteachQuestion = engine.makeQuestion({
     skillId: selection.skillId,
     tier: "EASY",
@@ -1248,7 +1279,7 @@ test("nested save snapshots validate every persisted discriminator", async (t) =
 
   for (const [name, mutate] of [
     ["not an object", () => "saved-ui"],
-    ["version", (ui) => { ui.version = 3; }],
+    ["version", (ui) => { ui.version = 4; }],
     ["screen", (ui) => { ui.screen = "home"; }],
     ["phase", (ui) => { ui.phase = "answer"; }],
     ["question type", (ui) => { ui.question = "question"; }],

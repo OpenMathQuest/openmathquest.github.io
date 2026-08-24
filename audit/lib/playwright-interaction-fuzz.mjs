@@ -46,7 +46,7 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES = Object.freeze([
     id: "advance",
     selector: [
       'button[data-action="choose-question"]',
-      'button[data-action="physical-done"]',
+      'button[data-action="practice-token-ready"]',
       'button[data-action="next"]',
       'button[data-action="one-more"]',
       'button[data-action="done-now"]',
@@ -54,7 +54,7 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES = Object.freeze([
     ].join(","),
     allowedDataActions: Object.freeze([
       "choose-question",
-      "physical-done",
+      "practice-token-ready",
       "next",
       "one-more",
       "done-now",
