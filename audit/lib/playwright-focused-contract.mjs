@@ -25,6 +25,7 @@ export const PLAYWRIGHT_FOCUSED_CASE_IDS = Object.freeze([
   "PW-F-11",
   "PW-F-12",
   "PW-F-13",
+  "PW-F-14",
 ]);
 
 export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([

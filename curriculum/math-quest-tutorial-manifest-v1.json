@@ -1,6 +1,6 @@
 {
   "manifestId": "math-quest-tutorials",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -70,7 +70,7 @@
   },
   "artDesignBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "02372941f80f174724e65770b6468d434391f1e5dd82551f06ed0f01d36a924d"
+    "sha256": "b84cb5b923ae9e5bac7622667316c37bb6d9ee2de0f5338b9b35c82aed2b46ea"
   },
   "differentExample": {
     "salt": "math-quest-different-example-v2",

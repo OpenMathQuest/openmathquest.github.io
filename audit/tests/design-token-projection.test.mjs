@@ -9,6 +9,7 @@ import {
   DESIGN_TOKEN_PROJECTED_VALUE_CLASSES,
   DESIGN_TOKEN_PROJECTION_CSS_PATH,
   designTokenProjectionProperties,
+  expectedRuntimeConsumers,
   expectedDesignTokenProjection,
   loadDesignTokenProjection,
   renderDesignTokenProjectionCss,
@@ -29,18 +30,19 @@ const fixture = async () => {
   return { tokens, cssBytes, releaseShell, runtimeSources: { "index.html": indexText } };
 };
 
-test("ART-MIG-02 projection is exact, collision-safe, linked, offline-bound, and consumer-free", async () => {
+test("ART-MIG-03 projection is exact, collision-safe, linked, offline-bound, and closed to its functional-art consumers", async () => {
   const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
   assert.deepEqual(validateDesignTokenProjection(tokens, cssBytes, { releaseShell, runtimeSources }), []);
   assert.equal(designTokenProjectionProperties(tokens).length, 63);
   assert.equal(new Set(designTokenProjectionProperties(tokens).map((record) => record.name)).size, 63);
   assert.deepEqual(tokens.projection.projectedValueClasses, DESIGN_TOKEN_PROJECTED_VALUE_CLASSES);
   assert.deepEqual(tokens.projection, expectedDesignTokenProjection(tokens));
+  assert.equal(expectedRuntimeConsumers(tokens).length, 15);
   assert.equal(cssBytes.toString("utf8"), renderDesignTokenProjectionCss(tokens));
-  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "TOKEN_PROJECTION_BYTE_VERIFIED");
+  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED");
 });
 
-test("[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, namespace consumers, and shell drift fail closed", async () => {
+test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {
   const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
   const cases = [
     {
@@ -57,7 +59,7 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, n
     },
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: { "index.html": `${sources["index.html"]}\n<style>#app{transform:translateX(var(${DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX}dimension-body-min))}</style>` } }),
-      pattern: /consumes or declares the reserved Conservatory/u,
+      pattern: /outside the ART-MIG-03 allowlisted style block/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({
@@ -65,7 +67,34 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, n
           "index.html": `${sources["index.html"]}\n<style>.future-only-state{transform:translateX(var(--mq-\\63onservatory-dimension-body-min))}</style>`,
         },
       }),
-      pattern: /consumes or declares the reserved Conservatory/u,
+      pattern: /outside the ART-MIG-03 allowlisted style block/u,
+    },
+    {
+      mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {
+        "index.html": sources["index.html"].replace(
+          "outline-color:var(--mq-conservatory-colour-action-focus)",
+          "outline-color:var(--mq-conservatory-colour-action-audio)",
+        ),
+      } }),
+      pattern: /do not equal the exact selector\/property\/token allowlist/u,
+    },
+    {
+      mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {
+        "index.html": sources["index.html"].replace(
+          "outline-color:var(--mq-conservatory-colour-action-focus)",
+          "border-color:var(--mq-conservatory-colour-action-focus)",
+        ),
+      } }),
+      pattern: /do not equal the exact selector\/property\/token allowlist/u,
+    },
+    {
+      mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {
+        "index.html": sources["index.html"].replace(
+          "outline-color:var(--mq-conservatory-colour-action-focus)",
+          "outline-color:#5B3CC4",
+        ),
+      } }),
+      pattern: /do not equal the exact selector\/property\/token allowlist/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({
@@ -130,6 +159,32 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, n
       releaseShell: mutated.releaseShell,
       runtimeSources: mutated.runtimeSources,
     }).join("\n"), pattern);
+  }
+});
+
+test("[NC-ART-FUNCTIONAL-SLICE-DRIFT] unlisted, retargeted, literal, and dynamic runtime consumers fail closed", async () => {
+  const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
+  const runtimeMutants = [
+    `${runtimeSources["index.html"]}\n<style>#app{transform:translateX(var(${DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX}dimension-body-min))}</style>`,
+    runtimeSources["index.html"].replace(
+      "outline-color:var(--mq-conservatory-colour-action-focus)",
+      "outline-color:var(--mq-conservatory-colour-action-audio)",
+    ),
+    runtimeSources["index.html"].replace(
+      "outline-color:var(--mq-conservatory-colour-action-focus)",
+      "border-color:var(--mq-conservatory-colour-action-focus)",
+    ),
+    runtimeSources["index.html"].replace(
+      "outline-color:var(--mq-conservatory-colour-action-focus)",
+      "outline-color:#5B3CC4",
+    ),
+    `${runtimeSources["index.html"]}\n<script>getComputedStyle(document.documentElement).getPropertyValue("--mq-conservatory-colour-action-focus")</script>`,
+  ];
+  for (const indexText of runtimeMutants) {
+    assert.notEqual(validateDesignTokenProjection(tokens, cssBytes, {
+      releaseShell,
+      runtimeSources: { "index.html": indexText },
+    }).length, 0);
   }
 });
 

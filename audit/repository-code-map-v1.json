@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -288,7 +288,7 @@
         "art-design.tokens.dimensions",
         "art-design.tokens.generated-projection-bytes",
         "art-design.tokens.motion",
-        "art-design.tokens.no-consumer-boundary",
+        "art-design.tokens.runtime-consumer-contract",
         "art-design.tokens.view-palettes"
       ],
       "copyPolicy": "DECLARED_PROJECTIONS_ONLY",

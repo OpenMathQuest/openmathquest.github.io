@@ -11,7 +11,7 @@
   "entries": [
     {
       "path": "./assets/design/math-quest-design-tokens-v1.css",
-      "sha256": "fdeeaf26802f677029dcbd85d20fffc92697d83a93eb987d6f48048c22da2c55",
+      "sha256": "975d2e5099552dbc1a173ac629662187520176a922e54547fec44ff7fdcedab2",
       "bytes": 3346,
       "mime": "text/css",
       "status": 200
@@ -74,8 +74,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "2262c52e57ea05c97caab1cd377e409070af8acfa4d7e3727dcce225e2bf976c",
-      "bytes": 1237837,
+      "sha256": "fb28013bd9276d0a1bc6d5ce4afe7d38317a8dc9c1c6c91b13fed55b4e1caea2",
+      "bytes": 1240800,
       "mime": "text/html",
       "status": 200
     },
@@ -88,7 +88,7 @@
     },
     {
       "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
-      "sha256": "c04d6cb95e6bf9f5506107c8104ae69964f0f63565a11a67dcca4b8462e2ea44",
+      "sha256": "10b3c252b5b6aebee01b29ffcb110dc25e2474b7e535f30a3022ab522e10bf4b",
       "bytes": 73387,
       "mime": "application/json",
       "status": 200

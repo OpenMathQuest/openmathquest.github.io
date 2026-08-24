@@ -62,8 +62,8 @@
       "kind": "attribution",
       "origin": "original-project",
       "licenceExpression": "MIT",
-      "purpose": "Original authorship, active no-consumer runtime status, generation boundary, and exact hashes for the canonical Conservatory token contract and stylesheet projection.",
-      "sha256": "8c416f2293a138eccbcb0d61948c3c01f88c7282d00b4cc62cb6dcdae85a0694"
+      "purpose": "Original authorship, closed ART-MIG-03 runtime consumer contract, generation boundary, and exact hashes for the canonical Conservatory token contract and stylesheet projection.",
+      "sha256": "b704cd3514ea74ab67962a9f508a666deee207743609d84bbee9532a133af21c"
     },
     {
       "path": "licenses/sound-effects.md",

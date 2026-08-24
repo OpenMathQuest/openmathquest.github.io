@@ -178,7 +178,7 @@ export async function validateRepositoryCodeMap(map, {
       "art-design.tokens.dimensions",
       "art-design.tokens.generated-projection-bytes",
       "art-design.tokens.motion",
-      "art-design.tokens.no-consumer-boundary",
+      "art-design.tokens.runtime-consumer-contract",
       "art-design.tokens.view-palettes",
     ]],
     ["art-design.source-decisions", [

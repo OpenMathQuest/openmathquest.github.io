@@ -209,9 +209,9 @@
       "paths": [
         "assets/design/math-quest-design-tokens-v1.json"
       ],
-      "sha256": "978c945f3f71682719c806ce25f37e151656c6f4d443f46306082220c2a541c0",
+      "sha256": "e7fc0c9828e27eb9345dca0fb98199869e62ebd1a6d407a3441cf5c3e1da2e8e",
       "licence": "MIT",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "creator": "Math Quest contributors",
       "copyright": "Math Quest contributors",
       "sourceUrl": "assets/design/math-quest-design-tokens-v1.json",
@@ -226,9 +226,9 @@
       "paths": [
         "assets/design/math-quest-design-tokens-v1.css"
       ],
-      "sha256": "fdeeaf26802f677029dcbd85d20fffc92697d83a93eb987d6f48048c22da2c55",
+      "sha256": "975d2e5099552dbc1a173ac629662187520176a922e54547fec44ff7fdcedab2",
       "licence": "MIT",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "creator": "Math Quest contributors",
       "copyright": "Math Quest contributors",
       "sourceUrl": "assets/design/math-quest-design-tokens-v1.css",

@@ -1,8 +1,8 @@
 {
   "designSystemId": "math-quest-conservatory",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "schemaVersion": 1,
-  "status": "RUNTIME_FOUNDATION_ACTIVE_NO_CONSUMERS",
+  "status": "RUNTIME_FUNCTIONAL_ART_SLICE_ACTIVE",
   "primaryConsumer": "AI_AGENT",
   "authority": "THIS_FILE",
   "licence": {
@@ -12,17 +12,20 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "3014000f3f0ad1797459110da3e3ac496b79d98750da05beb961d08c6df0c507"
+    "sha256": "b61c9ae18ed3670b98824dfa9d92b8af8fea380dd33b9ef4ba7c81bf01acc261"
   },
   "sourceDecisionIds": [
+    "ART-SRC-005",
     "ART-SRC-013",
+    "ART-SRC-014",
+    "ART-SRC-022",
     "ART-SRC-023",
     "ART-SRC-028",
     "ART-SRC-042",
     "ART-SRC-045"
   ],
   "projection": {
-    "state": "ACTIVATED_NO_CONSUMERS",
+    "state": "ACTIVATED_EXACT_CONSUMERS",
     "runtimeCssPath": "assets/design/math-quest-design-tokens-v1.css",
     "generatorPath": "tools/build-design-token-projection.mjs",
     "customPropertyPrefix": "--mq-conservatory-",
@@ -36,14 +39,149 @@
       "MOTION",
       "VIEW_PALETTES"
     ],
-    "consumerPolicy": "NO_RUNTIME_CUSTOM_PROPERTY_CONSUMERS_UNTIL_ART_MIG_03",
-    "renderedChangePolicy": "ZERO_RENDERED_CHANGE_ART_MIG_02",
-    "activationGate": "TOKEN_PROJECTION_BYTE_VERIFIED",
-    "semanticInputSha256": "29222e2273ce7fece04672819d8f1871abb62e5e7d9648e05d13391682d804f3",
-    "cssSha256": "fdeeaf26802f677029dcbd85d20fffc92697d83a93eb987d6f48048c22da2c55",
+    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_03",
+    "renderedChangePolicy": "FUNCTIONAL_ART_VERTICAL_SLICE_ONLY_ART_MIG_03",
+    "activationGate": "FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED",
+    "consumerContractSha256": "67f845f6d7bc5328d002cd9106d747417b7a5ca0f318a97a2e2dc06d147e0151",
+    "consumerRecordCount": 15,
+    "semanticInputSha256": "f2c2255cd4ae5ad787ecc2eacfea5ed7414ab587f6ee12fa9593bc232bfbc74a",
+    "cssSha256": "975d2e5099552dbc1a173ac629662187520176a922e54547fec44ff7fdcedab2",
     "cssBytes": 3346
   },
+  "runtimeConsumerContract": {
+    "id": "ART-MIG-03-FUNCTIONAL-ART-CONSUMERS",
+    "version": 1,
+    "sourcePath": "index.html",
+    "styleMarker": "style[data-mq-functional-art=\"ART-MIG-03\"]",
+    "mode": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST",
+    "records": [
+      {
+        "id": "consumer.focus.outline-colour",
+        "selector": ":focus-visible",
+        "cssProperty": "outline-color",
+        "tokenIds": [
+          "colour.action.focus"
+        ]
+      },
+      {
+        "id": "consumer.icon.colour",
+        "selector": ".mq-icon",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-dark",
+        "selector": ".mq-icon .icon-dark",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-default",
+        "selector": ".mq-icon .icon-fill",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.action.verdigris"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-light",
+        "selector": ".mq-icon .icon-light",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-warm",
+        "selector": ".mq-icon .icon-warm",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.resonance.colour",
+        "selector": ".resonance-disc",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.resonance.idle-core",
+        "selector": ".resonance-disc::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.state.neutral"
+        ]
+      },
+      {
+        "id": "consumer.resonance.speaking-core",
+        "selector": ".resonance-disc[data-speech-state=\"SPEAKING\"]::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.audio"
+        ]
+      },
+      {
+        "id": "consumer.resonance.surface",
+        "selector": ".resonance-disc",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.resonance.transition",
+        "selector": ".resonance-disc",
+        "cssProperty": "transition-duration",
+        "tokenIds": [
+          "motion.state-fade"
+        ]
+      },
+      {
+        "id": "consumer.selection-pill.background",
+        "selector": ".selected-state--labelled::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.selection-pill.colour",
+        "selector": ".selected-state--labelled::after",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.selection.hatch",
+        "selector": ".selected-state[aria-pressed=\"true\"]",
+        "cssProperty": "background-image",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.selection.inset",
+        "selector": ".selected-state[aria-pressed=\"true\"]",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      }
+    ]
+  },
   "orderingContract": [
+    {
+      "jsonPointer": "/runtimeConsumerContract/records",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
     {
       "jsonPointer": "/sourceDecisionIds",
       "policy": "LEXICOGRAPHIC"

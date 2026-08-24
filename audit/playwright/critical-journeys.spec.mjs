@@ -1,4 +1,8 @@
-import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import {
+  designTokenProjectionProperties,
+  expectedRuntimeConsumers,
+} from "../lib/design-token-projection.mjs";
 import {
   activate,
   answerPatternResponse,
@@ -18,6 +22,14 @@ import {
   test,
   visibleTutorialButton,
 } from "./fixtures.mjs";
+
+const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
+const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-03"]';
+const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
+  origin: FUNCTIONAL_ART_STYLE_ORIGIN,
+  ...record,
+})));
+const EXPECTED_PROJECTED_PROPERTIES = Object.freeze(designTokenProjectionProperties(DESIGN_TOKENS).map((record) => record.name));
 
 async function tutorialIdentity(page) {
   const panel = page.locator('[data-tutorial="different-example"]');
@@ -110,12 +122,12 @@ async function expectSelectedState(control, { labelled = false } = {}) {
     const marker = getComputedStyle(button, "::after");
     return {
       backgroundImage: style.backgroundImage,
-      outlineWidth: style.outlineWidth,
+      boxShadow: style.boxShadow,
       markerContent: marker.content,
     };
   });
   expect(presentation.backgroundImage).toContain("repeating-linear-gradient");
-  expect(Number.parseFloat(presentation.outlineWidth)).toBeGreaterThanOrEqual(4);
+  expect(presentation.boxShadow).toContain("inset");
   expect(presentation.markerContent).not.toContain("✓");
   if (labelled) expect(presentation.markerContent).toContain("Selected");
 }
@@ -552,52 +564,62 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await expect(page.locator("section.question .question-response")).toBeVisible();
 });
 
-test("[PW-F-13] activated design tokens load without changing rendered pixels until consumed", async ({ page }) => {
-  const projectionPath = "**/assets/design/math-quest-design-tokens-v1.css";
+test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-03 runtime consumers", async ({ page }) => {
   const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
-  const pixelDigest = async () => createHash("sha256")
-    .update(await page.screenshot({ animations: "disabled", caret: "hide", fullPage: true }))
-    .digest("hex");
   const settle = async () => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator("#app")).toBeVisible();
   };
-  const runtimeConsumerState = async () => page.evaluate(({ prefix, selector }) => {
-    const projectionLink = document.querySelector(selector);
+  const runtimeConsumerState = async () => page.evaluate(() => {
+    const projectionLink = document.querySelector('link[data-mq-design-token-projection="v1"]');
+    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-03"]');
+    const consumers = [];
+    const inaccessible = [];
+    const unparsed = [];
     const canonicalCss = (value) => String(value).replace(
       /\\([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?/giu,
       (_match, hex) => String.fromCodePoint(Number.parseInt(hex, 16)),
     ).toLowerCase();
-    const consumers = [];
-    const inaccessible = [];
-    const inspectStyle = (style, owner) => {
+    const inspectStyle = (style, selector, origin) => {
       for (let index = 0; index < style.length; index += 1) {
-        const property = style.item(index);
-        const declaration = canonicalCss(`${property}:${style.getPropertyValue(property)}`);
-        if (declaration.includes(prefix)) consumers.push(`${owner}:${property}`);
+        const cssProperty = style.item(index);
+        const value = style.getPropertyValue(cssProperty);
+        const tokenNames = [...value.matchAll(/var\(\s*(--mq-conservatory-[a-z0-9-]+)\s*\)/gu)].map((match) => match[1]);
+        if (tokenNames.length) consumers.push({ origin, selector: selector.toLowerCase(), cssProperty, tokenNames });
+        if (canonicalCss(cssProperty).includes("--mq-conservatory-")) unparsed.push(`${origin}:${selector}:${cssProperty}:custom-property-declaration`);
+        const namespaceUses = [...canonicalCss(value).matchAll(/--mq-conservatory-/gu)].length;
+        if (namespaceUses !== tokenNames.length) unparsed.push(`${origin}:${selector}:${cssProperty}:unparsed-namespace-use`);
       }
     };
-    const inspectRules = (rules, owner) => {
+    const inspectRules = (rules, origin) => {
       for (let index = 0; index < rules.length; index += 1) {
         const rule = rules[index];
-        if (canonicalCss(rule.cssText).includes(prefix)) consumers.push(`${owner}:rule-${index}:css-text`);
-        if (rule.style) inspectStyle(rule.style, `${owner}:rule-${index}`);
-        if (rule.cssRules) inspectRules(rule.cssRules, `${owner}:rule-${index}`);
+        if (rule.style) inspectStyle(rule.style, rule.selectorText || `@rule-${index}`, origin);
+        if (rule.cssRules) inspectRules(rule.cssRules, origin);
         if (rule.styleSheet) {
-          try { inspectRules(rule.styleSheet.cssRules, `${owner}:rule-${index}:import`); }
-          catch (error) { inaccessible.push(`${owner}:rule-${index}:import:${error.name}`); }
+          try { inspectRules(rule.styleSheet.cssRules, `${origin}:import-${index}`); }
+          catch (error) { inaccessible.push(`${origin}:import-${index}:${error.name}`); }
+        }
+        if (!rule.style && !rule.cssRules && !rule.styleSheet && canonicalCss(rule.cssText).includes("--mq-conservatory-")) {
+          unparsed.push(`${origin}:rule-${index}:unparsed-namespace-rule`);
         }
       }
     };
     [...document.styleSheets].forEach((sheet, index) => {
       if (sheet === projectionLink?.sheet) return;
-      try { inspectRules(sheet.cssRules, `sheet-${index}`); }
-      catch (error) { inaccessible.push(`sheet-${index}:${error.name}`); }
+      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-03"]' : `sheet-${index}`;
+      try { inspectRules(sheet.cssRules, origin); }
+      catch (error) { inaccessible.push(`${origin}:${error.name}`); }
     });
-    [...document.querySelectorAll("[style]")].forEach((element, index) => inspectStyle(element.style, `inline-${index}`));
-    return { consumers, inaccessible };
-  }, { prefix: "--mq-conservatory-", selector: projectionSelector });
+    [...document.querySelectorAll("[style]")].forEach((element, index) => inspectStyle(element.style, `inline-${index}`, "inline-style"));
+    consumers.sort((left, right) => `${left.origin}\u0000${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.origin}\u0000${right.selector}\u0000${right.cssProperty}`, "en"));
+    return {
+      consumers,
+      inaccessible: [...new Set(inaccessible)].sort(),
+      unparsed: [...new Set(unparsed)].sort(),
+    };
+  });
 
   await settle();
   await expect(page.locator(projectionSelector)).toHaveCount(1);
@@ -639,37 +661,230 @@ test("[PW-F-13] activated design tokens load without changing rendered pixels un
   expect(cssom.rootSelector).toBe(":root");
   expect(cssom.properties).toHaveLength(63);
   expect(cssom.namespaceClosed).toBe(true);
-  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
-  const futureConsumer = await page.addStyleTag({
+  expect([...cssom.properties].sort()).toEqual([...EXPECTED_PROJECTED_PROPERTIES].sort());
+  const expectedRuntimeState = { consumers: EXPECTED_RUNTIME_TOKEN_CONSUMERS, inaccessible: [], unparsed: [] };
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const unlistedConsumer = await page.addStyleTag({
     content: ".future-only-state{transform:translateX(var(--mq-conservatory-dimension-body-min))}",
   });
-  expect((await runtimeConsumerState()).consumers.length).toBeGreaterThan(0);
-  await futureConsumer.evaluate((element) => element.remove());
-  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
-  const futureProperty = await page.addStyleTag({
+  expect((await runtimeConsumerState()).consumers).toHaveLength(EXPECTED_RUNTIME_TOKEN_CONSUMERS.length + 1);
+  await unlistedConsumer.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  await page.locator("#app").evaluate((element) => { element.style.transform = "translateX(var(--mq-conservatory-dimension-body-min))"; });
+  expect((await runtimeConsumerState()).consumers).toHaveLength(EXPECTED_RUNTIME_TOKEN_CONSUMERS.length + 1);
+  await page.locator("#app").evaluate((element) => { element.style.transform = ""; });
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const unparsedProperty = await page.addStyleTag({
     content: "@property --mq-conservatory-future-length{syntax:'<length>';inherits:false;initial-value:0px}",
   });
-  expect((await runtimeConsumerState()).consumers.length).toBeGreaterThan(0);
-  await futureProperty.evaluate((element) => element.remove());
-  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
-  const activatedDigest = await pixelDigest();
+  expect((await runtimeConsumerState()).unparsed.length).toBeGreaterThan(0);
+  await unparsedProperty.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const resolvedValues = await page.evaluate((names) => Object.fromEntries(names.map((name) => [name, getComputedStyle(document.documentElement).getPropertyValue(name).trim()])), EXPECTED_PROJECTED_PROPERTIES);
+  expect(Object.keys(resolvedValues).sort()).toEqual([...EXPECTED_PROJECTED_PROPERTIES].sort());
+  expect(Object.values(resolvedValues).every((value) => value.length > 0)).toBe(true);
+});
 
-  await page.route(projectionPath, (route) => route.fulfill({
-    status: 200,
-    contentType: "text/css; charset=utf-8",
-    body: "",
-  }));
-  await settle();
-  const emptyProjectionDigest = await pixelDigest();
-  expect(activatedDigest).toBe(emptyProjectionDigest);
-  await page.unroute(projectionPath);
+test("[PW-F-14] functional art keeps identity, selection, focus, and speech status truthful", async ({ page }) => {
+  await page.addInitScript(() => {
+    const utterances = [];
+    let cancelCount = 0;
+    const voice = { default: true, lang: "en-CA", localService: true, name: "Math Quest Test Voice", voiceURI: "mq-test-voice" };
+    class TestUtterance { constructor(text) { this.text = String(text); this.lang = ""; this.rate = 1; this.voice = null; this.onstart = null; this.onend = null; this.onerror = null; } }
+    const synthesis = {
+      getVoices: () => [voice],
+      speak: (utterance) => { utterances.push(utterance); },
+      cancel: () => { cancelCount += 1; },
+      onvoiceschanged: null,
+    };
+    Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: TestUtterance });
+    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: synthesis });
+    Object.defineProperty(window, "__mqSpeechTest", { configurable: true, value: {
+      count: () => utterances.length,
+      cancelCount: () => cancelCount,
+      start: (index = utterances.length - 1) => utterances[index]?.onstart?.(),
+      end: (index = utterances.length - 1) => utterances[index]?.onend?.(),
+      error: (index = utterances.length - 1) => utterances[index]?.onerror?.({ error: "synthesis-failed" }),
+    } });
+  });
+  await openFreshHome(page);
 
-  await page.route(projectionPath, (route) => route.fulfill({
-    status: 200,
-    contentType: "text/css; charset=utf-8",
-    body: ":root{--mq-conservatory-negative-control:translateX(17px)}#app{transform:var(--mq-conservatory-negative-control)!important}",
+  const title = page.getByRole("heading", { name: "Math Quest", exact: true });
+  const rocket = page.locator('.brand-mark--inquiry svg[data-icon="rocket"]');
+  await expect(title).toBeVisible();
+  await expect(rocket).toHaveCount(1);
+  await expect(rocket).toHaveAttribute("aria-hidden", "true");
+  await expect(rocket).toHaveAttribute("focusable", "false");
+  const rocketBefore = await rocket.evaluate((element) => ({
+    body: element.innerHTML,
+    animation: getComputedStyle(element).animationName,
+    interactiveAncestor: Boolean(element.closest("button,a,[role=button]")),
+    width: element.getBoundingClientRect().width,
   }));
-  await settle();
-  const consumedProjectionDigest = await pixelDigest();
-  expect(consumedProjectionDigest).not.toBe(activatedDigest);
+  expect(rocketBefore.animation).toBe("none");
+  expect(rocketBefore.interactiveAncestor).toBe(false);
+  expect(rocketBefore.width).toBeLessThanOrEqual(44);
+
+  const forest = page.locator('[data-action="world"][data-world="forest"]');
+  await activate(forest, page);
+  await expectSelectedState(forest, { labelled: true });
+  await expect(rocket.evaluate((element) => element.innerHTML)).resolves.toBe(rocketBefore.body);
+  await tabUntilFocused(page, forest);
+  const focusAndSelection = await forest.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const marker = getComputedStyle(button, "::after");
+    const token = getComputedStyle(document.documentElement).getPropertyValue("--mq-conservatory-colour-action-focus").trim();
+    const probe = document.createElement("span");
+    probe.style.color = token;
+    document.body.append(probe);
+    const expectedFocusColour = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      expectedFocusColour,
+      focusColour: style.outlineColor,
+      focusWidth: Number.parseFloat(style.outlineWidth),
+      hatch: style.backgroundImage,
+      inset: style.boxShadow,
+      marker: marker.content,
+    };
+  });
+  expect(focusAndSelection.focusColour).toBe(focusAndSelection.expectedFocusColour);
+  expect(focusAndSelection.focusWidth).toBeGreaterThanOrEqual(5);
+  expect(focusAndSelection.hatch).toContain("repeating-linear-gradient");
+  expect(focusAndSelection.inset).toContain("inset");
+  expect(focusAndSelection.marker).toContain("Selected");
+
+  const governedSelection = await forest.evaluate((button) => {
+    const structuralTokenName = "--mq-conservatory-colour-ink-structural";
+    const surfaceTokenName = "--mq-conservatory-colour-surface-ivory";
+    const root = document.documentElement;
+    const previousStructural = root.style.getPropertyValue(structuralTokenName);
+    const previousSurface = root.style.getPropertyValue(surfaceTokenName);
+    root.style.setProperty(structuralTokenName, "rgb(1, 2, 3)");
+    root.style.setProperty(surfaceTokenName, "rgb(4, 5, 6)");
+    const style = getComputedStyle(button);
+    const marker = getComputedStyle(button, "::after");
+    const observed = {
+      hatch: style.backgroundImage,
+      inset: style.boxShadow,
+      markerColour: marker.color,
+      markerBackground: marker.backgroundColor,
+      markerBorder: marker.borderColor,
+    };
+    if (previousStructural) root.style.setProperty(structuralTokenName, previousStructural);
+    else root.style.removeProperty(structuralTokenName);
+    if (previousSurface) root.style.setProperty(surfaceTokenName, previousSurface);
+    else root.style.removeProperty(surfaceTokenName);
+    return observed;
+  });
+  expect(governedSelection.hatch).toContain("rgb(1, 2, 3)");
+  expect(governedSelection.inset).toContain("rgb(1, 2, 3)");
+  expect(governedSelection.markerColour).toBe("rgb(1, 2, 3)");
+  expect(governedSelection.markerBackground).toBe("rgb(4, 5, 6)");
+  expect(governedSelection.markerBorder).toBe("rgb(1, 2, 3)");
+
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await tabUntilFocused(page, forest);
+  const forcedState = await forest.evaluate((button) => ({
+    outlineWidth: Number.parseFloat(getComputedStyle(button).outlineWidth),
+    marker: getComputedStyle(button, "::after").content,
+  }));
+  expect(forcedState.outlineWidth).toBeGreaterThanOrEqual(4);
+  expect(forcedState.marker).toContain("Selected");
+  await page.emulateMedia({ forcedColors: "none", reducedMotion: "reduce" });
+
+  const replay = page.getByRole("button", { name: "Replay", exact: true });
+  const disc = replay.locator("[data-resonance-disc]");
+  await expect(replay).toBeVisible();
+  await expectMinimumTarget(replay);
+  await expect(disc).toHaveCount(1);
+  await expect(disc).toHaveAttribute("aria-hidden", "true");
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  await expect(page.locator("[data-resonance-disc][role],[data-resonance-disc][tabindex]" )).toHaveCount(0);
+  expect(await disc.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("none");
+  await expect(disc).toBeVisible();
+
+  await activate(replay, page);
+  expect(await page.evaluate(() => window.__mqSpeechTest.count())).toBe(1);
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  const speakingGeometry = await disc.evaluate((element) => ({
+    borderWidth: Number.parseFloat(getComputedStyle(element).borderWidth),
+    transitionDuration: getComputedStyle(element).transitionDuration,
+    innerInset: getComputedStyle(element, "::before").inset,
+  }));
+  expect(speakingGeometry.borderWidth).toBeGreaterThanOrEqual(6);
+  expect(speakingGeometry.transitionDuration).toBe("0s");
+  expect(speakingGeometry.innerInset).toBe("2px");
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+
+  await activate(replay, page);
+  await page.evaluate(() => { window.__mqSpeechTest.start(); window.__mqSpeechTest.error(); });
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+
+  await activate(replay, page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  const previousIndex = await page.evaluate(() => window.__mqSpeechTest.count() - 1);
+  await activate(replay, page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  await page.evaluate((index) => window.__mqSpeechTest.end(index), previousIndex);
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  expect(await page.evaluate(() => window.__mqSpeechTest.cancelCount())).toBeGreaterThan(0);
+
+  await activate(page.getByRole("button", { name: /Start/u }), page);
+  const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
+  if (await chooseQuestion.count()) await activate(chooseQuestion.first(), page);
+  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
+  if (await physicalDone.count()) await activate(physicalDone.first(), page);
+  await expect(page.locator("section.question")).toBeVisible();
+  const sessionReplayButtons = page.locator('button[data-action="replay"]');
+  const sessionDiscs = page.locator("[data-resonance-disc]");
+  expect(await sessionReplayButtons.count()).toBe(2);
+  expect(await sessionDiscs.count()).toBe(2);
+  const mobileReplay = page.locator('.mobile-session-toolbar button[data-action="replay"]');
+  if ((page.viewportSize()?.width || 0) <= 850) {
+    await expect(mobileReplay).toBeVisible();
+    expect(await mobileReplay.evaluate((button) => button.nextElementSibling?.getAttribute("data-action"))).toBe("tutorial");
+    const replayGeometry = await mobileReplay.evaluate((button) => {
+      const bounds = (element) => {
+        const rectangle = element.getBoundingClientRect();
+        return { left: rectangle.left, right: rectangle.right, top: rectangle.top, bottom: rectangle.bottom };
+      };
+      const buttonBounds = bounds(button);
+      const speaker = button.querySelector(".button-icon");
+      const resonance = button.querySelector("[data-resonance-disc]");
+      const tutorial = button.nextElementSibling instanceof HTMLElement ? button.nextElementSibling : null;
+      const tutorialBounds = tutorial ? bounds(tutorial) : null;
+      const overlapWidth = tutorialBounds ? Math.max(0, Math.min(buttonBounds.right, tutorialBounds.right) - Math.max(buttonBounds.left, tutorialBounds.left)) : 0;
+      const overlapHeight = tutorialBounds ? Math.max(0, Math.min(buttonBounds.bottom, tutorialBounds.bottom) - Math.max(buttonBounds.top, tutorialBounds.top)) : 0;
+      return {
+        buttonBounds,
+        childBounds: [speaker, resonance].filter(Boolean).map(bounds),
+        clientHeight: button.clientHeight,
+        clientWidth: button.clientWidth,
+        scrollHeight: button.scrollHeight,
+        scrollWidth: button.scrollWidth,
+        tutorialOverlapArea: overlapWidth * overlapHeight,
+      };
+    });
+    expect(replayGeometry.scrollWidth).toBeLessThanOrEqual(replayGeometry.clientWidth);
+    expect(replayGeometry.scrollHeight).toBeLessThanOrEqual(replayGeometry.clientHeight);
+    expect(replayGeometry.childBounds.every((child) => child.left >= replayGeometry.buttonBounds.left
+      && child.right <= replayGeometry.buttonBounds.right
+      && child.top >= replayGeometry.buttonBounds.top
+      && child.bottom <= replayGeometry.buttonBounds.bottom)).toBe(true);
+    expect(replayGeometry.tutorialOverlapArea).toBe(0);
+  } else {
+    await expect(mobileReplay).toBeHidden();
+  }
+  await activate(page.locator('button[data-action="replay"]:visible').first(), page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "SPEAKING"))).toBe(true);
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "IDLE"))).toBe(true);
 });

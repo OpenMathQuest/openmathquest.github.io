@@ -4,20 +4,22 @@
   "title": "Math Quest Conservatory design tokens v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["designSystemId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "decisionRegisterBinding", "sourceDecisionIds", "projection", "orderingContract", "contrastPolicy", "colours", "approvedTextPairings", "dimensions", "motion", "viewPalettes"],
+  "required": ["designSystemId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "decisionRegisterBinding", "sourceDecisionIds", "projection", "runtimeConsumerContract", "orderingContract", "contrastPolicy", "colours", "approvedTextPairings", "dimensions", "motion", "viewPalettes"],
   "properties": {
     "designSystemId": { "const": "math-quest-conservatory" },
     "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
     "schemaVersion": { "const": 1 },
-    "status": { "const": "RUNTIME_FOUNDATION_ACTIVE_NO_CONSUMERS" },
+    "status": { "const": "RUNTIME_FUNCTIONAL_ART_SLICE_ACTIVE" },
     "primaryConsumer": { "const": "AI_AGENT" },
     "authority": { "const": "THIS_FILE" },
     "licence": { "$ref": "#/$defs/licence" },
     "decisionRegisterBinding": { "$ref": "#/$defs/binding" },
     "sourceDecisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-SRC-[0-9]{3}$" } },
     "projection": { "$ref": "#/$defs/projection" },
+    "runtimeConsumerContract": { "$ref": "#/$defs/runtimeConsumerContract" },
     "orderingContract": {
       "const": [
+        { "jsonPointer": "/runtimeConsumerContract/records", "policy": "LEXICOGRAPHIC_BY_ID" },
         { "jsonPointer": "/sourceDecisionIds", "policy": "LEXICOGRAPHIC" },
         { "jsonPointer": "/colours", "policy": "LEXICOGRAPHIC_BY_ID" },
         { "jsonPointer": "/approvedTextPairings", "policy": "LEXICOGRAPHIC_BY_ID" },
@@ -59,21 +61,47 @@
     "projection": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["state", "runtimeCssPath", "generatorPath", "customPropertyPrefix", "runtimeLinkSelector", "runtimeConsumerPaths", "projectedValueClasses", "consumerPolicy", "renderedChangePolicy", "activationGate", "semanticInputSha256", "cssSha256", "cssBytes"],
+      "required": ["state", "runtimeCssPath", "generatorPath", "customPropertyPrefix", "runtimeLinkSelector", "runtimeConsumerPaths", "projectedValueClasses", "consumerPolicy", "renderedChangePolicy", "activationGate", "consumerContractSha256", "consumerRecordCount", "semanticInputSha256", "cssSha256", "cssBytes"],
       "properties": {
-        "state": { "const": "ACTIVATED_NO_CONSUMERS" },
+        "state": { "const": "ACTIVATED_EXACT_CONSUMERS" },
         "runtimeCssPath": { "const": "assets/design/math-quest-design-tokens-v1.css" },
         "generatorPath": { "const": "tools/build-design-token-projection.mjs" },
         "customPropertyPrefix": { "const": "--mq-conservatory-" },
         "runtimeLinkSelector": { "const": "link[data-mq-design-token-projection=\"v1\"]" },
         "runtimeConsumerPaths": { "const": ["index.html"] },
         "projectedValueClasses": { "const": ["COLOURS", "DIMENSIONS", "MOTION", "VIEW_PALETTES"] },
-        "consumerPolicy": { "const": "NO_RUNTIME_CUSTOM_PROPERTY_CONSUMERS_UNTIL_ART_MIG_03" },
-        "renderedChangePolicy": { "const": "ZERO_RENDERED_CHANGE_ART_MIG_02" },
-        "activationGate": { "const": "TOKEN_PROJECTION_BYTE_VERIFIED" },
+        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_03" },
+        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_VERTICAL_SLICE_ONLY_ART_MIG_03" },
+        "activationGate": { "const": "FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED" },
+        "consumerContractSha256": { "$ref": "#/$defs/sha256" },
+        "consumerRecordCount": { "const": 15 },
         "semanticInputSha256": { "$ref": "#/$defs/sha256" },
         "cssSha256": { "$ref": "#/$defs/sha256" },
         "cssBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "runtimeConsumerContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sourcePath", "styleMarker", "mode", "records"],
+      "properties": {
+        "id": { "const": "ART-MIG-03-FUNCTIONAL-ART-CONSUMERS" },
+        "version": { "const": 1 },
+        "sourcePath": { "const": "index.html" },
+        "styleMarker": { "const": "style[data-mq-functional-art=\"ART-MIG-03\"]" },
+        "mode": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST" },
+        "records": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/runtimeConsumerRecord" } }
+      }
+    },
+    "runtimeConsumerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "selector", "cssProperty", "tokenIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^consumer\\.[a-z0-9.-]+$" },
+        "selector": { "type": "string", "minLength": 1 },
+        "cssProperty": { "type": "string", "pattern": "^[a-z][a-z-]+$" },
+        "tokenIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^(colour|dimension|motion)\\.[a-z][a-z0-9.-]+$" } }
       }
     },
     "colour": {

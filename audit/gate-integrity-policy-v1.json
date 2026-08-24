@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -239,6 +239,16 @@
       "validatorPaths": ["audit/tests/art-design-governance.test.mjs", "audit/tests/design-token-projection.test.mjs"]
     },
     {
+      "id": "gate.art-functional-vertical-slice",
+      "claim": "ART_MIG_03_STATIC_ROCKET_LITERAL_ICONS_NON_COLOUR_SELECTION_FOCUS_AND_REAL_SPEECH_LIFECYCLE_RESONANCE_DISC_ARE_EXACT_AND_FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "AUTOMATED_RENDERING_ACCESSIBILITY_AND_SPEECH_CALLBACK_PROOFS_DO_NOT_CLAIM_CHILD_COMPREHENSION_REAL_DEVICE_AUDIO_QUALITY_OR_HUMAN_VISUAL_APPROVAL",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-ART-FUNCTIONAL-SLICE-DRIFT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-FUNCTIONAL-SLICE-DRIFT] unlisted, retargeted, literal, and dynamic runtime consumers fail closed" },
+      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/design-token-projection.mjs", "audit/playwright/critical-journeys.spec.mjs", "audit/schemas/design-tokens-v1.schema.json", "audit/tests/design-token-projection.test.mjs", "index.html"],
+      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/design-token-projection.test.mjs"]
+    },
+    {
       "id": "gate.art-migration-baseline",
       "claim": "ART_MIG_01_SOURCE_REVISION_FIXTURES_FEATURE_TUTORIAL_JOINS_AND_RETAINED_SANITIZED_RENDER_EVIDENCE_ARE_EXACTLY_BOUND",
       "proofClass": "BOUND_EVIDENCE_AND_EFFECT_SENSITIVE_BROWSER",
@@ -250,11 +260,11 @@
     },
     {
       "id": "gate.art-token-projection",
-      "claim": "ART_MIG_02_GENERATED_TOKEN_BYTES_NAMESPACE_EXACT_RELATIVE_RUNTIME_LINK_OFFLINE_SHELL_STATIC_SOURCE_AND_CSSOM_ZERO_CONSUMER_BOUNDARIES_ARE_EXACT",
+      "claim": "ART_MIG_03_GENERATED_TOKEN_BYTES_NAMESPACE_EXACT_RELATIVE_RUNTIME_LINK_OFFLINE_SHELL_STATIC_SOURCE_AND_CSSOM_CONSUMER_ALLOWLIST_ARE_EXACT",
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
-      "independenceBoundary": "INERT_PROJECTION_EQUIVALENCE_DOES_NOT_AUTHORIZE_ART_MIG_03_CONSUMERS_OR_CLAIM_HUMAN_PLAY_APPROVAL_AND_STATIC_SOURCE_PLUS_FOCUSED_BROWSER_ORACLES_DO_NOT_PROVE_ABSENCE_OF_INTENTIONALLY_OBFUSCATED_UNEXECUTED_JAVASCRIPT",
+      "independenceBoundary": "EXACT_PROJECTION_AND_CONSUMER_BINDING_DO_NOT_CLAIM_HUMAN_PLAY_APPROVAL_AND_STATIC_SOURCE_PLUS_FOCUSED_BROWSER_ORACLES_DO_NOT_PROVE_ABSENCE_OF_INTENTIONALLY_OBFUSCATED_UNEXECUTED_JAVASCRIPT",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, namespace consumers, and shell drift fail closed" },
+      "negativeControl": { "id": "NC-ART-TOKEN-PROJECTION-DRIFT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed" },
       "implementationPaths": [".github/workflows/pages.yml", "Serve-MathQuest.ps1", "assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit.html", "audit/lib/design-token-projection.mjs", "audit/run-audit.ps1", "audit/run-trusted-https-canary.mjs", "audit/test-launcher-identity.ps1", "index.html", "release-shell-v1.json", "sw.js", "tools/build-design-token-projection.mjs", "tools/build-pwa-release-manifest.mjs"],
       "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/design-token-projection.test.mjs"]
     },

@@ -1133,7 +1133,7 @@ test("QA-031 tutorials are operable only for active questions, reteaching, and i
     function home(){} function playgroundView(){} function placementView(){} function sessionView(){} function fatigueView(){}
     function capstoneView(){} function doneView(){} function grown(){} function parentLabViewV2(){} function parents(){}
     function renderRuntimeWarning(){} function renderPwaOverlay(){} function renderDestructiveOverlay(){}
-    function applySelectedStateIndicators(){}
+    function applySelectedStateIndicators(){} function applyFunctionalArt(){}
     function resumePendingPwaReloadAtBoundary(){} function checkPwaUpdateAtBoundary(){}
     ${extractFunction("tutorialAvailable")}
     ${extractFunction("applyTutorialAvailability")}

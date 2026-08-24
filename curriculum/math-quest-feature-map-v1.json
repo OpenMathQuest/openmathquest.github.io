@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-feature-map",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -38,11 +38,11 @@
   },
   "tutorialBinding": {
     "path": "curriculum/math-quest-tutorial-manifest-v1.json",
-    "sha256": "e4cc88b1f03b21c761db29d0a22f1d30698d464a8d152f3e03af1bb3b221c149"
+    "sha256": "be92387c97f74807861bd6ffebf546509776ef26eb403efe082dc99c514c0ce1"
   },
   "artDesignBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "02372941f80f174724e65770b6468d434391f1e5dd82551f06ed0f01d36a924d"
+    "sha256": "b84cb5b923ae9e5bac7622667316c37bb6d9ee2de0f5338b9b35c82aed2b46ea"
   },
   "proofKindCatalog": [
     { "kind": "a11y", "predicate": "ACCESSIBILITY_TREE_AND_TARGET_CONTRACT_HOLDS", "observationClass": "A11Y_TREE" },
