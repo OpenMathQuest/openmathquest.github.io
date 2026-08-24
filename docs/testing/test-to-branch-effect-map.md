@@ -314,7 +314,7 @@ fail safe to the broad development suite.
 `audit/playwright/critical-journeys.spec.mjs` supplements the exhaustive
 72-record browser audit with native, direct-user interactions. Each stable
 case runs in installed Microsoft Edge at 1366x768 desktop and 390x844 touch
-phone profiles, producing exactly 24 closed results. Playwright's ordinary
+phone profiles, producing exactly 32 closed results. Playwright's ordinary
 actionability checks must succeed; the suite forbids forced clicks, synthetic
 event dispatch, direct DOM `.click()`, and scripted `.focus()` as substitutes
 for real pointer or keyboard operation. Service workers are blocked for these
@@ -337,9 +337,10 @@ state.
 | `PW-F-10` | An open tutorial, exact step, source/example identity, and selected response survive a real reload and return to the original question intact. |
 | `PW-F-11` | Find Your Level retains Replay and Not sure but exposes no tutorial before or during placement, so the heuristic remains uncoached. |
 | `PW-F-12` | Native Tab and Enter reach and operate tutorial, Next, Previous, and Back controls without scripted focus or synthetic activation. |
-| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 63 collision-safe properties, and every ART-MIG-04 runtime use equals the closed selector/property/token allowlist; unlisted, dynamic, escaped, or inline consumers are detected. |
+| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 64 collision-safe properties, and every ART-MIG-05 runtime use equals the closed selector/property/token allowlist; unlisted, dynamic, escaped, or inline consumers are detected. |
 | `PW-F-14` | Functional rocket, focus, selected state, and Resonance Disc remain truthful and accessible through focus, forced-colour, reduced-motion, speech start/end/error/cancel/replacement, and the single session Replay control. |
 | `PW-F-15` | One question shell and one naturally ordered instrument rail preserve actual response controls → Confirm → Replay → Show me how → Stop across the six governed viewport sizes. DOM positions, individual CSS order, tab order, and exact visible/accessibility names are pinned, with no duplicates, hidden rail, clipped labels, undersized targets, nested scrolling, horizontal overflow, or overlap with mathematics. |
+| `PW-F-16` | One static observation zone precedes one interactive construction zone across all six governed viewport sizes and the exact 900/901/1023/1024px boundaries. Real selection, pattern-construction, and reteach questions prove static/reference-versus-interactive ownership, response → Confirm → rail order, touch-phone first-screen response/tutorial availability, natural stacking through 1023px, measured selection pairing from 1024px, non-colour boundary distinction, 44px targets, no zone overlap or horizontal overflow, no target-content clipping, and no nested question/support scrolling. |
 
 `audit/lib/playwright-focused-contract.mjs` rejects unknown, duplicate,
 missing, skipped, retried, wrong-project, failed, or privacy-unsafe reports.

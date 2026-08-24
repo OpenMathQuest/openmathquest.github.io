@@ -9,7 +9,7 @@
     "designSystemId": { "const": "math-quest-conservatory" },
     "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
     "schemaVersion": { "const": 1 },
-    "status": { "const": "RUNTIME_QUESTION_SHELL_ACTIVE" },
+    "status": { "const": "RUNTIME_QUESTION_ZONES_ACTIVE" },
     "primaryConsumer": { "const": "AI_AGENT" },
     "authority": { "const": "THIS_FILE" },
     "licence": { "$ref": "#/$defs/licence" },
@@ -70,11 +70,11 @@
         "runtimeLinkSelector": { "const": "link[data-mq-design-token-projection=\"v1\"]" },
         "runtimeConsumerPaths": { "const": ["index.html"] },
         "projectedValueClasses": { "const": ["COLOURS", "DIMENSIONS", "MOTION", "VIEW_PALETTES"] },
-        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04" },
-        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_AND_QUESTION_SHELL_ONLY_ART_MIG_04" },
-        "activationGate": { "const": "QUESTION_SHELL_PLAYWRIGHT_VERIFIED" },
+        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_05" },
+        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_QUESTION_SHELL_AND_QUESTION_ZONES_ONLY_ART_MIG_05" },
+        "activationGate": { "const": "ZONE_GEOMETRY_AND_HUMAN_LEGIBILITY_VERIFIED" },
         "consumerContractSha256": { "$ref": "#/$defs/sha256" },
-        "consumerRecordCount": { "const": 37 },
+        "consumerRecordCount": { "const": 63 },
         "semanticInputSha256": { "$ref": "#/$defs/sha256" },
         "cssSha256": { "$ref": "#/$defs/sha256" },
         "cssBytes": { "type": "integer", "minimum": 1 }
@@ -85,10 +85,10 @@
       "additionalProperties": false,
       "required": ["id", "version", "sourcePath", "styleMarker", "mode", "records"],
       "properties": {
-        "id": { "const": "ART-MIG-04-QUESTION-SHELL-CONSUMERS" },
-        "version": { "const": 2 },
+        "id": { "const": "ART-MIG-05-QUESTION-ZONE-CONSUMERS" },
+        "version": { "const": 3 },
         "sourcePath": { "const": "index.html" },
-        "styleMarker": { "const": "style[data-mq-functional-art=\"ART-MIG-04\"]" },
+        "styleMarker": { "const": "style[data-mq-functional-art=\"ART-MIG-05\"]" },
         "mode": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST" },
         "records": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/runtimeConsumerRecord" } }
       }

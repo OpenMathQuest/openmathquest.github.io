@@ -124,6 +124,18 @@ after any art-governance or governed-art change; unregistered, stale,
 unresolved, rejected, mathematically unproved, or directly projected source
 material fails closed.
 
+Before any new or materially revised art asset or visual treatment is pushed
+or integrated, present the owner with rendered evidence of the exact proposed
+revision, routes, states, modes, and governed viewports, and obtain the
+owner’s explicit approval. A prior approval, source-bundle claim, automated
+pass, or approval of a neighbouring migration does not authorize changed
+pixels or an unshown use.
+
+Every visual approval handoff MUST include matched before-and-after renders of
+the same route, state, mode, content, and viewport. Never ask the owner to infer
+a visual change from source code, an unmatched screenshot, or differently
+parameterized examples. Present both versions before requesting approval.
+
 ## Gate integrity
 
 `audit/gate-integrity-policy-v1.json` is the sole machine authority for gate

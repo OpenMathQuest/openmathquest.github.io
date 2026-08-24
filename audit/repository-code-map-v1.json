@@ -325,6 +325,7 @@
         "art-design.design-rules",
         "art-design.implementation-decisions",
         "art-design.migration-sequence",
+        "art-design.observation-construction-zones",
         "art-design.question-shell-and-instrument-rail",
         "art-design.source-dispositions",
         "art-design.theme-policy"
@@ -1040,6 +1041,24 @@
     },
     {
       "id": "art-question-shell.test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/tests/art-question-shell.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-zones.browser-test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-zones.runtime",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "art-question-zones.test",
       "source": "audit/lib/art-question-shell.mjs",
       "target": "audit/tests/art-question-shell.test.mjs",
       "kind": "TESTS"

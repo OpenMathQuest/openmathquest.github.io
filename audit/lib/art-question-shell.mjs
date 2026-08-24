@@ -2,6 +2,7 @@ const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
 export const ART_QUESTION_SHELL_ACTION_ORDER = Object.freeze(["replay", "tutorial", "stop"]);
 export const ART_QUESTION_SHELL_MINIMUM_TARGET_PX = 44;
+export const ART_QUESTION_ZONE_NARROW_MAX_PX = 1023;
 export const ART_QUESTION_SHELL_RAIL_LABELS = Object.freeze({
   replay: "Replay",
   tutorial: "? Show me how",
@@ -43,5 +44,42 @@ export function artQuestionShellIssues(snapshot) {
   if ((snapshot.documentScrollWidth || 0) > (snapshot.viewportWidth || 0) + 1) issues.push("question shell introduces horizontal document overflow");
   if (["auto", "scroll"].includes(snapshot.questionOverflowX) || ["auto", "scroll"].includes(snapshot.questionOverflowY)) issues.push("question shell creates a nested scroller");
   if ((snapshot.questionRailOverlapArea || 0) > 0) issues.push("instrument rail overlaps the mathematical question surface");
+  return Object.freeze(issues);
+}
+
+export function artQuestionZoneIssues(snapshot) {
+  const issues = [];
+  if (!snapshot || typeof snapshot !== "object") return Object.freeze(["question-zone snapshot is missing"]);
+  if (snapshot.layoutCount !== 1) issues.push(`question-zone layout count is ${snapshot.layoutCount}; expected 1`);
+  if (snapshot.observationCount !== 1) issues.push(`observation-zone count is ${snapshot.observationCount}; expected 1`);
+  if (snapshot.constructionCount !== 1) issues.push(`construction-zone count is ${snapshot.constructionCount}; expected 1`);
+  if (!snapshot.observationBeforeConstruction) issues.push("observation zone must precede construction zone in DOM order");
+  if (!snapshot.promptInObservation) issues.push("the prompt must remain in the observation zone");
+  if (snapshot.staticStimulusCount !== snapshot.staticStimulusInObservationCount) issues.push("every static answer-free stimulus must remain in the observation zone");
+  if (snapshot.referenceSupportCount !== snapshot.referenceSupportInObservationCount) issues.push("every reteach support block must remain in the observation zone");
+  if (snapshot.workedReferenceCount !== snapshot.workedReferenceInObservationCount) issues.push("every worked reference model must remain in the observation zone");
+  if (!snapshot.responseInConstruction) issues.push("the response region must remain in the construction zone");
+  if (!snapshot.confirmInConstruction) issues.push("Confirm must remain in the construction zone");
+  if (!snapshot.responseBeforeConfirm) issues.push("response controls must precede Confirm in DOM order");
+  if (!snapshot.confirmBeforeRail) issues.push("Confirm must precede the instrument rail in DOM order");
+  if (!Number.isInteger(snapshot.responseControlCount) || snapshot.responseControlCount < 1) issues.push("construction zone has no operable response control");
+  if (!snapshot.firstResponseDiscoverable) issues.push("the first response control is not visibly contained in the construction zone");
+  if (snapshot.requiresFirstScreenResponse && !snapshot.firstResponseOnFirstScreen) issues.push("the first response control is not discoverable on the first screen");
+  if (snapshot.requiresFirstScreenTutorial && !snapshot.tutorialActionOnFirstScreen) issues.push("the tutorial action is not discoverable on the first screen");
+  if (numericValues(snapshot.cssOrders).some((value) => value !== 0)) issues.push("CSS order repositions a governed zone or response control");
+  if (numericValues(snapshot.tabIndexes).some((value) => value !== 0)) issues.push("tab order removes or positively reorders a governed response control");
+  if ((snapshot.zoneOverlapArea || 0) > 0) issues.push("observation and construction zones overlap");
+  if (snapshot.expectedLayout === "STACKED" && !snapshot.stacked) issues.push("governed narrow viewport does not stack observation before construction");
+  if (snapshot.expectedLayout === "PAIRED" && !snapshot.paired) issues.push("governed wide selection viewport does not pair readable zones");
+  if (snapshot.observationBorderStyle === snapshot.constructionBorderStyle) issues.push("zones are distinguished by colour alone");
+  if (snapshot.observationBackground === snapshot.constructionBackground) issues.push("observation and construction surfaces are not visually distinct");
+  if ((snapshot.documentScrollWidth || 0) > (snapshot.viewportWidth || 0) + 1) issues.push("question zones introduce horizontal document overflow");
+  if ((snapshot.zoneScrollWidth || 0) > (snapshot.zoneClientWidth || 0) + 1) issues.push("question zones introduce horizontal internal overflow");
+  if ([snapshot.supportScrollOverflowX, snapshot.supportScrollOverflowY, snapshot.layoutOverflowX, snapshot.layoutOverflowY, snapshot.observationOverflowX, snapshot.observationOverflowY, snapshot.constructionOverflowX, snapshot.constructionOverflowY].some((value) => ["auto", "scroll"].includes(value))) issues.push("question zones create a nested scroller");
+  if ((snapshot.supportScrollWidth || 0) > (snapshot.supportClientWidth || 0) || (snapshot.supportScrollHeight || 0) > (snapshot.supportClientHeight || 0)) issues.push("question-zone support wrapper clips or scrolls its content");
+  for (const target of snapshot.targets || []) {
+    if (target.width < ART_QUESTION_SHELL_MINIMUM_TARGET_PX || target.height < ART_QUESTION_SHELL_MINIMUM_TARGET_PX) issues.push(`${target.action} target is below ${ART_QUESTION_SHELL_MINIMUM_TARGET_PX}px`);
+    if (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight) issues.push(`${target.action} content overflows its target`);
+  }
   return Object.freeze(issues);
 }

@@ -186,6 +186,7 @@ export async function validateRepositoryCodeMap(map, {
       "art-design.design-rules",
       "art-design.implementation-decisions",
       "art-design.migration-sequence",
+      "art-design.observation-construction-zones",
       "art-design.question-shell-and-instrument-rail",
       "art-design.source-dispositions",
       "art-design.theme-policy",
@@ -201,7 +202,7 @@ export async function validateRepositoryCodeMap(map, {
     if (!family || !sameJson(family.owns, ownedFacts)) issues.push(`${familyId} must own its complete closed art-design fact set.`);
     if (!family || !sameJson(family.validators, requiredArtValidators.get(familyId))) issues.push(`${familyId} must bind its complete focused art-design validator set.`);
   }
-  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-question-shell.browser-test", "art-question-shell.runtime", "art-question-shell.test", "art-token-projection.audit-oracle", "art-token-projection.browser", "art-token-projection.generator", "art-token-projection.runtime", "art-token-projection.schema", "art-token-projection.shell", "art-token-projection.test", "art-token-projection.tokens", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
+  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-question-shell.browser-test", "art-question-shell.runtime", "art-question-shell.test", "art-question-zones.browser-test", "art-question-zones.runtime", "art-question-zones.test", "art-token-projection.audit-oracle", "art-token-projection.browser", "art-token-projection.generator", "art-token-projection.runtime", "art-token-projection.schema", "art-token-projection.shell", "art-token-projection.test", "art-token-projection.tokens", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
   }
   const artMigrationFamily = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");

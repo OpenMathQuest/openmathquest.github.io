@@ -166,8 +166,8 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
   assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
-  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-04");
-  assert.equal(result.tokens.status, "RUNTIME_QUESTION_SHELL_ACTIVE");
+  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-05");
+  assert.equal(result.tokens.status, "RUNTIME_QUESTION_ZONES_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
   assert.equal(result.assets.version, "1.3.0");
   assert.equal(result.assets.records.length, 0);
@@ -194,12 +194,25 @@ test("construction workflow is complete, tiered, ordered, and applies to human o
 test("art implementation decisions are durable, ordered, cross-linked, and superseded explicitly", async () => {
   const entry = decisions.implementationDecisionLog.entries[0];
   const correction = decisions.implementationDecisionLog.entries[1];
+  const approval = decisions.implementationDecisionLog.entries[2];
+  const zones = decisions.implementationDecisionLog.entries[3];
+  const zoneApproval = decisions.implementationDecisionLog.entries[4];
   assert.equal(entry.id, "ART-DEC-001");
   assert.equal(entry.baseRevision, "f3a0c39b939d860c7531355489bddc1a0b4f3db9");
   assert.deepEqual(entry.affectedDesignRuleIds, ["ART-R-008", "ART-R-021"]);
   assert.equal(correction.id, "ART-DEC-002");
   assert.equal(correction.decisionId, "PRESERVE_LABELS_AND_BROWSER_INSPECTABLE_TOKEN_BINDINGS");
   assert.deepEqual(correction.affectedDesignRuleIds, ["ART-R-021"]);
+  assert.equal(approval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_04_RENDERED_HANDOFF");
+  assert.equal(approval.baseRevision, "0836f6f68abe648675fa02b091155801bceec2e6");
+  assert.equal(zones.migrationId, "ART-MIG-05");
+  assert.deepEqual(zones.affectedDesignRuleIds, ["ART-R-010", "ART-R-048"]);
+  assert.equal(zoneApproval.id, "ART-DEC-005");
+  assert.equal(zoneApproval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_05_RENDERED_HANDOFF");
+  assert.equal(zoneApproval.baseRevision, "0836f6f68abe648675fa02b091155801bceec2e6");
+  assert.ok(zoneApproval.adopted.includes("COMPARISON_SET_SHA256_CA16B30B5BA5F75E331391C7B7DB8A3F638C20CB5F19C64BA9E945A31ACDBAD2"));
+  assert.ok(zoneApproval.adopted.includes("AFTER_RETEACH_PHONE_SHA256_0A254D29620EC1BBBC51391E26890DD417CC71D7BCC99EB367616BD636E49743"));
+  assert.ok(zoneApproval.constraints.includes("ART_MIG_06_REQUIRES_NEW_HANDOFF"));
 
   const unknownRule = clone(decisions);
   unknownRule.implementationDecisionLog.entries[0].affectedDesignRuleIds = ["ART-R-999"];

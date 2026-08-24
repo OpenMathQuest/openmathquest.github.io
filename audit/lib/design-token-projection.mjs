@@ -117,7 +117,7 @@ export function renderDesignTokenProjectionCss(tokens) {
   const declarations = designTokenProjectionProperties(tokens)
     .map(({ name, value }) => `  ${name}: ${value};`)
     .join("\n");
-  return `/* GENERATED_FILE source=${DESIGN_TOKEN_SOURCE_PATH} generator=${DESIGN_TOKEN_PROJECTION_GENERATOR_PATH} semantic_input_sha256=${semanticSha256} projection_contract=ART_MIG_04_V2 */\n:root {\n${declarations}\n}\n`;
+  return `/* GENERATED_FILE source=${DESIGN_TOKEN_SOURCE_PATH} generator=${DESIGN_TOKEN_PROJECTION_GENERATOR_PATH} semantic_input_sha256=${semanticSha256} projection_contract=ART_MIG_05_V3 */\n:root {\n${declarations}\n}\n`;
 }
 
 export function expectedDesignTokenProjection(tokens) {
@@ -130,9 +130,9 @@ export function expectedDesignTokenProjection(tokens) {
     runtimeLinkSelector: DESIGN_TOKEN_RUNTIME_LINK_SELECTOR,
     runtimeConsumerPaths: DESIGN_TOKEN_RUNTIME_CONSUMER_PATHS,
     projectedValueClasses: DESIGN_TOKEN_PROJECTED_VALUE_CLASSES,
-    consumerPolicy: "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04",
-    renderedChangePolicy: "FUNCTIONAL_ART_AND_QUESTION_SHELL_ONLY_ART_MIG_04",
-    activationGate: "QUESTION_SHELL_PLAYWRIGHT_VERIFIED",
+    consumerPolicy: "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_05",
+    renderedChangePolicy: "FUNCTIONAL_ART_QUESTION_SHELL_AND_QUESTION_ZONES_ONLY_ART_MIG_05",
+    activationGate: "ZONE_GEOMETRY_AND_HUMAN_LEGIBILITY_VERIFIED",
     consumerContractSha256: designTokenConsumerContractSha256(tokens),
     consumerRecordCount: tokens.runtimeConsumerContract.records.length,
     semanticInputSha256: designTokenSemanticProjectionSha256(tokens),
@@ -199,7 +199,7 @@ function runtimeSourceUsesProjectionNamespace(source) {
 
 function functionalArtStyle(source) {
   const canonical = canonicalRuntimeSourceText(source);
-  const matches = [...canonical.matchAll(/<style\s+data-mq-functional-art=["']art-mig-04["']\s*>([\s\S]*?)<\/style>/gu)];
+  const matches = [...canonical.matchAll(/<style\s+data-mq-functional-art=["']art-mig-05["']\s*>([\s\S]*?)<\/style>/gu)];
   const markers = [...canonical.matchAll(/\bdata-mq-functional-art\b/gu)];
   if (matches.length !== 1 || markers.length !== 1) return null;
   return Object.freeze({ body: matches[0][1], full: matches[0][0], canonical });
@@ -236,15 +236,15 @@ export function expectedRuntimeConsumers(tokens) {
 export function validateDesignTokenRuntimeConsumers(tokens, source) {
   const issues = [];
   const markedStyle = functionalArtStyle(source);
-  if (!markedStyle) return Object.freeze(["index.html must contain exactly one closed ART-MIG-04 governed-art style block."]);
+  if (!markedStyle) return Object.freeze(["index.html must contain exactly one closed ART-MIG-05 governed-art style block."]);
   const outsideStyle = markedStyle.canonical.replace(markedStyle.full, "");
-  if (runtimeSourceUsesProjectionNamespace(outsideStyle)) issues.push("index.html consumes or declares the Conservatory namespace outside the ART-MIG-04 allowlisted style block.");
+  if (runtimeSourceUsesProjectionNamespace(outsideStyle)) issues.push("index.html consumes or declares the Conservatory namespace outside the ART-MIG-05 allowlisted style block.");
   const observed = observedRuntimeConsumers(markedStyle.body);
   const expected = expectedRuntimeConsumers(tokens);
   if (!same(observed, expected)) issues.push("index.html runtime token consumers do not equal the exact selector/property/token allowlist.");
   const declaredUseCount = [...markedStyle.body.matchAll(/--mq-conservatory-/gu)].length;
   const observedUseCount = observed.reduce((total, record) => total + record.tokenNames.length, 0);
-  if (declaredUseCount !== observedUseCount) issues.push("ART-MIG-04 governed-art style contains an unparsed or non-var Conservatory namespace use.");
+  if (declaredUseCount !== observedUseCount) issues.push("ART-MIG-05 governed-art style contains an unparsed or non-var Conservatory namespace use.");
   return Object.freeze(issues);
 }
 
@@ -292,7 +292,7 @@ export function validateDesignTokenProjection(tokens, cssBytes, {
     const normalized = normalizePath(runtimePath);
     if (normalized === tokens.runtimeConsumerContract.sourcePath) issues.push(...validateDesignTokenRuntimeConsumers(tokens, text));
     else if (runtimeSourceUsesProjectionNamespace(text)) issues.push(`${normalized} consumes or declares the Conservatory custom-property namespace without an allowlisted contract.`);
-    if (runtimeSourceCanDynamicallyReadOrAuthorCss(text)) issues.push(`${normalized} can dynamically read or author CSS outside the ART-MIG-04 closed consumer contract.`);
+    if (runtimeSourceCanDynamicallyReadOrAuthorCss(text)) issues.push(`${normalized} can dynamically read or author CSS outside the ART-MIG-05 closed consumer contract.`);
   }
   const pageText = runtimeSources["index.html"];
   if (typeof pageText !== "string" || !runtimeProjectionLinkIsClosed(pageText)) issues.push("index.html must contain exactly one closed design-token projection stylesheet link.");

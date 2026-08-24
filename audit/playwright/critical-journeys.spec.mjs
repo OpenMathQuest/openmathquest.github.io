@@ -3,7 +3,12 @@ import {
   designTokenProjectionProperties,
   expectedRuntimeConsumers,
 } from "../lib/design-token-projection.mjs";
-import { ART_QUESTION_SHELL_RAIL_LABELS, artQuestionShellIssues } from "../lib/art-question-shell.mjs";
+import {
+  ART_QUESTION_SHELL_RAIL_LABELS,
+  ART_QUESTION_ZONE_NARROW_MAX_PX,
+  artQuestionShellIssues,
+  artQuestionZoneIssues,
+} from "../lib/art-question-shell.mjs";
 import {
   activate,
   answerPatternResponse,
@@ -25,7 +30,7 @@ import {
 } from "./fixtures.mjs";
 
 const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
-const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-04"]';
+const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-05"]';
 const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
   origin: FUNCTIONAL_ART_STYLE_ORIGIN,
   ...record,
@@ -157,6 +162,120 @@ async function expectPatternResponseSingleRow(question) {
   const centers = [...geometry.source, ...geometry.slots].map((box) => box.centerY);
   expect(Math.max(...centers) - Math.min(...centers)).toBeLessThanOrEqual(2);
   expect(geometry.slots[0].left).toBeGreaterThanOrEqual(geometry.source.at(-1).right - 1);
+}
+
+async function questionZoneSnapshot(page, expectedLayout, {
+  requiresFirstScreenResponse = false,
+  requiresFirstScreenTutorial = false,
+} = {}) {
+  return page.evaluate(({ expectedLayout, requiresFirstScreenResponse, requiresFirstScreenTutorial }) => {
+    const question = document.querySelector('[data-art-question-shell="ART-MIG-04"]');
+    const layout = question?.querySelector('[data-art-zone-layout="ART-MIG-05"]') || null;
+    const supportScroll = layout?.closest(".support-scroll") || null;
+    const observation = layout?.querySelector(':scope > [data-art-question-zone="OBSERVATION"]') || null;
+    const construction = layout?.querySelector(':scope > [data-art-question-zone="CONSTRUCTION"]') || null;
+    const response = construction?.querySelector(".question-response") || null;
+    const answerRegion = response?.querySelector(".answer-controls") || null;
+    const confirm = response?.querySelector('button[data-action="confirm"]') || null;
+    const rail = document.querySelector('[data-art-instrument-rail="ART-MIG-04"]');
+    const tutorialAction = rail?.querySelector('button[data-action="tutorial"]:not([hidden])') || null;
+    const follows = (left, right) => Boolean(left && right && (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const rendered = (element) => {
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      const bounds = element.getBoundingClientRect();
+      return !element.hidden && style.display !== "none" && style.visibility !== "hidden" && bounds.width > 0 && bounds.height > 0;
+    };
+    const responseControls = answerRegion ? [...answerRegion.querySelectorAll("button,input,select,textarea,[tabindex]")]
+      .filter((element) => !element.disabled && rendered(element)) : [];
+    const firstResponse = responseControls[0] || null;
+    const observationBounds = observation?.getBoundingClientRect() || null;
+    const constructionBounds = construction?.getBoundingClientRect() || null;
+    const firstResponseBounds = firstResponse?.getBoundingClientRect() || null;
+    const tutorialActionBounds = tutorialAction?.getBoundingClientRect() || null;
+    const onFirstScreen = (bounds) => Boolean(bounds
+      && bounds.left >= -1
+      && bounds.right <= innerWidth + 1
+      && bounds.top >= -1
+      && bounds.bottom <= innerHeight + 1);
+    const overlapWidth = observationBounds && constructionBounds ? Math.max(0, Math.min(observationBounds.right, constructionBounds.right) - Math.max(observationBounds.left, constructionBounds.left)) : 0;
+    const overlapHeight = observationBounds && constructionBounds ? Math.max(0, Math.min(observationBounds.bottom, constructionBounds.bottom) - Math.max(observationBounds.top, constructionBounds.top)) : 0;
+    const observationStyle = observation ? getComputedStyle(observation) : null;
+    const constructionStyle = construction ? getComputedStyle(construction) : null;
+    const layoutStyle = layout ? getComputedStyle(layout) : null;
+    const supportScrollStyle = supportScroll ? getComputedStyle(supportScroll) : null;
+    const staticStimuli = question ? [...question.querySelectorAll('[data-answer-free="true"]')] : [];
+    const referenceSupports = question ? [...question.querySelectorAll(".question-support")] : [];
+    const workedReferences = question ? [...question.querySelectorAll('[data-worked-result="true"]')] : [];
+    const targetRecords = [...responseControls, ...(confirm ? [confirm] : [])].map((element) => ({
+      action: element.getAttribute("data-action") || element.getAttribute("data-response-action") || "answer",
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }));
+    return {
+      layoutCount: question?.querySelectorAll('[data-art-zone-layout="ART-MIG-05"]').length || 0,
+      observationCount: layout?.querySelectorAll(':scope > [data-art-question-zone="OBSERVATION"]').length || 0,
+      constructionCount: layout?.querySelectorAll(':scope > [data-art-question-zone="CONSTRUCTION"]').length || 0,
+      observationBeforeConstruction: follows(observation, construction),
+      promptInObservation: Boolean(observation?.contains(layout?.querySelector(".prompt"))),
+      staticStimulusCount: staticStimuli.length,
+      staticStimulusInObservationCount: staticStimuli.filter((element) => observation?.contains(element)).length,
+      referenceSupportCount: referenceSupports.length,
+      referenceSupportInObservationCount: referenceSupports.filter((element) => observation?.contains(element)).length,
+      workedReferenceCount: workedReferences.length,
+      workedReferenceInObservationCount: workedReferences.filter((element) => observation?.contains(element)).length,
+      responseInConstruction: Boolean(response && construction?.contains(response)),
+      confirmInConstruction: Boolean(confirm && construction?.contains(confirm)),
+      responseBeforeConfirm: responseControls.length > 0 && responseControls.every((control) => follows(control, confirm)),
+      confirmBeforeRail: follows(confirm, rail),
+      responseControlCount: responseControls.length,
+      firstResponseDiscoverable: Boolean(firstResponseBounds && constructionBounds
+        && firstResponseBounds.left >= constructionBounds.left - 1
+        && firstResponseBounds.right <= constructionBounds.right + 1
+        && firstResponseBounds.top >= constructionBounds.top - 1
+        && firstResponseBounds.bottom <= constructionBounds.bottom + 1),
+      requiresFirstScreenResponse,
+      firstResponseOnFirstScreen: onFirstScreen(firstResponseBounds),
+      requiresFirstScreenTutorial,
+      tutorialActionOnFirstScreen: rendered(tutorialAction) && onFirstScreen(tutorialActionBounds),
+      cssOrders: {
+        observation: Number.parseInt(observationStyle?.order || "0", 10),
+        construction: Number.parseInt(constructionStyle?.order || "0", 10),
+        response: responseControls.map((control) => Number.parseInt(getComputedStyle(control).order || "0", 10)),
+        confirm: Number.parseInt(confirm ? getComputedStyle(confirm).order : "0", 10),
+      },
+      tabIndexes: { response: responseControls.map((control) => control.tabIndex), confirm: confirm?.tabIndex ?? -1 },
+      zoneOverlapArea: overlapWidth * overlapHeight,
+      expectedLayout,
+      stacked: Boolean(observationBounds && constructionBounds && constructionBounds.top >= observationBounds.bottom - 1),
+      paired: Boolean(observationBounds && constructionBounds && constructionBounds.left >= observationBounds.right - 1 && overlapHeight > 0),
+      observationBorderStyle: observationStyle?.borderTopStyle || "missing",
+      constructionBorderStyle: constructionStyle?.borderTopStyle || "missing",
+      observationBackground: observationStyle?.backgroundColor || "missing",
+      constructionBackground: constructionStyle?.backgroundColor || "missing",
+      documentScrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: innerWidth,
+      zoneScrollWidth: layout?.scrollWidth || 0,
+      zoneClientWidth: layout?.clientWidth || 0,
+      supportScrollWidth: supportScroll?.scrollWidth || 0,
+      supportClientWidth: supportScroll?.clientWidth || 0,
+      supportScrollHeight: supportScroll?.scrollHeight || 0,
+      supportClientHeight: supportScroll?.clientHeight || 0,
+      supportScrollOverflowX: supportScrollStyle?.overflowX || "missing",
+      supportScrollOverflowY: supportScrollStyle?.overflowY || "missing",
+      layoutOverflowX: layoutStyle?.overflowX || "missing",
+      layoutOverflowY: layoutStyle?.overflowY || "missing",
+      observationOverflowX: observationStyle?.overflowX || "missing",
+      observationOverflowY: observationStyle?.overflowY || "missing",
+      constructionOverflowX: constructionStyle?.overflowX || "missing",
+      constructionOverflowY: constructionStyle?.overflowY || "missing",
+      targets: targetRecords,
+    };
+  }, { expectedLayout, requiresFirstScreenResponse, requiresFirstScreenTutorial });
 }
 
 async function waitForLabSettled(page) {
@@ -565,7 +684,7 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await expect(page.locator("section.question .question-response")).toBeVisible();
 });
 
-test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 runtime consumers", async ({ page }) => {
+test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-05 runtime consumers", async ({ page }) => {
   const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
   const settle = async () => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
@@ -574,7 +693,7 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 r
   };
   const runtimeConsumerState = async () => page.evaluate(() => {
     const projectionLink = document.querySelector('link[data-mq-design-token-projection="v1"]');
-    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-04"]');
+    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-05"]');
     const consumers = [];
     const inaccessible = [];
     const unparsed = [];
@@ -609,7 +728,7 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 r
     };
     [...document.styleSheets].forEach((sheet, index) => {
       if (sheet === projectionLink?.sheet) return;
-      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-04"]' : `sheet-${index}`;
+      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-05"]' : `sheet-${index}`;
       try { inspectRules(sheet.cssRules, origin); }
       catch (error) { inaccessible.push(`${origin}:${error.name}`); }
     });
@@ -660,7 +779,7 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 r
   expect(cssom.loaded).toBe(true);
   expect(cssom.ruleCount).toBe(1);
   expect(cssom.rootSelector).toBe(":root");
-  expect(cssom.properties).toHaveLength(63);
+  expect(cssom.properties).toHaveLength(64);
   expect(cssom.namespaceClosed).toBe(true);
   expect([...cssom.properties].sort()).toEqual([...EXPECTED_PROJECTED_PROPERTIES].sort());
   const expectedRuntimeState = { consumers: EXPECTED_RUNTIME_TOKEN_CONSUMERS, inaccessible: [], unparsed: [] };
@@ -980,4 +1099,60 @@ test("[PW-F-15] one question shell and instrument rail preserve natural order ac
       await expect(rail.getByRole("button", { name: label, exact: true })).toHaveCount(1);
     }
   }
+});
+
+test("[PW-F-16] observation and construction zones preserve semantics and responsive geometry", async ({ page }) => {
+  const selection = await openPreviewSelectionQuestion(page);
+  const touchProject = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+    { id: "stack-boundary-900", width: 900, height: 900 },
+    { id: "stack-boundary-901", width: 901, height: 900 },
+    { id: "stack-boundary-1023", width: 1023, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const expectedLayout = viewport.width <= ART_QUESTION_ZONE_NARROW_MAX_PX ? "STACKED" : "PAIRED";
+    const phoneFirstScreen = touchProject && viewport.id === "phone-portrait";
+    expect(artQuestionZoneIssues(await questionZoneSnapshot(page, expectedLayout, {
+      requiresFirstScreenResponse: phoneFirstScreen,
+      requiresFirstScreenTutorial: phoneFirstScreen,
+    })), viewport.id).toEqual([]);
+    await expect(selection.locator('[data-art-question-zone="OBSERVATION"]')).toBeVisible();
+    await expect(selection.locator('[data-art-question-zone="CONSTRUCTION"]')).toBeVisible();
+  }
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  const pattern = await openRegularPatternQuestion(page);
+  for (const viewport of [viewports[0], viewports.find(({ id }) => id === "desktop")]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const phoneFirstScreen = touchProject && viewport.id === "phone-portrait";
+    expect(artQuestionZoneIssues(await questionZoneSnapshot(page, "STACKED", {
+      requiresFirstScreenResponse: phoneFirstScreen,
+      requiresFirstScreenTutorial: phoneFirstScreen,
+    })), `interactive-${viewport.id}`).toEqual([]);
+    await expect(pattern.locator('[data-art-question-zone="CONSTRUCTION"] .pattern-build-task .math-model')).toBeVisible();
+    await expect(pattern.locator('[data-art-question-zone="OBSERVATION"] .pattern-build-task')).toHaveCount(0);
+  }
+
+  await page.setViewportSize({ width: viewports[0].width, height: viewports[0].height });
+  const responses = await patternResponsePlan(page);
+  await answerPatternResponse(page, responses.incorrect, "incorrect");
+  await activate(page.getByRole("button", { name: "Next", exact: true }), page);
+  const reteach = page.locator('section.question.phase-reteach[data-skill-id="MQ-004"]');
+  await expect(reteach).toBeVisible();
+  const reteachSnapshot = await questionZoneSnapshot(page, "STACKED", {
+    requiresFirstScreenResponse: touchProject,
+    requiresFirstScreenTutorial: touchProject,
+  });
+  expect(reteachSnapshot.referenceSupportCount).toBe(1);
+  expect(reteachSnapshot.referenceSupportInObservationCount).toBe(1);
+  expect(reteachSnapshot.workedReferenceCount).toBeGreaterThan(0);
+  expect(reteachSnapshot.workedReferenceInObservationCount).toBe(reteachSnapshot.workedReferenceCount);
+  expect(artQuestionZoneIssues(reteachSnapshot), "real-reteach-phone-portrait").toEqual([]);
 });

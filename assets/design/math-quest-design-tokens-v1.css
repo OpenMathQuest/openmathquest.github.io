@@ -1,4 +1,4 @@
-/* GENERATED_FILE source=assets/design/math-quest-design-tokens-v1.json generator=tools/build-design-token-projection.mjs semantic_input_sha256=a199bbe113233046808527be56d1c3850f02855876d039fa7911a3ddedff80d4 projection_contract=ART_MIG_04_V2 */
+/* GENERATED_FILE source=assets/design/math-quest-design-tokens-v1.json generator=tools/build-design-token-projection.mjs semantic_input_sha256=578d32f6b17a4eccadf7ef1adb118128a30cb0e7ff6126875846c1278ed22dbc projection_contract=ART_MIG_05_V3 */
 :root {
   --mq-conservatory-colour-action-audio: #2FD5E8;
   --mq-conservatory-colour-action-focus: #5B3CC4;
@@ -41,6 +41,7 @@
   --mq-conservatory-dimension-early-target-min: 64px;
   --mq-conservatory-dimension-instrument-rail: 280px;
   --mq-conservatory-dimension-phone-gutter: 12px;
+  --mq-conservatory-dimension-phone-stack-compact: 2px;
   --mq-conservatory-dimension-tablet-gutter: 18px;
   --mq-conservatory-motion-major-crossfade: 250ms;
   --mq-conservatory-motion-major-crossfade-reduced: 0ms;
