@@ -6,7 +6,7 @@ repository MIT License. The JSON file is the sole semantic authority for the
 Mathematical Conservatory and Workshop target tokens. The stylesheet is an
 exact machine-generated projection and must never be edited directly.
 
-The stylesheet is linked, served, and available offline. ART-MIG-03 permits
+The stylesheet is linked, served, and available offline. ART-MIG-04 permits
 only the selector/property/token triples in the JSON file's closed runtime
 consumer contract. The validator rejects unlisted consumers, changed token or
 property targets, literal substitutions, dynamic CSS access, and stale
@@ -15,5 +15,5 @@ feature, tutorial, accessibility, PWA, browser, and release gates.
 
 | Shipped file | Version | SHA-256 |
 |---|---|---|
-| `math-quest-design-tokens-v1.json` | `1.2.0` | `e7fc0c9828e27eb9345dca0fb98199869e62ebd1a6d407a3441cf5c3e1da2e8e` |
-| `math-quest-design-tokens-v1.css` | `1.1.0` | `975d2e5099552dbc1a173ac629662187520176a922e54547fec44ff7fdcedab2` |
+| `math-quest-design-tokens-v1.json` | `1.3.0` | `38955b8d911ff0e0b6520b3a5c2982272fcd639d70d0926bbf76b9fbb3c8f31a` |
+| `math-quest-design-tokens-v1.css` | `1.2.0` | `b64d33efdb25e1c24f716cb861b28f49a69fd40d1e391b191a08ad26204af372` |

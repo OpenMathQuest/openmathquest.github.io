@@ -30,16 +30,16 @@ const fixture = async () => {
   return { tokens, cssBytes, releaseShell, runtimeSources: { "index.html": indexText } };
 };
 
-test("ART-MIG-03 projection is exact, collision-safe, linked, offline-bound, and closed to its functional-art consumers", async () => {
+test("ART-MIG-04 projection is exact, collision-safe, linked, offline-bound, and closed to its governed consumers", async () => {
   const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
   assert.deepEqual(validateDesignTokenProjection(tokens, cssBytes, { releaseShell, runtimeSources }), []);
   assert.equal(designTokenProjectionProperties(tokens).length, 63);
   assert.equal(new Set(designTokenProjectionProperties(tokens).map((record) => record.name)).size, 63);
   assert.deepEqual(tokens.projection.projectedValueClasses, DESIGN_TOKEN_PROJECTED_VALUE_CLASSES);
   assert.deepEqual(tokens.projection, expectedDesignTokenProjection(tokens));
-  assert.equal(expectedRuntimeConsumers(tokens).length, 15);
+  assert.equal(expectedRuntimeConsumers(tokens).length, 37);
   assert.equal(cssBytes.toString("utf8"), renderDesignTokenProjectionCss(tokens));
-  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED");
+  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "QUESTION_SHELL_PLAYWRIGHT_VERIFIED");
 });
 
 test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {
@@ -59,7 +59,7 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
     },
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: { "index.html": `${sources["index.html"]}\n<style>#app{transform:translateX(var(${DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX}dimension-body-min))}</style>` } }),
-      pattern: /outside the ART-MIG-03 allowlisted style block/u,
+      pattern: /outside the ART-MIG-04 allowlisted style block/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({
@@ -67,7 +67,7 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
           "index.html": `${sources["index.html"]}\n<style>.future-only-state{transform:translateX(var(--mq-\\63onservatory-dimension-body-min))}</style>`,
         },
       }),
-      pattern: /outside the ART-MIG-03 allowlisted style block/u,
+      pattern: /outside the ART-MIG-04 allowlisted style block/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {

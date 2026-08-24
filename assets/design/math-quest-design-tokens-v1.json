@@ -1,8 +1,8 @@
 {
   "designSystemId": "math-quest-conservatory",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "schemaVersion": 1,
-  "status": "RUNTIME_FUNCTIONAL_ART_SLICE_ACTIVE",
+  "status": "RUNTIME_QUESTION_SHELL_ACTIVE",
   "primaryConsumer": "AI_AGENT",
   "authority": "THIS_FILE",
   "licence": {
@@ -12,12 +12,14 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "b61c9ae18ed3670b98824dfa9d92b8af8fea380dd33b9ef4ba7c81bf01acc261"
+    "sha256": "49eaaa97248deeacedffbf21b515ba8a904fa83c2df26ef64f7b39da39cd0671"
   },
   "sourceDecisionIds": [
     "ART-SRC-005",
+    "ART-SRC-008",
     "ART-SRC-013",
     "ART-SRC-014",
+    "ART-SRC-021",
     "ART-SRC-022",
     "ART-SRC-023",
     "ART-SRC-028",
@@ -39,20 +41,20 @@
       "MOTION",
       "VIEW_PALETTES"
     ],
-    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_03",
-    "renderedChangePolicy": "FUNCTIONAL_ART_VERTICAL_SLICE_ONLY_ART_MIG_03",
-    "activationGate": "FUNCTIONAL_ART_VERTICAL_SLICE_VERIFIED",
-    "consumerContractSha256": "67f845f6d7bc5328d002cd9106d747417b7a5ca0f318a97a2e2dc06d147e0151",
-    "consumerRecordCount": 15,
-    "semanticInputSha256": "f2c2255cd4ae5ad787ecc2eacfea5ed7414ab587f6ee12fa9593bc232bfbc74a",
-    "cssSha256": "975d2e5099552dbc1a173ac629662187520176a922e54547fec44ff7fdcedab2",
+    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04",
+    "renderedChangePolicy": "FUNCTIONAL_ART_AND_QUESTION_SHELL_ONLY_ART_MIG_04",
+    "activationGate": "QUESTION_SHELL_PLAYWRIGHT_VERIFIED",
+    "consumerContractSha256": "bb46f6f83507a69be903a919366fb5b7f369c2058c3ffe78345209c9554b313f",
+    "consumerRecordCount": 37,
+    "semanticInputSha256": "a199bbe113233046808527be56d1c3850f02855876d039fa7911a3ddedff80d4",
+    "cssSha256": "b64d33efdb25e1c24f716cb861b28f49a69fd40d1e391b191a08ad26204af372",
     "cssBytes": 3346
   },
   "runtimeConsumerContract": {
-    "id": "ART-MIG-03-FUNCTIONAL-ART-CONSUMERS",
-    "version": 1,
+    "id": "ART-MIG-04-QUESTION-SHELL-CONSUMERS",
+    "version": 2,
     "sourcePath": "index.html",
-    "styleMarker": "style[data-mq-functional-art=\"ART-MIG-03\"]",
+    "styleMarker": "style[data-mq-functional-art=\"ART-MIG-04\"]",
     "mode": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST",
     "records": [
       {
@@ -101,6 +103,182 @@
         "cssProperty": "fill",
         "tokenIds": [
           "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.background",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-bottom",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-left",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-right",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-top",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.content-max",
+        "selector": ".play-shell",
+        "cssProperty": "max-width",
+        "tokenIds": [
+          "dimension.content-max"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-column-gap",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "column-gap",
+        "tokenIds": [
+          "dimension.tablet-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-columns",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "grid-template-columns",
+        "tokenIds": [
+          "dimension.instrument-rail"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-row-gap",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "row-gap",
+        "tokenIds": [
+          "dimension.tablet-gutter"
+        ]
+      },
+      {
+        "id": "consumer.rail.background",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-bottom",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-left",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-right",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-top",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-background",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-bottom",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-left",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-right",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-top",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-target",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "min-height",
+        "tokenIds": [
+          "dimension.control-target-min"
+        ]
+      },
+      {
+        "id": "consumer.rail.progress-fill",
+        "selector": ".play-shell .instrument-rail .progress-fill",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.rail.progress-track",
+        "selector": ".play-shell .instrument-rail .progress-track",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
         ]
       },
       {

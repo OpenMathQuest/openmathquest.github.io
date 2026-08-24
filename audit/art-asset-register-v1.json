@@ -12,7 +12,7 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "b61c9ae18ed3670b98824dfa9d92b8af8fea380dd33b9ef4ba7c81bf01acc261"
+    "sha256": "49eaaa97248deeacedffbf21b515ba8a904fa83c2df26ef64f7b39da39cd0671"
   },
   "scope": {
     "governedPathPattern": "^assets/design/",

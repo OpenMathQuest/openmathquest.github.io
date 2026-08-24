@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -323,7 +323,9 @@
       "owns": [
         "art-design.construction-workflow",
         "art-design.design-rules",
+        "art-design.implementation-decisions",
         "art-design.migration-sequence",
+        "art-design.question-shell-and-instrument-rail",
         "art-design.source-dispositions",
         "art-design.theme-policy"
       ],
@@ -349,10 +351,16 @@
         {
           "path": "curriculum/math-quest-tutorial-manifest-v1.json",
           "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "index.html",
+          "relationship": "DOCUMENTED_REFERENCE"
         }
       ],
       "validators": [
-        "audit/tests/art-design-governance.test.mjs"
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/art-question-shell.test.mjs"
       ]
     },
     {
@@ -1017,6 +1025,24 @@
       "source": "audit/lib/art-migration-baseline.mjs",
       "target": "audit/validate-art-migration-baseline.mjs",
       "kind": "CONSUMES"
+    },
+    {
+      "id": "art-question-shell.browser-test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-shell.runtime",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "art-question-shell.test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/tests/art-question-shell.test.mjs",
+      "kind": "TESTS"
     },
     {
       "id": "art-token-projection.audit-oracle",

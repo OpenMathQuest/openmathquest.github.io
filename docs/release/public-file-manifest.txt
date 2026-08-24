@@ -58,6 +58,7 @@ audit/gate-integrity-policy-v1.json
 audit/install-reviewed-ci-dependencies.ps1
 audit/lib/art-design-governance.mjs
 audit/lib/art-migration-baseline.mjs
+audit/lib/art-question-shell.mjs
 audit/lib/bounded-audit-lanes.mjs
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
@@ -119,6 +120,7 @@ audit/tests/adapter-syntax.test.mjs
 audit/tests/agent-collaboration-policy.test.mjs
 audit/tests/art-design-governance.test.mjs
 audit/tests/art-migration-baseline.test.mjs
+audit/tests/art-question-shell.test.mjs
 audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs

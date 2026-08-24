@@ -7,6 +7,7 @@ import {
   DESIGN_TOKENS_PATH,
   contrastRatio,
   loadArtDesignGovernance,
+  validateArtDesignDecisionSchema,
   validateArtDesignGovernance,
 } from "../lib/art-design-governance.mjs";
 import { trackedRepositoryPaths } from "../lib/repository-code-map.mjs";
@@ -164,7 +165,9 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.themePolicy.scope, "ALL_USER_FACING_ROUTES");
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
-  assert.equal(result.tokens.status, "RUNTIME_FUNCTIONAL_ART_SLICE_ACTIVE");
+  assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
+  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-04");
+  assert.equal(result.tokens.status, "RUNTIME_QUESTION_SHELL_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
   assert.equal(result.assets.version, "1.3.0");
   assert.equal(result.assets.records.length, 0);
@@ -186,6 +189,29 @@ test("construction workflow is complete, tiered, ordered, and applies to human o
   assert.deepEqual(workflow.steps.map((record) => record.order), Array.from({ length: 53 }, (_, index) => index + 1));
   assert.equal(workflow.tiers.find((record) => record.id === "TIER_1").minimumApplicableSteps, 53);
   assert.deepEqual(decisions.migrationSequence.map((record) => record.order), Array.from({ length: 16 }, (_, index) => index + 1));
+});
+
+test("art implementation decisions are durable, ordered, cross-linked, and superseded explicitly", async () => {
+  const entry = decisions.implementationDecisionLog.entries[0];
+  const correction = decisions.implementationDecisionLog.entries[1];
+  assert.equal(entry.id, "ART-DEC-001");
+  assert.equal(entry.baseRevision, "f3a0c39b939d860c7531355489bddc1a0b4f3db9");
+  assert.deepEqual(entry.affectedDesignRuleIds, ["ART-R-008", "ART-R-021"]);
+  assert.equal(correction.id, "ART-DEC-002");
+  assert.equal(correction.decisionId, "PRESERVE_LABELS_AND_BROWSER_INSPECTABLE_TOKEN_BINDINGS");
+  assert.deepEqual(correction.affectedDesignRuleIds, ["ART-R-021"]);
+
+  const unknownRule = clone(decisions);
+  unknownRule.implementationDecisionLog.entries[0].affectedDesignRuleIds = ["ART-R-999"];
+  assert.match((await validateArtDesignGovernance(unknownRule, assets, tokens, actualOptions())).join("\n"), /references unknown design rule ART-R-999/u);
+
+  const falseSupersession = clone(decisions);
+  falseSupersession.implementationDecisionLog.entries[0].status = "SUPERSEDED";
+  assert.match((await validateArtDesignGovernance(falseSupersession, assets, tokens, actualOptions())).join("\n"), /status does not match the declared supersession graph/u);
+
+  const missingHistory = clone(decisions);
+  missingHistory.implementationDecisionLog.entries = [];
+  assert.match((await validateArtDesignDecisionSchema(missingHistory)).join("\n"), /must NOT have fewer than 1 items/u);
 });
 
 test("approved text pairings are independently recalculated and unsafe raw pairings are absent", () => {

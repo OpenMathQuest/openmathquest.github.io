@@ -337,7 +337,9 @@ state.
 | `PW-F-10` | An open tutorial, exact step, source/example identity, and selected response survive a real reload and return to the original question intact. |
 | `PW-F-11` | Find Your Level retains Replay and Not sure but exposes no tutorial before or during placement, so the heuristic remains uncoached. |
 | `PW-F-12` | Native Tab and Enter reach and operate tutorial, Next, Previous, and Back controls without scripted focus or synthetic activation. |
-| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 63 collision-safe properties; removing its unused declarations leaves exact screenshot bytes unchanged on desktop and phone, while an injected real consumer changes them. |
+| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 63 collision-safe properties, and every ART-MIG-04 runtime use equals the closed selector/property/token allowlist; unlisted, dynamic, escaped, or inline consumers are detected. |
+| `PW-F-14` | Functional rocket, focus, selected state, and Resonance Disc remain truthful and accessible through focus, forced-colour, reduced-motion, speech start/end/error/cancel/replacement, and the single session Replay control. |
+| `PW-F-15` | One question shell and one naturally ordered instrument rail preserve actual response controls → Confirm → Replay → Show me how → Stop across the six governed viewport sizes. DOM positions, individual CSS order, tab order, and exact visible/accessibility names are pinned, with no duplicates, hidden rail, clipped labels, undersized targets, nested scrolling, horizontal overflow, or overlap with mathematics. |
 
 `audit/lib/playwright-focused-contract.mjs` rejects unknown, duplicate,
 missing, skipped, retried, wrong-project, failed, or privacy-unsafe reports.

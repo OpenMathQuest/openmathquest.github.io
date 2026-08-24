@@ -107,6 +107,26 @@ function validateDecisionSemantics(decisions, issues) {
   const activeRuleKeys = rules.filter((rule) => rule.activation === "GOVERNANCE_ACTIVE").map((rule) => `${rule.scopeId}|${rule.propertyId}`);
   for (const duplicate of duplicates(activeRuleKeys)) issues.push(`active design rules conflict at ${duplicate}.`);
 
+  const implementationEntries = decisions.implementationDecisionLog.entries;
+  const implementationById = new Map(implementationEntries.map((record) => [record.id, record]));
+  const migrationIds = new Set(decisions.migrationSequence.map((record) => record.id));
+  if (!same(implementationEntries.map((record) => record.order), Array.from({ length: implementationEntries.length }, (_, index) => index + 1))) issues.push("implementationDecisionLog orders are not contiguous from 1.");
+  if (!same(implementationEntries.map((record) => record.id), implementationEntries.map((record) => `ART-DEC-${String(record.order).padStart(3, "0")}`))) issues.push("implementationDecisionLog ids do not match their order.");
+  for (const duplicate of duplicates(implementationEntries.map((record) => record.id))) issues.push(`implementationDecisionLog repeats id ${duplicate}.`);
+  const supersededIds = new Set(implementationEntries.flatMap((record) => record.supersedes));
+  for (const record of implementationEntries) {
+    if (!migrationIds.has(record.migrationId)) issues.push(`${record.id} references unknown migration ${record.migrationId}.`);
+    for (const id of record.affectedSourceDecisionIds) if (!sourceById.has(id)) issues.push(`${record.id} references unknown source decision ${id}.`);
+    for (const id of record.affectedDesignRuleIds) if (!rulesById.has(id)) issues.push(`${record.id} references unknown design rule ${id}.`);
+    for (const proof of record.requiredProofs) if (!ART_PROOF_IDS.has(proof)) issues.push(`${record.id} has unknown proof ${proof}.`);
+    for (const id of record.supersedes) {
+      const earlier = implementationById.get(id);
+      if (!earlier) issues.push(`${record.id} supersedes unknown implementation decision ${id}.`);
+      else if (earlier.order >= record.order) issues.push(`${record.id} may supersede only an earlier implementation decision.`);
+    }
+    if ((record.status === "SUPERSEDED") !== supersededIds.has(record.id)) issues.push(`${record.id} status does not match the declared supersession graph.`);
+  }
+
   const stages = decisions.constructionWorkflow.stages;
   if (!same(stages.map((record) => record.id), EXPECTED_STAGE_ORDER)) issues.push("constructionWorkflow stages do not equal the mandatory sequence.");
   if (!same(stages.map((record) => record.order), Array.from({ length: 13 }, (_, index) => index + 1))) issues.push("constructionWorkflow stage orders are not contiguous.");

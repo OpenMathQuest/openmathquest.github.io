@@ -20,6 +20,7 @@
     "constructionWorkflow",
     "sourceDecisions",
     "designRules",
+    "implementationDecisionLog",
     "migrationSequence"
   ],
   "properties": {
@@ -39,6 +40,7 @@
         { "jsonPointer": "/constructionWorkflow/steps", "policy": "ORDER_ASCENDING" },
         { "jsonPointer": "/sourceDecisions", "policy": "SOURCE_NUMBER_ASCENDING" },
         { "jsonPointer": "/designRules", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/implementationDecisionLog/entries", "policy": "ORDER_ASCENDING_APPEND_ONLY" },
         { "jsonPointer": "/migrationSequence", "policy": "ORDER_ASCENDING" }
       ]
     },
@@ -62,6 +64,7 @@
       "minItems": 1,
       "items": { "$ref": "#/$defs/designRule" }
     },
+    "implementationDecisionLog": { "$ref": "#/$defs/implementationDecisionLog" },
     "migrationSequence": {
       "type": "array",
       "minItems": 16,
@@ -71,6 +74,7 @@
   },
   "$defs": {
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gitCommit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
     "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
     "ruleId": { "type": "string", "pattern": "^ART-R-[0-9]{3}$" },
     "decisionId": { "type": "string", "pattern": "^ART-SRC-[0-9]{3}$" },
@@ -107,7 +111,7 @@
       "additionalProperties": false,
       "required": ["normativeFields", "rationalePolicy", "conflictPolicy", "unknownPolicy", "mockupPolicy", "runtimeActivationPolicy"],
       "properties": {
-        "normativeFields": { "const": ["designRules[].predicate", "designRules[].constraints", "themePolicy", "constructionWorkflow", "migrationSequence"] },
+        "normativeFields": { "const": ["designRules[].predicate", "designRules[].constraints", "implementationDecisionLog.entries[].decisionId", "implementationDecisionLog.entries[].constraints", "themePolicy", "constructionWorkflow", "migrationSequence"] },
         "rationalePolicy": { "const": "NON_NORMATIVE_LOCAL_EXPLANATION_NEVER_OVERRIDES_PREDICATE" },
         "conflictPolicy": { "const": "REPOSITORY_OWNER_CONTRACTS_OVERRIDE_SOURCE_BUNDLE" },
         "unknownPolicy": { "const": "FAIL_CLOSED" },
@@ -235,6 +239,41 @@
         "rationale": { "type": "string", "minLength": 20 },
         "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
         "requiredProofs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] } }
+      }
+    },
+    "implementationDecisionLog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logId", "authority", "appendPolicy", "supersessionPolicy", "entries"],
+      "properties": {
+        "logId": { "const": "math-quest-art-implementation-decisions" },
+        "authority": { "const": "THIS_FILE" },
+        "appendPolicy": { "const": "APPEND_ONLY_ORDER_ASCENDING" },
+        "supersessionPolicy": { "const": "LATER_ENTRY_MUST_REFERENCE_EARLIER_ENTRY_AND_EARLIER_STATUS_MUST_BE_SUPERSEDED" },
+        "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/implementationDecision" } }
+      }
+    },
+    "implementationDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "migrationId", "baseRevision", "status", "scopeId", "decisionId", "affectedSourceDecisionIds", "affectedDesignRuleIds", "adopted", "rejected", "constraints", "rationale", "falsePassPrevented", "requiredProofs", "supersedes"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-DEC-[0-9]{3}$" },
+        "order": { "type": "integer", "minimum": 1 },
+        "migrationId": { "type": "string", "pattern": "^ART-MIG-(?:0[1-9]|1[0-6])$" },
+        "baseRevision": { "$ref": "#/$defs/gitCommit" },
+        "status": { "enum": ["ACTIVE", "SUPERSEDED"] },
+        "scopeId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "decisionId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "affectedSourceDecisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/decisionId" } },
+        "affectedDesignRuleIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/ruleId" } },
+        "adopted": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rejected": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "constraints": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rationale": { "type": "string", "minLength": 20 },
+        "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "requiredProofs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] } },
+        "supersedes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-DEC-[0-9]{3}$" } }
       }
     },
     "migrationStep": {

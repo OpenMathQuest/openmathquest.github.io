@@ -3,6 +3,7 @@ import {
   designTokenProjectionProperties,
   expectedRuntimeConsumers,
 } from "../lib/design-token-projection.mjs";
+import { ART_QUESTION_SHELL_RAIL_LABELS, artQuestionShellIssues } from "../lib/art-question-shell.mjs";
 import {
   activate,
   answerPatternResponse,
@@ -24,7 +25,7 @@ import {
 } from "./fixtures.mjs";
 
 const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
-const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-03"]';
+const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-04"]';
 const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
   origin: FUNCTIONAL_ART_STYLE_ORIGIN,
   ...record,
@@ -564,7 +565,7 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await expect(page.locator("section.question .question-response")).toBeVisible();
 });
 
-test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-03 runtime consumers", async ({ page }) => {
+test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 runtime consumers", async ({ page }) => {
   const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
   const settle = async () => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
@@ -573,7 +574,7 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-03 r
   };
   const runtimeConsumerState = async () => page.evaluate(() => {
     const projectionLink = document.querySelector('link[data-mq-design-token-projection="v1"]');
-    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-03"]');
+    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-04"]');
     const consumers = [];
     const inaccessible = [];
     const unparsed = [];
@@ -608,7 +609,7 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-03 r
     };
     [...document.styleSheets].forEach((sheet, index) => {
       if (sheet === projectionLink?.sheet) return;
-      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-03"]' : `sheet-${index}`;
+      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-04"]' : `sheet-${index}`;
       try { inspectRules(sheet.cssRules, origin); }
       catch (error) { inaccessible.push(`${origin}:${error.name}`); }
     });
@@ -844,47 +845,139 @@ test("[PW-F-14] functional art keeps identity, selection, focus, and speech stat
   await expect(page.locator("section.question")).toBeVisible();
   const sessionReplayButtons = page.locator('button[data-action="replay"]');
   const sessionDiscs = page.locator("[data-resonance-disc]");
-  expect(await sessionReplayButtons.count()).toBe(2);
-  expect(await sessionDiscs.count()).toBe(2);
-  const mobileReplay = page.locator('.mobile-session-toolbar button[data-action="replay"]');
-  if ((page.viewportSize()?.width || 0) <= 850) {
-    await expect(mobileReplay).toBeVisible();
-    expect(await mobileReplay.evaluate((button) => button.nextElementSibling?.getAttribute("data-action"))).toBe("tutorial");
-    const replayGeometry = await mobileReplay.evaluate((button) => {
-      const bounds = (element) => {
-        const rectangle = element.getBoundingClientRect();
-        return { left: rectangle.left, right: rectangle.right, top: rectangle.top, bottom: rectangle.bottom };
-      };
-      const buttonBounds = bounds(button);
-      const speaker = button.querySelector(".button-icon");
-      const resonance = button.querySelector("[data-resonance-disc]");
-      const tutorial = button.nextElementSibling instanceof HTMLElement ? button.nextElementSibling : null;
-      const tutorialBounds = tutorial ? bounds(tutorial) : null;
-      const overlapWidth = tutorialBounds ? Math.max(0, Math.min(buttonBounds.right, tutorialBounds.right) - Math.max(buttonBounds.left, tutorialBounds.left)) : 0;
-      const overlapHeight = tutorialBounds ? Math.max(0, Math.min(buttonBounds.bottom, tutorialBounds.bottom) - Math.max(buttonBounds.top, tutorialBounds.top)) : 0;
-      return {
-        buttonBounds,
-        childBounds: [speaker, resonance].filter(Boolean).map(bounds),
-        clientHeight: button.clientHeight,
-        clientWidth: button.clientWidth,
-        scrollHeight: button.scrollHeight,
-        scrollWidth: button.scrollWidth,
-        tutorialOverlapArea: overlapWidth * overlapHeight,
-      };
-    });
-    expect(replayGeometry.scrollWidth).toBeLessThanOrEqual(replayGeometry.clientWidth);
-    expect(replayGeometry.scrollHeight).toBeLessThanOrEqual(replayGeometry.clientHeight);
-    expect(replayGeometry.childBounds.every((child) => child.left >= replayGeometry.buttonBounds.left
-      && child.right <= replayGeometry.buttonBounds.right
-      && child.top >= replayGeometry.buttonBounds.top
-      && child.bottom <= replayGeometry.buttonBounds.bottom)).toBe(true);
-    expect(replayGeometry.tutorialOverlapArea).toBe(0);
-  } else {
-    await expect(mobileReplay).toBeHidden();
-  }
+  expect(await sessionReplayButtons.count()).toBe(1);
+  expect(await sessionDiscs.count()).toBe(1);
+  const railReplay = page.locator('.instrument-rail button[data-action="replay"]');
+  await expect(railReplay).toBeVisible();
+  expect(await railReplay.evaluate((button) => button.nextElementSibling?.getAttribute("data-action"))).toBe("tutorial");
+  const replayGeometry = await railReplay.evaluate((button) => {
+    const bounds = (element) => {
+      const rectangle = element.getBoundingClientRect();
+      return { left: rectangle.left, right: rectangle.right, top: rectangle.top, bottom: rectangle.bottom };
+    };
+    const buttonBounds = bounds(button);
+    const speaker = button.querySelector(".button-icon");
+    const resonance = button.querySelector("[data-resonance-disc]");
+    const tutorial = button.nextElementSibling instanceof HTMLElement ? button.nextElementSibling : null;
+    const tutorialBounds = tutorial ? bounds(tutorial) : null;
+    const overlapWidth = tutorialBounds ? Math.max(0, Math.min(buttonBounds.right, tutorialBounds.right) - Math.max(buttonBounds.left, tutorialBounds.left)) : 0;
+    const overlapHeight = tutorialBounds ? Math.max(0, Math.min(buttonBounds.bottom, tutorialBounds.bottom) - Math.max(buttonBounds.top, tutorialBounds.top)) : 0;
+    return {
+      buttonBounds,
+      childBounds: [speaker, resonance].filter(Boolean).map(bounds),
+      clientHeight: button.clientHeight,
+      clientWidth: button.clientWidth,
+      scrollHeight: button.scrollHeight,
+      scrollWidth: button.scrollWidth,
+      tutorialOverlapArea: overlapWidth * overlapHeight,
+    };
+  });
+  expect(replayGeometry.scrollWidth).toBeLessThanOrEqual(replayGeometry.clientWidth);
+  expect(replayGeometry.scrollHeight).toBeLessThanOrEqual(replayGeometry.clientHeight);
+  expect(replayGeometry.childBounds.every((child) => child.left >= replayGeometry.buttonBounds.left
+    && child.right <= replayGeometry.buttonBounds.right
+    && child.top >= replayGeometry.buttonBounds.top
+    && child.bottom <= replayGeometry.buttonBounds.bottom)).toBe(true);
+  expect(replayGeometry.tutorialOverlapArea).toBe(0);
   await activate(page.locator('button[data-action="replay"]:visible').first(), page);
   await page.evaluate(() => window.__mqSpeechTest.start());
   await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "SPEAKING"))).toBe(true);
   await page.evaluate(() => window.__mqSpeechTest.end());
   await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "IDLE"))).toBe(true);
+});
+
+test("[PW-F-15] one question shell and instrument rail preserve natural order across governed viewports", async ({ page }) => {
+  const question = await openPreviewSelectionQuestion(page);
+  const ids = await optionIdsForCurrentQuestion(page);
+  await activate(question.locator(`[data-action="select"][data-id="${ids.correct}"]`), page);
+  await expect(question.getByRole("button", { name: "Confirm", exact: true })).toBeEnabled();
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const snapshot = await page.evaluate(() => {
+      const question = document.querySelector('[data-art-question-shell="ART-MIG-04"]');
+      const rail = document.querySelector('[data-art-instrument-rail="ART-MIG-04"]');
+      const response = question?.querySelector(".question-response") || null;
+      const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+      const answerRegion = response?.querySelector(".answer-controls") || null;
+      const confirmContainer = confirm?.closest(".question-submit") || null;
+      const follows = (left, right) => Boolean(left && right && (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const rendered = (element) => {
+        const style = getComputedStyle(element);
+        const bounds = element.getBoundingClientRect();
+        return !element.hidden && style.display !== "none" && style.visibility !== "hidden" && bounds.width > 0 && bounds.height > 0;
+      };
+      const responseControls = answerRegion ? [...answerRegion.querySelectorAll("button,input,select,textarea,[tabindex]")]
+        .filter((element) => !element.disabled && rendered(element)) : [];
+      const actionCounts = Object.fromEntries(["replay", "tutorial", "stop"].map((action) => [action, document.querySelectorAll(`button[data-action="${action}"]`).length]));
+      const railActions = rail ? [...rail.querySelectorAll("button[data-action]")] : [];
+      const questionBounds = question?.getBoundingClientRect() || null;
+      const railBounds = rail?.getBoundingClientRect() || null;
+      const overlapWidth = questionBounds && railBounds ? Math.max(0, Math.min(questionBounds.right, railBounds.right) - Math.max(questionBounds.left, railBounds.left)) : 0;
+      const overlapHeight = questionBounds && railBounds ? Math.max(0, Math.min(questionBounds.bottom, railBounds.bottom) - Math.max(questionBounds.top, railBounds.top)) : 0;
+      const questionStyle = question ? getComputedStyle(question) : null;
+      const railStyle = rail ? getComputedStyle(rail) : null;
+      return {
+        questionCount: document.querySelectorAll('[data-art-question-shell="ART-MIG-04"]').length,
+        railCount: document.querySelectorAll('[data-art-instrument-rail="ART-MIG-04"]').length,
+        actionCounts,
+        questionBeforeRail: follows(question, rail),
+        responseControlCount: responseControls.length,
+        responseRegionBeforeConfirm: follows(answerRegion, confirm),
+        responseControlsBeforeConfirm: responseControls.length > 0 && responseControls.every((control) => follows(control, confirm)),
+        confirmBeforeRail: follows(confirm, rail),
+        railActionOrder: railActions.map((button) => button.getAttribute("data-action")),
+        railLabels: railActions.map((button) => ({
+          action: button.getAttribute("data-action"),
+          visibleText: button.innerText.replace(/\s+/gu, " ").trim(),
+        })),
+        railVisible: Boolean(rail && !rail.hidden && railStyle?.display !== "none" && railStyle?.visibility !== "hidden" && rail.getBoundingClientRect().width > 0 && rail.getBoundingClientRect().height > 0),
+        cssOrder: {
+          question: Number.parseInt(questionStyle?.order || "0", 10),
+          rail: Number.parseInt(railStyle?.order || "0", 10),
+        },
+        controlCssOrders: {
+          answerRegion: Number.parseInt(answerRegion ? getComputedStyle(answerRegion).order : "0", 10),
+          response: responseControls.map((control) => Number.parseInt(getComputedStyle(control).order || "0", 10)),
+          confirmContainer: Number.parseInt(confirmContainer ? getComputedStyle(confirmContainer).order : "0", 10),
+          confirm: Number.parseInt(confirm ? getComputedStyle(confirm).order : "0", 10),
+          rail: railActions.map((button) => Number.parseInt(getComputedStyle(button).order || "0", 10)),
+        },
+        controlTabIndexes: {
+          response: responseControls.map((control) => control.tabIndex),
+          confirm: confirm?.tabIndex ?? -1,
+          rail: railActions.map((button) => button.tabIndex),
+        },
+        targets: railActions.map((button) => ({
+          action: button.getAttribute("data-action"),
+          width: button.getBoundingClientRect().width,
+          height: button.getBoundingClientRect().height,
+          clientWidth: button.clientWidth,
+          scrollWidth: button.scrollWidth,
+          clientHeight: button.clientHeight,
+          scrollHeight: button.scrollHeight,
+        })),
+        documentScrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: innerWidth,
+        questionOverflowX: questionStyle?.overflowX || "missing",
+        questionOverflowY: questionStyle?.overflowY || "missing",
+        questionRailOverlapArea: overlapWidth * overlapHeight,
+      };
+    });
+    expect(artQuestionShellIssues(snapshot), viewport.id).toEqual([]);
+    await expect(page.locator('[data-art-question-shell="ART-MIG-04"]')).toBeVisible();
+    const rail = page.locator('[data-art-instrument-rail="ART-MIG-04"]');
+    await expect(rail).toBeVisible();
+    for (const [action, label] of Object.entries(ART_QUESTION_SHELL_RAIL_LABELS)) {
+      await expect(rail.locator(`button[data-action="${action}"]`)).toHaveText(label);
+      await expect(rail.getByRole("button", { name: label, exact: true })).toHaveCount(1);
+    }
+  }
 });
