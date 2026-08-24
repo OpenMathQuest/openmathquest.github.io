@@ -172,10 +172,13 @@ export async function validateRepositoryCodeMap(map, {
       "art-design.assets.semantic-class",
     ]],
     ["art-design.runtime-tokens", [
+      "art-design.tokens.activation-state",
       "art-design.tokens.approved-text-pairings",
       "art-design.tokens.colour-values",
       "art-design.tokens.dimensions",
+      "art-design.tokens.generated-projection-bytes",
       "art-design.tokens.motion",
+      "art-design.tokens.no-consumer-boundary",
       "art-design.tokens.view-palettes",
     ]],
     ["art-design.source-decisions", [
@@ -186,12 +189,17 @@ export async function validateRepositoryCodeMap(map, {
       "art-design.theme-policy",
     ]],
   ]);
+  const requiredArtValidators = new Map([
+    ["art-design.asset-acceptance", ["audit/tests/art-design-governance.test.mjs"]],
+    ["art-design.runtime-tokens", ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-design-governance.test.mjs", "audit/tests/design-token-projection.test.mjs"]],
+    ["art-design.source-decisions", ["audit/tests/art-design-governance.test.mjs"]],
+  ]);
   for (const [familyId, ownedFacts] of requiredArtFamilies) {
     const family = map.factFamilies.find((record) => record.id === familyId);
     if (!family || !sameJson(family.owns, ownedFacts)) issues.push(`${familyId} must own its complete closed art-design fact set.`);
-    if (!family || !sameJson(family.validators, ["audit/tests/art-design-governance.test.mjs"])) issues.push(`${familyId} must bind the focused art-design governance validator.`);
+    if (!family || !sameJson(family.validators, requiredArtValidators.get(familyId))) issues.push(`${familyId} must bind its complete focused art-design validator set.`);
   }
-  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
+  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-token-projection.audit-oracle", "art-token-projection.browser", "art-token-projection.generator", "art-token-projection.runtime", "art-token-projection.schema", "art-token-projection.shell", "art-token-projection.test", "art-token-projection.tokens", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
   }
   const artMigrationFamily = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");

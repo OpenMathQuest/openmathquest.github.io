@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   activate,
   answerPatternResponse,
@@ -549,4 +550,126 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-tutorial="different-example"]')).toHaveCount(0);
   await expect(page.locator("section.question .question-response")).toBeVisible();
+});
+
+test("[PW-F-13] activated design tokens load without changing rendered pixels until consumed", async ({ page }) => {
+  const projectionPath = "**/assets/design/math-quest-design-tokens-v1.css";
+  const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
+  const pixelDigest = async () => createHash("sha256")
+    .update(await page.screenshot({ animations: "disabled", caret: "hide", fullPage: true }))
+    .digest("hex");
+  const settle = async () => {
+    await page.goto("/index.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator("#app")).toBeVisible();
+  };
+  const runtimeConsumerState = async () => page.evaluate(({ prefix, selector }) => {
+    const projectionLink = document.querySelector(selector);
+    const canonicalCss = (value) => String(value).replace(
+      /\\([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?/giu,
+      (_match, hex) => String.fromCodePoint(Number.parseInt(hex, 16)),
+    ).toLowerCase();
+    const consumers = [];
+    const inaccessible = [];
+    const inspectStyle = (style, owner) => {
+      for (let index = 0; index < style.length; index += 1) {
+        const property = style.item(index);
+        const declaration = canonicalCss(`${property}:${style.getPropertyValue(property)}`);
+        if (declaration.includes(prefix)) consumers.push(`${owner}:${property}`);
+      }
+    };
+    const inspectRules = (rules, owner) => {
+      for (let index = 0; index < rules.length; index += 1) {
+        const rule = rules[index];
+        if (canonicalCss(rule.cssText).includes(prefix)) consumers.push(`${owner}:rule-${index}:css-text`);
+        if (rule.style) inspectStyle(rule.style, `${owner}:rule-${index}`);
+        if (rule.cssRules) inspectRules(rule.cssRules, `${owner}:rule-${index}`);
+        if (rule.styleSheet) {
+          try { inspectRules(rule.styleSheet.cssRules, `${owner}:rule-${index}:import`); }
+          catch (error) { inaccessible.push(`${owner}:rule-${index}:import:${error.name}`); }
+        }
+      }
+    };
+    [...document.styleSheets].forEach((sheet, index) => {
+      if (sheet === projectionLink?.sheet) return;
+      try { inspectRules(sheet.cssRules, `sheet-${index}`); }
+      catch (error) { inaccessible.push(`sheet-${index}:${error.name}`); }
+    });
+    [...document.querySelectorAll("[style]")].forEach((element, index) => inspectStyle(element.style, `inline-${index}`));
+    return { consumers, inaccessible };
+  }, { prefix: "--mq-conservatory-", selector: projectionSelector });
+
+  await settle();
+  await expect(page.locator(projectionSelector)).toHaveCount(1);
+  const cssom = await page.evaluate(({ expectedPathname, prefix, selector }) => {
+    const projectionLinks = [...document.querySelectorAll("link[href]")]
+      .filter((candidate) => new URL(candidate.getAttribute("href"), document.baseURI).pathname === expectedPathname);
+    const markerLinks = [...document.querySelectorAll("link[data-mq-design-token-projection]")];
+    const link = document.querySelector(selector);
+    const sheet = link?.sheet || null;
+    const rules = sheet ? [...sheet.cssRules] : [];
+    const rootRule = rules[0] || null;
+    const properties = rootRule?.style
+      ? Array.from({ length: rootRule.style.length }, (_, index) => rootRule.style.item(index))
+      : [];
+    return {
+      exactProjectionLinkCount: projectionLinks.length,
+      exactMarkerLinkCount: markerLinks.length,
+      projectionLinkIsMarkerLink: projectionLinks[0] === markerLinks[0],
+      href: link?.getAttribute("href") || null,
+      rel: link?.getAttribute("rel") || null,
+      loaded: Boolean(sheet),
+      ruleCount: rules.length,
+      rootSelector: rootRule?.selectorText || null,
+      properties,
+      namespaceClosed: properties.every((property) => property.startsWith(prefix)),
+    };
+  }, {
+    expectedPathname: "/assets/design/math-quest-design-tokens-v1.css",
+    prefix: "--mq-conservatory-",
+    selector: projectionSelector,
+  });
+  expect(cssom.exactProjectionLinkCount).toBe(1);
+  expect(cssom.exactMarkerLinkCount).toBe(1);
+  expect(cssom.projectionLinkIsMarkerLink).toBe(true);
+  expect(cssom.href).toBe("assets/design/math-quest-design-tokens-v1.css");
+  expect(cssom.rel).toBe("stylesheet");
+  expect(cssom.loaded).toBe(true);
+  expect(cssom.ruleCount).toBe(1);
+  expect(cssom.rootSelector).toBe(":root");
+  expect(cssom.properties).toHaveLength(63);
+  expect(cssom.namespaceClosed).toBe(true);
+  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
+  const futureConsumer = await page.addStyleTag({
+    content: ".future-only-state{transform:translateX(var(--mq-conservatory-dimension-body-min))}",
+  });
+  expect((await runtimeConsumerState()).consumers.length).toBeGreaterThan(0);
+  await futureConsumer.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
+  const futureProperty = await page.addStyleTag({
+    content: "@property --mq-conservatory-future-length{syntax:'<length>';inherits:false;initial-value:0px}",
+  });
+  expect((await runtimeConsumerState()).consumers.length).toBeGreaterThan(0);
+  await futureProperty.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual({ consumers: [], inaccessible: [] });
+  const activatedDigest = await pixelDigest();
+
+  await page.route(projectionPath, (route) => route.fulfill({
+    status: 200,
+    contentType: "text/css; charset=utf-8",
+    body: "",
+  }));
+  await settle();
+  const emptyProjectionDigest = await pixelDigest();
+  expect(activatedDigest).toBe(emptyProjectionDigest);
+  await page.unroute(projectionPath);
+
+  await page.route(projectionPath, (route) => route.fulfill({
+    status: 200,
+    contentType: "text/css; charset=utf-8",
+    body: ":root{--mq-conservatory-negative-control:translateX(17px)}#app{transform:var(--mq-conservatory-negative-control)!important}",
+  }));
+  await settle();
+  const consumedProjectionDigest = await pixelDigest();
+  expect(consumedProjectionDigest).not.toBe(activatedDigest);
 });

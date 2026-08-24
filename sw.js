@@ -4,7 +4,7 @@ const RELEASE = "1.0.0-beta.7";
 const BUILD_ID = "math-quest-pwa-v1.0.0-beta.7";
 const CACHE_NAME = "math-quest-static-v1.0.0-beta.7";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "97fad414e39a1f0e32dbc2408b8e14695c0115286f6af090cd1726f297fe57cf";
+const RELEASE_MANIFEST_SHA256 = "31c16a7ba7aae8ec616f626f874e21f8b103db5a93560ac7de83ab6bfcd383d1";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 function freshStagingCacheName() {
   const nonce = new Uint8Array(16);
@@ -24,6 +24,7 @@ const LEGAL_DOCUMENT_PATHS = new Set(LEGAL_DOCUMENT_RELATIVE_PATHS.map((relative
 const ACTIVATION_CHALLENGE_PATTERN = /^[a-f0-9]{64}$/;
 const MANIFEST_PATH = new URL(RELEASE_MANIFEST_URL, self.registration.scope).pathname;
 const SHELL_RELATIVE_PATHS = Object.freeze([
+  "./assets/design/math-quest-design-tokens-v1.css",
   "./assets/fonts/Inter-Variable.ttf",
   "./assets/icons/apple-touch-icon.png",
   "./assets/icons/icon-192.png",

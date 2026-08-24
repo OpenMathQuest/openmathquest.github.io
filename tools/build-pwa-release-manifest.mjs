@@ -11,6 +11,7 @@ const BUILD_ID = "math-quest-pwa-v1.0.0-beta.7";
 const CACHE_NAME = "math-quest-static-v1.0.0-beta.7";
 const HASH_MARKER = /const RELEASE_MANIFEST_SHA256 = "[a-f0-9]{64}";/u;
 const ENTRIES = Object.freeze([
+  ["./assets/design/math-quest-design-tokens-v1.css", "text/css"],
   ["./assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["./assets/icons/apple-touch-icon.png", "image/png"],
   ["./assets/icons/icon-192.png", "image/png"],

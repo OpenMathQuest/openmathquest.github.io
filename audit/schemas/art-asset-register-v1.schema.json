@@ -17,7 +17,10 @@
     "scope": {
       "const": {
         "governedPathPattern": "^assets/design/",
-        "excludedAuthorityPath": "assets/design/math-quest-design-tokens-v1.json",
+        "excludedNonAssetPaths": [
+          "assets/design/math-quest-design-tokens-v1.css",
+          "assets/design/math-quest-design-tokens-v1.json"
+        ],
         "legacyAssetPolicy": "EXISTING_ASSETS_OUTSIDE_GOVERNED_PATH_REMAIN_RIGHTS_GOVERNED_UNTIL_MIGRATED",
         "unregisteredGovernedAssetPolicy": "FAIL_CLOSED"
       }

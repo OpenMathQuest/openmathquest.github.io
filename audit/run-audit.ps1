@@ -226,6 +226,7 @@ function Get-LauncherAuditExpectation {
         @('/curriculum/math-quest-tutorial-manifest-v1.json', 'curriculum/math-quest-tutorial-manifest-v1.json'),
         @('/release-shell-v1.json', 'release-shell-v1.json'),
         @('/sw.js', 'sw.js'),
+        @('/assets/design/math-quest-design-tokens-v1.css', 'assets/design/math-quest-design-tokens-v1.css'),
         @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
         @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
         @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
@@ -477,7 +478,8 @@ try {
                 $env:MQ_ART_GOVERNANCE_MODE = if ($DevelopmentOnly) { 'DEVELOPMENT' } else { 'RELEASE' }
                 $artDesignTests = @(
                     (Join-Path $auditDirectory 'tests\art-design-governance.test.mjs'),
-                    (Join-Path $auditDirectory 'tests\art-migration-baseline.test.mjs')
+                    (Join-Path $auditDirectory 'tests\art-migration-baseline.test.mjs'),
+                    (Join-Path $auditDirectory 'tests\design-token-projection.test.mjs')
                 )
                 & $node.Path --test $artDesignTests
                 $artGovernanceExitCode = $LASTEXITCODE

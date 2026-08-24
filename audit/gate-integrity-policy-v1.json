@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -230,13 +230,13 @@
   "gateFamilies": [
     {
       "id": "gate.art-design-governance",
-      "claim": "ART_DESIGN_CONTRACTS_REJECT_UNRESOLVED_REJECTED_UNREGISTERED_STALE_CONFLICTING_UNAUTHORIZED_INCOMPLETE_RIGHTS_UNBOUND_OR_MATHEMATICALLY_UNPROVED_PROJECTIONS",
+      "claim": "ART_DESIGN_CONTRACTS_REJECT_UNRESOLVED_REJECTED_UNREGISTERED_STALE_CONFLICTING_UNAUTHORIZED_INCOMPLETE_RIGHTS_UNBOUND_MATHEMATICALLY_UNPROVED_OR_HAND_EDITED_PROJECTIONS",
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "STRUCTURAL_SEMANTIC_AND_CONTRAST_ORACLES_DO_NOT_REPLACE_RENDERED_VISUAL_OR_HUMAN_PLAY_REVIEW",
       "nonRunPolicy": "FAIL",
       "negativeControl": { "id": "NC-ART-DESIGN-UNRESOLVED-PROJECTION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-design-governance.test.mjs", "testName": "[NC-ART-DESIGN-UNRESOLVED-PROJECTION] unresolved, rejected, unregistered, stale, and mathematically unproved art fails closed" },
-      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.json", "audit/art-asset-register-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-design-governance.mjs", "audit/schemas/art-asset-register-v1.schema.json", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/schemas/design-tokens-v1.schema.json", "licenses/component-register-v1.json", "licenses/evidence-paths-v1.json", "release-shell-v1.json"],
-      "validatorPaths": ["audit/tests/art-design-governance.test.mjs"]
+      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-asset-register-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-design-governance.mjs", "audit/lib/design-token-projection.mjs", "audit/schemas/art-asset-register-v1.schema.json", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/schemas/design-tokens-v1.schema.json", "licenses/component-register-v1.json", "licenses/evidence-paths-v1.json", "release-shell-v1.json"],
+      "validatorPaths": ["audit/tests/art-design-governance.test.mjs", "audit/tests/design-token-projection.test.mjs"]
     },
     {
       "id": "gate.art-migration-baseline",
@@ -247,6 +247,16 @@
       "negativeControl": { "id": "NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-migration-baseline.test.mjs", "testName": "[NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE] stale, foreign, incomplete, retried, private, or arbitrary baseline evidence fails closed" },
       "implementationPaths": ["audit/art-migration-baseline-v1.json", "audit/art-migration-browser-evidence-v1.json", "audit/lib/art-migration-baseline.mjs", "audit/schemas/art-migration-baseline-v1.schema.json", "audit/schemas/art-migration-browser-evidence-v1.schema.json", "audit/validate-art-migration-baseline.mjs", "index.html"],
       "validatorPaths": ["audit/tests/art-migration-baseline.test.mjs"]
+    },
+    {
+      "id": "gate.art-token-projection",
+      "claim": "ART_MIG_02_GENERATED_TOKEN_BYTES_NAMESPACE_EXACT_RELATIVE_RUNTIME_LINK_OFFLINE_SHELL_STATIC_SOURCE_AND_CSSOM_ZERO_CONSUMER_BOUNDARIES_ARE_EXACT",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "INERT_PROJECTION_EQUIVALENCE_DOES_NOT_AUTHORIZE_ART_MIG_03_CONSUMERS_OR_CLAIM_HUMAN_PLAY_APPROVAL_AND_STATIC_SOURCE_PLUS_FOCUSED_BROWSER_ORACLES_DO_NOT_PROVE_ABSENCE_OF_INTENTIONALLY_OBFUSCATED_UNEXECUTED_JAVASCRIPT",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-TOKEN-PROJECTION-DRIFT-OR-CONSUMER] stale bytes, broken loading, namespace consumers, and shell drift fail closed" },
+      "implementationPaths": [".github/workflows/pages.yml", "Serve-MathQuest.ps1", "assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit.html", "audit/lib/design-token-projection.mjs", "audit/run-audit.ps1", "audit/run-trusted-https-canary.mjs", "audit/test-launcher-identity.ps1", "index.html", "release-shell-v1.json", "sw.js", "tools/build-design-token-projection.mjs", "tools/build-pwa-release-manifest.mjs"],
+      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/design-token-projection.test.mjs"]
     },
     {
       "id": "gate.audit-orchestration",

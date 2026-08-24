@@ -21,8 +21,8 @@ const readJson = async (relative) => JSON.parse(await readFile(path.join(root, r
 
 test("the gate-integrity policy is closed, ordered, and complete", async () => {
   const policy = await loadGateIntegrityPolicy();
-  assert.equal(policy.gateFamilies.length, 17);
-  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 17);
+  assert.equal(policy.gateFamilies.length, 18);
+  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 18);
   assert.equal(policy.enforcement.requiredPullRequestCheck, "development-checks");
   assert.deepEqual(policy.enforcement.prohibitedRequiredPullRequestChecks, ["full-audit"]);
   assert.equal(policy.retryPolicy.automaticRetries, 0);

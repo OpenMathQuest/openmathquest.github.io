@@ -1,6 +1,6 @@
 {
   "registerId": "math-quest-art-assets",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -16,7 +16,10 @@
   },
   "scope": {
     "governedPathPattern": "^assets/design/",
-    "excludedAuthorityPath": "assets/design/math-quest-design-tokens-v1.json",
+    "excludedNonAssetPaths": [
+      "assets/design/math-quest-design-tokens-v1.css",
+      "assets/design/math-quest-design-tokens-v1.json"
+    ],
     "legacyAssetPolicy": "EXISTING_ASSETS_OUTSIDE_GOVERNED_PATH_REMAIN_RIGHTS_GOVERNED_UNTIL_MIGRATED",
     "unregisteredGovernedAssetPolicy": "FAIL_CLOSED"
   },

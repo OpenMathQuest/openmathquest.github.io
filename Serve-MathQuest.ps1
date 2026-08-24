@@ -24,6 +24,7 @@ foreach ($entry in @(
     @('/release-shell-v1.json', 'release-shell-v1.json'),
     @('/sw.js', 'sw.js'),
     @('/curriculum/math-quest-tutorial-manifest-v1.json', 'curriculum/math-quest-tutorial-manifest-v1.json'),
+    @('/assets/design/math-quest-design-tokens-v1.css', 'assets/design/math-quest-design-tokens-v1.css'),
     @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
     @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
     @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),

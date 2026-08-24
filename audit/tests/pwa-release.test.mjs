@@ -42,6 +42,7 @@ function sha256(bytes) {
 }
 
 const RELEASE_ENTRY_SPECS = Object.freeze([
+  ["./assets/design/math-quest-design-tokens-v1.css", "text/css"],
   ["./assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["./assets/icons/apple-touch-icon.png", "image/png"],
   ["./assets/icons/icon-192.png", "image/png"],
@@ -58,6 +59,7 @@ const RELEASE_ENTRY_SPECS = Object.freeze([
   ["./THIRD_PARTY_NOTICES.md", "text/markdown"],
 ]);
 const PAGES_TAGGED_ARTIFACT_SPECS = Object.freeze([
+  ["assets/design/math-quest-design-tokens-v1.css", "text/css"],
   ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["assets/icons/apple-touch-icon.png", "image/png"],
   ["assets/icons/icon-192.png", "image/png"],

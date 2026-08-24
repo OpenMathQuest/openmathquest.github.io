@@ -7,6 +7,7 @@ import path from "node:path";
 import { browserRunnerTupleIssues } from "./browser-runner-evidence.mjs";
 
 const TYPES = Object.freeze({
+  ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
@@ -19,6 +20,7 @@ const TYPES = Object.freeze({
 
 export const AUDIT_SERVED_RELATIVE_PATHS = Object.freeze([
   "audit.html",
+  "assets/design/math-quest-design-tokens-v1.css",
   "index.html",
   "manifest.webmanifest",
   "release-shell-v1.json",

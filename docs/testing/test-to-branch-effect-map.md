@@ -337,6 +337,7 @@ state.
 | `PW-F-10` | An open tutorial, exact step, source/example identity, and selected response survive a real reload and return to the original question intact. |
 | `PW-F-11` | Find Your Level retains Replay and Not sure but exposes no tutorial before or during placement, so the heuristic remains uncoached. |
 | `PW-F-12` | Native Tab and Enter reach and operate tutorial, Next, Previous, and Back controls without scripted focus or synthetic activation. |
+| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 63 collision-safe properties; removing its unused declarations leaves exact screenshot bytes unchanged on desktop and phone, while an injected real consumer changes them. |
 
 `audit/lib/playwright-focused-contract.mjs` rejects unknown, duplicate,
 missing, skipped, retried, wrong-project, failed, or privacy-unsafe reports.
@@ -882,8 +883,8 @@ payload SHA-256 and tree OID into the same clearance matcher; omitting either
 identity is an effect-tested failure rather than a late deployment surprise.
 
 `audit/run-audit.mjs` predicts and observes all eight records separately. The
-24 direct Playwright journeys raise the closed technical-plus-external total
-from 267 to 291. The decision helper requires the
+26 direct Playwright journeys raise the closed technical-plus-external total
+from 267 to 293. The decision helper requires the
 exact eight IDs in exact order. For Beta 6 it requires five mandatory results
 `PASS`, including exact digest-bound `EXT-CANARY: PASS` from `RECONCILED`
 evidence; exact evaluator-bound `EXT-HOST: DEFERRED`; both optional results as

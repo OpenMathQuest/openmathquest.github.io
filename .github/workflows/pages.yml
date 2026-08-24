@@ -302,6 +302,7 @@ jobs:
 
           const artifactSpecs = Object.freeze([
             [".nojekyll", "application/octet-stream", false],
+            ["assets/design/math-quest-design-tokens-v1.css", "text/css", true],
             ["assets/fonts/Inter-Variable.ttf", "font/ttf", true],
             ["assets/icons/apple-touch-icon.png", "image/png", true],
             ["assets/icons/icon-192.png", "image/png", true],
@@ -327,6 +328,7 @@ jobs:
             ["licenses/sound-effects.md", "text/markdown", true],
           ]);
           const releaseBoundSpecs = new Map([
+            ["assets/design/math-quest-design-tokens-v1.css", "text/css"],
             ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
             ["assets/icons/apple-touch-icon.png", "image/png"],
             ["assets/icons/icon-192.png", "image/png"],
@@ -461,7 +463,7 @@ jobs:
               `${snapshotFiles.get("index.html").toString("utf8")}\n${
                 snapshotFiles.get("manifest.webmanifest").toString("utf8")
               }`.match(
-                /assets\/[A-Za-z0-9._/-]+\.(?:ttf|otf|woff2?|wav|mp3|ogg|png|svg|jpe?g|gif|webp|json|webmanifest)/gu,
+                /assets\/[A-Za-z0-9._/-]+\.(?:css|ttf|otf|woff2?|wav|mp3|ogg|png|svg|jpe?g|gif|webp|json|webmanifest)/gu,
               ) || [],
             ),
           ].sort();

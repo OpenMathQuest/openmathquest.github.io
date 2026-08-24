@@ -143,7 +143,7 @@ workflow cannot succeed unless both required jobs succeed. It inventories all
 plan across six viewports and applicable states, and uploads only its compact
 report plus synthetic anomaly evidence on failure. A local 100-cell benchmark,
 an odd-numbered beta, or a clean direct-journey result cannot impersonate the
-scheduled census. The census neither changes the 291-result gauntlet count nor
+scheduled census. The census neither changes the 293-result gauntlet count nor
 replaces browser, mathematical, human, accessibility, PWA, or device evidence.
 Beta 7 is odd-numbered, so the complete census is exact
 `NOT_REQUIRED_BY_CADENCE`. The local balanced 100-cell benchmark remains

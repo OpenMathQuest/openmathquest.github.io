@@ -59,6 +59,7 @@
     "audit/lib/browser-smoke.mjs",
     "audit/lib/child-strings.mjs",
     "audit/lib/curriculum-manifest.mjs",
+    "audit/lib/design-token-projection.mjs",
     "audit/lib/development-suite-plan.mjs",
     "audit/lib/engine-loader.mjs",
     "audit/lib/feature-map.mjs",
@@ -118,6 +119,7 @@
     "audit/tests/audit-orchestration.test.mjs",
     "audit/tests/blast-radius-lookup.test.mjs",
     "audit/tests/certification-cadence.test.mjs",
+    "audit/tests/design-token-projection.test.mjs",
     "audit/tests/development-suite-plan.test.mjs",
     "audit/tests/engine-suite.mjs",
     "audit/tests/feature-map.test.mjs",
@@ -190,6 +192,7 @@
     "sw.js",
     "tools/blast-radius-lookup.mjs",
     "tools/build-app-icons.mjs",
+    "tools/build-design-token-projection.mjs",
     "tools/build-pwa-release-manifest.mjs",
     "tools/build-tutorial-manifest.mjs",
     "tools/normalize-curriculum-manifest.mjs",
@@ -206,12 +209,29 @@
       "paths": [
         "assets/design/math-quest-design-tokens-v1.json"
       ],
-      "sha256": "ce8731b380b7912dfc79a9acb8532bba35cc04cf74a9125dcd01869050fc01d2",
+      "sha256": "978c945f3f71682719c806ce25f37e151656c6f4d443f46306082220c2a541c0",
+      "licence": "MIT",
+      "version": "1.1.0",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/design/math-quest-design-tokens-v1.json",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/design-tokens.md",
+      "modified": false
+    },
+    {
+      "id": "math-quest-design-token-projection-v1",
+      "kind": "design-token-contract",
+      "origin": "original-project",
+      "paths": [
+        "assets/design/math-quest-design-tokens-v1.css"
+      ],
+      "sha256": "fdeeaf26802f677029dcbd85d20fffc92697d83a93eb987d6f48048c22da2c55",
       "licence": "MIT",
       "version": "1.0.0",
       "creator": "Math Quest contributors",
       "copyright": "Math Quest contributors",
-      "sourceUrl": "assets/design/math-quest-design-tokens-v1.json",
+      "sourceUrl": "assets/design/math-quest-design-tokens-v1.css",
       "licenceEvidence": "LICENSE",
       "attributionRecord": "licenses/design-tokens.md",
       "modified": false

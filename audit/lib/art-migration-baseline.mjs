@@ -8,7 +8,6 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import { extractEngineFromPageBytes, evaluateEngine } from "./engine-loader.mjs";
 import {
-  AUDIT_SERVED_RELATIVE_PATHS,
   BROWSER_AUDIT_SHARDS,
   validateBrowserAuditPayload,
 } from "./browser-smoke.mjs";
@@ -23,6 +22,28 @@ export const ART_MIGRATION_BROWSER_EVIDENCE_RAW_SHA256 = "b1134226011173f7c97556
 export const ART_MIGRATION_BROWSER_EVIDENCE_CANONICAL_SHA256 = "e0e16cd8d4695748d344b355ddcf709c6242fdd70f18cfcca67e7657f4945aeb";
 export const ART_MIGRATION_BROWSER_EVIDENCE_BYTES = 300373;
 export const ART_MIGRATION_BROWSER_SERVED_PATH_SET_SHA256 = "8cfe3c4c826e967bf7ca60d6f81489c62ea8134e90d6fdbdcb21687775e5ad1b";
+export const ART_MIGRATION_BROWSER_SERVED_RELATIVE_PATHS = Object.freeze([
+  "audit.html",
+  "index.html",
+  "manifest.webmanifest",
+  "release-shell-v1.json",
+  "sw.js",
+  "LICENSE",
+  "PRIVACY.md",
+  "THIRD_PARTY_NOTICES.md",
+  "curriculum/math-quest-tutorial-manifest-v1.json",
+  "audit/approved-visual-regression.js",
+  "assets/fonts/Inter-Variable.ttf",
+  "assets/icons/apple-touch-icon.png",
+  "assets/icons/icon-192.png",
+  "assets/icons/icon-512.png",
+  "assets/sounds/tap.wav",
+  "assets/sounds/confirm.wav",
+  "assets/sounds/incorrect.wav",
+  "assets/sounds/close.wav",
+  "licenses/Inter-OFL.txt",
+  "licenses/app-icons.md",
+]);
 
 export const ART_MIGRATION_AUTHORITY_BINDINGS = Object.freeze([
   Object.freeze({ id: "AUTH-ART-DESIGN", path: "audit/art-design-decision-register-v1.json", json: true }),
@@ -372,7 +393,7 @@ export async function validateArtMigrationBrowserEvidence(evidence, { rawBytes =
     issues.push("browser evidence contains unexpected request signatures.");
   }
   try {
-    const servedPaths = [...AUDIT_SERVED_RELATIVE_PATHS]
+    const servedPaths = [...ART_MIGRATION_BROWSER_SERVED_RELATIVE_PATHS]
       .sort((left, right) => left.localeCompare(right, "en"))
       .map((relativePath) => {
         const bytesAtRevision = gitBytes(root, evidence.sourceRevision.commitSha1, relativePath);

@@ -152,6 +152,17 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.factFamilies.find((family) => family.id === "art-design.source-decisions")?.owner, "audit/art-design-decision-register-v1.json");
   assert.equal(map.factFamilies.find((family) => family.id === "art-design.asset-acceptance")?.owner, "audit/art-asset-register-v1.json");
   assert.equal(map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.owner, "assets/design/math-quest-design-tokens-v1.json");
+  assert.deepEqual(
+    map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.projections,
+    [
+      { path: "assets/design/math-quest-design-tokens-v1.css", relationship: "GENERATED" },
+      { path: "audit.html", relationship: "VALIDATION_EXPECTATION" },
+      { path: "index.html", relationship: "DOCUMENTED_REFERENCE" },
+      { path: "release-shell-v1.json", relationship: "GENERATED_METADATA" },
+    ],
+  );
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.generator"), true);
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.runtime"), true);
   assert.equal(map.relationKindSemantics.CONSUMES, "TARGET_READS_SOURCE");
   assert.equal(map.relationKindSemantics.GENERATES, "SOURCE_WRITES_TARGET");
   assert.equal(map.relationKindSemantics.TESTS, "TARGET_TESTS_SOURCE");

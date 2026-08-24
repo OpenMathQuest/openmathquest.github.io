@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -282,17 +282,39 @@
       "id": "art-design.runtime-tokens",
       "owner": "assets/design/math-quest-design-tokens-v1.json",
       "owns": [
+        "art-design.tokens.activation-state",
         "art-design.tokens.approved-text-pairings",
         "art-design.tokens.colour-values",
         "art-design.tokens.dimensions",
+        "art-design.tokens.generated-projection-bytes",
         "art-design.tokens.motion",
+        "art-design.tokens.no-consumer-boundary",
         "art-design.tokens.view-palettes"
       ],
-      "copyPolicy": "REFERENCES_ONLY",
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
       "copyDiscovery": "NONE",
-      "projections": [],
+      "projections": [
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.css",
+          "relationship": "GENERATED"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "index.html",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        }
+      ],
       "validators": [
-        "audit/tests/art-design-governance.test.mjs"
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/design-token-projection.test.mjs"
       ]
     },
     {
@@ -994,6 +1016,54 @@
       "id": "art-migration.validator",
       "source": "audit/lib/art-migration-baseline.mjs",
       "target": "audit/validate-art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-token-projection.audit-oracle",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "audit.html",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.browser",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-token-projection.generator",
+      "source": "tools/build-design-token-projection.mjs",
+      "target": "assets/design/math-quest-design-tokens-v1.css",
+      "kind": "GENERATES"
+    },
+    {
+      "id": "art-token-projection.runtime",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "index.html",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-token-projection.schema",
+      "source": "audit/schemas/design-tokens-v1.schema.json",
+      "target": "audit/lib/design-token-projection.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.shell",
+      "source": "release-shell-v1.json",
+      "target": "audit/lib/design-token-projection.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.test",
+      "source": "audit/lib/design-token-projection.mjs",
+      "target": "audit/tests/design-token-projection.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-token-projection.tokens",
+      "source": "assets/design/math-quest-design-tokens-v1.json",
+      "target": "tools/build-design-token-projection.mjs",
       "kind": "CONSUMES"
     },
     {

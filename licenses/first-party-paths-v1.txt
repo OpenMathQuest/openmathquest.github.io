@@ -48,6 +48,7 @@ audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
 audit/lib/child-strings.mjs
 audit/lib/curriculum-manifest.mjs
+audit/lib/design-token-projection.mjs
 audit/lib/development-suite-plan.mjs
 audit/lib/engine-loader.mjs
 audit/lib/feature-map.mjs
@@ -107,6 +108,7 @@ audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs
 audit/tests/certification-cadence.test.mjs
+audit/tests/design-token-projection.test.mjs
 audit/tests/development-suite-plan.test.mjs
 audit/tests/engine-suite.mjs
 audit/tests/feature-map.test.mjs
@@ -179,6 +181,7 @@ research/tiny-polka-dot-mechanics-review.md
 sw.js
 tools/blast-radius-lookup.mjs
 tools/build-app-icons.mjs
+tools/build-design-token-projection.mjs
 tools/build-pwa-release-manifest.mjs
 tools/build-tutorial-manifest.mjs
 tools/normalize-curriculum-manifest.mjs

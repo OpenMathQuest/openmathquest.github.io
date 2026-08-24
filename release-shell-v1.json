@@ -10,6 +10,13 @@
   ],
   "entries": [
     {
+      "path": "./assets/design/math-quest-design-tokens-v1.css",
+      "sha256": "fdeeaf26802f677029dcbd85d20fffc92697d83a93eb987d6f48048c22da2c55",
+      "bytes": 3346,
+      "mime": "text/css",
+      "status": 200
+    },
+    {
       "path": "./assets/fonts/Inter-Variable.ttf",
       "sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
       "bytes": 879708,
@@ -67,8 +74,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "299dfa59d254826fd2a9d7cc1dbc0a5bcace6ffcda23fb6a09b437a46b4da12d",
-      "bytes": 1237671,
+      "sha256": "2262c52e57ea05c97caab1cd377e409070af8acfa4d7e3727dcce225e2bf976c",
+      "bytes": 1237837,
       "mime": "text/html",
       "status": 200
     },

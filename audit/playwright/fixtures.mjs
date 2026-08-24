@@ -7,6 +7,7 @@ const ALLOWED_PATHS = new Set([
   "/release-shell-v1.json",
   "/sw.js",
   "/curriculum/math-quest-tutorial-manifest-v1.json",
+  "/assets/design/math-quest-design-tokens-v1.css",
   "/assets/fonts/Inter-Variable.ttf",
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",

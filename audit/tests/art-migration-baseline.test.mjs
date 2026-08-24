@@ -8,6 +8,7 @@ import {
   ART_MIGRATION_BROWSER_EVIDENCE_CANONICAL_SHA256,
   ART_MIGRATION_BROWSER_EVIDENCE_PATH,
   ART_MIGRATION_BROWSER_EVIDENCE_RAW_SHA256,
+  ART_MIGRATION_BROWSER_SERVED_RELATIVE_PATHS,
   ART_MIGRATION_BROWSER_SERVED_PATH_SET_SHA256,
   ART_MIGRATION_STATES,
   ART_MIGRATION_VIEWPORTS,
@@ -20,6 +21,7 @@ import {
   validateArtMigrationBrowserEvidence,
   visualObservationFromBrowserEvidence,
 } from "../lib/art-migration-baseline.mjs";
+import { AUDIT_SERVED_RELATIVE_PATHS } from "../lib/browser-smoke.mjs";
 
 const baseline = JSON.parse(await readFile(ART_MIGRATION_BASELINE_PATH, "utf8"));
 const browserEvidenceBytes = await readFile(ART_MIGRATION_BROWSER_EVIDENCE_PATH);
@@ -56,6 +58,12 @@ test("ART-MIG-01 binds the exact historical revision, 50 joined fixtures, and 36
   assert.equal(loaded.baseline.browserEvidenceBinding.rawByteSha256, ART_MIGRATION_BROWSER_EVIDENCE_RAW_SHA256);
   assert.equal(loaded.baseline.browserEvidenceBinding.canonicalJsonSha256, ART_MIGRATION_BROWSER_EVIDENCE_CANONICAL_SHA256);
   assert.equal(loaded.baseline.browserEvidenceBinding.bytes, ART_MIGRATION_BROWSER_EVIDENCE_BYTES);
+});
+
+test("ART-MIG-01 served-source history remains frozen when the live runtime gains later assets", () => {
+  assert.equal(ART_MIGRATION_BROWSER_SERVED_RELATIVE_PATHS.length, 20);
+  assert.equal(ART_MIGRATION_BROWSER_SERVED_RELATIVE_PATHS.includes("assets/design/math-quest-design-tokens-v1.css"), false);
+  assert.equal(AUDIT_SERVED_RELATIVE_PATHS.includes("assets/design/math-quest-design-tokens-v1.css"), true);
 });
 
 test("retained browser evidence passes the closed browser payload contract and reproduces every visual digest", async () => {

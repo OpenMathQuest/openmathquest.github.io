@@ -290,11 +290,10 @@ function validateAssetSemantics(decisions, assets, decisionBytes, tokens, issues
     }
   }
   const designPath = new RegExp(assets.scope.governedPathPattern, "u");
-  const excluded = assets.scope.excludedAuthorityPath;
-  for (const file of tracked.filter((file) => designPath.test(file) && file !== excluded)) if (!paths.has(file)) issues.push(`${file}: governed art asset is absent from the art asset register.`);
+  const excluded = new Set(assets.scope.excludedNonAssetPaths);
+  for (const file of tracked.filter((file) => designPath.test(file) && !excluded.has(file))) if (!paths.has(file)) issues.push(`${file}: governed art asset is absent from the art asset register.`);
   const sourceName = decisions.sourceBundle.fileName;
   for (const file of tracked) if (file.includes(sourceName) || file.includes(decisions.sourceBundle.internalRoot)) issues.push(`${file}: source bundle material may not be projected directly into the repository.`);
-  if (tokens.projection.state === "NOT_ACTIVATED" && tokens.projection.runtimeCssPath !== null) issues.push("inactive design tokens may not declare runtime CSS bytes.");
 }
 
 export async function validateArtDesignGovernance(decisions, assets, tokens, options = {}) {

@@ -164,8 +164,9 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.themePolicy.scope, "ALL_USER_FACING_ROUTES");
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
-  assert.equal(result.tokens.status, "DESIGN_TARGET_NOT_RUNTIME");
-  assert.equal(result.assets.version, "1.1.0");
+  assert.equal(result.tokens.status, "RUNTIME_FOUNDATION_ACTIVE_NO_CONSUMERS");
+  assert.equal(result.tokens.projection.state, "ACTIVATED_NO_CONSUMERS");
+  assert.equal(result.assets.version, "1.2.0");
   assert.equal(result.assets.records.length, 0);
 });
 
