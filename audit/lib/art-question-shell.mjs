@@ -3,6 +3,7 @@ const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 export const ART_QUESTION_SHELL_ACTION_ORDER = Object.freeze(["replay", "tutorial", "stop"]);
 export const ART_QUESTION_SHELL_MINIMUM_TARGET_PX = 44;
 export const ART_QUESTION_ZONE_NARROW_MAX_PX = 1023;
+export const ART_EARLY_COUNTING_RENDERER_FAMILY = "ART-MIG-06-EARLY-COUNTING";
 export const ART_QUESTION_SHELL_RAIL_LABELS = Object.freeze({
   replay: "Replay",
   tutorial: "? Show me how",
@@ -80,6 +81,26 @@ export function artQuestionZoneIssues(snapshot) {
   for (const target of snapshot.targets || []) {
     if (target.width < ART_QUESTION_SHELL_MINIMUM_TARGET_PX || target.height < ART_QUESTION_SHELL_MINIMUM_TARGET_PX) issues.push(`${target.action} target is below ${ART_QUESTION_SHELL_MINIMUM_TARGET_PX}px`);
     if (target.scrollWidth > target.clientWidth || target.scrollHeight > target.clientHeight) issues.push(`${target.action} content overflows its target`);
+  }
+  return Object.freeze(issues);
+}
+
+export function artEarlyCountingIssues(snapshot) {
+  const issues = [];
+  if (!snapshot || typeof snapshot !== "object") return Object.freeze(["early-counting snapshot is missing"]);
+  if (snapshot.skillId !== "MQ-002" || snapshot.inputMethod !== "COUNT_TOUCH" || snapshot.semanticPromptStringId !== "question.countSet") issues.push("early-counting identity is not the governed MQ-002 COUNT_TOUCH count-set family");
+  if (snapshot.rendererFamily !== ART_EARLY_COUNTING_RENDERER_FAMILY) issues.push("early-counting renderer-family marker is missing or incorrect");
+  if (!Number.isInteger(snapshot.objectOracle) || snapshot.objectOracle < 0 || snapshot.objectCount !== snapshot.objectOracle) issues.push("rendered object count does not equal the question-owned oracle");
+  if (new Set(snapshot.objectIds || []).size !== snapshot.objectCount) issues.push("rendered counting objects do not have one unique response id each");
+  if (!same(snapshot.numberBank, snapshot.expectedNumberBank)) issues.push("number bank does not equal the question-owned bounded choice sequence");
+  if (snapshot.touchedCount !== snapshot.expectedTouchedCount) issues.push("counted-state cardinality does not equal the exercised response state");
+  if (snapshot.expectedTouchedCount > 0 && (!snapshot.countedHasGeometricCheckCue || !snapshot.countedHasVisibleTextCue || !snapshot.countedHasAccessibleCue)) issues.push("counted state depends on colour instead of a CSS-drawn check, text, and accessible-state cues");
+  if (snapshot.answerDisclosureCount !== 0) issues.push("early-counting response state discloses the answer before submission");
+  if (!snapshot.confirmDisabled) issues.push("incomplete early-counting response enables Confirm");
+  if (!snapshot.firstResponseOnFirstScreen) issues.push("first early-counting response is not visible on the first screen");
+  if (snapshot.horizontalDocumentOverflow || snapshot.nestedQuestionScroll) issues.push("early-counting renderer introduces horizontal or nested question scrolling");
+  for (const target of snapshot.targets || []) {
+    if (target.width < ART_QUESTION_SHELL_MINIMUM_TARGET_PX || target.height < ART_QUESTION_SHELL_MINIMUM_TARGET_PX) issues.push(`early-counting ${target.kind} target is below ${ART_QUESTION_SHELL_MINIMUM_TARGET_PX}px`);
   }
   return Object.freeze(issues);
 }

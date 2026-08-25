@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { artQuestionShellIssues, artQuestionZoneIssues } from "../lib/art-question-shell.mjs";
+import { artEarlyCountingIssues, artQuestionShellIssues, artQuestionZoneIssues } from "../lib/art-question-shell.mjs";
 
 const valid = () => ({
   questionCount: 1,
@@ -161,5 +161,60 @@ test("[NC-ART-QUESTION-ZONES-SEMANTIC-GEOMETRY] missing, reversed, misplaced, co
     const snapshot = validZones();
     mutate(snapshot);
     assert.notDeepEqual(artQuestionZoneIssues(snapshot), [], `zone mutant ${index + 1} escaped`);
+  }
+});
+
+const validEarlyCounting = () => ({
+  skillId: "MQ-002",
+  inputMethod: "COUNT_TOUCH",
+  semanticPromptStringId: "question.countSet",
+  rendererFamily: "ART-MIG-06-EARLY-COUNTING",
+  objectOracle: 3,
+  objectCount: 3,
+  objectIds: ["i0", "i1", "i2"],
+  numberBank: [0, 1, 2, 3],
+  expectedNumberBank: [0, 1, 2, 3],
+  touchedCount: 1,
+  expectedTouchedCount: 1,
+  countedHasGeometricCheckCue: true,
+  countedHasVisibleTextCue: true,
+  countedHasAccessibleCue: true,
+  answerDisclosureCount: 0,
+  confirmDisabled: true,
+  firstResponseOnFirstScreen: true,
+  horizontalDocumentOverflow: false,
+  nestedQuestionScroll: false,
+  targets: [
+    { kind: "object", width: 82, height: 84 },
+    { kind: "number", width: 56, height: 56 },
+  ],
+});
+
+test("ART-MIG-06 early-counting oracle accepts the exact data-owned COUNT_TOUCH renderer with redundant counted cues", () => {
+  assert.deepEqual(artEarlyCountingIssues(validEarlyCounting()), []);
+});
+
+test("[NC-ART-EARLY-COUNTING-SEMANTICS-STATE-GEOMETRY] retargeting, count drift, answer disclosure, colour-only state, and undersized controls fail closed", () => {
+  const mutants = [
+    (value) => { value.skillId = "MQ-003"; },
+    (value) => { value.rendererFamily = "ART-MIG-06-TEN-FRAME"; },
+    (value) => { value.objectCount = 2; },
+    (value) => { value.objectIds[2] = "i1"; },
+    (value) => { value.numberBank = [0, 1, 3]; },
+    (value) => { value.touchedCount = 0; },
+    (value) => { value.countedHasGeometricCheckCue = false; },
+    (value) => { value.countedHasVisibleTextCue = false; },
+    (value) => { value.countedHasAccessibleCue = false; },
+    (value) => { value.answerDisclosureCount = 1; },
+    (value) => { value.confirmDisabled = false; },
+    (value) => { value.firstResponseOnFirstScreen = false; },
+    (value) => { value.horizontalDocumentOverflow = true; },
+    (value) => { value.nestedQuestionScroll = true; },
+    (value) => { value.targets[0].height = 30; },
+  ];
+  for (const [index, mutate] of mutants.entries()) {
+    const snapshot = validEarlyCounting();
+    mutate(snapshot);
+    assert.notDeepEqual(artEarlyCountingIssues(snapshot), [], `early-counting mutant ${index + 1} escaped`);
   }
 });

@@ -30,16 +30,16 @@ const fixture = async () => {
   return { tokens, cssBytes, releaseShell, runtimeSources: { "index.html": indexText } };
 };
 
-test("ART-MIG-05 projection is exact, collision-safe, linked, offline-bound, and closed to its governed consumers", async () => {
+test("ART-MIG-04 through ART-MIG-06 projection is exact, collision-safe, linked, offline-bound, and closed to its governed consumers", async () => {
   const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
   assert.deepEqual(validateDesignTokenProjection(tokens, cssBytes, { releaseShell, runtimeSources }), []);
   assert.equal(designTokenProjectionProperties(tokens).length, 64);
   assert.equal(new Set(designTokenProjectionProperties(tokens).map((record) => record.name)).size, 64);
   assert.deepEqual(tokens.projection.projectedValueClasses, DESIGN_TOKEN_PROJECTED_VALUE_CLASSES);
   assert.deepEqual(tokens.projection, expectedDesignTokenProjection(tokens));
-  assert.equal(expectedRuntimeConsumers(tokens).length, 63);
+  assert.equal(expectedRuntimeConsumers(tokens).length, 100);
   assert.equal(cssBytes.toString("utf8"), renderDesignTokenProjectionCss(tokens));
-  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "ZONE_GEOMETRY_AND_HUMAN_LEGIBILITY_VERIFIED");
+  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "EARLY_COUNTING_COUNT_TOUCH_PLAIN_BASELINE_AND_ORACLE_VERIFIED");
 });
 
 test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {
@@ -59,7 +59,7 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
     },
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: { "index.html": `${sources["index.html"]}\n<style>#app{transform:translateX(var(${DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX}dimension-body-min))}</style>` } }),
-      pattern: /outside the ART-MIG-05 allowlisted style block/u,
+      pattern: /outside the ART-MIG-04-06 allowlisted style blocks/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({
@@ -67,7 +67,13 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
           "index.html": `${sources["index.html"]}\n<style>.future-only-state{transform:translateX(var(--mq-\\63onservatory-dimension-body-min))}</style>`,
         },
       }),
-      pattern: /outside the ART-MIG-05 allowlisted style block/u,
+      pattern: /outside the ART-MIG-04-06 allowlisted style blocks/u,
+    },
+    {
+      mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {
+        "index.html": sources["index.html"].replace('data-mq-functional-art="ART-MIG-06"', 'data-mq-functional-art="ART-MIG-07"'),
+      } }),
+      pattern: /exactly the ordered ART-MIG-05 and ART-MIG-06 governed-art style blocks/u,
     },
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: {

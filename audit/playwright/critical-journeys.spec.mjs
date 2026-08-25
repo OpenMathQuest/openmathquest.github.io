@@ -6,6 +6,7 @@ import {
 import {
   ART_QUESTION_SHELL_RAIL_LABELS,
   ART_QUESTION_ZONE_NARROW_MAX_PX,
+  artEarlyCountingIssues,
   artQuestionShellIssues,
   artQuestionZoneIssues,
 } from "../lib/art-question-shell.mjs";
@@ -30,11 +31,16 @@ import {
 } from "./fixtures.mjs";
 
 const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
-const FUNCTIONAL_ART_STYLE_ORIGIN = 'style[data-mq-functional-art="ART-MIG-05"]';
+const FUNCTIONAL_ART_STYLE_ORIGINS = Object.freeze({
+  earlyCounting: 'style[data-mq-functional-art="ART-MIG-06"]',
+  shellAndZones: 'style[data-mq-functional-art="ART-MIG-05"]',
+});
 const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
-  origin: FUNCTIONAL_ART_STYLE_ORIGIN,
+  origin: record.selector.includes('[data-input-method="count_touch"]')
+    ? FUNCTIONAL_ART_STYLE_ORIGINS.earlyCounting
+    : FUNCTIONAL_ART_STYLE_ORIGINS.shellAndZones,
   ...record,
-})));
+})).sort((left, right) => `${left.origin}\u0000${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.origin}\u0000${right.selector}\u0000${right.cssProperty}`, "en")));
 const EXPECTED_PROJECTED_PROPERTIES = Object.freeze(designTokenProjectionProperties(DESIGN_TOKENS).map((record) => record.name));
 
 async function tutorialIdentity(page) {
@@ -684,7 +690,7 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await expect(page.locator("section.question .question-response")).toBeVisible();
 });
 
-test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-05 runtime consumers", async ({ page }) => {
+test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 through ART-MIG-06 runtime consumers", async ({ page }) => {
   const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
   const settle = async () => {
     await page.goto("/index.html", { waitUntil: "domcontentloaded" });
@@ -693,7 +699,9 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-05 r
   };
   const runtimeConsumerState = async () => page.evaluate(() => {
     const projectionLink = document.querySelector('link[data-mq-design-token-projection="v1"]');
-    const styleElement = document.querySelector('style[data-mq-functional-art="ART-MIG-05"]');
+    const governedStyleElements = [...document.querySelectorAll("style[data-mq-functional-art]")];
+    const styleElements = new Map(governedStyleElements
+      .map((element) => [element, `style[data-mq-functional-art="${element.getAttribute("data-mq-functional-art")}"]`]));
     const consumers = [];
     const inaccessible = [];
     const unparsed = [];
@@ -712,6 +720,25 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-05 r
         if (namespaceUses !== tokenNames.length) unparsed.push(`${origin}:${selector}:${cssProperty}:unparsed-namespace-use`);
       }
     };
+    const inspectGovernedSource = (element, origin) => {
+      if (!element.sheet) inaccessible.push(`${origin}:sheet-not-parsed`);
+      const source = canonicalCss(element.textContent || "");
+      let parsedNamespaceUses = 0;
+      for (const block of source.matchAll(/([^{}]+)\{([^{}]*)\}/gu)) {
+        const selector = block[1].trim().replace(/\s+/gu, " ");
+        for (const declaration of block[2].split(";")) {
+          const separator = declaration.indexOf(":");
+          if (separator < 1) continue;
+          const cssProperty = declaration.slice(0, separator).trim();
+          const value = declaration.slice(separator + 1);
+          const tokenNames = [...value.matchAll(/var\(\s*(--mq-conservatory-[a-z0-9-]+)\s*\)/gu)].map((match) => match[1]);
+          if (tokenNames.length) consumers.push({ origin, selector, cssProperty, tokenNames });
+          parsedNamespaceUses += tokenNames.length;
+        }
+      }
+      const declaredNamespaceUses = [...source.matchAll(/--mq-conservatory-/gu)].length;
+      if (declaredNamespaceUses !== parsedNamespaceUses) unparsed.push(`${origin}:unparsed-namespace-use`);
+    };
     const inspectRules = (rules, origin) => {
       for (let index = 0; index < rules.length; index += 1) {
         const rule = rules[index];
@@ -726,9 +753,11 @@ test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-05 r
         }
       }
     };
+    governedStyleElements.forEach((element) => inspectGovernedSource(element, styleElements.get(element)));
     [...document.styleSheets].forEach((sheet, index) => {
       if (sheet === projectionLink?.sheet) return;
-      const origin = sheet.ownerNode === styleElement ? 'style[data-mq-functional-art="ART-MIG-05"]' : `sheet-${index}`;
+      if (styleElements.has(sheet.ownerNode)) return;
+      const origin = styleElements.get(sheet.ownerNode) || `sheet-${index}`;
       try { inspectRules(sheet.cssRules, origin); }
       catch (error) { inaccessible.push(`${origin}:${error.name}`); }
     });
@@ -1155,4 +1184,163 @@ test("[PW-F-16] observation and construction zones preserve semantics and respon
   expect(reteachSnapshot.workedReferenceCount).toBeGreaterThan(0);
   expect(reteachSnapshot.workedReferenceInObservationCount).toBe(reteachSnapshot.workedReferenceCount);
   expect(artQuestionZoneIssues(reteachSnapshot), "real-reteach-phone-portrait").toEqual([]);
+});
+
+async function openGovernedEarlyCountingQuestion(page) {
+  await page.clock.setFixedTime("2026-08-24T12:00:00-03:00");
+  await openFreshHome(page);
+  const identity = await page.evaluate(() => {
+    const engine = window.MathQuestEngine;
+    const playDay = 20689;
+    const seed = 6;
+    const skill = engine.SKILL_BY_ID["MQ-002"];
+    const slotFor = (index) => {
+      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
+      return {
+        skillId: skill.skillId,
+        ordinal: index,
+        baseOrdinal: index,
+        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
+        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: index + 1 }).includes(index + 1),
+        mandatorySecondExposure: false,
+        obligation: "NEW",
+        preview: false,
+      };
+    };
+    const queue = [slotFor(0), slotFor(1)];
+    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
+    const state = engine.createInitialState(playDay);
+    state.earnedLevel = Math.max(state.earnedLevel, question.level);
+    state.activeSession = {
+      sessionId: "art-mig-06-playwright",
+      playDay,
+      level: question.level,
+      stage: question.stage,
+      seed,
+      queue,
+      baseSlotCount: queue.length,
+      effectivePracticeLimit: queue.length,
+      effectivePlannedCount: queue.length,
+      effectiveTimeCapMs: 60000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 1,
+      world: "ocean",
+      servedCount: 2,
+      servedOrdinals: [0, 1],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
+        screen: "session",
+        phase: "question",
+        question,
+        choiceCandidates: [],
+        choiceResolved: {},
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        responseState: engine.createResponseState(question),
+        modelTouched: false,
+        hintUsed: false,
+        tutorialOpen: false,
+        tutorialStep: 1,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        attemptCommitted: true,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach: false,
+        capstoneSubmitted: false,
+      },
+    };
+    const issue = engine.validateState(state);
+    if (issue !== null) throw new Error(`Invalid early-counting Playwright fixture: ${issue}`);
+    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
+    return { questionId: question.questionId, objectOracle: Number(question.answer.value) };
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const question = page.locator('section.question[data-skill-id="MQ-002"][data-input-method="COUNT_TOUCH"]');
+  await expect(question).toBeVisible();
+  expect(identity.questionId).toBe("MQ-002-1-53399667");
+  expect(identity.objectOracle).toBe(3);
+  return question;
+}
+
+async function earlyCountingSnapshot(page, expectedTouchedCount) {
+  return page.evaluate((expectedTouchedCount) => {
+    const question = document.querySelector('section.question[data-skill-id="MQ-002"][data-input-method="COUNT_TOUCH"]');
+    const task = question?.querySelector('.count-touch-task[data-response-kind="COUNT_TOUCH"]');
+    const objectButtons = [...(task?.querySelectorAll('.touch-objects button[data-item-id]') || [])];
+    const numberButtons = [...(task?.querySelectorAll('.count-number-bank button[data-count-value]') || [])];
+    const counted = objectButtons.find((button) => button.getAttribute("aria-pressed") === "true") || null;
+    const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+    const support = question?.querySelector(".support-scroll") || null;
+    const saved = JSON.parse(localStorage.getItem(window.MathQuestEngine.CONSTANTS.STORAGE_NAMESPACE) || "null");
+    const savedQuestion = saved?.activeSession?.uiState?.question || null;
+    const firstBounds = objectButtons[0]?.getBoundingClientRect() || null;
+    return {
+      skillId: question?.dataset.skillId || null,
+      inputMethod: question?.dataset.inputMethod || null,
+      semanticPromptStringId: savedQuestion?.semanticPromptStringId || null,
+      rendererFamily: task?.dataset.artRendererFamily || null,
+      objectOracle: Number(savedQuestion?.answer?.value),
+      objectCount: objectButtons.length,
+      objectIds: objectButtons.map((button) => button.dataset.itemId),
+      numberBank: numberButtons.map((button) => Number(button.dataset.countValue)),
+      expectedNumberBank: [0, 1, 2, 3],
+      touchedCount: objectButtons.filter((button) => button.getAttribute("aria-pressed") === "true").length,
+      expectedTouchedCount,
+      countedHasGeometricCheckCue: Boolean(counted && (() => {
+        const cue = getComputedStyle(counted, "::after");
+        return cue.content === '\"\"'
+          && cue.backgroundImage.split("linear-gradient").length === 3
+          && Number.parseFloat(cue.width) >= 32
+          && Number.parseFloat(cue.height) >= 32;
+      })()),
+      countedHasVisibleTextCue: Boolean(counted && counted.querySelector("span:last-child")?.textContent.trim() === "Counted"),
+      countedHasAccessibleCue: Boolean(counted && counted.getAttribute("aria-label")?.includes("counted") && counted.getAttribute("aria-pressed") === "true"),
+      answerDisclosureCount: (question?.querySelectorAll('[data-feedback-state],[data-correct-answer],.worked-answer,.feedback')?.length || 0)
+        + numberButtons.filter((button) => button.getAttribute("aria-pressed") === "true").length,
+      confirmDisabled: confirm?.disabled === true,
+      firstResponseOnFirstScreen: Boolean(firstBounds && firstBounds.top >= 0 && firstBounds.bottom <= innerHeight),
+      horizontalDocumentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      nestedQuestionScroll: Boolean(support && support.scrollHeight > support.clientHeight && ["auto", "scroll"].includes(getComputedStyle(support).overflowY)),
+      targets: [...objectButtons.map((button) => ({ kind: "object", width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })), ...numberButtons.map((button) => ({ kind: "number", width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height }))],
+    };
+  }, expectedTouchedCount);
+}
+
+test("[PW-F-17] ART-MIG-06 early counting preserves the oracle, answer boundary, counted cues, and responsive geometry", async ({ page }) => {
+  const question = await openGovernedEarlyCountingQuestion(page);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyCountingIssues(await earlyCountingSnapshot(page, 0)), `initial-${viewport.id}`).toEqual([]);
+  }
+  await activate(question.locator('.touch-objects button[data-item-id="i0"]'), page);
+  await expect(question.locator('.touch-objects button[data-item-id="i0"]')).toHaveAttribute("aria-pressed", "true");
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyCountingIssues(await earlyCountingSnapshot(page, 1)), `partial-${viewport.id}`).toEqual([]);
+  }
 });

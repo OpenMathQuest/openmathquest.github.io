@@ -9,7 +9,7 @@
     "designSystemId": { "const": "math-quest-conservatory" },
     "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
     "schemaVersion": { "const": 1 },
-    "status": { "const": "RUNTIME_QUESTION_ZONES_ACTIVE" },
+    "status": { "const": "RUNTIME_EARLY_COUNTING_ACTIVE" },
     "primaryConsumer": { "const": "AI_AGENT" },
     "authority": { "const": "THIS_FILE" },
     "licence": { "$ref": "#/$defs/licence" },
@@ -70,11 +70,11 @@
         "runtimeLinkSelector": { "const": "link[data-mq-design-token-projection=\"v1\"]" },
         "runtimeConsumerPaths": { "const": ["index.html"] },
         "projectedValueClasses": { "const": ["COLOURS", "DIMENSIONS", "MOTION", "VIEW_PALETTES"] },
-        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_05" },
-        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_QUESTION_SHELL_AND_QUESTION_ZONES_ONLY_ART_MIG_05" },
-        "activationGate": { "const": "ZONE_GEOMETRY_AND_HUMAN_LEGIBILITY_VERIFIED" },
+        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04_06" },
+        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_AND_EARLY_COUNTING_ONLY_THROUGH_ART_MIG_06" },
+        "activationGate": { "const": "EARLY_COUNTING_COUNT_TOUCH_PLAIN_BASELINE_AND_ORACLE_VERIFIED" },
         "consumerContractSha256": { "$ref": "#/$defs/sha256" },
-        "consumerRecordCount": { "const": 63 },
+        "consumerRecordCount": { "const": 100 },
         "semanticInputSha256": { "$ref": "#/$defs/sha256" },
         "cssSha256": { "$ref": "#/$defs/sha256" },
         "cssBytes": { "type": "integer", "minimum": 1 }
@@ -83,12 +83,12 @@
     "runtimeConsumerContract": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "sourcePath", "styleMarker", "mode", "records"],
+      "required": ["id", "version", "sourcePath", "styleMarkers", "mode", "records"],
       "properties": {
-        "id": { "const": "ART-MIG-05-QUESTION-ZONE-CONSUMERS" },
-        "version": { "const": 3 },
+        "id": { "const": "ART-MIG-04-06-GOVERNED-RUNTIME-CONSUMERS" },
+        "version": { "const": 4 },
         "sourcePath": { "const": "index.html" },
-        "styleMarker": { "const": "style[data-mq-functional-art=\"ART-MIG-05\"]" },
+        "styleMarkers": { "const": ["style[data-mq-functional-art=\"ART-MIG-05\"]", "style[data-mq-functional-art=\"ART-MIG-06\"]"] },
         "mode": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST" },
         "records": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/runtimeConsumerRecord" } }
       }

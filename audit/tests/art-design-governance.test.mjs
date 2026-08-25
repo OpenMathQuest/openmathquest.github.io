@@ -166,10 +166,10 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
   assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
-  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-05");
-  assert.equal(result.tokens.status, "RUNTIME_QUESTION_ZONES_ACTIVE");
+  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-06");
+  assert.equal(result.tokens.status, "RUNTIME_EARLY_COUNTING_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
-  assert.equal(result.assets.version, "1.3.0");
+  assert.equal(result.assets.version, "1.4.0");
   assert.equal(result.assets.records.length, 0);
 });
 
@@ -197,6 +197,9 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   const approval = decisions.implementationDecisionLog.entries[2];
   const zones = decisions.implementationDecisionLog.entries[3];
   const zoneApproval = decisions.implementationDecisionLog.entries[4];
+  const earlyCounting = decisions.implementationDecisionLog.entries[5];
+  const earlyCountingApproval = decisions.implementationDecisionLog.entries[6];
+  const correctedEarlyCountingApproval = decisions.implementationDecisionLog.entries[7];
   assert.equal(entry.id, "ART-DEC-001");
   assert.equal(entry.baseRevision, "f3a0c39b939d860c7531355489bddc1a0b4f3db9");
   assert.deepEqual(entry.affectedDesignRuleIds, ["ART-R-008", "ART-R-021"]);
@@ -213,6 +216,26 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.ok(zoneApproval.adopted.includes("COMPARISON_SET_SHA256_CA16B30B5BA5F75E331391C7B7DB8A3F638C20CB5F19C64BA9E945A31ACDBAD2"));
   assert.ok(zoneApproval.adopted.includes("AFTER_RETEACH_PHONE_SHA256_0A254D29620EC1BBBC51391E26890DD417CC71D7BCC99EB367616BD636E49743"));
   assert.ok(zoneApproval.constraints.includes("ART_MIG_06_REQUIRES_NEW_HANDOFF"));
+  assert.equal(earlyCounting.id, "ART-DEC-006");
+  assert.equal(earlyCounting.decisionId, "APPLY_CONSERVATORY_MATERIAL_AND_REDUNDANT_RESPONSE_CUES_TO_DATA_OWNED_COUNTING");
+  assert.deepEqual(earlyCounting.affectedDesignRuleIds, ["ART-R-008", "ART-R-009", "ART-R-029", "ART-R-034", "ART-R-046", "ART-R-048"]);
+  assert.equal(earlyCountingApproval.id, "ART-DEC-007");
+  assert.equal(earlyCountingApproval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_06_EARLY_COUNTING_RENDERED_HANDOFF");
+  assert.equal(earlyCountingApproval.baseRevision, "ebc824c81ede68308899da0091e4a3af3bb6772c");
+  assert.equal(earlyCountingApproval.status, "SUPERSEDED");
+  assert.ok(earlyCountingApproval.adopted.includes("CAPTURE_EVIDENCE_SHA256_682965BB669B020A02C49D50A9C7A18783192FC9411E8A52C86FF6C777670D3A"));
+  assert.ok(earlyCountingApproval.adopted.includes("INTEGRATED_AFTER_IMAGES_BYTE_IDENTICAL_12_OF_12"));
+  assert.ok(earlyCountingApproval.constraints.includes("NO_IMPLIED_APPROVAL_FOR_LATER_ART_MIG_06_RENDERER_FAMILIES"));
+  assert.equal(correctedEarlyCountingApproval.id, "ART-DEC-008");
+  assert.equal(correctedEarlyCountingApproval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_06_CSS_GEOMETRIC_CHECK_CORRECTION_HANDOFF");
+  assert.equal(correctedEarlyCountingApproval.baseRevision, "ebc824c81ede68308899da0091e4a3af3bb6772c");
+  assert.equal(correctedEarlyCountingApproval.status, "ACTIVE");
+  assert.deepEqual(correctedEarlyCountingApproval.supersedes, ["ART-DEC-007"]);
+  assert.ok(correctedEarlyCountingApproval.adopted.includes("AFTER_PARTIAL_PHONE_PORTRAIT_SHA256_A74A1C9017EB503C848EA8D6385634376D8F166E88B26FF9FD6B3AB40E628C29"));
+  assert.ok(correctedEarlyCountingApproval.adopted.includes("AFTER_PARTIAL_DESKTOP_SHA256_551056823A48672B07F2831A111F9E72562B807F6C5BD6E8C7A84B7D953B96DA"));
+  assert.ok(correctedEarlyCountingApproval.adopted.includes("CORRECTION_COMPARISON_EVIDENCE_SHA256_18F9562FD3814EA0A47D6063B3BD20D893A50F8944587BD3A5A2093A1B336CCF"));
+  assert.ok(correctedEarlyCountingApproval.adopted.includes("INITIAL_IMAGES_BYTE_IDENTICAL_6_OF_6"));
+  assert.ok(correctedEarlyCountingApproval.constraints.includes("ORIGINAL_PLATFORM_GLYPH_APPROVAL_SUPERSEDED"));
 
   const unknownRule = clone(decisions);
   unknownRule.implementationDecisionLog.entries[0].affectedDesignRuleIds = ["ART-R-999"];

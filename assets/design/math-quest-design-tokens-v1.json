@@ -1,8 +1,8 @@
 {
   "designSystemId": "math-quest-conservatory",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schemaVersion": 1,
-  "status": "RUNTIME_QUESTION_ZONES_ACTIVE",
+  "status": "RUNTIME_EARLY_COUNTING_ACTIVE",
   "primaryConsumer": "AI_AGENT",
   "authority": "THIS_FILE",
   "licence": {
@@ -12,7 +12,7 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "366880fbea60333375da58d8be821226d1e8803487bafd40efc717152630f105"
+    "sha256": "565ef1afff6ca53f838eaf0d47914dae093d7a775e6d1bc21ceda4b6aa3f7a62"
   },
   "sourceDecisionIds": [
     "ART-SRC-005",
@@ -42,22 +42,324 @@
       "MOTION",
       "VIEW_PALETTES"
     ],
-    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_05",
-    "renderedChangePolicy": "FUNCTIONAL_ART_QUESTION_SHELL_AND_QUESTION_ZONES_ONLY_ART_MIG_05",
-    "activationGate": "ZONE_GEOMETRY_AND_HUMAN_LEGIBILITY_VERIFIED",
-    "consumerContractSha256": "365dd9dba008f1f63e36bdbf026825498b530f2fd9afa6a76b6d0f89ad760ee5",
-    "consumerRecordCount": 63,
-    "semanticInputSha256": "578d32f6b17a4eccadf7ef1adb118128a30cb0e7ff6126875846c1278ed22dbc",
-    "cssSha256": "29ab5cfdd1febe539a5b58ba02f20d945cb9cd80a91a9e0c424b592dfbff2a5d",
+    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04_06",
+    "renderedChangePolicy": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_AND_EARLY_COUNTING_ONLY_THROUGH_ART_MIG_06",
+    "activationGate": "EARLY_COUNTING_COUNT_TOUCH_PLAIN_BASELINE_AND_ORACLE_VERIFIED",
+    "consumerContractSha256": "4aeb78a5a267e1c87b73c6fb3ae56e890a179a7e4e81e03d9d5fd12db9810521",
+    "consumerRecordCount": 100,
+    "semanticInputSha256": "f5e91081bec82ec8f6d3491e4b004e82227e0c89b8484883c5a1e96de4a37ab4",
+    "cssSha256": "02d3fe21cc07849543ffaa87c0d2579adc81194a120007e64068222b8316d62a",
     "cssBytes": 3402
   },
   "runtimeConsumerContract": {
-    "id": "ART-MIG-05-QUESTION-ZONE-CONSUMERS",
-    "version": 3,
+    "id": "ART-MIG-04-06-GOVERNED-RUNTIME-CONSUMERS",
+    "version": 4,
     "sourcePath": "index.html",
-    "styleMarker": "style[data-mq-functional-art=\"ART-MIG-05\"]",
+    "styleMarkers": [
+      "style[data-mq-functional-art=\"ART-MIG-05\"]",
+      "style[data-mq-functional-art=\"ART-MIG-06\"]"
+    ],
     "mode": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST",
     "records": [
+      {
+        "id": "consumer.early-counting.counted-badge.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.counted-badge.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.counted-badge.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-bank.border-bottom",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank",
+        "cssProperty": "border-bottom",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-bank.border-top",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank",
+        "cssProperty": "border-top",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.outline",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "outline",
+        "tokenIds": [
+          "colour.action.focus"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-counted.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-counted.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.action.primary",
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label-counted.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched>span:last-child",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label-counted.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched>span:last-child",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button>span:last-child",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button>span:last-child",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.status.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-status",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn-cap.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn-cap.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]::before",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-counter.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"counter\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-moon-rock.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"moon-rock\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-shell.background",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"shell\"]",
+        "cssProperty": "background",
+        "tokenIds": [
+          "colour.surface.ivory",
+          "colour.surface.pale-wood",
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
       {
         "id": "consumer.focus.outline-colour",
         "selector": ":focus-visible",
