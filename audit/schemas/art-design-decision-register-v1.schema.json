@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/art-design-decision-register-v1.schema.json",
+  "title": "Math Quest art-design decision register v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registerId",
+    "version",
+    "schemaVersion",
+    "status",
+    "primaryConsumer",
+    "authority",
+    "licence",
+    "sourceBundle",
+    "interpretation",
+    "orderingContract",
+    "semanticClasses",
+    "themePolicy",
+    "constructionWorkflow",
+    "sourceDecisions",
+    "designRules",
+    "implementationDecisionLog",
+    "migrationSequence"
+  ],
+  "properties": {
+    "registerId": { "const": "math-quest-art-design-decisions" },
+    "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "primaryConsumer": { "const": "AI_AGENT" },
+    "authority": { "const": "THIS_FILE" },
+    "licence": { "$ref": "#/$defs/licence" },
+    "sourceBundle": { "$ref": "#/$defs/sourceBundle" },
+    "interpretation": { "$ref": "#/$defs/interpretation" },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/semanticClasses", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/constructionWorkflow/stages", "policy": "ORDER_ASCENDING" },
+        { "jsonPointer": "/constructionWorkflow/steps", "policy": "ORDER_ASCENDING" },
+        { "jsonPointer": "/sourceDecisions", "policy": "SOURCE_NUMBER_ASCENDING" },
+        { "jsonPointer": "/designRules", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/implementationDecisionLog/entries", "policy": "ORDER_ASCENDING_APPEND_ONLY" },
+        { "jsonPointer": "/migrationSequence", "policy": "ORDER_ASCENDING" }
+      ]
+    },
+    "semanticClasses": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/semanticClass" }
+    },
+    "themePolicy": { "$ref": "#/$defs/themePolicy" },
+    "constructionWorkflow": { "$ref": "#/$defs/constructionWorkflow" },
+    "sourceDecisions": {
+      "type": "array",
+      "minItems": 49,
+      "maxItems": 49,
+      "items": { "$ref": "#/$defs/sourceDecision" }
+    },
+    "designRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/designRule" }
+    },
+    "implementationDecisionLog": { "$ref": "#/$defs/implementationDecisionLog" },
+    "migrationSequence": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/migrationStep" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gitCommit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+    "ruleId": { "type": "string", "pattern": "^ART-R-[0-9]{3}$" },
+    "decisionId": { "type": "string", "pattern": "^ART-SRC-[0-9]{3}$" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "scope": { "type": "string", "minLength": 1 },
+        "originalWork": { "const": true }
+      }
+    },
+    "sourceBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileName", "sha256", "internalRoot", "internalManifestSha256", "decisionRegisterPath", "decisionRegisterSha256", "fileCount", "verifiedFileCount", "authorityClass", "repositoryProjectionPolicy", "rightsBasis"],
+      "properties": {
+        "fileName": { "const": "Math_Quest_Art_Design_Bible_IP_Neutral_v1.0.zip" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "internalRoot": { "const": "Math_Quest_Art_Design_Bible_IP_Neutral_v1.0" },
+        "internalManifestSha256": { "$ref": "#/$defs/sha256" },
+        "decisionRegisterPath": { "const": "03_Decision_Register.md" },
+        "decisionRegisterSha256": { "$ref": "#/$defs/sha256" },
+        "fileCount": { "const": 44 },
+        "verifiedFileCount": { "const": 43 },
+        "authorityClass": { "const": "SOURCE_SUGGESTION_ONLY" },
+        "repositoryProjectionPolicy": { "const": "DIRECT_SOURCE_PROJECTION_FORBIDDEN" },
+        "rightsBasis": { "const": "OWNER_CONFIRMED_ORIGINAL_WORK_AUTHORIZED_FOR_MIT_ADAPTATION_2026_08_22" }
+      }
+    },
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normativeFields", "rationalePolicy", "conflictPolicy", "unknownPolicy", "mockupPolicy", "runtimeActivationPolicy"],
+      "properties": {
+        "normativeFields": { "const": ["designRules[].predicate", "designRules[].constraints", "implementationDecisionLog.entries[].decisionId", "implementationDecisionLog.entries[].constraints", "themePolicy", "constructionWorkflow", "migrationSequence"] },
+        "rationalePolicy": { "const": "NON_NORMATIVE_LOCAL_EXPLANATION_NEVER_OVERRIDES_PREDICATE" },
+        "conflictPolicy": { "const": "REPOSITORY_OWNER_CONTRACTS_OVERRIDE_SOURCE_BUNDLE" },
+        "unknownPolicy": { "const": "FAIL_CLOSED" },
+        "mockupPolicy": { "const": "REFERENCE_ONLY_NEVER_MATHEMATICAL_OR_UI_AUTHORITY" },
+        "runtimeActivationPolicy": { "const": "EXPLICIT_VERTICAL_SLICE_REVIEW_AND_GATE_REQUIRED" }
+      }
+    },
+    "semanticClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "predicate"],
+      "properties": {
+        "id": { "enum": ["ATMOSPHERIC", "FUNCTIONAL", "MATHEMATICAL"] },
+        "predicate": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    },
+    "themePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worldIdentity", "scope", "viewModes", "mathThemeBoundary", "legacyTransition", "featurePreservation", "progressTruthOwner"],
+      "properties": {
+        "worldIdentity": { "const": "MATHEMATICAL_CONSERVATORY_AND_WORKSHOP" },
+        "scope": { "const": "ALL_USER_FACING_ROUTES" },
+        "viewModes": { "const": ["OCEAN", "FOREST", "SPACE"] },
+        "mathThemeBoundary": { "const": "THEMES_AFFECT_ATMOSPHERE_ONLY_NOT_MATHEMATICAL_FACTS_PIECES_COLOURS_OR_GEOMETRY" },
+        "legacyTransition": { "const": "REPLACE_THEME_DEPENDENT_MATH_PIECES_ONLY_AFTER_NEUTRAL_EQUIVALENT_PASSES_CLARITY_AND_PLAY_TESTS" },
+        "featurePreservation": { "const": "VISUAL_RECOMPOSITION_MUST_NOT_REMOVE_HIDE_RENAME_OR_CHANGE_GOVERNED_FEATURES_CONTROLS_STRINGS_OR_FLOWS" },
+        "progressTruthOwner": { "const": "CURRENT_RUNTIME_AND_CURRICULUM_CONTRACTS" }
+      }
+    },
+    "constructionStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order"],
+      "properties": {
+        "id": { "enum": ["COORDINATES", "PERSPECTIVE", "ENVELOPE", "BOXES", "AXES", "SECTIONS", "CURVES", "CONTOUR", "SHADOWS", "VALUES", "COLOUR", "MATERIALS", "DETAIL"] },
+        "order": { "type": "integer", "minimum": 1, "maximum": 13 }
+      }
+    },
+    "workflowTier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "assetClass", "minimumApplicableSteps", "maximumApplicableSteps", "fullStageSequenceRequired"],
+      "properties": {
+        "id": { "enum": ["TIER_1", "TIER_2", "TIER_3"] },
+        "assetClass": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "minimumApplicableSteps": { "type": "integer", "minimum": 13, "maximum": 53 },
+        "maximumApplicableSteps": { "type": "integer", "minimum": 13, "maximum": 53 },
+        "fullStageSequenceRequired": { "const": true }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "stage", "directive", "rationale", "falsePassPrevented"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-WF-(?:0[1-9]|[1-4][0-9]|5[0-3])$" },
+        "order": { "type": "integer", "minimum": 1, "maximum": 53 },
+        "stage": { "enum": ["COORDINATES", "PERSPECTIVE", "ENVELOPE", "BOXES", "AXES", "SECTIONS", "CURVES", "CONTOUR", "SHADOWS", "VALUES", "COLOUR", "MATERIALS", "DETAIL"] },
+        "directive": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "rationale": { "type": "string", "minLength": 20 },
+        "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    },
+    "constructionWorkflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflowId", "appliesTo", "governingPriority", "laterStageConcealmentPolicy", "notApplicablePolicy", "stages", "tiers", "steps", "evidenceRequirements", "archivePolicy"],
+      "properties": {
+        "workflowId": { "const": "ART-WORKFLOW-CONSTRUCTION-FIRST-53" },
+        "appliesTo": { "const": "ALL_NEW_OR_MATERIALLY_REVISED_GAME_ART_HUMAN_OR_AI_CREATED" },
+        "governingPriority": { "const": "MATHEMATICAL_TRUTH_AND_INSTRUCTIONAL_CLARITY_OVERRIDE_ART_REALISM" },
+        "laterStageConcealmentPolicy": { "const": "FORBIDDEN" },
+        "notApplicablePolicy": { "const": "WRITTEN_REASON_REQUIRED_PER_STEP" },
+        "stages": { "type": "array", "minItems": 13, "maxItems": 13, "items": { "$ref": "#/$defs/constructionStage" } },
+        "tiers": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/workflowTier" } },
+        "steps": { "type": "array", "minItems": 53, "maxItems": 53, "items": { "$ref": "#/$defs/workflowStep" } },
+        "evidenceRequirements": { "const": ["INPUT", "OUTPUT", "CONSTRAINTS_RESOLVED", "UNRESOLVED_ISSUES", "CORRECTIONS", "REVIEW_DISPOSITION", "NEXT_STAGE_AUTHORIZATION"] },
+        "archivePolicy": { "const": "PUBLIC_SAFE_RECORD_REQUIRED_PRIVATE_PRODUCTION_ARCHIVE_OPTIONAL_AND_NEVER_RUNTIME_OR_RELEASE_DEPENDENCY" }
+      }
+    },
+    "sourceDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceNumber", "sourceTitle", "sourcePath", "sourceFileSha256", "disposition", "runtimeProjection", "designRuleIds", "rejectedPortions", "rationale"],
+      "properties": {
+        "id": { "$ref": "#/$defs/decisionId" },
+        "sourceNumber": { "type": "integer", "minimum": 1, "maximum": 49 },
+        "sourceTitle": { "type": "string", "minLength": 3 },
+        "sourcePath": { "const": "03_Decision_Register.md" },
+        "sourceFileSha256": { "$ref": "#/$defs/sha256" },
+        "disposition": { "enum": ["UNRESOLVED", "REVIEWED_ADOPTED", "REVIEWED_MODIFIED", "REVIEWED_REJECTED"] },
+        "runtimeProjection": { "enum": ["ACTIVE_RULE", "ROADMAP_RULE", "REFERENCE_ONLY", "FORBIDDEN"] },
+        "designRuleIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/ruleId" } },
+        "rejectedPortions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rationale": { "type": "string", "minLength": 20 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "disposition": { "enum": ["REVIEWED_ADOPTED", "REVIEWED_MODIFIED"] } }, "required": ["disposition"] },
+          "then": { "properties": { "designRuleIds": { "type": "array", "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "disposition": { "enum": ["UNRESOLVED", "REVIEWED_REJECTED"] } }, "required": ["disposition"] },
+          "then": { "properties": { "designRuleIds": { "type": "array", "maxItems": 0 } } }
+        },
+        {
+          "if": { "properties": { "disposition": { "const": "REVIEWED_MODIFIED" } }, "required": ["disposition"] },
+          "then": { "properties": { "rejectedPortions": { "type": "array", "minItems": 1 } } }
+        }
+      ]
+    },
+    "designRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceDecisionIds", "scopeId", "propertyId", "activation", "predicate", "constraints", "rationale", "falsePassPrevented", "requiredProofs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ruleId" },
+        "sourceDecisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/decisionId" } },
+        "scopeId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "propertyId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "activation": { "enum": ["GOVERNANCE_ACTIVE", "VERTICAL_SLICE_ROADMAP"] },
+        "predicate": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "constraints": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rationale": { "type": "string", "minLength": 20 },
+        "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "requiredProofs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] } }
+      }
+    },
+    "implementationDecisionLog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logId", "authority", "appendPolicy", "supersessionPolicy", "entries"],
+      "properties": {
+        "logId": { "const": "math-quest-art-implementation-decisions" },
+        "authority": { "const": "THIS_FILE" },
+        "appendPolicy": { "const": "APPEND_ONLY_ORDER_ASCENDING" },
+        "supersessionPolicy": { "const": "LATER_ENTRY_MUST_REFERENCE_EARLIER_ENTRY_AND_EARLIER_STATUS_MUST_BE_SUPERSEDED" },
+        "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/implementationDecision" } }
+      }
+    },
+    "implementationDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "migrationId", "baseRevision", "status", "scopeId", "decisionId", "affectedSourceDecisionIds", "affectedDesignRuleIds", "adopted", "rejected", "constraints", "rationale", "falsePassPrevented", "requiredProofs", "supersedes"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-DEC-[0-9]{3}$" },
+        "order": { "type": "integer", "minimum": 1 },
+        "migrationId": { "type": "string", "pattern": "^ART-MIG-(?:0[1-9]|1[0-6])$" },
+        "baseRevision": { "$ref": "#/$defs/gitCommit" },
+        "status": { "enum": ["ACTIVE", "SUPERSEDED"] },
+        "scopeId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "decisionId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "affectedSourceDecisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/decisionId" } },
+        "affectedDesignRuleIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/ruleId" } },
+        "adopted": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rejected": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "constraints": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "rationale": { "type": "string", "minLength": 20 },
+        "falsePassPrevented": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "requiredProofs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] } },
+        "supersedes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-DEC-[0-9]{3}$" } }
+      }
+    },
+    "migrationStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "directive", "entryGate", "exitGate"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-MIG-(?:0[1-9]|1[0-6])$" },
+        "order": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "directive": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "entryGate": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "exitGate": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    }
+  }
+}

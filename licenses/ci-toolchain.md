@@ -1,8 +1,8 @@
-# CI-only browser-verification toolchain
+# CI-only verification toolchain
 
 Math Quest uses the following open-source tools only for focused direct-user
-browser journeys, the alternating-beta Deep UX Census, and the disposable
-hosted-Windows trusted-HTTPS canary. They
+browser journeys, closed JSON-contract validation, the alternating-beta Deep
+UX Census, and the disposable hosted-Windows trusted-HTTPS canary. They
 are development dependencies and are not included in the child-facing Pages
 payload, service-worker shell, desktop launcher, or offline installation.
 
@@ -41,7 +41,7 @@ funding requests disabled. The focused browser suite, Deep UX Census, and canary
 Microsoft Edge binary already present on Windows; no Playwright-managed browser
 is downloaded or shipped.
 
-## Ajv 8.20.0 tutorial-manifest validator
+## Ajv 8.20.0 closed JSON-contract validator
 
 - Provider: Ajv contributors
 - Licence: MIT
@@ -50,9 +50,10 @@ is downloaded or shipped.
 - Registry artifact: <https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz>
 - Registry SRI: `sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==`
 
-Ajv validates the closed tutorial-manifest schema during development and
-release checks. It and its dependency closure are CI-only and never enter the
-Pages or service-worker payload.
+Ajv validates closed repository contracts, including tutorial, art-design, and
+art-migration baseline schemas, during development and release checks. It and
+its dependency closure are CI-only and never enter the Pages or service-worker
+payload.
 
 ## Ajv 8.20.0 transitive dependency closure
 
@@ -73,3 +74,28 @@ Pages or service-worker payload.
 Playwright declares this macOS-only package as optional. Math Quest's reviewed
 Windows install uses `--omit=optional`, so the package remains provenance-bound
 in the lockfile but is not installed or executed by the Windows audit.
+
+## fast-check 4.9.0 interaction-fuzz dependency
+
+- Provider: fast-check contributors
+- Licence: MIT
+- Source: <https://github.com/dubzzz/fast-check/tree/0d3c2547dce556f72413607849377530d18ea283/packages/fast-check>
+- Licence: <https://github.com/dubzzz/fast-check/blob/0d3c2547dce556f72413607849377530d18ea283/LICENSE>
+- Registry artifact: <https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz>
+- Registry SRI: `sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==`
+
+fast-check generates and shrinks bounded command sequences for the diagnostic
+Playwright interaction-fuzz lane. It is development-only, cannot make a
+release certification claim, and is not included in the child-facing payload.
+
+## pure-rand 8.4.2 transitive dependency
+
+- Provider: pure-rand contributors
+- Licence: MIT
+- Source: <https://github.com/dubzzz/pure-rand/tree/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6>
+- Licence: <https://github.com/dubzzz/pure-rand/blob/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6/LICENSE>
+- Registry artifact: <https://registry.npmjs.org/pure-rand/-/pure-rand-8.4.2.tgz>
+- Registry SRI: `sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==`
+
+pure-rand is fast-check's reviewed seeded pseudorandom-generator dependency.
+It is installed and executed only with the diagnostic development toolchain.

@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/art-asset-register-v1.schema.json",
+  "title": "Math Quest governed art-asset register v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["registerId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "decisionRegisterBinding", "scope", "orderingContract", "semanticClassSemantics", "acceptanceStateSemantics", "records"],
+  "properties": {
+    "registerId": { "const": "math-quest-art-assets" },
+    "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "primaryConsumer": { "const": "AI_AGENT" },
+    "authority": { "const": "THIS_FILE" },
+    "licence": { "$ref": "#/$defs/licence" },
+    "decisionRegisterBinding": { "$ref": "#/$defs/binding" },
+    "scope": {
+      "const": {
+        "governedPathPattern": "^assets/design/",
+        "excludedNonAssetPaths": [
+          "assets/design/math-quest-design-tokens-v1.css",
+          "assets/design/math-quest-design-tokens-v1.json"
+        ],
+        "legacyAssetPolicy": "EXISTING_ASSETS_OUTSIDE_GOVERNED_PATH_REMAIN_RIGHTS_GOVERNED_UNTIL_MIGRATED",
+        "unregisteredGovernedAssetPolicy": "FAIL_CLOSED"
+      }
+    },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/records", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/records/*/decisionIds", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/designRuleIds", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/featureIds", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/tutorialRefs", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/permittedUses", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/requiredProofs", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/records/*/evidence/constructionEvidence", "policy": "WORKFLOW_ORDER_ASCENDING_EXACT_COVER" },
+        { "jsonPointer": "/records/*/evidence/proofEvidence", "policy": "LEXICOGRAPHIC_BY_PROOF_ID_EXACT_COVER" }
+      ]
+    },
+    "semanticClassSemantics": {
+      "const": {
+        "DECORATIVE_ATMOSPHERE": "CANNOT_ENCODE_MATHEMATICAL_FACT_INSTRUCTION_STATE_CONTROL_OR_ANSWER",
+        "FUNCTIONAL_UI": "COMMUNICATES_CONTROL_STATE_NAVIGATION_OR_STATUS_WITH_ACCESSIBLE_EQUIVALENT",
+        "MATHEMATICAL_REPRESENTATION": "MAY_COMMUNICATE_QUANTITY_GROUPING_ORDER_OPERATION_EQUALITY_GEOMETRY_OR_ANSWER"
+      }
+    },
+    "acceptanceStateSemantics": {
+      "const": {
+        "CANDIDATE": "NOT_AUTHORIZED_FOR_RUNTIME_OR_RELEASE",
+        "IMPLEMENTED": "EXACT_REVIEWED_USE_PRESENT_IN_RUNTIME_NOT_RELEASE_CERTIFIED",
+        "RELEASE_CERTIFIED": "EXACT_CANDIDATE_HASH_AND_PERMITTED_USE_PASSED_ALL_REQUIRED_GATES"
+      }
+    },
+    "records": { "type": "array", "items": { "$ref": "#/$defs/record" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": { "spdx": { "const": "MIT" }, "scope": { "type": "string", "minLength": 1 }, "originalWork": { "const": true } }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "const": "audit/art-design-decision-register-v1.json" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["constructionEvidence", "proofEvidence", "plainBaselineSelector", "renderedEvidenceSelectors", "mathematicalOracleId", "rightsEvidencePath", "reviewedRevision", "reviewedAssetSha256"],
+      "properties": {
+        "constructionEvidence": {
+          "type": "array",
+          "minItems": 53,
+          "maxItems": 53,
+          "items": { "$ref": "#/$defs/constructionEvidenceRecord" }
+        },
+        "proofEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/proofEvidenceRecord" }
+        },
+        "plainBaselineSelector": { "type": ["string", "null"], "minLength": 1 },
+        "renderedEvidenceSelectors": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "mathematicalOracleId": { "type": ["string", "null"], "minLength": 1 },
+        "rightsEvidencePath": { "type": ["string", "null"], "minLength": 1 },
+        "reviewedRevision": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40}$" },
+        "reviewedAssetSha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "constructionEvidenceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stepId", "status", "evidenceRefs", "notApplicableReason"],
+      "properties": {
+        "stepId": { "type": "string", "pattern": "^ART-WF-(?:0[1-9]|[1-4][0-9]|5[0-3])$" },
+        "status": { "enum": ["APPLICABLE_PENDING", "APPLIED_PROVED", "NOT_APPLICABLE_JUSTIFIED"] },
+        "evidenceRefs": { "$ref": "#/$defs/constructionEvidenceRefs" },
+        "notApplicableReason": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "APPLIED_PROVED" } }, "required": ["status"] },
+          "then": {
+            "properties": {
+              "evidenceRefs": {
+                "type": "object",
+                "properties": {
+                  "INPUT": { "type": "array", "minItems": 1 },
+                  "OUTPUT": { "type": "array", "minItems": 1 },
+                  "CONSTRAINTS_RESOLVED": { "type": "array", "minItems": 1 },
+                  "REVIEW_DISPOSITION": { "type": "array", "minItems": 1 },
+                  "NEXT_STAGE_AUTHORIZATION": { "type": "array", "minItems": 1 }
+                }
+              },
+              "notApplicableReason": { "type": "null" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "APPLICABLE_PENDING" } }, "required": ["status"] },
+          "then": { "properties": { "evidenceRefs": { "const": { "INPUT": [], "OUTPUT": [], "CONSTRAINTS_RESOLVED": [], "UNRESOLVED_ISSUES": [], "CORRECTIONS": [], "REVIEW_DISPOSITION": [], "NEXT_STAGE_AUTHORIZATION": [] } }, "notApplicableReason": { "type": "null" } } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "NOT_APPLICABLE_JUSTIFIED" } }, "required": ["status"] },
+          "then": { "properties": { "evidenceRefs": { "const": { "INPUT": [], "OUTPUT": [], "CONSTRAINTS_RESOLVED": [], "UNRESOLVED_ISSUES": [], "CORRECTIONS": [], "REVIEW_DISPOSITION": [], "NEXT_STAGE_AUTHORIZATION": [] } }, "notApplicableReason": { "type": "string", "minLength": 1 } } }
+        }
+      ]
+    },
+    "constructionEvidenceRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["INPUT", "OUTPUT", "CONSTRAINTS_RESOLVED", "UNRESOLVED_ISSUES", "CORRECTIONS", "REVIEW_DISPOSITION", "NEXT_STAGE_AUTHORIZATION"],
+      "properties": {
+        "INPUT": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "OUTPUT": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "CONSTRAINTS_RESOLVED": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "UNRESOLVED_ISSUES": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "CORRECTIONS": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "REVIEW_DISPOSITION": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } },
+        "NEXT_STAGE_AUTHORIZATION": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } }
+      }
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "allOf": [
+            { "$ref": "#/$defs/path" },
+            { "type": "string", "pattern": "^audit/art-evidence/[A-Za-z0-9][A-Za-z0-9._/-]*$" }
+          ]
+        },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "proofEvidenceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proofId", "status", "evidenceRefs"],
+      "properties": {
+        "proofId": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] },
+        "status": { "enum": ["PENDING", "PROVED", "FAILED"] },
+        "evidenceRefs": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/evidenceRef" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "PENDING" } }, "required": ["status"] },
+          "then": { "properties": { "evidenceRefs": { "type": "array", "maxItems": 0 } } }
+        },
+        {
+          "if": { "properties": { "status": { "enum": ["PROVED", "FAILED"] } }, "required": ["status"] },
+          "then": { "properties": { "evidenceRefs": { "type": "array", "minItems": 1 } } }
+        }
+      ]
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "sha256", "componentId", "semanticClass", "acceptanceState", "workflowTier", "decisionIds", "designRuleIds", "featureIds", "tutorialRefs", "runtimeSelectors", "modes", "permittedUses", "requiredProofs", "mathFactMode", "answerDisclosureBoundary", "evidence"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-ASSET-[A-Z0-9-]+$" },
+        "path": { "type": "string", "pattern": "^assets/design/.+" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "componentId": { "type": "string", "minLength": 1 },
+        "semanticClass": { "enum": ["DECORATIVE_ATMOSPHERE", "FUNCTIONAL_UI", "MATHEMATICAL_REPRESENTATION"] },
+        "acceptanceState": { "enum": ["CANDIDATE", "IMPLEMENTED", "RELEASE_CERTIFIED"] },
+        "workflowTier": { "enum": ["TIER_1", "TIER_2", "TIER_3"] },
+        "decisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-SRC-[0-9]{3}$" } },
+        "designRuleIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-R-[0-9]{3}$" } },
+        "featureIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^(?:child|grownup)\\.[a-z0-9.-]+$" } },
+        "tutorialRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^(?:ANCHOR|CUE|FAMILY):[A-Z0-9_]+$" } },
+        "runtimeSelectors": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "modes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["DEFAULT", "LARGE_HIGH_CONTRAST_MATH", "QUIET_DISPLAY", "REDUCED_MOTION"] } },
+        "permittedUses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "requiredProofs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["ACCESSIBILITY", "CONSTRUCTION", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAIN_BASELINE", "PLAYWRIGHT", "PROVENANCE", "PWA", "RESPONSIVE", "RIGHTS", "VISUAL_QA"] } },
+        "mathFactMode": { "enum": ["NONE", "DETERMINISTIC_RENDERER_OWNS_FACTS"] },
+        "answerDisclosureBoundary": { "enum": ["NOT_APPLICABLE", "MUST_NOT_DISCLOSE_ANSWER", "TUTORIAL_MANIFEST_OWNS_DISCLOSURE"] },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    }
+  }
+}

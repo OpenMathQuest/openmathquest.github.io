@@ -7,6 +7,7 @@ const ALLOWED_PATHS = new Set([
   "/release-shell-v1.json",
   "/sw.js",
   "/curriculum/math-quest-tutorial-manifest-v1.json",
+  "/assets/design/math-quest-design-tokens-v1.css",
   "/assets/fonts/Inter-Variable.ttf",
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
@@ -81,8 +82,6 @@ export async function openFirstQuestion(page) {
   await activate(page.getByRole("button", { name: /Start/u }), page);
   const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
   if (await chooseQuestion.count()) await activate(chooseQuestion.first(), page);
-  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
-  if (await physicalDone.count()) await activate(physicalDone.first(), page);
   const question = page.locator("section.question");
   await expect(question).toBeVisible();
   return question;
@@ -117,8 +116,6 @@ export async function openRegularPatternQuestion(page) {
   await activate(page.getByRole("button", { name: "Next", exact: true }), page);
   const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
   if (await chooseQuestion.count()) await activate(chooseQuestion.first(), page);
-  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
-  if (await physicalDone.count()) await activate(physicalDone.first(), page);
   const question = page.locator('section.question[data-skill-id="MQ-004"][data-input-method="PATTERN_BUILD"]');
   await expect(question).toBeVisible();
   return question;

@@ -10,6 +10,13 @@
   ],
   "entries": [
     {
+      "path": "./assets/design/math-quest-design-tokens-v1.css",
+      "sha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee",
+      "bytes": 3402,
+      "mime": "text/css",
+      "status": 200
+    },
+    {
       "path": "./assets/fonts/Inter-Variable.ttf",
       "sha256": "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
       "bytes": 879708,
@@ -67,8 +74,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "288d709e8181144d07d2eef940314918261bcf821b9d92990d964a8c96bb3534",
-      "bytes": 1237023,
+      "sha256": "6a6e6dce78a1268b98b8dafbd5ae1e109246329378441bc331ee524e3f0f6370",
+      "bytes": 1257793,
       "mime": "text/html",
       "status": 200
     },
@@ -81,8 +88,8 @@
     },
     {
       "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
-      "sha256": "f6347716820dc423ca26c6217d5d61858c1c0e66f96a4fb2a833099729abbc30",
-      "bytes": 73046,
+      "sha256": "ab3c2ef67e6e800234ea68ca8e7b5468712e8642055988f2ed979cd2579c06c8",
+      "bytes": 73387,
       "mime": "application/json",
       "status": 200
     },
@@ -102,8 +109,8 @@
     },
     {
       "path": "./THIRD_PARTY_NOTICES.md",
-      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb",
-      "bytes": 5546,
+      "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae",
+      "bytes": 5879,
       "mime": "text/markdown",
       "status": 200
     }

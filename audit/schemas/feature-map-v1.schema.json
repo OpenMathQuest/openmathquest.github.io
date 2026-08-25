@@ -4,7 +4,7 @@
   "title": "Math Quest user-operable feature map v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["mapId", "version", "schemaVersion", "licence", "aiReaderContractRef", "aiSemantics", "orderingContract", "curriculumBinding", "tutorialBinding", "proofKindCatalog", "proofGateOwners", "invariants", "features"],
+  "required": ["mapId", "version", "schemaVersion", "licence", "aiReaderContractRef", "aiSemantics", "orderingContract", "curriculumBinding", "tutorialBinding", "artDesignBinding", "proofKindCatalog", "proofGateOwners", "invariants", "features"],
   "properties": {
     "mapId": { "const": "math-quest-feature-map" },
     "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
@@ -24,6 +24,8 @@
       "const": {
         "featureIdentityKey": "id",
         "mechanicJoinKey": "inputMethod",
+        "artDesignJoinKey": "artDesignBinding.path",
+        "artDesignBoundary": "ART_DESIGN_MAY_CONSTRAIN_PRESENTATION_NOT_MECHANIC_IDENTITY_OR_BEHAVIOR",
         "invariantIdentityKey": "id",
         "invariantPredicateKey": "predicate",
         "stepActionKey": "action",
@@ -45,6 +47,7 @@
     },
     "curriculumBinding": { "$ref": "#/$defs/binding" },
     "tutorialBinding": { "$ref": "#/$defs/binding" },
+    "artDesignBinding": { "$ref": "#/$defs/binding" },
     "proofKindCatalog": {
       "const": [
         { "kind": "a11y", "predicate": "ACCESSIBILITY_TREE_AND_TARGET_CONTRACT_HOLDS", "observationClass": "A11Y_TREE" },

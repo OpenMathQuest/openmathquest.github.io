@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const indexPath = path.join(root, "index.html");
 const curriculumPath = path.join(root, "curriculum", "math-quest-manifest-v1.json");
 const tutorialPath = path.join(root, ...TUTORIAL_PATH.split("/"));
+const artDesignPath = path.join(root, "audit", "art-design-decision-register-v1.json");
 const startMarker = "  /* ===TUTORIAL-MANIFEST-START=== */";
 const endMarker = "  /* ===TUTORIAL-MANIFEST-END=== */";
 
@@ -22,9 +23,11 @@ function replacement(canonical, sha256) {
 }
 
 const curriculumArtifact = await loadManifest(curriculumPath);
+const artDesign = JSON.parse(await readFile(artDesignPath, "utf8"));
 const { engine } = await loadShippedEngine(indexPath, { timeoutMs: 2_000 });
 const tutorialArtifact = await loadTutorialManifest(tutorialPath, {
   curriculumArtifact,
+  artDesign,
   questionGeneratorContractVersion: engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION,
   inputMethods: Object.keys(engine.CONSTANTS.INPUT_CLASS_BY_METHOD),
   featureInventory: tutorialFeatureInventory(engine),

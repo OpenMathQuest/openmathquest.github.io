@@ -771,15 +771,9 @@
     }
 
     function dispatchKey(scenario, key, options = {}) {
-      const shortcutTarget = options.shortcutTarget
-        ? scenario.doc.getElementById("app") || scenario.doc.body
-        : null;
-      shortcutTarget?.focus?.({ preventScroll: true });
-      const target = shortcutTarget || (
-        scenario.doc.activeElement && scenario.doc.activeElement !== scenario.doc.documentElement
-          ? scenario.doc.activeElement
-          : scenario.doc.body
-      );
+      const target = scenario.doc.activeElement && scenario.doc.activeElement !== scenario.doc.documentElement
+        ? scenario.doc.activeElement
+        : scenario.doc.body;
       const event = new scenario.win.KeyboardEvent("keydown", {
         key,
         code: /^[0-9]$/u.test(key) ? `Digit${key}` : key === " " ? "Space" : key,
@@ -1986,11 +1980,6 @@
             100,
             10,
           ));
-        }
-        const pickedPhysical = childFlow.doc.querySelector('[data-action="physical-done"]');
-        if (pickedPhysical) {
-          dispatchKey(childFlow, "Enter", { shortcutTarget: true });
-          await waitUntil(() => !pickedPhysical.isConnected, 100, 10);
         }
         const pickedSave = JSON.parse(localStorage.getItem(TEST_SAVE_KEY));
         const pickedQuestion = pickedSave.activeSession?.uiState?.question;
@@ -5863,14 +5852,10 @@
 
           speechScenario.doc.querySelector('[data-action="start"]')?.click();
           await pause();
-          for (let step = 0; step < 4; step += 1) {
+          for (let step = 0; step < 2; step += 1) {
             const pick = speechScenario.doc.querySelector('[data-action="choose-question"]');
-            const physical = speechScenario.doc.querySelector('[data-action="physical-done"]');
             if (pick) {
               pick.click();
-              await pause();
-            } else if (physical) {
-              physical.click();
               await pause();
             } else break;
           }
@@ -6684,7 +6669,7 @@
           "tutorial-desktop-origin",
           selectionCase.question,
           [{
-            selector: '.session-actions [data-action="tutorial"]',
+            selector: '.instrument-rail [data-action="tutorial"]',
             expectedSelector: '[data-tutorial] h2',
             focusScope: "[data-tutorial]",
           }],
@@ -6694,7 +6679,7 @@
           "tutorial-mobile-reteach-origin",
           keyboardReteachQuestion,
           [{
-            selector: '.mobile-session-toolbar [data-action="tutorial"]',
+            selector: '.instrument-rail [data-action="tutorial"]',
             expectedSelector: '[data-tutorial] h2',
             focusScope: "[data-tutorial]",
           }],
@@ -8025,6 +8010,7 @@
           } = pwaReadiness.value;
           const shellManifestRelative = "./release-shell-v1.json";
           const expectedShellEntryPaths = Object.freeze([
+            "./assets/design/math-quest-design-tokens-v1.css",
             "./assets/fonts/Inter-Variable.ttf",
             "./assets/icons/apple-touch-icon.png",
             "./assets/icons/icon-192.png",

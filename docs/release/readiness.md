@@ -153,7 +153,7 @@ physical-device qualification claim nor an independent-review claim.
 
 These requirements are now machine-enforced through the closed ordered
 `PUBLICATION_CLEARANCE.md` schema. The ordinary audit predicts and observes
-eight external records (291 total counted results, including 24 direct
+eight external records (293 total counted results, including 26 direct
 Playwright browser journeys). For Beta 7, five are mandatory PASS gates,
 including `EXT-CANARY` backed by exact `RECONCILED` evidence; `EXT-HOST` is a
 separately visible `DEFERRED_PRERELEASE`/`DEFERRED` record, and two records are

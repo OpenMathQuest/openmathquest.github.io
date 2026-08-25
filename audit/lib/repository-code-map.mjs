@@ -164,6 +164,103 @@ export async function validateRepositoryCodeMap(map, {
   for (const requiredRelation of ["feature.tutorial", "tutorial.build-spec", "tutorial.deep-ux"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`tutorial.linkage requires artifact relation ${requiredRelation}.`);
   }
+  const requiredArtFamilies = new Map([
+    ["art-design.asset-acceptance", [
+      "art-design.assets.acceptance-state",
+      "art-design.assets.evidence-bindings",
+      "art-design.assets.permitted-uses",
+      "art-design.assets.semantic-class",
+    ]],
+    ["art-design.runtime-tokens", [
+      "art-design.tokens.activation-state",
+      "art-design.tokens.approved-text-pairings",
+      "art-design.tokens.colour-values",
+      "art-design.tokens.dimensions",
+      "art-design.tokens.generated-projection-bytes",
+      "art-design.tokens.motion",
+      "art-design.tokens.runtime-consumer-contract",
+      "art-design.tokens.view-palettes",
+    ]],
+    ["art-design.source-decisions", [
+      "art-design.construction-workflow",
+      "art-design.design-rules",
+      "art-design.implementation-decisions",
+      "art-design.migration-sequence",
+      "art-design.observation-construction-zones",
+      "art-design.question-shell-and-instrument-rail",
+      "art-design.source-dispositions",
+      "art-design.theme-policy",
+    ]],
+  ]);
+  const requiredArtValidators = new Map([
+    ["art-design.asset-acceptance", ["audit/tests/art-design-governance.test.mjs"]],
+    ["art-design.runtime-tokens", ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-design-governance.test.mjs", "audit/tests/design-token-projection.test.mjs"]],
+    ["art-design.source-decisions", ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-design-governance.test.mjs", "audit/tests/art-question-shell.test.mjs"]],
+  ]);
+  for (const [familyId, ownedFacts] of requiredArtFamilies) {
+    const family = map.factFamilies.find((record) => record.id === familyId);
+    if (!family || !sameJson(family.owns, ownedFacts)) issues.push(`${familyId} must own its complete closed art-design fact set.`);
+    if (!family || !sameJson(family.validators, requiredArtValidators.get(familyId))) issues.push(`${familyId} must bind its complete focused art-design validator set.`);
+  }
+  for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-question-shell.browser-test", "art-question-shell.runtime", "art-question-shell.test", "art-question-zones.browser-test", "art-question-zones.runtime", "art-question-zones.test", "art-token-projection.audit-oracle", "art-token-projection.browser", "art-token-projection.generator", "art-token-projection.runtime", "art-token-projection.schema", "art-token-projection.shell", "art-token-projection.test", "art-token-projection.tokens", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
+    if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
+  }
+  const artMigrationFamily = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");
+  const requiredArtMigrationFacts = [
+    "art-design.migration-baseline.browser-evidence-binding",
+    "art-design.migration-baseline.claim-boundary",
+    "art-design.migration-baseline.fixture-contract",
+    "art-design.migration-baseline.source-bindings",
+    "art-design.migration-baseline.source-revision",
+    "art-design.migration-baseline.viewport-state-matrix",
+  ];
+  const artMigrationBrowserFamily = map.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence");
+  const requiredArtMigrationBrowserFacts = [
+    "art-design.migration-browser-evidence.capture-contract",
+    "art-design.migration-browser-evidence.exact-browser-identity",
+    "art-design.migration-browser-evidence.exact-served-source",
+    "art-design.migration-browser-evidence.harness-adapter",
+    "art-design.migration-browser-evidence.passing-artifact-policy",
+    "art-design.migration-browser-evidence.request-integrity",
+    "art-design.migration-browser-evidence.visual-result-details",
+    "art-design.migration-browser-evidence.visual-result-set",
+  ];
+  const requiredArtMigrationValidators = [
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
+  ];
+  if (!artMigrationFamily || artMigrationFamily.owner !== "audit/art-migration-baseline-v1.json") {
+    issues.push("art-design.migration-baseline must have the sole canonical ART-MIG-01 owner.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.owns, requiredArtMigrationFacts)) {
+    issues.push("art-design.migration-baseline must own the complete closed ART-MIG-01 fact set.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-baseline must bind the complete ART-MIG-01 validator set.");
+  }
+  if (!artMigrationBrowserFamily || artMigrationBrowserFamily.owner !== "audit/art-migration-browser-evidence-v1.json") {
+    issues.push("art-design.migration-browser-evidence must have the sole canonical retained-browser-evidence owner.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.owns, requiredArtMigrationBrowserFacts)) {
+    issues.push("art-design.migration-browser-evidence must own the complete closed retained-browser-evidence fact set.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-browser-evidence must bind the complete ART-MIG-01 validator set.");
+  }
+  for (const requiredRelation of [
+    "art-migration.browser-contract",
+    "art-migration.browser-evidence-record",
+    "art-migration.browser-evidence-schema",
+    "art-migration.engine-loader",
+    "art-migration.record",
+    "art-migration.schema",
+    "art-migration.test",
+    "art-migration.validator",
+  ]) {
+    if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) {
+      issues.push(`art-design.migration-baseline requires artifact relation ${requiredRelation}.`);
+    }
+  }
   if (!sameJson(map.artifactRelations, canonicalOrder(map.artifactRelations, (record) => record.id))) issues.push("artifactRelations must be sorted lexicographically by id.");
   if (!sameJson(map.dataArtifactPatterns, canonicalOrder(map.dataArtifactPatterns))) issues.push("dataArtifactPatterns must be sorted lexicographically.");
   if (!sameJson(map.tombstones, canonicalOrder(map.tombstones, (record) => record.path))) issues.push("tombstones must be sorted lexicographically by path.");
@@ -200,7 +297,7 @@ export async function validateRepositoryCodeMap(map, {
       const allowedRoles = {
         EXACT_MIRROR: null,
         RUNTIME_EMBED: new Set(["runtime"]),
-        OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool"]),
+        OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool", "toolchain"]),
         VALIDATION_EXPECTATION: new Set(["audit", "runtime", "test"]),
         GENERATED_METADATA: new Set(["runtime"]),
         STATE_DEPENDENT_DOCUMENTED_REFERENCE: new Set(["documentation", "governance", "research"]),

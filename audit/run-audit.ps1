@@ -226,6 +226,7 @@ function Get-LauncherAuditExpectation {
         @('/curriculum/math-quest-tutorial-manifest-v1.json', 'curriculum/math-quest-tutorial-manifest-v1.json'),
         @('/release-shell-v1.json', 'release-shell-v1.json'),
         @('/sw.js', 'sw.js'),
+        @('/assets/design/math-quest-design-tokens-v1.css', 'assets/design/math-quest-design-tokens-v1.css'),
         @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
         @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
         @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
@@ -387,6 +388,10 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The alternating-beta Playwright Deep UX Census planner, cadence, privacy, and evidence contract tests failed.'
     }
+    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-interaction-fuzz.test.mjs')
+    if ($LASTEXITCODE -ne 0) {
+        throw 'The bounded Playwright interaction-fuzz policy, negative controls, and diagnostic-only claim boundary failed.'
+    }
     & $node.Path --test @(
         (Join-Path $auditDirectory 'tests\audit-orchestration.test.mjs'),
         (Join-Path $auditDirectory 'tests\audit-lane-orchestration.test.mjs')
@@ -464,6 +469,40 @@ try {
         Write-Host 'Focused deterministic engine and semantic development checks passed.'
     } elseif ($DevelopmentOnly) {
         Write-Host 'Engine and semantic checks not selected by the changed-path development plan.'
+    }
+    if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'art-design') {
+        Push-Location $workspace
+        try {
+            $previousArtGovernanceMode = $env:MQ_ART_GOVERNANCE_MODE
+            try {
+                $env:MQ_ART_GOVERNANCE_MODE = if ($DevelopmentOnly) { 'DEVELOPMENT' } else { 'RELEASE' }
+                $artDesignTests = @(
+                    (Join-Path $auditDirectory 'tests\art-design-governance.test.mjs'),
+                    (Join-Path $auditDirectory 'tests\art-migration-baseline.test.mjs'),
+                    (Join-Path $auditDirectory 'tests\design-token-projection.test.mjs')
+                )
+                & $node.Path --test $artDesignTests
+                $artGovernanceExitCode = $LASTEXITCODE
+            } finally {
+                if ($null -eq $previousArtGovernanceMode) {
+                    Remove-Item -LiteralPath 'Env:MQ_ART_GOVERNANCE_MODE' -ErrorAction SilentlyContinue
+                } else {
+                    $env:MQ_ART_GOVERNANCE_MODE = $previousArtGovernanceMode
+                }
+            }
+            if ($artGovernanceExitCode -ne 0) {
+                throw 'The Conservatory art-design decisions, tokens, assets, and negative controls failed.'
+            }
+            & $node.Path (Join-Path $auditDirectory 'validate-art-migration-baseline.mjs')
+            if ($LASTEXITCODE -ne 0) {
+                throw 'The ART-MIG-01 historical source, fixture joins, or sanitized render evidence failed.'
+            }
+            Write-Host 'Conservatory art-design governance, migration baseline, and fail-closed projection checks passed.'
+        } finally {
+            Pop-Location
+        }
+    } elseif ($DevelopmentOnly) {
+        Write-Host 'Art-design governance checks not selected by the changed-path development plan.'
     }
     if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'tutorial') {
         Push-Location $workspace

@@ -14,15 +14,18 @@ import {
 const root = new URL("../../", import.meta.url);
 const curriculumPath = new URL("curriculum/math-quest-manifest-v1.json", root);
 const tutorialPath = new URL("curriculum/math-quest-tutorial-manifest-v1.json", root);
+const artDesignPath = new URL("audit/art-design-decision-register-v1.json", root);
 const indexPath = new URL("index.html", root);
 
 const curriculumArtifact = await loadManifest(curriculumPath);
+const artDesign = JSON.parse(await readFile(artDesignPath, "utf8"));
 const { engine } = await loadShippedEngine(indexPath, { timeoutMs: 3_000 });
 const featureInventory = tutorialFeatureInventory(engine);
 const inputMethods = Object.keys(engine.CONSTANTS.INPUT_CLASS_BY_METHOD).sort();
 const childStringIds = engine.CHILD_STRINGS.map((record) => record.id);
 const validationOptions = {
   curriculumArtifact,
+  artDesign,
   questionGeneratorContractVersion: engine.CONSTANTS.QUESTION_GENERATOR_CONTRACT_VERSION,
   inputMethods,
   featureInventory,
@@ -127,6 +130,7 @@ test("tutorial manifest rejects missing coverage, stale curriculum, and missing 
     ["curriculum", (value) => { value.curriculumBinding.projectionSha256 = "0".repeat(64); }, /projectionSha256/u],
     ["string", (value) => { value.tutorialFamilies[0].noticeStringId = "tutorial.missing"; }, /missing child string/u],
     ["AI contract", (value) => { value.aiReaderContractRef.version = 2; }, /must be equal to constant/u],
+    ["art design", (value) => { value.artDesignBinding.sha256 = "0".repeat(64); }, /artDesignBinding\.sha256/u],
   ];
   for (const [name, mutate, expected] of cases) {
     const mutant = clone(tutorialArtifact.manifest);

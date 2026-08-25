@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/design-tokens-v1.schema.json",
+  "title": "Math Quest Conservatory design tokens v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["designSystemId", "version", "schemaVersion", "status", "primaryConsumer", "authority", "licence", "decisionRegisterBinding", "sourceDecisionIds", "projection", "runtimeConsumerContract", "orderingContract", "contrastPolicy", "colours", "approvedTextPairings", "dimensions", "motion", "viewPalettes"],
+  "properties": {
+    "designSystemId": { "const": "math-quest-conservatory" },
+    "version": { "type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE" },
+    "primaryConsumer": { "const": "AI_AGENT" },
+    "authority": { "const": "THIS_FILE" },
+    "licence": { "$ref": "#/$defs/licence" },
+    "decisionRegisterBinding": { "$ref": "#/$defs/binding" },
+    "sourceDecisionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^ART-SRC-[0-9]{3}$" } },
+    "projection": { "$ref": "#/$defs/projection" },
+    "runtimeConsumerContract": { "$ref": "#/$defs/runtimeConsumerContract" },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/runtimeConsumerContract/records", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/sourceDecisionIds", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/colours", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/approvedTextPairings", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/dimensions", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/motion", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/viewPalettes", "policy": "LEXICOGRAPHIC_BY_ID" }
+      ]
+    },
+    "contrastPolicy": {
+      "const": {
+        "normalTextMinimumRatio": 4.5,
+        "largeTextMinimumRatio": 3,
+        "aspirationalTextRatio": 7,
+        "ratioTolerance": 0.001,
+        "pairingPolicy": "ONLY_EXPLICIT_APPROVED_TEXT_PAIRINGS",
+        "colourOnlyStatePolicy": "FORBIDDEN"
+      }
+    },
+    "colours": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/colour" } },
+    "approvedTextPairings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/pairing" } },
+    "dimensions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/dimension" } },
+    "motion": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/motion" } },
+    "viewPalettes": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/viewPalette" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": { "spdx": { "const": "MIT" }, "scope": { "type": "string", "minLength": 1 }, "originalWork": { "const": true } }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": { "path": { "const": "audit/art-design-decision-register-v1.json" }, "sha256": { "$ref": "#/$defs/sha256" } }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "runtimeCssPath", "generatorPath", "customPropertyPrefix", "runtimeLinkSelector", "runtimeConsumerPaths", "projectedValueClasses", "consumerPolicy", "renderedChangePolicy", "activationGate", "consumerContractSha256", "consumerRecordCount", "semanticInputSha256", "cssSha256", "cssBytes"],
+      "properties": {
+        "state": { "const": "ACTIVATED_EXACT_CONSUMERS" },
+        "runtimeCssPath": { "const": "assets/design/math-quest-design-tokens-v1.css" },
+        "generatorPath": { "const": "tools/build-design-token-projection.mjs" },
+        "customPropertyPrefix": { "const": "--mq-conservatory-" },
+        "runtimeLinkSelector": { "const": "link[data-mq-design-token-projection=\"v1\"]" },
+        "runtimeConsumerPaths": { "const": ["index.html"] },
+        "projectedValueClasses": { "const": ["COLOURS", "DIMENSIONS", "MOTION", "VIEW_PALETTES"] },
+        "consumerPolicy": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04_06" },
+        "renderedChangePolicy": { "const": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_EARLY_COUNTING_AND_EARLY_FRAME_ONLY_THROUGH_ART_MIG_06" },
+        "activationGate": { "const": "EARLY_COUNTING_COUNT_TOUCH_AND_MQ_026_TEN_FRAME_PLAIN_BASELINES_AND_ORACLES_VERIFIED" },
+        "consumerContractSha256": { "$ref": "#/$defs/sha256" },
+        "consumerRecordCount": { "const": 116 },
+        "semanticInputSha256": { "$ref": "#/$defs/sha256" },
+        "cssSha256": { "$ref": "#/$defs/sha256" },
+        "cssBytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "runtimeConsumerContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sourcePath", "styleMarkers", "mode", "records"],
+      "properties": {
+        "id": { "const": "ART-MIG-04-06-GOVERNED-RUNTIME-CONSUMERS" },
+        "version": { "const": 5 },
+        "sourcePath": { "const": "index.html" },
+        "styleMarkers": { "const": ["style[data-mq-functional-art=\"ART-MIG-05\"]", "style[data-mq-functional-art=\"ART-MIG-06\"]"] },
+        "mode": { "const": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST" },
+        "records": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/runtimeConsumerRecord" } }
+      }
+    },
+    "runtimeConsumerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "selector", "cssProperty", "tokenIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^consumer\\.[a-z0-9.-]+$" },
+        "selector": { "type": "string", "minLength": 1 },
+        "cssProperty": { "type": "string", "pattern": "^[a-z][a-z-]+$" },
+        "tokenIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^(colour|dimension|motion)\\.[a-z][a-z0-9.-]+$" } }
+      }
+    },
+    "colour": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value", "usageClass", "semanticRole"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^colour\\.[a-z][a-z0-9.-]+$" },
+        "value": { "type": "string", "pattern": "^#[A-F0-9]{6}$" },
+        "usageClass": { "enum": ["TEXT_OR_STROKE", "SURFACE", "DECORATIVE_ONLY", "STATE_WITH_NON_COLOUR_CUE", "ATMOSPHERE_ONLY"] },
+        "semanticRole": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    },
+    "pairing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "foregroundId", "backgroundId", "minimumClass", "measuredRatio"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^pair\\.[a-z0-9.-]+$" },
+        "foregroundId": { "type": "string", "pattern": "^colour\\.[a-z][a-z0-9.-]+$" },
+        "backgroundId": { "type": "string", "pattern": "^colour\\.[a-z][a-z0-9.-]+$" },
+        "minimumClass": { "enum": ["NORMAL_TEXT", "LARGE_TEXT"] },
+        "measuredRatio": { "type": "number", "minimum": 3, "maximum": 21 }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value", "unit", "semanticRole"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^dimension\\.[a-z][a-z0-9.-]+$" },
+        "value": { "type": "number", "minimum": 0 },
+        "unit": { "enum": ["CSS_PX"] },
+        "semanticRole": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+      }
+    },
+    "motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "durationMs", "semanticRole", "reducedMotionValueMs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^motion\\.[a-z][a-z0-9.-]+$" },
+        "durationMs": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "semanticRole": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "reducedMotionValueMs": { "const": 0 }
+      }
+    },
+    "viewPalette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tokenIds", "scope"],
+      "properties": {
+        "id": { "enum": ["OCEAN", "FOREST", "SPACE"] },
+        "tokenIds": { "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "pattern": "^colour\\.[a-z][a-z0-9.-]+$" } },
+        "scope": { "const": "ATMOSPHERIC_PERIMETER_ONLY" }
+      }
+    }
+  }
+}

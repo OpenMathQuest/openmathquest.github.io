@@ -1,7 +1,7 @@
 # Math Quest — Public Beta Build Contract
 
-- **Contract version:** `3.6`
-- **Date:** `2026-08-14`
+- **Contract version:** `3.7`
+- **Date:** `2026-08-24`
 - **Digest record:** `research/build-axioms.md`
 - **Status:** active for the independently authored public beta
 
@@ -247,9 +247,13 @@ running snapshot after its own folder bytes have changed.
 ## Teaching and mastery
 
 Every skill declares how it moves from Concrete experience to Pictorial
-representation to Abstract notation. A physical-object prompt counts as
-Concrete; an on-screen manipulative counts as Pictorial. Scaffolding and
-re-teaching never count as mastery evidence.
+representation to Abstract notation. In this screen-native game, Concrete
+means acting directly on individually visible on-screen objects; Pictorial
+means interpreting or building a representation; Abstract means working with
+notation. Off-screen construction and grown-up acknowledgement are never
+prerequisites for reaching an assessed question. Physical-object play may be
+offered as optional grown-up-led enrichment, but it cannot block play or count
+as evidence. Scaffolding and re-teaching never count as mastery evidence.
 
 Preserve these general learning safeguards:
 

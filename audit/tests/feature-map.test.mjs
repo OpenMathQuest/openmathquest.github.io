@@ -10,12 +10,13 @@ import {
 } from "../lib/feature-map.mjs";
 import { AI_READER_CONTRACT_REF } from "../lib/repository-code-map.mjs";
 
-const [featureMap, curriculum, tutorial] = await Promise.all([
+const [featureMap, curriculum, tutorial, artDesign] = await Promise.all([
   readFile(FEATURE_MAP_PATH, "utf8").then(JSON.parse),
   readFile("curriculum/math-quest-manifest-v1.json", "utf8").then(JSON.parse),
   readFile("curriculum/math-quest-tutorial-manifest-v1.json", "utf8").then(JSON.parse),
+  readFile("audit/art-design-decision-register-v1.json", "utf8").then(JSON.parse),
 ]);
-const options = { curriculum, tutorial, schemaPathOrUrl: FEATURE_MAP_SCHEMA_PATH };
+const options = { curriculum, tutorial, artDesign, schemaPathOrUrl: FEATURE_MAP_SCHEMA_PATH };
 const clone = (value) => structuredClone(value);
 
 test("feature map is schema-valid and exactly covers every current response mechanic", async () => {
@@ -36,7 +37,7 @@ test("missing proofs and orphaned mechanics fail closed", async () => {
   assert.match((await validateFeatureMap(orphan, options)).join("\n"), /must exactly cover the tutorial input-method set/u);
 });
 
-test("stale curriculum/tutorial bindings and mismatched tutorial families are rejected", async () => {
+test("stale curriculum, tutorial, or art-design bindings and mismatched tutorial families are rejected", async () => {
   const staleCurriculum = clone(featureMap);
   staleCurriculum.curriculumBinding.sha256 = "0".repeat(64);
   assert.match((await validateFeatureMap(staleCurriculum, options)).join("\n"), /curriculumBinding\.sha256 does not match/u);
@@ -44,6 +45,10 @@ test("stale curriculum/tutorial bindings and mismatched tutorial families are re
   const staleTutorial = clone(featureMap);
   staleTutorial.tutorialBinding.sha256 = "0".repeat(64);
   assert.match((await validateFeatureMap(staleTutorial, options)).join("\n"), /tutorialBinding\.sha256 does not match/u);
+
+  const staleArtDesign = clone(featureMap);
+  staleArtDesign.artDesignBinding.sha256 = "0".repeat(64);
+  assert.match((await validateFeatureMap(staleArtDesign, options)).join("\n"), /artDesignBinding\.sha256 does not match/u);
 
   const wrongFamily = clone(featureMap);
   wrongFamily.features[0].tutorialFamilyId = "DATA_SPATIAL";

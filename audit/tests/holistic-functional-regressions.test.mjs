@@ -768,15 +768,13 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
       "aria.patternSequence":"Pattern, from left to right: "+slots.items+".",
       "aria.numberCards":"Number cards: "+slots.items+".",
       "aria.hiddenFrame":"Ten-cell frame. Showing: "+slots.items+". The remaining cells are covered.",
-      "aria.tenFrameCells":"Ten-frame cells, from left to right: "+slots.cells+".",
-      "instruction.physical":"Grown-up: make this with real objects, then choose We made it.",
-      "instruction.physicalModel":"Try "+slots.representation+" with large objects.",
-      "ui.physicalDone":"We made it"
+      "aria.tenFrameCells":"Ten-frame cells, from left to right: "+slots.cells+"."
     })[id]||id;
     function patternTokenName(value){return ({"●":"circle","▲":"triangle","■":"square","◆":"diamond"})[String(value)]||String(value);}
     const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8},makeTeachingSupport(question){return question.support;}};
     const displayPrompt=q=>escape(q.prompt);
-    let ui={screen:"session",phase:"physical",question:{prompt:"Pair every shell with one shell."}};
+    let ui={screen:"session",phase:"question",question:{prompt:"Pair every shell with one shell."}};
+    function questionSpeechText(){return ui.question.prompt;}
     ${extractFunction("modelOperandDescription")}
     ${extractFunction("repeatedStimulusItems")}
     ${extractFunction("clockHandStimulusDescription")}
@@ -788,8 +786,7 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
     ${extractFunction("teachingSupportSpeech")}
     ${extractFunction("durationEvidenceSpeech")}
     ${extractFunction("replayText")}
-    ${extractFunction("physicalTaskHtml")}
-    return {modelOperandDescription,stimulusOperandDescription,semanticModel,workedTeachingDescriptor,teachingSupportSpeech,durationEvidenceSpeech,replayText,physicalTaskHtml};
+    return {modelOperandDescription,stimulusOperandDescription,semanticModel,workedTeachingDescriptor,teachingSupportSpeech,durationEvidenceSpeech,replayText};
   })()`;
   const harness = new vm.Script(source, {
     filename: "math-quest-complete-visual-operands.js",
@@ -895,14 +892,6 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
   assert.equal(generatedStimuli, 5_760);
 
   assert.match(harness.replayText(), /Pair every shell with one shell\./u);
-  const physical = harness.physicalTaskHtml(
-    { level: 1, prompt: "Pair every shell with one shell." },
-    { representation: "objects-and-actions" },
-    "<span>two rows of shells</span>",
-  );
-  assert.match(physical, /Pair every shell with one shell\./u);
-  assert.match(physical, /two rows of shells/u);
-  assert.match(physical, /data-action="physical-done"/u);
 });
 
 test("QA-034 multiplication and division fact-family controls show and grade the governed equations", () => {
@@ -1133,7 +1122,7 @@ test("QA-031 tutorials are operable only for active questions, reteaching, and i
     function home(){} function playgroundView(){} function placementView(){} function sessionView(){} function fatigueView(){}
     function capstoneView(){} function doneView(){} function grown(){} function parentLabViewV2(){} function parents(){}
     function renderRuntimeWarning(){} function renderPwaOverlay(){} function renderDestructiveOverlay(){}
-    function applySelectedStateIndicators(){}
+    function applySelectedStateIndicators(){} function applyFunctionalArt(){}
     function resumePendingPwaReloadAtBoundary(){} function checkPwaUpdateAtBoundary(){}
     ${extractFunction("tutorialAvailable")}
     ${extractFunction("applyTutorialAvailability")}
@@ -1162,7 +1151,7 @@ test("QA-031 tutorials are operable only for active questions, reteaching, and i
   assert.equal(effects.buttons.filter((button) => !button.hidden && !button.disabled).length, 1);
   assert.equal(effects.buttons[0].attributes["aria-hidden"], "true");
   assert.equal(effects.buttons[1].attributes["aria-hidden"], "false");
-  for (const phase of ["pick", "physical"]) {
+  for (const phase of ["pick", "practice-token-guide"]) {
     const result = harness.setPhase(phase);
     assert.equal(result.available, false);
     assert.ok(effects.buttons.every((button) => button.hidden && button.disabled));

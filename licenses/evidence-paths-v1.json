@@ -23,7 +23,7 @@
       "origin": "mixed-open",
       "licenceExpression": "MIT AND OFL-1.1 AND OGL-UK-3.0 AND CC-BY-4.0",
       "purpose": "Required notices and attribution for open font and curriculum reference expression.",
-      "sha256": "3e5b27f5b1e9fa1fce4f6584c31ebfd7ac38d04052ca4ad3b5f8cae0a284eceb"
+      "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae"
     },
     {
       "path": "curriculum/PROVENANCE.md",
@@ -54,8 +54,16 @@
       "kind": "attribution",
       "origin": "mixed-open",
       "licenceExpression": "Apache-2.0 AND MIT AND BSD-3-Clause",
-      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser-verification tools.",
-      "sha256": "ad56c4ed74fa0fc8059873e8c73d3c19e7ef01852a1e9158361b7a8924d8e889"
+      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser and closed JSON-contract tools.",
+      "sha256": "264a58d8ef2513753a881de1bcc77e581e36eaf1cae1d360678b63a2f4af519b"
+    },
+    {
+      "path": "licenses/design-tokens.md",
+      "kind": "attribution",
+      "origin": "original-project",
+      "licenceExpression": "MIT",
+      "purpose": "Original authorship, closed ART-MIG-04 through ART-MIG-06 runtime consumer contract, generation boundary, and exact hashes for the canonical Conservatory token contract and stylesheet projection.",
+      "sha256": "d41d8a8a973605c274a15c22b0c5f53804600ce4b89f23005df2b6ff0f987f42"
     },
     {
       "path": "licenses/sound-effects.md",

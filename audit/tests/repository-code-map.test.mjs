@@ -47,7 +47,8 @@ test("owners are unique by fact id and every governed data artifact is owned or 
   assert.match((await validateRepositoryCodeMap(duplicate)).join("\n"), /factFamilies repeats repository\.structure/u);
 
   const duplicateFact = clone(map);
-  duplicateFact.factFamilies[1].owns = [duplicateFact.factFamilies[0].owns[0]];
+  const browserOwner = duplicateFact.factFamilies.find((family) => family.id === "browser.reviewed-identity");
+  duplicateFact.factFamilies.find((family) => family.id === "certification.cadence").owns = [browserOwner.owns[0]];
   assert.match((await validateRepositoryCodeMap(duplicateFact)).join("\n"), /owned fact browser\.identity\.executable-sha256 has multiple sole owners/u);
 
   const orphan = clone(map);
@@ -84,9 +85,55 @@ test("missing required ownership structure fails schema validation and human pro
   assert.match(markdown, /Edit the canonical JSON, not this projection/u);
 
   const agentPolicy = await readFile("AGENTS.md", "utf8");
-  assert.match(agentPolicy, /Owners → Code Map → Feature Map → Tutorial Manifest →[\s\S]*Blast Radius → Gates/u);
+  assert.match(agentPolicy, /Owners → Code Map → Feature Map → Tutorial Manifest →[\s\S]*Art Design → Blast Radius → Gates/u);
   assert.match(agentPolicy, /tools\/blast-radius-lookup\.mjs --self-test/u);
   assert.match(agentPolicy, /Unknown paths and[\s\S]*fail safe to the broad development suite/u);
+});
+
+test("ART-MIG-01 has one exact owner, a closed fact set, and complete typed validator edges", async () => {
+  const family = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");
+  assert.equal(family.owner, "audit/art-migration-baseline-v1.json");
+  assert.deepEqual(family.owns, [
+    "art-design.migration-baseline.browser-evidence-binding",
+    "art-design.migration-baseline.claim-boundary",
+    "art-design.migration-baseline.fixture-contract",
+    "art-design.migration-baseline.source-bindings",
+    "art-design.migration-baseline.source-revision",
+    "art-design.migration-baseline.viewport-state-matrix",
+  ]);
+  assert.deepEqual(family.validators, [
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
+  ]);
+  const browserFamily = map.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence");
+  assert.equal(browserFamily.owner, "audit/art-migration-browser-evidence-v1.json");
+  assert.deepEqual(browserFamily.owns, [
+    "art-design.migration-browser-evidence.capture-contract",
+    "art-design.migration-browser-evidence.exact-browser-identity",
+    "art-design.migration-browser-evidence.exact-served-source",
+    "art-design.migration-browser-evidence.harness-adapter",
+    "art-design.migration-browser-evidence.passing-artifact-policy",
+    "art-design.migration-browser-evidence.request-integrity",
+    "art-design.migration-browser-evidence.visual-result-details",
+    "art-design.migration-browser-evidence.visual-result-set",
+  ]);
+  assert.deepEqual(browserFamily.validators, family.validators);
+
+  const missingFact = clone(map);
+  missingFact.factFamilies.find((record) => record.id === "art-design.migration-baseline").owns.pop();
+  assert.match((await validateRepositoryCodeMap(missingFact)).join("\n"), /complete closed ART-MIG-01 fact set/u);
+
+  const missingRelation = clone(map);
+  missingRelation.artifactRelations = missingRelation.artifactRelations.filter((relation) => relation.id !== "art-migration.browser-evidence-schema");
+  assert.match((await validateRepositoryCodeMap(missingRelation)).join("\n"), /requires artifact relation art-migration\.browser-evidence-schema/u);
+
+  const foreignOwner = clone(map);
+  foreignOwner.factFamilies.find((record) => record.id === "art-design.migration-baseline").owner = "audit/art-asset-register-v1.json";
+  assert.match((await validateRepositoryCodeMap(foreignOwner)).join("\n"), /sole canonical ART-MIG-01 owner/u);
+
+  const foreignEvidenceOwner = clone(map);
+  foreignEvidenceOwner.factFamilies.find((record) => record.id === "art-design.migration-browser-evidence").owner = "audit/art-migration-baseline-v1.json";
+  assert.match((await validateRepositoryCodeMap(foreignEvidenceOwner)).join("\n"), /sole canonical retained-browser-evidence owner/u);
 });
 
 test("AI-first drift-control contract is exact, hash-bound, machine-default, and order-enforced", async () => {
@@ -101,7 +148,21 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.aiReaderContract.humanViewPolicy, "GENERATED_NON_AUTHORITATIVE_ONLY");
   assert.equal(map.aiReaderContract.commandOutputPolicy, "MACHINE_READABLE_BY_DEFAULT");
   assert.equal(map.aiReaderContract.ambiguityPolicy, "FAIL_CLOSED");
-  assert.deepEqual(map.aiReaderContract.governedSystems, ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "BLAST_RADIUS", "GATES"]);
+  assert.deepEqual(map.aiReaderContract.governedSystems, ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "ART_DESIGN", "BLAST_RADIUS", "GATES"]);
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.source-decisions")?.owner, "audit/art-design-decision-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.asset-acceptance")?.owner, "audit/art-asset-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.owner, "assets/design/math-quest-design-tokens-v1.json");
+  assert.deepEqual(
+    map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.projections,
+    [
+      { path: "assets/design/math-quest-design-tokens-v1.css", relationship: "GENERATED" },
+      { path: "audit.html", relationship: "VALIDATION_EXPECTATION" },
+      { path: "index.html", relationship: "DOCUMENTED_REFERENCE" },
+      { path: "release-shell-v1.json", relationship: "GENERATED_METADATA" },
+    ],
+  );
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.generator"), true);
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.runtime"), true);
   assert.equal(map.relationKindSemantics.CONSUMES, "TARGET_READS_SOURCE");
   assert.equal(map.relationKindSemantics.GENERATES, "SOURCE_WRITES_TARGET");
   assert.equal(map.relationKindSemantics.TESTS, "TARGET_TESTS_SOURCE");

@@ -1,0 +1,1476 @@
+{
+  "designSystemId": "math-quest-conservatory",
+  "version": "1.6.0",
+  "schemaVersion": 1,
+  "status": "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE",
+  "primaryConsumer": "AI_AGENT",
+  "authority": "THIS_FILE",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest Conservatory target tokens, semantic roles, and approved contrast pairings.",
+    "originalWork": true
+  },
+  "decisionRegisterBinding": {
+    "path": "audit/art-design-decision-register-v1.json",
+    "sha256": "dedbc0e42f2c38d7926466a5a5d7e099b7bdc448bdc1cbb00f58bbe694f919b4"
+  },
+  "sourceDecisionIds": [
+    "ART-SRC-005",
+    "ART-SRC-008",
+    "ART-SRC-010",
+    "ART-SRC-013",
+    "ART-SRC-014",
+    "ART-SRC-021",
+    "ART-SRC-022",
+    "ART-SRC-023",
+    "ART-SRC-028",
+    "ART-SRC-042",
+    "ART-SRC-045"
+  ],
+  "projection": {
+    "state": "ACTIVATED_EXACT_CONSUMERS",
+    "runtimeCssPath": "assets/design/math-quest-design-tokens-v1.css",
+    "generatorPath": "tools/build-design-token-projection.mjs",
+    "customPropertyPrefix": "--mq-conservatory-",
+    "runtimeLinkSelector": "link[data-mq-design-token-projection=\"v1\"]",
+    "runtimeConsumerPaths": [
+      "index.html"
+    ],
+    "projectedValueClasses": [
+      "COLOURS",
+      "DIMENSIONS",
+      "MOTION",
+      "VIEW_PALETTES"
+    ],
+    "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04_06",
+    "renderedChangePolicy": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_EARLY_COUNTING_AND_EARLY_FRAME_ONLY_THROUGH_ART_MIG_06",
+    "activationGate": "EARLY_COUNTING_COUNT_TOUCH_AND_MQ_026_TEN_FRAME_PLAIN_BASELINES_AND_ORACLES_VERIFIED",
+    "consumerContractSha256": "22f947586beb84f8374379863ee5936dfa8d46b96fd8463360572a3327d3aa90",
+    "consumerRecordCount": 116,
+    "semanticInputSha256": "dc44451054e075966ebe27a30accdc529f5e96195b865748cfaf38feeea0fbb6",
+    "cssSha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee",
+    "cssBytes": 3402
+  },
+  "runtimeConsumerContract": {
+    "id": "ART-MIG-04-06-GOVERNED-RUNTIME-CONSUMERS",
+    "version": 5,
+    "sourcePath": "index.html",
+    "styleMarkers": [
+      "style[data-mq-functional-art=\"ART-MIG-05\"]",
+      "style[data-mq-functional-art=\"ART-MIG-06\"]"
+    ],
+    "mode": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST",
+    "records": [
+      {
+        "id": "consumer.early-counting.counted-badge.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.counted-badge.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.counted-badge.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched::after",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-bank.border-bottom",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank",
+        "cssProperty": "border-bottom",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-bank.border-top",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank",
+        "cssProperty": "border-top",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-button.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.number-selected.outline",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .count-number-bank button[aria-pressed=\"true\"]",
+        "cssProperty": "outline",
+        "tokenIds": [
+          "colour.action.focus"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-button.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-counted.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-counted.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.action.primary",
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label-counted.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched>span:last-child",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label-counted.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button.touched>span:last-child",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button>span:last-child",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.object-label.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects button>span:last-child",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.status.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-status",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn-cap.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn-cap.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]::before",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-acorn.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"acorn\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-counter.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"counter\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-moon-rock.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"moon-rock\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token-shell.background",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token[data-object-kind=\"shell\"]",
+        "cssProperty": "background",
+        "tokenIds": [
+          "colour.surface.ivory",
+          "colour.surface.pale-wood",
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.token.border-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects .themed-object-token",
+        "cssProperty": "border-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.undo.color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .direct-undo",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.background-color",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.border",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-counting.work-surface.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"COUNT_TOUCH\"] .count-touch-task .touch-objects:not(.empty-set)",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-pip.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-pip.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::after",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.action.primary",
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-well.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-well.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell::before",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.mineral",
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.row-divider.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory",
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.focus.outline-colour",
+        "selector": ":focus-visible",
+        "cssProperty": "outline-color",
+        "tokenIds": [
+          "colour.action.focus"
+        ]
+      },
+      {
+        "id": "consumer.icon.colour",
+        "selector": ".mq-icon",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.primary"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-dark",
+        "selector": ".mq-icon .icon-dark",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-default",
+        "selector": ".mq-icon .icon-fill",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.action.verdigris"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-light",
+        "selector": ".mq-icon .icon-light",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.icon.fill-warm",
+        "selector": ".mq-icon .icon-warm",
+        "cssProperty": "fill",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.background",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-bottom",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-left",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-right",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.border-top",
+        "selector": ".play-shell .question[data-art-question-shell=\"ART-MIG-04\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.content-max",
+        "selector": ".play-shell",
+        "cssProperty": "max-width",
+        "tokenIds": [
+          "dimension.content-max"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-column-gap",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "column-gap",
+        "tokenIds": [
+          "dimension.tablet-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-columns",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "grid-template-columns",
+        "tokenIds": [
+          "dimension.instrument-rail"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.grid-row-gap",
+        "selector": ".play-shell .session-grid",
+        "cssProperty": "row-gap",
+        "tokenIds": [
+          "dimension.tablet-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-shell.phone-stack-row-gap",
+        "selector": ".play-shell > .session-grid",
+        "cssProperty": "row-gap",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-background",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-border-bottom",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-border-left",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-border-right",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-border-top",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-padding-bottom",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-bottom",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-padding-left",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-left",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-padding-right",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-right",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.construction-padding-top",
+        "selector": ".play-shell .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-top",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.grid-column-gap",
+        "selector": ".play-shell .support-grid[data-art-zone-layout=\"ART-MIG-05\"]",
+        "cssProperty": "column-gap",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.grid-row-gap",
+        "selector": ".play-shell .support-grid[data-art-zone-layout=\"ART-MIG-05\"]",
+        "cssProperty": "row-gap",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-background",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-border-bottom",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-border-left",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-border-right",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-border-top",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-padding-bottom",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-bottom",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-padding-left",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-left",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-padding-right",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-right",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.observation-padding-top",
+        "selector": ".play-shell .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-top",
+        "tokenIds": [
+          "dimension.phone-gutter"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.phone-compact-construction-padding-bottom",
+        "selector": ".play-shell .question .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-bottom",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.phone-compact-construction-padding-top",
+        "selector": ".play-shell .question .construction-zone[data-art-question-zone=\"CONSTRUCTION\"]",
+        "cssProperty": "padding-top",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.phone-compact-observation-padding-bottom",
+        "selector": ".play-shell .question .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-bottom",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.phone-compact-observation-padding-top",
+        "selector": ".play-shell .question .observation-zone[data-art-question-zone=\"OBSERVATION\"]",
+        "cssProperty": "padding-top",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.question-zones.phone-compact-row-gap",
+        "selector": ".play-shell .question .support-grid[data-art-zone-layout=\"ART-MIG-05\"]",
+        "cssProperty": "row-gap",
+        "tokenIds": [
+          "dimension.phone-stack-compact"
+        ]
+      },
+      {
+        "id": "consumer.rail.background",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-bottom",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-left",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-right",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.border-top",
+        "selector": ".play-shell .instrument-rail[data-art-instrument-rail=\"ART-MIG-04\"]",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-background",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-bottom",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-bottom-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-left",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-left-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-right",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-right-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-border-top",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "border-top-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.rail.button-target",
+        "selector": ".play-shell .instrument-rail .quiet",
+        "cssProperty": "min-height",
+        "tokenIds": [
+          "dimension.control-target-min"
+        ]
+      },
+      {
+        "id": "consumer.rail.progress-fill",
+        "selector": ".play-shell .instrument-rail .progress-fill",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.primary"
+        ]
+      },
+      {
+        "id": "consumer.rail.progress-track",
+        "selector": ".play-shell .instrument-rail .progress-track",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.resonance.colour",
+        "selector": ".resonance-disc",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.resonance.idle-core",
+        "selector": ".resonance-disc::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.state.neutral"
+        ]
+      },
+      {
+        "id": "consumer.resonance.speaking-core",
+        "selector": ".resonance-disc[data-speech-state=\"SPEAKING\"]::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.action.audio"
+        ]
+      },
+      {
+        "id": "consumer.resonance.surface",
+        "selector": ".resonance-disc",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.resonance.transition",
+        "selector": ".resonance-disc",
+        "cssProperty": "transition-duration",
+        "tokenIds": [
+          "motion.state-fade"
+        ]
+      },
+      {
+        "id": "consumer.selection-pill.background",
+        "selector": ".selected-state--labelled::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.selection-pill.colour",
+        "selector": ".selected-state--labelled::after",
+        "cssProperty": "color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.selection.hatch",
+        "selector": ".selected-state[aria-pressed=\"true\"]",
+        "cssProperty": "background-image",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.selection.inset",
+        "selector": ".selected-state[aria-pressed=\"true\"]",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      }
+    ]
+  },
+  "orderingContract": [
+    {
+      "jsonPointer": "/runtimeConsumerContract/records",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/sourceDecisionIds",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/colours",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/approvedTextPairings",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/dimensions",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/motion",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/viewPalettes",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    }
+  ],
+  "contrastPolicy": {
+    "normalTextMinimumRatio": 4.5,
+    "largeTextMinimumRatio": 3,
+    "aspirationalTextRatio": 7,
+    "ratioTolerance": 0.001,
+    "pairingPolicy": "ONLY_EXPLICIT_APPROVED_TEXT_PAIRINGS",
+    "colourOnlyStatePolicy": "FORBIDDEN"
+  },
+  "colours": [
+    {
+      "id": "colour.action.audio",
+      "value": "#2FD5E8",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "SPEECH_ACTIVITY_ACCENT_NOT_TEXT"
+    },
+    {
+      "id": "colour.action.focus",
+      "value": "#5B3CC4",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "FOCUS_OUTLINE_NOT_TEXT"
+    },
+    {
+      "id": "colour.action.primary",
+      "value": "#087F8C",
+      "usageClass": "TEXT_OR_STROKE",
+      "semanticRole": "PRIMARY_ACTION"
+    },
+    {
+      "id": "colour.action.verdigris",
+      "value": "#1B817D",
+      "usageClass": "TEXT_OR_STROKE",
+      "semanticRole": "SECONDARY_ACTION"
+    },
+    {
+      "id": "colour.ink.muted",
+      "value": "#627783",
+      "usageClass": "TEXT_OR_STROKE",
+      "semanticRole": "MUTED_TEXT_RESTRICTED_PAIRING"
+    },
+    {
+      "id": "colour.ink.primary",
+      "value": "#18354A",
+      "usageClass": "TEXT_OR_STROKE",
+      "semanticRole": "PRIMARY_TEXT"
+    },
+    {
+      "id": "colour.ink.structural",
+      "value": "#24485B",
+      "usageClass": "TEXT_OR_STROKE",
+      "semanticRole": "STRUCTURAL_TEXT_AND_STROKE"
+    },
+    {
+      "id": "colour.state.correct",
+      "value": "#3F7959",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "CORRECT_STATE"
+    },
+    {
+      "id": "colour.state.neutral",
+      "value": "#58717E",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "NEUTRAL_STATE"
+    },
+    {
+      "id": "colour.state.revision",
+      "value": "#B45743",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "REVISION_STATE"
+    },
+    {
+      "id": "colour.surface.celadon",
+      "value": "#E4F0E9",
+      "usageClass": "SURFACE",
+      "semanticRole": "SOFT_PANEL_SURFACE"
+    },
+    {
+      "id": "colour.surface.ivory",
+      "value": "#FFFDF7",
+      "usageClass": "SURFACE",
+      "semanticRole": "PRIMARY_INSTRUCTIONAL_SURFACE"
+    },
+    {
+      "id": "colour.surface.mineral",
+      "value": "#F4F0E3",
+      "usageClass": "SURFACE",
+      "semanticRole": "SECONDARY_INSTRUCTIONAL_SURFACE"
+    },
+    {
+      "id": "colour.surface.pale-wood",
+      "value": "#D9C7A0",
+      "usageClass": "SURFACE",
+      "semanticRole": "WORKBENCH_SURFACE"
+    },
+    {
+      "id": "colour.view.forest.1",
+      "value": "#29483B",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "FOREST_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.forest.2",
+      "value": "#55765A",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "FOREST_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.forest.3",
+      "value": "#A8BC81",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "FOREST_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.forest.4",
+      "value": "#B98C45",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "FOREST_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.forest.5",
+      "value": "#775969",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "FOREST_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.ocean.1",
+      "value": "#27495A",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "OCEAN_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.ocean.2",
+      "value": "#6DAAB0",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "OCEAN_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.ocean.3",
+      "value": "#BBDCE1",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "OCEAN_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.ocean.4",
+      "value": "#F2E7CF",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "OCEAN_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.ocean.5",
+      "value": "#B96D59",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "OCEAN_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.space.1",
+      "value": "#1F2942",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "SPACE_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.space.2",
+      "value": "#4B3C62",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "SPACE_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.space.3",
+      "value": "#526A8A",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "SPACE_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.space.4",
+      "value": "#F0E6CE",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "SPACE_ATMOSPHERE"
+    },
+    {
+      "id": "colour.view.space.5",
+      "value": "#C6983D",
+      "usageClass": "ATMOSPHERE_ONLY",
+      "semanticRole": "SPACE_ATMOSPHERE"
+    },
+    {
+      "id": "colour.warm.brass",
+      "value": "#B98C45",
+      "usageClass": "DECORATIVE_ONLY",
+      "semanticRole": "MATERIAL_ACCENT_NOT_TEXT"
+    },
+    {
+      "id": "colour.warm.burnt-coral",
+      "value": "#B45743",
+      "usageClass": "STATE_WITH_NON_COLOUR_CUE",
+      "semanticRole": "WARM_REVISION_ACCENT"
+    },
+    {
+      "id": "colour.warm.coral",
+      "value": "#C96D52",
+      "usageClass": "DECORATIVE_ONLY",
+      "semanticRole": "WARM_ACCENT_NOT_TEXT"
+    },
+    {
+      "id": "colour.warm.old-gold",
+      "value": "#C6983D",
+      "usageClass": "DECORATIVE_ONLY",
+      "semanticRole": "MILESTONE_ACCENT_NOT_TEXT"
+    }
+  ],
+  "approvedTextPairings": [
+    {
+      "id": "pair.action-primary-on-ivory",
+      "foregroundId": "colour.action.primary",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.666
+    },
+    {
+      "id": "pair.correct-on-ivory",
+      "foregroundId": "colour.state.correct",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 5.047
+    },
+    {
+      "id": "pair.correct-on-mineral",
+      "foregroundId": "colour.state.correct",
+      "backgroundId": "colour.surface.mineral",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.503
+    },
+    {
+      "id": "pair.ink-muted-on-ivory",
+      "foregroundId": "colour.ink.muted",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.602
+    },
+    {
+      "id": "pair.ink-primary-on-celadon",
+      "foregroundId": "colour.ink.primary",
+      "backgroundId": "colour.surface.celadon",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 10.892
+    },
+    {
+      "id": "pair.ink-primary-on-ivory",
+      "foregroundId": "colour.ink.primary",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 12.535
+    },
+    {
+      "id": "pair.ink-primary-on-mineral",
+      "foregroundId": "colour.ink.primary",
+      "backgroundId": "colour.surface.mineral",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 11.184
+    },
+    {
+      "id": "pair.ink-primary-on-pale-wood",
+      "foregroundId": "colour.ink.primary",
+      "backgroundId": "colour.surface.pale-wood",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 7.667
+    },
+    {
+      "id": "pair.ink-structural-on-celadon",
+      "foregroundId": "colour.ink.structural",
+      "backgroundId": "colour.surface.celadon",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 8.332
+    },
+    {
+      "id": "pair.ink-structural-on-ivory",
+      "foregroundId": "colour.ink.structural",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 9.589
+    },
+    {
+      "id": "pair.ink-structural-on-mineral",
+      "foregroundId": "colour.ink.structural",
+      "backgroundId": "colour.surface.mineral",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 8.555
+    },
+    {
+      "id": "pair.ink-structural-on-pale-wood",
+      "foregroundId": "colour.ink.structural",
+      "backgroundId": "colour.surface.pale-wood",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 5.865
+    },
+    {
+      "id": "pair.neutral-on-ivory",
+      "foregroundId": "colour.state.neutral",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 5.062
+    },
+    {
+      "id": "pair.neutral-on-mineral",
+      "foregroundId": "colour.state.neutral",
+      "backgroundId": "colour.surface.mineral",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.517
+    },
+    {
+      "id": "pair.revision-on-ivory",
+      "foregroundId": "colour.state.revision",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.708
+    },
+    {
+      "id": "pair.verdigris-on-ivory",
+      "foregroundId": "colour.action.verdigris",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.605
+    },
+    {
+      "id": "pair.warm-burnt-coral-on-ivory",
+      "foregroundId": "colour.warm.burnt-coral",
+      "backgroundId": "colour.surface.ivory",
+      "minimumClass": "NORMAL_TEXT",
+      "measuredRatio": 4.708
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "dimension.body-min",
+      "value": 16,
+      "unit": "CSS_PX",
+      "semanticRole": "BODY_TEXT_MINIMUM"
+    },
+    {
+      "id": "dimension.content-max",
+      "value": 1180,
+      "unit": "CSS_PX",
+      "semanticRole": "CONTENT_MAXIMUM_WIDTH"
+    },
+    {
+      "id": "dimension.control-target-min",
+      "value": 44,
+      "unit": "CSS_PX",
+      "semanticRole": "CONTROL_TARGET_MINIMUM"
+    },
+    {
+      "id": "dimension.desktop-gutter",
+      "value": 24,
+      "unit": "CSS_PX",
+      "semanticRole": "DESKTOP_GUTTER"
+    },
+    {
+      "id": "dimension.early-essential-min",
+      "value": 18,
+      "unit": "CSS_PX",
+      "semanticRole": "EARLY_ESSENTIAL_TEXT_MINIMUM"
+    },
+    {
+      "id": "dimension.early-target-min",
+      "value": 64,
+      "unit": "CSS_PX",
+      "semanticRole": "EARLY_TARGET_MINIMUM"
+    },
+    {
+      "id": "dimension.instrument-rail",
+      "value": 280,
+      "unit": "CSS_PX",
+      "semanticRole": "WIDE_INSTRUMENT_RAIL_TARGET"
+    },
+    {
+      "id": "dimension.phone-gutter",
+      "value": 12,
+      "unit": "CSS_PX",
+      "semanticRole": "PHONE_GUTTER"
+    },
+    {
+      "id": "dimension.phone-stack-compact",
+      "value": 2,
+      "unit": "CSS_PX",
+      "semanticRole": "PHONE_STACK_COMPACT_SPACING"
+    },
+    {
+      "id": "dimension.tablet-gutter",
+      "value": 18,
+      "unit": "CSS_PX",
+      "semanticRole": "TABLET_GUTTER"
+    }
+  ],
+  "motion": [
+    {
+      "id": "motion.major-crossfade",
+      "durationMs": 250,
+      "semanticRole": "MAJOR_STATE_CROSSFADE",
+      "reducedMotionValueMs": 0
+    },
+    {
+      "id": "motion.press",
+      "durationMs": 80,
+      "semanticRole": "CONTROL_PRESS_FEEDBACK",
+      "reducedMotionValueMs": 0
+    },
+    {
+      "id": "motion.state-fade",
+      "durationMs": 150,
+      "semanticRole": "FUNCTIONAL_STATE_FADE",
+      "reducedMotionValueMs": 0
+    }
+  ],
+  "viewPalettes": [
+    {
+      "id": "FOREST",
+      "tokenIds": [
+        "colour.view.forest.1",
+        "colour.view.forest.2",
+        "colour.view.forest.3",
+        "colour.view.forest.4",
+        "colour.view.forest.5"
+      ],
+      "scope": "ATMOSPHERIC_PERIMETER_ONLY"
+    },
+    {
+      "id": "OCEAN",
+      "tokenIds": [
+        "colour.view.ocean.1",
+        "colour.view.ocean.2",
+        "colour.view.ocean.3",
+        "colour.view.ocean.4",
+        "colour.view.ocean.5"
+      ],
+      "scope": "ATMOSPHERIC_PERIMETER_ONLY"
+    },
+    {
+      "id": "SPACE",
+      "tokenIds": [
+        "colour.view.space.1",
+        "colour.view.space.2",
+        "colour.view.space.3",
+        "colour.view.space.4",
+        "colour.view.space.5"
+      ],
+      "scope": "ATMOSPHERIC_PERIMETER_ONLY"
+    }
+  ]
+}

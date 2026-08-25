@@ -24,6 +24,12 @@ export const PLAYWRIGHT_FOCUSED_CASE_IDS = Object.freeze([
   "PW-F-10",
   "PW-F-11",
   "PW-F-12",
+  "PW-F-13",
+  "PW-F-14",
+  "PW-F-15",
+  "PW-F-16",
+  "PW-F-17",
+  "PW-F-18",
 ]);
 
 export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
@@ -33,6 +39,7 @@ export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
   ["/release-shell-v1.json", "release-shell-v1.json"],
   ["/sw.js", "sw.js"],
   ["/curriculum/math-quest-tutorial-manifest-v1.json", "curriculum/math-quest-tutorial-manifest-v1.json"],
+  ["/assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.css"],
   ["/assets/fonts/Inter-Variable.ttf", "assets/fonts/Inter-Variable.ttf"],
   ["/assets/icons/apple-touch-icon.png", "assets/icons/apple-touch-icon.png"],
   ["/assets/icons/icon-192.png", "assets/icons/icon-192.png"],

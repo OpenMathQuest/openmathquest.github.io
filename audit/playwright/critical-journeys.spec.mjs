@@ -1,3 +1,16 @@
+import { readFile } from "node:fs/promises";
+import {
+  designTokenProjectionProperties,
+  expectedRuntimeConsumers,
+} from "../lib/design-token-projection.mjs";
+import {
+  ART_QUESTION_SHELL_RAIL_LABELS,
+  ART_QUESTION_ZONE_NARROW_MAX_PX,
+  artEarlyCountingIssues,
+  artEarlyFrameIssues,
+  artQuestionShellIssues,
+  artQuestionZoneIssues,
+} from "../lib/art-question-shell.mjs";
 import {
   activate,
   answerPatternResponse,
@@ -17,6 +30,19 @@ import {
   test,
   visibleTutorialButton,
 } from "./fixtures.mjs";
+
+const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
+const FUNCTIONAL_ART_STYLE_ORIGINS = Object.freeze({
+  earlyCounting: 'style[data-mq-functional-art="ART-MIG-06"]',
+  shellAndZones: 'style[data-mq-functional-art="ART-MIG-05"]',
+});
+const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
+  origin: record.selector.includes('[data-input-method="count_touch"]') || record.selector.includes('[data-input-method="ten_frame"]')
+    ? FUNCTIONAL_ART_STYLE_ORIGINS.earlyCounting
+    : FUNCTIONAL_ART_STYLE_ORIGINS.shellAndZones,
+  ...record,
+})).sort((left, right) => `${left.origin}\u0000${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.origin}\u0000${right.selector}\u0000${right.cssProperty}`, "en")));
+const EXPECTED_PROJECTED_PROPERTIES = Object.freeze(designTokenProjectionProperties(DESIGN_TOKENS).map((record) => record.name));
 
 async function tutorialIdentity(page) {
   const panel = page.locator('[data-tutorial="different-example"]');
@@ -109,12 +135,12 @@ async function expectSelectedState(control, { labelled = false } = {}) {
     const marker = getComputedStyle(button, "::after");
     return {
       backgroundImage: style.backgroundImage,
-      outlineWidth: style.outlineWidth,
+      boxShadow: style.boxShadow,
       markerContent: marker.content,
     };
   });
   expect(presentation.backgroundImage).toContain("repeating-linear-gradient");
-  expect(Number.parseFloat(presentation.outlineWidth)).toBeGreaterThanOrEqual(4);
+  expect(presentation.boxShadow).toContain("inset");
   expect(presentation.markerContent).not.toContain("✓");
   if (labelled) expect(presentation.markerContent).toContain("Selected");
 }
@@ -143,6 +169,120 @@ async function expectPatternResponseSingleRow(question) {
   const centers = [...geometry.source, ...geometry.slots].map((box) => box.centerY);
   expect(Math.max(...centers) - Math.min(...centers)).toBeLessThanOrEqual(2);
   expect(geometry.slots[0].left).toBeGreaterThanOrEqual(geometry.source.at(-1).right - 1);
+}
+
+async function questionZoneSnapshot(page, expectedLayout, {
+  requiresFirstScreenResponse = false,
+  requiresFirstScreenTutorial = false,
+} = {}) {
+  return page.evaluate(({ expectedLayout, requiresFirstScreenResponse, requiresFirstScreenTutorial }) => {
+    const question = document.querySelector('[data-art-question-shell="ART-MIG-04"]');
+    const layout = question?.querySelector('[data-art-zone-layout="ART-MIG-05"]') || null;
+    const supportScroll = layout?.closest(".support-scroll") || null;
+    const observation = layout?.querySelector(':scope > [data-art-question-zone="OBSERVATION"]') || null;
+    const construction = layout?.querySelector(':scope > [data-art-question-zone="CONSTRUCTION"]') || null;
+    const response = construction?.querySelector(".question-response") || null;
+    const answerRegion = response?.querySelector(".answer-controls") || null;
+    const confirm = response?.querySelector('button[data-action="confirm"]') || null;
+    const rail = document.querySelector('[data-art-instrument-rail="ART-MIG-04"]');
+    const tutorialAction = rail?.querySelector('button[data-action="tutorial"]:not([hidden])') || null;
+    const follows = (left, right) => Boolean(left && right && (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING));
+    const rendered = (element) => {
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      const bounds = element.getBoundingClientRect();
+      return !element.hidden && style.display !== "none" && style.visibility !== "hidden" && bounds.width > 0 && bounds.height > 0;
+    };
+    const responseControls = answerRegion ? [...answerRegion.querySelectorAll("button,input,select,textarea,[tabindex]")]
+      .filter((element) => !element.disabled && rendered(element)) : [];
+    const firstResponse = responseControls[0] || null;
+    const observationBounds = observation?.getBoundingClientRect() || null;
+    const constructionBounds = construction?.getBoundingClientRect() || null;
+    const firstResponseBounds = firstResponse?.getBoundingClientRect() || null;
+    const tutorialActionBounds = tutorialAction?.getBoundingClientRect() || null;
+    const onFirstScreen = (bounds) => Boolean(bounds
+      && bounds.left >= -1
+      && bounds.right <= innerWidth + 1
+      && bounds.top >= -1
+      && bounds.bottom <= innerHeight + 1);
+    const overlapWidth = observationBounds && constructionBounds ? Math.max(0, Math.min(observationBounds.right, constructionBounds.right) - Math.max(observationBounds.left, constructionBounds.left)) : 0;
+    const overlapHeight = observationBounds && constructionBounds ? Math.max(0, Math.min(observationBounds.bottom, constructionBounds.bottom) - Math.max(observationBounds.top, constructionBounds.top)) : 0;
+    const observationStyle = observation ? getComputedStyle(observation) : null;
+    const constructionStyle = construction ? getComputedStyle(construction) : null;
+    const layoutStyle = layout ? getComputedStyle(layout) : null;
+    const supportScrollStyle = supportScroll ? getComputedStyle(supportScroll) : null;
+    const staticStimuli = question ? [...question.querySelectorAll('[data-answer-free="true"]')] : [];
+    const referenceSupports = question ? [...question.querySelectorAll(".question-support")] : [];
+    const workedReferences = question ? [...question.querySelectorAll('[data-worked-result="true"]')] : [];
+    const targetRecords = [...responseControls, ...(confirm ? [confirm] : [])].map((element) => ({
+      action: element.getAttribute("data-action") || element.getAttribute("data-response-action") || "answer",
+      width: element.getBoundingClientRect().width,
+      height: element.getBoundingClientRect().height,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+    }));
+    return {
+      layoutCount: question?.querySelectorAll('[data-art-zone-layout="ART-MIG-05"]').length || 0,
+      observationCount: layout?.querySelectorAll(':scope > [data-art-question-zone="OBSERVATION"]').length || 0,
+      constructionCount: layout?.querySelectorAll(':scope > [data-art-question-zone="CONSTRUCTION"]').length || 0,
+      observationBeforeConstruction: follows(observation, construction),
+      promptInObservation: Boolean(observation?.contains(layout?.querySelector(".prompt"))),
+      staticStimulusCount: staticStimuli.length,
+      staticStimulusInObservationCount: staticStimuli.filter((element) => observation?.contains(element)).length,
+      referenceSupportCount: referenceSupports.length,
+      referenceSupportInObservationCount: referenceSupports.filter((element) => observation?.contains(element)).length,
+      workedReferenceCount: workedReferences.length,
+      workedReferenceInObservationCount: workedReferences.filter((element) => observation?.contains(element)).length,
+      responseInConstruction: Boolean(response && construction?.contains(response)),
+      confirmInConstruction: Boolean(confirm && construction?.contains(confirm)),
+      responseBeforeConfirm: responseControls.length > 0 && responseControls.every((control) => follows(control, confirm)),
+      confirmBeforeRail: follows(confirm, rail),
+      responseControlCount: responseControls.length,
+      firstResponseDiscoverable: Boolean(firstResponseBounds && constructionBounds
+        && firstResponseBounds.left >= constructionBounds.left - 1
+        && firstResponseBounds.right <= constructionBounds.right + 1
+        && firstResponseBounds.top >= constructionBounds.top - 1
+        && firstResponseBounds.bottom <= constructionBounds.bottom + 1),
+      requiresFirstScreenResponse,
+      firstResponseOnFirstScreen: onFirstScreen(firstResponseBounds),
+      requiresFirstScreenTutorial,
+      tutorialActionOnFirstScreen: rendered(tutorialAction) && onFirstScreen(tutorialActionBounds),
+      cssOrders: {
+        observation: Number.parseInt(observationStyle?.order || "0", 10),
+        construction: Number.parseInt(constructionStyle?.order || "0", 10),
+        response: responseControls.map((control) => Number.parseInt(getComputedStyle(control).order || "0", 10)),
+        confirm: Number.parseInt(confirm ? getComputedStyle(confirm).order : "0", 10),
+      },
+      tabIndexes: { response: responseControls.map((control) => control.tabIndex), confirm: confirm?.tabIndex ?? -1 },
+      zoneOverlapArea: overlapWidth * overlapHeight,
+      expectedLayout,
+      stacked: Boolean(observationBounds && constructionBounds && constructionBounds.top >= observationBounds.bottom - 1),
+      paired: Boolean(observationBounds && constructionBounds && constructionBounds.left >= observationBounds.right - 1 && overlapHeight > 0),
+      observationBorderStyle: observationStyle?.borderTopStyle || "missing",
+      constructionBorderStyle: constructionStyle?.borderTopStyle || "missing",
+      observationBackground: observationStyle?.backgroundColor || "missing",
+      constructionBackground: constructionStyle?.backgroundColor || "missing",
+      documentScrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: innerWidth,
+      zoneScrollWidth: layout?.scrollWidth || 0,
+      zoneClientWidth: layout?.clientWidth || 0,
+      supportScrollWidth: supportScroll?.scrollWidth || 0,
+      supportClientWidth: supportScroll?.clientWidth || 0,
+      supportScrollHeight: supportScroll?.scrollHeight || 0,
+      supportClientHeight: supportScroll?.clientHeight || 0,
+      supportScrollOverflowX: supportScrollStyle?.overflowX || "missing",
+      supportScrollOverflowY: supportScrollStyle?.overflowY || "missing",
+      layoutOverflowX: layoutStyle?.overflowX || "missing",
+      layoutOverflowY: layoutStyle?.overflowY || "missing",
+      observationOverflowX: observationStyle?.overflowX || "missing",
+      observationOverflowY: observationStyle?.overflowY || "missing",
+      constructionOverflowX: constructionStyle?.overflowX || "missing",
+      constructionOverflowY: constructionStyle?.overflowY || "missing",
+      targets: targetRecords,
+    };
+  }, { expectedLayout, requiresFirstScreenResponse, requiresFirstScreenTutorial });
 }
 
 async function waitForLabSettled(page) {
@@ -265,9 +405,9 @@ test("[PW-F-06] keyboard play and isolated Parent Test mechanics remain child-le
   await page.keyboard.press("Enter");
   const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
   if (await chooseQuestion.count()) await page.keyboard.press("Enter");
-  const physicalDone = page.locator('button[data-action="physical-done"]:visible');
-  if (await physicalDone.count()) await page.keyboard.press("Enter");
+  await expect(page.locator('[data-action="physical-done"]')).toHaveCount(0);
   await expect(page.locator("section.question")).toBeVisible();
+  await expect(page.locator("section.question .question-response")).toBeVisible();
   await activate(page.getByRole("button", { name: "Home", exact: true }), page);
   await expect(page.getByRole("button", { name: /Start/u })).toBeVisible();
   await activate(page.getByRole("button", { name: "Grown-ups corner", exact: true }), page);
@@ -549,4 +689,838 @@ test("[PW-F-12] tutorial controls follow a native keyboard focus path", async ({
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-tutorial="different-example"]')).toHaveCount(0);
   await expect(page.locator("section.question .question-response")).toBeVisible();
+});
+
+test("[PW-F-13] activated design tokens expose exactly the governed ART-MIG-04 through ART-MIG-06 runtime consumers", async ({ page }) => {
+  const projectionSelector = 'link[data-mq-design-token-projection="v1"]';
+  const settle = async () => {
+    await page.goto("/index.html", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator("#app")).toBeVisible();
+  };
+  const runtimeConsumerState = async () => page.evaluate(() => {
+    const projectionLink = document.querySelector('link[data-mq-design-token-projection="v1"]');
+    const governedStyleElements = [...document.querySelectorAll("style[data-mq-functional-art]")];
+    const styleElements = new Map(governedStyleElements
+      .map((element) => [element, `style[data-mq-functional-art="${element.getAttribute("data-mq-functional-art")}"]`]));
+    const consumers = [];
+    const inaccessible = [];
+    const unparsed = [];
+    const canonicalCss = (value) => String(value).replace(
+      /\\([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?/giu,
+      (_match, hex) => String.fromCodePoint(Number.parseInt(hex, 16)),
+    ).toLowerCase();
+    const inspectStyle = (style, selector, origin) => {
+      for (let index = 0; index < style.length; index += 1) {
+        const cssProperty = style.item(index);
+        const value = style.getPropertyValue(cssProperty);
+        const tokenNames = [...value.matchAll(/var\(\s*(--mq-conservatory-[a-z0-9-]+)\s*\)/gu)].map((match) => match[1]);
+        if (tokenNames.length) consumers.push({ origin, selector: selector.toLowerCase(), cssProperty, tokenNames });
+        if (canonicalCss(cssProperty).includes("--mq-conservatory-")) unparsed.push(`${origin}:${selector}:${cssProperty}:custom-property-declaration`);
+        const namespaceUses = [...canonicalCss(value).matchAll(/--mq-conservatory-/gu)].length;
+        if (namespaceUses !== tokenNames.length) unparsed.push(`${origin}:${selector}:${cssProperty}:unparsed-namespace-use`);
+      }
+    };
+    const inspectGovernedSource = (element, origin) => {
+      if (!element.sheet) inaccessible.push(`${origin}:sheet-not-parsed`);
+      const source = canonicalCss(element.textContent || "");
+      let parsedNamespaceUses = 0;
+      for (const block of source.matchAll(/([^{}]+)\{([^{}]*)\}/gu)) {
+        const selector = block[1].trim().replace(/\s+/gu, " ");
+        for (const declaration of block[2].split(";")) {
+          const separator = declaration.indexOf(":");
+          if (separator < 1) continue;
+          const cssProperty = declaration.slice(0, separator).trim();
+          const value = declaration.slice(separator + 1);
+          const tokenNames = [...value.matchAll(/var\(\s*(--mq-conservatory-[a-z0-9-]+)\s*\)/gu)].map((match) => match[1]);
+          if (tokenNames.length) consumers.push({ origin, selector, cssProperty, tokenNames });
+          parsedNamespaceUses += tokenNames.length;
+        }
+      }
+      const declaredNamespaceUses = [...source.matchAll(/--mq-conservatory-/gu)].length;
+      if (declaredNamespaceUses !== parsedNamespaceUses) unparsed.push(`${origin}:unparsed-namespace-use`);
+    };
+    const inspectRules = (rules, origin) => {
+      for (let index = 0; index < rules.length; index += 1) {
+        const rule = rules[index];
+        if (rule.style) inspectStyle(rule.style, rule.selectorText || `@rule-${index}`, origin);
+        if (rule.cssRules) inspectRules(rule.cssRules, origin);
+        if (rule.styleSheet) {
+          try { inspectRules(rule.styleSheet.cssRules, `${origin}:import-${index}`); }
+          catch (error) { inaccessible.push(`${origin}:import-${index}:${error.name}`); }
+        }
+        if (!rule.style && !rule.cssRules && !rule.styleSheet && canonicalCss(rule.cssText).includes("--mq-conservatory-")) {
+          unparsed.push(`${origin}:rule-${index}:unparsed-namespace-rule`);
+        }
+      }
+    };
+    governedStyleElements.forEach((element) => inspectGovernedSource(element, styleElements.get(element)));
+    [...document.styleSheets].forEach((sheet, index) => {
+      if (sheet === projectionLink?.sheet) return;
+      if (styleElements.has(sheet.ownerNode)) return;
+      const origin = styleElements.get(sheet.ownerNode) || `sheet-${index}`;
+      try { inspectRules(sheet.cssRules, origin); }
+      catch (error) { inaccessible.push(`${origin}:${error.name}`); }
+    });
+    [...document.querySelectorAll("[style]")].forEach((element, index) => inspectStyle(element.style, `inline-${index}`, "inline-style"));
+    consumers.sort((left, right) => `${left.origin}\u0000${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.origin}\u0000${right.selector}\u0000${right.cssProperty}`, "en"));
+    return {
+      consumers,
+      inaccessible: [...new Set(inaccessible)].sort(),
+      unparsed: [...new Set(unparsed)].sort(),
+    };
+  });
+
+  await settle();
+  await expect(page.locator(projectionSelector)).toHaveCount(1);
+  const cssom = await page.evaluate(({ expectedPathname, prefix, selector }) => {
+    const projectionLinks = [...document.querySelectorAll("link[href]")]
+      .filter((candidate) => new URL(candidate.getAttribute("href"), document.baseURI).pathname === expectedPathname);
+    const markerLinks = [...document.querySelectorAll("link[data-mq-design-token-projection]")];
+    const link = document.querySelector(selector);
+    const sheet = link?.sheet || null;
+    const rules = sheet ? [...sheet.cssRules] : [];
+    const rootRule = rules[0] || null;
+    const properties = rootRule?.style
+      ? Array.from({ length: rootRule.style.length }, (_, index) => rootRule.style.item(index))
+      : [];
+    return {
+      exactProjectionLinkCount: projectionLinks.length,
+      exactMarkerLinkCount: markerLinks.length,
+      projectionLinkIsMarkerLink: projectionLinks[0] === markerLinks[0],
+      href: link?.getAttribute("href") || null,
+      rel: link?.getAttribute("rel") || null,
+      loaded: Boolean(sheet),
+      ruleCount: rules.length,
+      rootSelector: rootRule?.selectorText || null,
+      properties,
+      namespaceClosed: properties.every((property) => property.startsWith(prefix)),
+    };
+  }, {
+    expectedPathname: "/assets/design/math-quest-design-tokens-v1.css",
+    prefix: "--mq-conservatory-",
+    selector: projectionSelector,
+  });
+  expect(cssom.exactProjectionLinkCount).toBe(1);
+  expect(cssom.exactMarkerLinkCount).toBe(1);
+  expect(cssom.projectionLinkIsMarkerLink).toBe(true);
+  expect(cssom.href).toBe("assets/design/math-quest-design-tokens-v1.css");
+  expect(cssom.rel).toBe("stylesheet");
+  expect(cssom.loaded).toBe(true);
+  expect(cssom.ruleCount).toBe(1);
+  expect(cssom.rootSelector).toBe(":root");
+  expect(cssom.properties).toHaveLength(64);
+  expect(cssom.namespaceClosed).toBe(true);
+  expect([...cssom.properties].sort()).toEqual([...EXPECTED_PROJECTED_PROPERTIES].sort());
+  const expectedRuntimeState = { consumers: EXPECTED_RUNTIME_TOKEN_CONSUMERS, inaccessible: [], unparsed: [] };
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const unlistedConsumer = await page.addStyleTag({
+    content: ".future-only-state{transform:translateX(var(--mq-conservatory-dimension-body-min))}",
+  });
+  expect((await runtimeConsumerState()).consumers).toHaveLength(EXPECTED_RUNTIME_TOKEN_CONSUMERS.length + 1);
+  await unlistedConsumer.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  await page.locator("#app").evaluate((element) => { element.style.transform = "translateX(var(--mq-conservatory-dimension-body-min))"; });
+  expect((await runtimeConsumerState()).consumers).toHaveLength(EXPECTED_RUNTIME_TOKEN_CONSUMERS.length + 1);
+  await page.locator("#app").evaluate((element) => { element.style.transform = ""; });
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const unparsedProperty = await page.addStyleTag({
+    content: "@property --mq-conservatory-future-length{syntax:'<length>';inherits:false;initial-value:0px}",
+  });
+  expect((await runtimeConsumerState()).unparsed.length).toBeGreaterThan(0);
+  await unparsedProperty.evaluate((element) => element.remove());
+  expect(await runtimeConsumerState()).toEqual(expectedRuntimeState);
+  const resolvedValues = await page.evaluate((names) => Object.fromEntries(names.map((name) => [name, getComputedStyle(document.documentElement).getPropertyValue(name).trim()])), EXPECTED_PROJECTED_PROPERTIES);
+  expect(Object.keys(resolvedValues).sort()).toEqual([...EXPECTED_PROJECTED_PROPERTIES].sort());
+  expect(Object.values(resolvedValues).every((value) => value.length > 0)).toBe(true);
+});
+
+test("[PW-F-14] functional art keeps identity, selection, focus, and speech status truthful", async ({ page }) => {
+  await page.addInitScript(() => {
+    const utterances = [];
+    let cancelCount = 0;
+    const voice = { default: true, lang: "en-CA", localService: true, name: "Math Quest Test Voice", voiceURI: "mq-test-voice" };
+    class TestUtterance { constructor(text) { this.text = String(text); this.lang = ""; this.rate = 1; this.voice = null; this.onstart = null; this.onend = null; this.onerror = null; } }
+    const synthesis = {
+      getVoices: () => [voice],
+      speak: (utterance) => { utterances.push(utterance); },
+      cancel: () => { cancelCount += 1; },
+      onvoiceschanged: null,
+    };
+    Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: TestUtterance });
+    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: synthesis });
+    Object.defineProperty(window, "__mqSpeechTest", { configurable: true, value: {
+      count: () => utterances.length,
+      cancelCount: () => cancelCount,
+      start: (index = utterances.length - 1) => utterances[index]?.onstart?.(),
+      end: (index = utterances.length - 1) => utterances[index]?.onend?.(),
+      error: (index = utterances.length - 1) => utterances[index]?.onerror?.({ error: "synthesis-failed" }),
+    } });
+  });
+  await openFreshHome(page);
+
+  const title = page.getByRole("heading", { name: "Math Quest", exact: true });
+  const rocket = page.locator('.brand-mark--inquiry svg[data-icon="rocket"]');
+  await expect(title).toBeVisible();
+  await expect(rocket).toHaveCount(1);
+  await expect(rocket).toHaveAttribute("aria-hidden", "true");
+  await expect(rocket).toHaveAttribute("focusable", "false");
+  const rocketBefore = await rocket.evaluate((element) => ({
+    body: element.innerHTML,
+    animation: getComputedStyle(element).animationName,
+    interactiveAncestor: Boolean(element.closest("button,a,[role=button]")),
+    width: element.getBoundingClientRect().width,
+  }));
+  expect(rocketBefore.animation).toBe("none");
+  expect(rocketBefore.interactiveAncestor).toBe(false);
+  expect(rocketBefore.width).toBeLessThanOrEqual(44);
+
+  const forest = page.locator('[data-action="world"][data-world="forest"]');
+  await activate(forest, page);
+  await expectSelectedState(forest, { labelled: true });
+  await expect(rocket.evaluate((element) => element.innerHTML)).resolves.toBe(rocketBefore.body);
+  await tabUntilFocused(page, forest);
+  const focusAndSelection = await forest.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const marker = getComputedStyle(button, "::after");
+    const token = getComputedStyle(document.documentElement).getPropertyValue("--mq-conservatory-colour-action-focus").trim();
+    const probe = document.createElement("span");
+    probe.style.color = token;
+    document.body.append(probe);
+    const expectedFocusColour = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      expectedFocusColour,
+      focusColour: style.outlineColor,
+      focusWidth: Number.parseFloat(style.outlineWidth),
+      hatch: style.backgroundImage,
+      inset: style.boxShadow,
+      marker: marker.content,
+    };
+  });
+  expect(focusAndSelection.focusColour).toBe(focusAndSelection.expectedFocusColour);
+  expect(focusAndSelection.focusWidth).toBeGreaterThanOrEqual(5);
+  expect(focusAndSelection.hatch).toContain("repeating-linear-gradient");
+  expect(focusAndSelection.inset).toContain("inset");
+  expect(focusAndSelection.marker).toContain("Selected");
+
+  const governedSelection = await forest.evaluate((button) => {
+    const structuralTokenName = "--mq-conservatory-colour-ink-structural";
+    const surfaceTokenName = "--mq-conservatory-colour-surface-ivory";
+    const root = document.documentElement;
+    const previousStructural = root.style.getPropertyValue(structuralTokenName);
+    const previousSurface = root.style.getPropertyValue(surfaceTokenName);
+    root.style.setProperty(structuralTokenName, "rgb(1, 2, 3)");
+    root.style.setProperty(surfaceTokenName, "rgb(4, 5, 6)");
+    const style = getComputedStyle(button);
+    const marker = getComputedStyle(button, "::after");
+    const observed = {
+      hatch: style.backgroundImage,
+      inset: style.boxShadow,
+      markerColour: marker.color,
+      markerBackground: marker.backgroundColor,
+      markerBorder: marker.borderColor,
+    };
+    if (previousStructural) root.style.setProperty(structuralTokenName, previousStructural);
+    else root.style.removeProperty(structuralTokenName);
+    if (previousSurface) root.style.setProperty(surfaceTokenName, previousSurface);
+    else root.style.removeProperty(surfaceTokenName);
+    return observed;
+  });
+  expect(governedSelection.hatch).toContain("rgb(1, 2, 3)");
+  expect(governedSelection.inset).toContain("rgb(1, 2, 3)");
+  expect(governedSelection.markerColour).toBe("rgb(1, 2, 3)");
+  expect(governedSelection.markerBackground).toBe("rgb(4, 5, 6)");
+  expect(governedSelection.markerBorder).toBe("rgb(1, 2, 3)");
+
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+  await tabUntilFocused(page, forest);
+  const forcedState = await forest.evaluate((button) => ({
+    outlineWidth: Number.parseFloat(getComputedStyle(button).outlineWidth),
+    marker: getComputedStyle(button, "::after").content,
+  }));
+  expect(forcedState.outlineWidth).toBeGreaterThanOrEqual(4);
+  expect(forcedState.marker).toContain("Selected");
+  await page.emulateMedia({ forcedColors: "none", reducedMotion: "reduce" });
+
+  const replay = page.getByRole("button", { name: "Replay", exact: true });
+  const disc = replay.locator("[data-resonance-disc]");
+  await expect(replay).toBeVisible();
+  await expectMinimumTarget(replay);
+  await expect(disc).toHaveCount(1);
+  await expect(disc).toHaveAttribute("aria-hidden", "true");
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  await expect(page.locator("[data-resonance-disc][role],[data-resonance-disc][tabindex]" )).toHaveCount(0);
+  expect(await disc.evaluate((element) => getComputedStyle(element).pointerEvents)).toBe("none");
+  await expect(disc).toBeVisible();
+
+  await activate(replay, page);
+  expect(await page.evaluate(() => window.__mqSpeechTest.count())).toBe(1);
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  const speakingGeometry = await disc.evaluate((element) => ({
+    borderWidth: Number.parseFloat(getComputedStyle(element).borderWidth),
+    transitionDuration: getComputedStyle(element).transitionDuration,
+    innerInset: getComputedStyle(element, "::before").inset,
+  }));
+  expect(speakingGeometry.borderWidth).toBeGreaterThanOrEqual(6);
+  expect(speakingGeometry.transitionDuration).toBe("0s");
+  expect(speakingGeometry.innerInset).toBe("2px");
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+
+  await activate(replay, page);
+  await page.evaluate(() => { window.__mqSpeechTest.start(); window.__mqSpeechTest.error(); });
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+
+  await activate(replay, page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  const previousIndex = await page.evaluate(() => window.__mqSpeechTest.count() - 1);
+  await activate(replay, page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  await page.evaluate((index) => window.__mqSpeechTest.end(index), previousIndex);
+  await expect(disc).toHaveAttribute("data-speech-state", "SPEAKING");
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect(disc).toHaveAttribute("data-speech-state", "IDLE");
+  expect(await page.evaluate(() => window.__mqSpeechTest.cancelCount())).toBeGreaterThan(0);
+
+  await activate(page.getByRole("button", { name: /Start/u }), page);
+  const chooseQuestion = page.locator('button[data-action="choose-question"]:visible');
+  if (await chooseQuestion.count()) await activate(chooseQuestion.first(), page);
+  await expect(page.locator('[data-action="physical-done"]')).toHaveCount(0);
+  await expect(page.locator("section.question")).toBeVisible();
+  await expect(page.locator("section.question .question-response")).toBeVisible();
+  const sessionReplayButtons = page.locator('button[data-action="replay"]');
+  const sessionDiscs = page.locator("[data-resonance-disc]");
+  expect(await sessionReplayButtons.count()).toBe(1);
+  expect(await sessionDiscs.count()).toBe(1);
+  const railReplay = page.locator('.instrument-rail button[data-action="replay"]');
+  await expect(railReplay).toBeVisible();
+  expect(await railReplay.evaluate((button) => button.nextElementSibling?.getAttribute("data-action"))).toBe("tutorial");
+  const replayGeometry = await railReplay.evaluate((button) => {
+    const bounds = (element) => {
+      const rectangle = element.getBoundingClientRect();
+      return { left: rectangle.left, right: rectangle.right, top: rectangle.top, bottom: rectangle.bottom };
+    };
+    const buttonBounds = bounds(button);
+    const speaker = button.querySelector(".button-icon");
+    const resonance = button.querySelector("[data-resonance-disc]");
+    const tutorial = button.nextElementSibling instanceof HTMLElement ? button.nextElementSibling : null;
+    const tutorialBounds = tutorial ? bounds(tutorial) : null;
+    const overlapWidth = tutorialBounds ? Math.max(0, Math.min(buttonBounds.right, tutorialBounds.right) - Math.max(buttonBounds.left, tutorialBounds.left)) : 0;
+    const overlapHeight = tutorialBounds ? Math.max(0, Math.min(buttonBounds.bottom, tutorialBounds.bottom) - Math.max(buttonBounds.top, tutorialBounds.top)) : 0;
+    return {
+      buttonBounds,
+      childBounds: [speaker, resonance].filter(Boolean).map(bounds),
+      clientHeight: button.clientHeight,
+      clientWidth: button.clientWidth,
+      scrollHeight: button.scrollHeight,
+      scrollWidth: button.scrollWidth,
+      tutorialOverlapArea: overlapWidth * overlapHeight,
+    };
+  });
+  expect(replayGeometry.scrollWidth).toBeLessThanOrEqual(replayGeometry.clientWidth);
+  expect(replayGeometry.scrollHeight).toBeLessThanOrEqual(replayGeometry.clientHeight);
+  expect(replayGeometry.childBounds.every((child) => child.left >= replayGeometry.buttonBounds.left
+    && child.right <= replayGeometry.buttonBounds.right
+    && child.top >= replayGeometry.buttonBounds.top
+    && child.bottom <= replayGeometry.buttonBounds.bottom)).toBe(true);
+  expect(replayGeometry.tutorialOverlapArea).toBe(0);
+  await activate(page.locator('button[data-action="replay"]:visible').first(), page);
+  await page.evaluate(() => window.__mqSpeechTest.start());
+  await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "SPEAKING"))).toBe(true);
+  await page.evaluate(() => window.__mqSpeechTest.end());
+  await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "IDLE"))).toBe(true);
+});
+
+test("[PW-F-15] one question shell and instrument rail preserve natural order across governed viewports", async ({ page }) => {
+  const question = await openPreviewSelectionQuestion(page);
+  const ids = await optionIdsForCurrentQuestion(page);
+  await activate(question.locator(`[data-action="select"][data-id="${ids.correct}"]`), page);
+  await expect(question.getByRole("button", { name: "Confirm", exact: true })).toBeEnabled();
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const snapshot = await page.evaluate(() => {
+      const question = document.querySelector('[data-art-question-shell="ART-MIG-04"]');
+      const rail = document.querySelector('[data-art-instrument-rail="ART-MIG-04"]');
+      const response = question?.querySelector(".question-response") || null;
+      const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+      const answerRegion = response?.querySelector(".answer-controls") || null;
+      const confirmContainer = confirm?.closest(".question-submit") || null;
+      const follows = (left, right) => Boolean(left && right && (left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const rendered = (element) => {
+        const style = getComputedStyle(element);
+        const bounds = element.getBoundingClientRect();
+        return !element.hidden && style.display !== "none" && style.visibility !== "hidden" && bounds.width > 0 && bounds.height > 0;
+      };
+      const responseControls = answerRegion ? [...answerRegion.querySelectorAll("button,input,select,textarea,[tabindex]")]
+        .filter((element) => !element.disabled && rendered(element)) : [];
+      const actionCounts = Object.fromEntries(["replay", "tutorial", "stop"].map((action) => [action, document.querySelectorAll(`button[data-action="${action}"]`).length]));
+      const railActions = rail ? [...rail.querySelectorAll("button[data-action]")] : [];
+      const questionBounds = question?.getBoundingClientRect() || null;
+      const railBounds = rail?.getBoundingClientRect() || null;
+      const overlapWidth = questionBounds && railBounds ? Math.max(0, Math.min(questionBounds.right, railBounds.right) - Math.max(questionBounds.left, railBounds.left)) : 0;
+      const overlapHeight = questionBounds && railBounds ? Math.max(0, Math.min(questionBounds.bottom, railBounds.bottom) - Math.max(questionBounds.top, railBounds.top)) : 0;
+      const questionStyle = question ? getComputedStyle(question) : null;
+      const railStyle = rail ? getComputedStyle(rail) : null;
+      return {
+        questionCount: document.querySelectorAll('[data-art-question-shell="ART-MIG-04"]').length,
+        railCount: document.querySelectorAll('[data-art-instrument-rail="ART-MIG-04"]').length,
+        actionCounts,
+        questionBeforeRail: follows(question, rail),
+        responseControlCount: responseControls.length,
+        responseRegionBeforeConfirm: follows(answerRegion, confirm),
+        responseControlsBeforeConfirm: responseControls.length > 0 && responseControls.every((control) => follows(control, confirm)),
+        confirmBeforeRail: follows(confirm, rail),
+        railActionOrder: railActions.map((button) => button.getAttribute("data-action")),
+        railLabels: railActions.map((button) => ({
+          action: button.getAttribute("data-action"),
+          visibleText: button.innerText.replace(/\s+/gu, " ").trim(),
+        })),
+        railVisible: Boolean(rail && !rail.hidden && railStyle?.display !== "none" && railStyle?.visibility !== "hidden" && rail.getBoundingClientRect().width > 0 && rail.getBoundingClientRect().height > 0),
+        cssOrder: {
+          question: Number.parseInt(questionStyle?.order || "0", 10),
+          rail: Number.parseInt(railStyle?.order || "0", 10),
+        },
+        controlCssOrders: {
+          answerRegion: Number.parseInt(answerRegion ? getComputedStyle(answerRegion).order : "0", 10),
+          response: responseControls.map((control) => Number.parseInt(getComputedStyle(control).order || "0", 10)),
+          confirmContainer: Number.parseInt(confirmContainer ? getComputedStyle(confirmContainer).order : "0", 10),
+          confirm: Number.parseInt(confirm ? getComputedStyle(confirm).order : "0", 10),
+          rail: railActions.map((button) => Number.parseInt(getComputedStyle(button).order || "0", 10)),
+        },
+        controlTabIndexes: {
+          response: responseControls.map((control) => control.tabIndex),
+          confirm: confirm?.tabIndex ?? -1,
+          rail: railActions.map((button) => button.tabIndex),
+        },
+        targets: railActions.map((button) => ({
+          action: button.getAttribute("data-action"),
+          width: button.getBoundingClientRect().width,
+          height: button.getBoundingClientRect().height,
+          clientWidth: button.clientWidth,
+          scrollWidth: button.scrollWidth,
+          clientHeight: button.clientHeight,
+          scrollHeight: button.scrollHeight,
+        })),
+        documentScrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: innerWidth,
+        questionOverflowX: questionStyle?.overflowX || "missing",
+        questionOverflowY: questionStyle?.overflowY || "missing",
+        questionRailOverlapArea: overlapWidth * overlapHeight,
+      };
+    });
+    expect(artQuestionShellIssues(snapshot), viewport.id).toEqual([]);
+    await expect(page.locator('[data-art-question-shell="ART-MIG-04"]')).toBeVisible();
+    const rail = page.locator('[data-art-instrument-rail="ART-MIG-04"]');
+    await expect(rail).toBeVisible();
+    for (const [action, label] of Object.entries(ART_QUESTION_SHELL_RAIL_LABELS)) {
+      await expect(rail.locator(`button[data-action="${action}"]`)).toHaveText(label);
+      await expect(rail.getByRole("button", { name: label, exact: true })).toHaveCount(1);
+    }
+  }
+});
+
+test("[PW-F-16] observation and construction zones preserve semantics and responsive geometry", async ({ page }) => {
+  const selection = await openPreviewSelectionQuestion(page);
+  const touchProject = await page.evaluate(() => navigator.maxTouchPoints > 0);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+    { id: "stack-boundary-900", width: 900, height: 900 },
+    { id: "stack-boundary-901", width: 901, height: 900 },
+    { id: "stack-boundary-1023", width: 1023, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const expectedLayout = viewport.width <= ART_QUESTION_ZONE_NARROW_MAX_PX ? "STACKED" : "PAIRED";
+    const phoneFirstScreen = touchProject && viewport.id === "phone-portrait";
+    expect(artQuestionZoneIssues(await questionZoneSnapshot(page, expectedLayout, {
+      requiresFirstScreenResponse: phoneFirstScreen,
+      requiresFirstScreenTutorial: phoneFirstScreen,
+    })), viewport.id).toEqual([]);
+    await expect(selection.locator('[data-art-question-zone="OBSERVATION"]')).toBeVisible();
+    await expect(selection.locator('[data-art-question-zone="CONSTRUCTION"]')).toBeVisible();
+  }
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  const pattern = await openRegularPatternQuestion(page);
+  for (const viewport of [viewports[0], viewports.find(({ id }) => id === "desktop")]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const phoneFirstScreen = touchProject && viewport.id === "phone-portrait";
+    expect(artQuestionZoneIssues(await questionZoneSnapshot(page, "STACKED", {
+      requiresFirstScreenResponse: phoneFirstScreen,
+      requiresFirstScreenTutorial: phoneFirstScreen,
+    })), `interactive-${viewport.id}`).toEqual([]);
+    await expect(pattern.locator('[data-art-question-zone="CONSTRUCTION"] .pattern-build-task .math-model')).toBeVisible();
+    await expect(pattern.locator('[data-art-question-zone="OBSERVATION"] .pattern-build-task')).toHaveCount(0);
+  }
+
+  await page.setViewportSize({ width: viewports[0].width, height: viewports[0].height });
+  const responses = await patternResponsePlan(page);
+  await answerPatternResponse(page, responses.incorrect, "incorrect");
+  await activate(page.getByRole("button", { name: "Next", exact: true }), page);
+  const reteach = page.locator('section.question.phase-reteach[data-skill-id="MQ-004"]');
+  await expect(reteach).toBeVisible();
+  const reteachSnapshot = await questionZoneSnapshot(page, "STACKED", {
+    requiresFirstScreenResponse: touchProject,
+    requiresFirstScreenTutorial: touchProject,
+  });
+  expect(reteachSnapshot.referenceSupportCount).toBe(1);
+  expect(reteachSnapshot.referenceSupportInObservationCount).toBe(1);
+  expect(reteachSnapshot.workedReferenceCount).toBeGreaterThan(0);
+  expect(reteachSnapshot.workedReferenceInObservationCount).toBe(reteachSnapshot.workedReferenceCount);
+  expect(artQuestionZoneIssues(reteachSnapshot), "real-reteach-phone-portrait").toEqual([]);
+});
+
+async function openGovernedEarlyCountingQuestion(page) {
+  await page.clock.setFixedTime("2026-08-24T12:00:00-03:00");
+  await openFreshHome(page);
+  const identity = await page.evaluate(() => {
+    const engine = window.MathQuestEngine;
+    const playDay = 20689;
+    const seed = 6;
+    const skill = engine.SKILL_BY_ID["MQ-002"];
+    const slotFor = (index) => {
+      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
+      return {
+        skillId: skill.skillId,
+        ordinal: index,
+        baseOrdinal: index,
+        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
+        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: index + 1 }).includes(index + 1),
+        mandatorySecondExposure: false,
+        obligation: "NEW",
+        preview: false,
+      };
+    };
+    const queue = [slotFor(0), slotFor(1)];
+    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
+    const state = engine.createInitialState(playDay);
+    state.earnedLevel = Math.max(state.earnedLevel, question.level);
+    state.activeSession = {
+      sessionId: "art-mig-06-playwright",
+      playDay,
+      level: question.level,
+      stage: question.stage,
+      seed,
+      queue,
+      baseSlotCount: queue.length,
+      effectivePracticeLimit: queue.length,
+      effectivePlannedCount: queue.length,
+      effectiveTimeCapMs: 60000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 1,
+      world: "ocean",
+      servedCount: 2,
+      servedOrdinals: [0, 1],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
+        screen: "session",
+        phase: "question",
+        question,
+        choiceCandidates: [],
+        choiceResolved: {},
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        responseState: engine.createResponseState(question),
+        modelTouched: false,
+        hintUsed: false,
+        tutorialOpen: false,
+        tutorialStep: 1,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        attemptCommitted: true,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach: false,
+        capstoneSubmitted: false,
+      },
+    };
+    const issue = engine.validateState(state);
+    if (issue !== null) throw new Error(`Invalid early-counting Playwright fixture: ${issue}`);
+    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
+    return { questionId: question.questionId, objectOracle: Number(question.answer.value) };
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const question = page.locator('section.question[data-skill-id="MQ-002"][data-input-method="COUNT_TOUCH"]');
+  await expect(question).toBeVisible();
+  expect(identity.questionId).toBe("MQ-002-1-53399667");
+  expect(identity.objectOracle).toBe(3);
+  return question;
+}
+
+async function earlyCountingSnapshot(page, expectedTouchedCount) {
+  return page.evaluate((expectedTouchedCount) => {
+    const question = document.querySelector('section.question[data-skill-id="MQ-002"][data-input-method="COUNT_TOUCH"]');
+    const task = question?.querySelector('.count-touch-task[data-response-kind="COUNT_TOUCH"]');
+    const objectButtons = [...(task?.querySelectorAll('.touch-objects button[data-item-id]') || [])];
+    const numberButtons = [...(task?.querySelectorAll('.count-number-bank button[data-count-value]') || [])];
+    const counted = objectButtons.find((button) => button.getAttribute("aria-pressed") === "true") || null;
+    const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+    const support = question?.querySelector(".support-scroll") || null;
+    const saved = JSON.parse(localStorage.getItem(window.MathQuestEngine.CONSTANTS.STORAGE_NAMESPACE) || "null");
+    const savedQuestion = saved?.activeSession?.uiState?.question || null;
+    const firstBounds = objectButtons[0]?.getBoundingClientRect() || null;
+    return {
+      skillId: question?.dataset.skillId || null,
+      inputMethod: question?.dataset.inputMethod || null,
+      semanticPromptStringId: savedQuestion?.semanticPromptStringId || null,
+      rendererFamily: task?.dataset.artRendererFamily || null,
+      objectOracle: Number(savedQuestion?.answer?.value),
+      objectCount: objectButtons.length,
+      objectIds: objectButtons.map((button) => button.dataset.itemId),
+      numberBank: numberButtons.map((button) => Number(button.dataset.countValue)),
+      expectedNumberBank: [0, 1, 2, 3],
+      touchedCount: objectButtons.filter((button) => button.getAttribute("aria-pressed") === "true").length,
+      expectedTouchedCount,
+      countedHasGeometricCheckCue: Boolean(counted && (() => {
+        const cue = getComputedStyle(counted, "::after");
+        return cue.content === '\"\"'
+          && cue.backgroundImage.split("linear-gradient").length === 3
+          && Number.parseFloat(cue.width) >= 32
+          && Number.parseFloat(cue.height) >= 32;
+      })()),
+      countedHasVisibleTextCue: Boolean(counted && counted.querySelector("span:last-child")?.textContent.trim() === "Counted"),
+      countedHasAccessibleCue: Boolean(counted && counted.getAttribute("aria-label")?.includes("counted") && counted.getAttribute("aria-pressed") === "true"),
+      answerDisclosureCount: (question?.querySelectorAll('[data-feedback-state],[data-correct-answer],.worked-answer,.feedback')?.length || 0)
+        + numberButtons.filter((button) => button.getAttribute("aria-pressed") === "true").length,
+      confirmDisabled: confirm?.disabled === true,
+      firstResponseOnFirstScreen: Boolean(firstBounds && firstBounds.top >= 0 && firstBounds.bottom <= innerHeight),
+      horizontalDocumentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      nestedQuestionScroll: Boolean(support && support.scrollHeight > support.clientHeight && ["auto", "scroll"].includes(getComputedStyle(support).overflowY)),
+      targets: [...objectButtons.map((button) => ({ kind: "object", width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })), ...numberButtons.map((button) => ({ kind: "number", width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height }))],
+    };
+  }, expectedTouchedCount);
+}
+
+test("[PW-F-17] ART-MIG-06 early counting preserves the oracle, answer boundary, counted cues, and responsive geometry", async ({ page }) => {
+  const question = await openGovernedEarlyCountingQuestion(page);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyCountingIssues(await earlyCountingSnapshot(page, 0)), `initial-${viewport.id}`).toEqual([]);
+  }
+  await activate(question.locator('.touch-objects button[data-item-id="i0"]'), page);
+  await expect(question.locator('.touch-objects button[data-item-id="i0"]')).toHaveAttribute("aria-pressed", "true");
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyCountingIssues(await earlyCountingSnapshot(page, 1)), `partial-${viewport.id}`).toEqual([]);
+  }
+});
+
+async function openGovernedEarlyFrameQuestion(page) {
+  await page.clock.setFixedTime("2026-08-24T12:00:00-03:00");
+  await openFreshHome(page);
+  const identity = await page.evaluate(() => {
+    const engine = window.MathQuestEngine;
+    const playDay = 20689;
+    const seed = 9;
+    const skill = engine.SKILL_BY_ID["MQ-026"];
+    const slotFor = (index) => {
+      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
+      return {
+        skillId: skill.skillId,
+        ordinal: index,
+        baseOrdinal: index,
+        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
+        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: 2 }).includes(index + 1),
+        mandatorySecondExposure: false,
+        obligation: "NEW",
+        preview: false,
+      };
+    };
+    const queue = [slotFor(0), slotFor(1)];
+    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
+    const state = engine.createInitialState(playDay);
+    state.earnedLevel = Math.max(state.earnedLevel, question.level);
+    state.activeSession = {
+      sessionId: "art-mig-06-early-frame-playwright",
+      playDay,
+      level: question.level,
+      stage: question.stage,
+      seed,
+      queue,
+      baseSlotCount: queue.length,
+      effectivePracticeLimit: queue.length,
+      effectivePlannedCount: queue.length,
+      effectiveTimeCapMs: 60000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 1,
+      world: "ocean",
+      servedCount: 2,
+      servedOrdinals: [0, 1],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
+        screen: "session",
+        phase: "question",
+        question,
+        choiceCandidates: [],
+        choiceResolved: { 0: 0 },
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        responseState: engine.createResponseState(question),
+        modelTouched: false,
+        hintUsed: false,
+        tutorialOpen: false,
+        tutorialStep: 1,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        attemptCommitted: true,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach: false,
+        capstoneSubmitted: false,
+      },
+    };
+    const issue = engine.validateState(state);
+    if (issue !== null) throw new Error(`Invalid early-frame Playwright fixture: ${issue}`);
+    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
+    return { questionId: question.questionId, answerOracle: Number(question.answer.value) };
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const question = page.locator('section.question[data-skill-id="MQ-026"][data-input-method="TEN_FRAME"]');
+  await expect(question).toBeVisible();
+  expect(identity.questionId).toBe("MQ-026-1-3301471712");
+  expect(identity.answerOracle).toBe(15);
+  return question;
+}
+
+async function earlyFrameSnapshot(page, expectedPressedCount) {
+  return page.evaluate((expectedPressedCount) => {
+    const question = document.querySelector('section.question[data-skill-id="MQ-026"][data-input-method="TEN_FRAME"]');
+    const task = question?.querySelector('.ten-frame-construction[data-response-kind="TEN_FRAME"]');
+    const frames = [...(task?.querySelectorAll(":scope > .tenframe") || [])];
+    const cells = [...(task?.querySelectorAll('.model-cell[data-cell][data-cell-position]') || [])];
+    const filled = cells.find((cell) => cell.getAttribute("aria-pressed") === "true") || null;
+    const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+    const support = question?.querySelector(".support-scroll") || null;
+    const saved = JSON.parse(localStorage.getItem(window.MathQuestEngine.CONSTANTS.STORAGE_NAMESPACE) || "null");
+    const savedUi = saved?.activeSession?.uiState || null;
+    const savedQuestion = savedUi?.question || null;
+    const firstBounds = cells[0]?.getBoundingClientRect() || null;
+    const near = (left, right) => Math.abs(left - right) <= 1;
+    const fiveByTwoStructure = frames.every((frame) => {
+      const frameCells = [...frame.querySelectorAll(":scope > .model-cell")];
+      if (frameCells.length !== 10) return false;
+      const bounds = frameCells.map((cell) => cell.getBoundingClientRect());
+      return bounds.slice(0, 5).every((rect) => near(rect.top, bounds[0].top))
+        && bounds.slice(5).every((rect) => near(rect.top, bounds[5].top))
+        && bounds[5].top > bounds[0].top
+        && bounds.slice(0, 5).every((rect, index) => near(rect.left, bounds[index + 5].left));
+    });
+    return {
+      skillId: question?.dataset.skillId || null,
+      inputMethod: question?.dataset.inputMethod || null,
+      semanticPromptStringId: savedQuestion?.semanticPromptStringId || null,
+      taskType: savedQuestion?.taskType || null,
+      rendererFamily: task?.dataset.artRendererFamily || null,
+      answerOracle: Number(savedQuestion?.answer?.value),
+      declaredCellCount: Number(task?.dataset.cellCount),
+      frameCount: frames.length,
+      frameCapacities: frames.map((frame) => Number(frame.dataset.frameCapacity)),
+      cellsPerFrame: frames.map((frame) => frame.querySelectorAll(":scope > .model-cell").length),
+      frameIndexes: frames.map((frame) => Number(frame.dataset.frameIndex)),
+      cellIndexes: cells.map((cell) => Number(cell.dataset.cell)),
+      cellPositions: cells.map((cell) => Number(cell.dataset.cellPosition)),
+      fiveByTwoStructure,
+      pressedCount: cells.filter((cell) => cell.getAttribute("aria-pressed") === "true").length,
+      expectedPressedCount,
+      responseValue: String(savedUi?.entry ?? ""),
+      filledHasCssCounterCue: Boolean(filled && (() => {
+        const cue = getComputedStyle(filled, "::before");
+        const renderedWidth = Number.parseFloat(cue.width) + Number.parseFloat(cue.borderLeftWidth) + Number.parseFloat(cue.borderRightWidth);
+        const renderedHeight = Number.parseFloat(cue.height) + Number.parseFloat(cue.borderTopWidth) + Number.parseFloat(cue.borderBottomWidth);
+        return cue.content === '\"\"' && cue.borderStyle === "solid" && renderedWidth >= 28 && renderedHeight >= 28;
+      })()),
+      filledHasCentrePipCue: Boolean(filled && (() => {
+        const cue = getComputedStyle(filled, "::after");
+        return cue.content === '\"\"' && cue.borderStyle === "solid" && Number.parseFloat(cue.width) >= 10 && Number.parseFloat(cue.height) >= 10;
+      })()),
+      filledHasAccessibleCue: Boolean(filled && filled.getAttribute("aria-pressed") === "true" && filled.getAttribute("aria-label")),
+      answerDisclosureCount: question?.querySelectorAll('[data-feedback-state],[data-correct-answer],.worked-answer,.feedback')?.length || 0,
+      confirmDisabled: confirm?.disabled === true,
+      firstResponseOnFirstScreen: Boolean(firstBounds && firstBounds.top >= 0 && firstBounds.bottom <= innerHeight),
+      horizontalDocumentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      nestedQuestionScroll: Boolean(support && support.scrollHeight > support.clientHeight && ["auto", "scroll"].includes(getComputedStyle(support).overflowY)),
+      targets: cells.map((cell) => ({ width: cell.getBoundingClientRect().width, height: cell.getBoundingClientRect().height })),
+    };
+  }, expectedPressedCount);
+}
+
+test("[PW-F-18] ART-MIG-06 early frame preserves the MQ-026 oracle, exact five-by-two trays, response count, filled cues, and responsive geometry", async ({ page }) => {
+  const question = await openGovernedEarlyFrameQuestion(page);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyFrameIssues(await earlyFrameSnapshot(page, 0)), `initial-${viewport.id}`).toEqual([]);
+  }
+  for (let index = 0; index < 12; index += 1) {
+    await activate(question.locator(`.model-cell[data-cell="${index}"]`), page);
+  }
+  await expect(question.locator('.model-cell[aria-pressed="true"]')).toHaveCount(12);
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyFrameIssues(await earlyFrameSnapshot(page, 12)), `partial-${viewport.id}`).toEqual([]);
+  }
 });

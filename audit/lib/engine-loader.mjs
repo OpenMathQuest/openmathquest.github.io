@@ -45,8 +45,11 @@ function afterLine(buffer, offset) {
   return lf === -1 ? buffer.length : lf + 1;
 }
 
-export async function extractEngine(indexPath) {
-  const pageBytes = await readFile(indexPath);
+export function extractEngineFromPageBytes(pageBytes) {
+  if (!Buffer.isBuffer(pageBytes) && !(pageBytes instanceof Uint8Array)) {
+    throw new TypeError("Engine extraction requires the exact page bytes.");
+  }
+  pageBytes = Buffer.from(pageBytes);
   const startCount = countAscii(pageBytes, START_MARKER);
   const endCount = countAscii(pageBytes, END_MARKER);
   if (startCount !== 1 || endCount !== 1) {
@@ -74,6 +77,10 @@ export async function extractEngine(indexPath) {
     byteStart: engineStart,
     byteEndExclusive: engineEnd,
   });
+}
+
+export async function extractEngine(indexPath) {
+  return extractEngineFromPageBytes(await readFile(indexPath));
 }
 
 // This scanner removes ordinary comments and quoted text before looking for the

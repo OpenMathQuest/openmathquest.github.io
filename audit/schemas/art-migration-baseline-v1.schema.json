@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/art-migration-baseline-v1.schema.json",
+  "title": "Math Quest art migration baseline v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "baselineId",
+    "version",
+    "schemaVersion",
+    "recordState",
+    "primaryConsumer",
+    "authority",
+    "licence",
+    "migrationStepId",
+    "entryGateId",
+    "exitGateId",
+    "claimBoundary",
+    "digestSemantics",
+    "orderingContract",
+    "sourceRevision",
+    "authorityBindings",
+    "runtimeBindings",
+    "engineBinding",
+    "fixtureContract",
+    "browserEvidenceBinding",
+    "visualEvidence"
+  ],
+  "properties": {
+    "baselineId": { "const": "math-quest-art-migration-baseline" },
+    "version": { "const": "1.0.0" },
+    "schemaVersion": { "const": 1 },
+    "recordState": { "const": "FROZEN_REFERENCE" },
+    "primaryConsumer": { "const": "AI_AGENT" },
+    "authority": { "const": "THIS_FILE" },
+    "licence": { "$ref": "#/$defs/licence" },
+    "migrationStepId": { "const": "ART-MIG-01" },
+    "entryGateId": { "const": "GOVERNANCE_FOUNDATION_VALID" },
+    "exitGateId": { "const": "BASELINE_EVIDENCE_BOUND" },
+    "claimBoundary": { "const": "HISTORICAL_COMPARISON_REFERENCE_NOT_ART_APPROVAL_HUMAN_LEGIBILITY_PROOF_REAL_DEVICE_PROOF_OR_RELEASE_CERTIFICATION" },
+    "digestSemantics": {
+      "const": {
+        "fileDigest": "SHA256_RAW_GIT_BLOB_BYTES",
+        "jsonDigest": "SHA256_CANONICAL_JSON_SORTED_OBJECT_KEYS_ARRAY_ORDER_PRESERVED",
+        "gitIdentity": "SHA1_GIT_OBJECT_ID",
+        "derivedDigest": "SHA256_EXACT_DERIVED_UTF8_BYTES_NO_TRAILING_NEWLINE",
+        "visualDetailsDigest": "SHA256_EXACT_TIMING_FREE_RESULT_DETAILS_UTF8"
+      }
+    },
+    "orderingContract": {
+      "const": [
+        { "jsonPointer": "/authorityBindings", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/runtimeBindings", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/fixtureContract/records", "policy": "ORDER_ASCENDING" },
+        { "jsonPointer": "/fixtureContract/exclusions", "policy": "LEXICOGRAPHIC_BY_FEATURE_ID" },
+        { "jsonPointer": "/visualEvidence/viewports", "policy": "LEXICOGRAPHIC_BY_ID" },
+        { "jsonPointer": "/visualEvidence/states", "policy": "LEXICOGRAPHIC" },
+        { "jsonPointer": "/visualEvidence/results", "policy": "LEXICOGRAPHIC_BY_ID" }
+      ]
+    },
+    "sourceRevision": { "$ref": "#/$defs/sourceRevision" },
+    "authorityBindings": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/sourceBinding" }
+    },
+    "runtimeBindings": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": { "$ref": "#/$defs/sourceBinding" }
+    },
+    "engineBinding": { "$ref": "#/$defs/engineBinding" },
+    "fixtureContract": { "$ref": "#/$defs/fixtureContract" },
+    "browserEvidenceBinding": { "$ref": "#/$defs/browserEvidenceBinding" },
+    "visualEvidence": { "$ref": "#/$defs/visualEvidence" }
+  },
+  "$defs": {
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$" },
+    "licence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spdx", "scope", "originalWork"],
+      "properties": {
+        "spdx": { "const": "MIT" },
+        "scope": { "const": "Original Math Quest historical art-migration baseline, fixture joins, and sanitized structured render evidence." },
+        "originalWork": { "const": true }
+      }
+    },
+    "sourceRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commitSha1", "parentSha1", "treeOidSha1"],
+      "properties": {
+        "commitSha1": { "$ref": "#/$defs/sha1" },
+        "parentSha1": { "$ref": "#/$defs/sha1" },
+        "treeOidSha1": { "$ref": "#/$defs/sha1" }
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "gitBlobOidSha1", "rawByteSha256", "bytes", "canonicalJsonSha256"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^(?:AUTH|RUNTIME)-[A-Z0-9-]+$" },
+        "path": { "$ref": "#/$defs/path" },
+        "gitBlobOidSha1": { "$ref": "#/$defs/sha1" },
+        "rawByteSha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "canonicalJsonSha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+      }
+    },
+    "engineBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceBindingId", "derivation", "bytes", "rawByteSha256"],
+      "properties": {
+        "id": { "const": "DERIVED-ENGINE" },
+        "sourceBindingId": { "const": "RUNTIME-INDEX" },
+        "derivation": { "const": "ENGINE_MARKER_RAW_BYTES" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "rawByteSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "fixtureRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "order", "skillId", "featureId", "level", "strand", "generatorProfile",
+        "tier", "representation", "theme", "ordinal", "inputMethod", "taskType",
+        "semanticPromptStringId", "questionId", "sampleKeySha256", "tutorialFamilyId",
+        "tutorialAnchorRoleIds", "tutorialVisualCueIds", "tutorialObligationKey"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ART-FIX-(?:0[0-4][1-9]|0[1-4]0|050)$" },
+        "order": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "skillId": { "type": "string", "pattern": "^MQ-(?:00[1-9]|0[1-9][0-9]|1[01][0-9]|12[0-6])$" },
+        "featureId": { "type": "string", "pattern": "^child\\.mechanic\\.[a-z0-9-]+$" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 21 },
+        "strand": { "type": "string", "minLength": 1 },
+        "generatorProfile": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "tier": { "enum": ["EASY", "HARD/TARGET"] },
+        "representation": { "enum": ["CONCRETE", "PICTORIAL", "ABSTRACT"] },
+        "theme": { "enum": ["ocean", "forest", "space"] },
+        "ordinal": { "type": "integer", "minimum": 0 },
+        "inputMethod": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "taskType": { "type": "string", "minLength": 1 },
+        "semanticPromptStringId": { "type": "string", "pattern": "^question\\.[A-Za-z0-9]+$" },
+        "questionId": { "type": "string", "minLength": 1 },
+        "sampleKeySha256": { "$ref": "#/$defs/sha256" },
+        "tutorialFamilyId": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+        "tutorialAnchorRoleIds": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "tutorialVisualCueIds": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "tutorialObligationKey": { "type": "string", "pattern": "^MQ-[0-9]{3}\\|[a-z0-9-]+$" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questionCount", "levels", "strands", "generatorProfiles", "releaseReachableInputMethods", "strategyBuildSkillIds"],
+      "properties": {
+        "questionCount": { "const": 50 },
+        "levels": { "type": "array", "minItems": 21, "maxItems": 21, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 21 } },
+        "strands": { "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "generatorProfiles": { "type": "array", "minItems": 26, "maxItems": 26, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9-]+$" } },
+        "releaseReachableInputMethods": { "type": "array", "minItems": 33, "maxItems": 33, "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+        "strategyBuildSkillIds": { "const": ["MQ-040", "MQ-041", "MQ-079", "MQ-095", "MQ-097", "MQ-101"] }
+      }
+    },
+    "exclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["featureId", "inputMethod", "state", "proofResultId"],
+      "properties": {
+        "featureId": { "enum": ["child.mechanic.number-bond", "child.mechanic.number-choice"] },
+        "inputMethod": { "enum": ["NUMBER_BOND", "NUMBER_CHOICE"] },
+        "state": { "const": "RENDERER_CAPABLE_NOT_RELEASE_REACHABLE_AT_SOURCE_REVISION" },
+        "proofResultId": { "const": "VIS-CAPABILITIES" }
+      }
+    },
+    "fixtureContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractId", "authorityPath", "seed", "generatorContractVersion", "sampleKeyVersion",
+        "declarationBytes", "declarationSha256", "evaluatedSpecBytes", "evaluatedSpecSha256",
+        "fullIdentityRowsBytes", "fullIdentityRowsSha256", "storedRecordSetSha256", "records", "coverage", "exclusions"
+      ],
+      "properties": {
+        "contractId": { "const": "qa-tour-v1" },
+        "authorityPath": { "const": "index.html#QA_TOUR_V1" },
+        "seed": { "const": 1363235889 },
+        "generatorContractVersion": { "const": "question-generator-v6" },
+        "sampleKeyVersion": { "const": "manifest-skill-task-stimulus-response-answer-v2" },
+        "declarationBytes": { "const": 1673 },
+        "declarationSha256": { "const": "4b69dda64c3583466501652e65ca73605e357e81c21ec1d98d8575e7df07e88f" },
+        "evaluatedSpecBytes": { "const": 6477 },
+        "evaluatedSpecSha256": { "const": "c7582b185721f36a2232b883c2bd28724feb593a093c1e95ba1f60b2e7e5d548" },
+        "fullIdentityRowsBytes": { "const": 72251 },
+        "fullIdentityRowsSha256": { "const": "da665f8956bd58ded9857a061d68584bdb6fa546be037e9334aada7cf168ea94" },
+        "storedRecordSetSha256": { "$ref": "#/$defs/sha256" },
+        "records": { "type": "array", "minItems": 50, "maxItems": 50, "items": { "$ref": "#/$defs/fixtureRecord" } },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "exclusions": { "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/exclusion" } }
+      }
+    },
+    "browserIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productName", "fullVersion", "executableName", "executableSha256", "runnerKind", "status", "browserIdentityValid", "validForPublication"],
+      "properties": {
+        "productName": { "const": "Microsoft Edge" },
+        "fullVersion": { "const": "151.0.4129.101" },
+        "executableName": { "const": "msedge.exe" },
+        "executableSha256": { "const": "24f626e48dae3574b4d59adc8f23722f890fd0a64f78c772384b783b96bcf1a0" },
+        "runnerKind": { "const": "LOCAL" },
+        "status": { "const": "OBSERVED_LOCAL" },
+        "browserIdentityValid": { "const": true },
+        "validForPublication": { "const": false }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "automaticRetries", "attemptCount", "acceptedAttempt"],
+      "properties": {
+        "method": { "const": "EFFECT_SENSITIVE_BROWSER_AUDIT_VISUAL_SHARD_WITH_EXPORT_ONLY_ADAPTER" },
+        "automaticRetries": { "const": 0 },
+        "attemptCount": { "const": 1 },
+        "acceptedAttempt": { "const": 1 }
+      }
+    },
+    "browserEvidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "rawByteSha256", "bytes", "canonicalJsonSha256"],
+      "properties": {
+        "path": { "const": "audit/art-migration-browser-evidence-v1.json" },
+        "rawByteSha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "canonicalJsonSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "width", "height", "touch", "mobile", "deviceScaleFactor"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z-]+$" },
+        "width": { "type": "integer", "minimum": 320 },
+        "height": { "type": "integer", "minimum": 320 },
+        "touch": { "type": "boolean" },
+        "mobile": { "type": "boolean" },
+        "deviceScaleFactor": { "type": "number", "minimum": 1, "maximum": 3 }
+      }
+    },
+    "visualResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "detailsSha256"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^(?:PROFILE|VIS)-[A-Z0-9-]+$" },
+        "status": { "const": "PASS" },
+        "detailsSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "visualEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceClass", "disposition", "passingArtifactPolicy", "capture", "browserIdentity",
+        "viewports", "states", "results", "resultSetSha256", "passedCount", "failedCount",
+        "skippedCount", "missingCount", "unknownCount"
+      ],
+      "properties": {
+        "evidenceClass": { "const": "SANITIZED_TIMING_FREE_RENDERED_STRUCTURE" },
+        "disposition": { "const": "FREEZES_CURRENT_BEHAVIOR_WITHOUT_APPROVING_VISUAL_QUALITY" },
+        "passingArtifactPolicy": { "const": "NO_SCREENSHOTS_TRACES_VIDEO_OR_CHILD_DATA" },
+        "capture": { "$ref": "#/$defs/capture" },
+        "browserIdentity": { "$ref": "#/$defs/browserIdentity" },
+        "viewports": { "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/viewport" } },
+        "states": { "const": ["EXPECTED_REVEALED", "INITIAL", "PARTIAL_RESPONSE", "TEACHING_MODEL_WHEN_AVAILABLE", "TUTORIAL_STEP_1_DIFFERENT_EXAMPLE", "TUTORIAL_STEP_2_PLAN", "TUTORIAL_STEP_3_CHECK"] },
+        "results": { "type": "array", "minItems": 36, "maxItems": 36, "items": { "$ref": "#/$defs/visualResult" } },
+        "resultSetSha256": { "$ref": "#/$defs/sha256" },
+        "passedCount": { "const": 36 },
+        "failedCount": { "const": 0 },
+        "skippedCount": { "const": 0 },
+        "missingCount": { "const": 0 },
+        "unknownCount": { "const": 0 }
+      }
+    }
+  }
+}

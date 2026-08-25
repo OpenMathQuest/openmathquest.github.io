@@ -315,17 +315,7 @@ function openingTagById(html, id) {
   return match[0];
 }
 
-test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original practice tokens", () => {
-  const representation = E.SKILL_BY_ID["MQ-001"].representation;
-  const guidance = E.renderChildString("instruction.physicalModel", { representation });
-  assert.match(guidance, /\blarge\b/iu);
-  assert.match(guidance, /\bgrown-up-approved\b/iu);
-  assert.doesNotMatch(
-    guidance,
-    /\b(?:coins?|counters?|beads?|buttons?|marbles?|small objects?)\b/iu,
-    "the generic floor-play cue must not invite small manipulatives",
-  );
-
+test("QA-007: ordinary questions open directly and MQ-048 uses answer-free original practice tokens", () => {
   const skill = E.SKILL_BY_ID["MQ-048"];
   assert.equal(skill.title, "Match Canadian Practice Tokens to Values");
   assert.doesNotMatch(skill.objective, /authentic|coin faces?|official artwork/iu);
@@ -498,61 +488,12 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
   }
   assert.equal(renderPracticeToken({ kind: "practiceCoin", tokenId: "unknown", label: "practice token" }), "");
 
-  const guideHarness = evaluateHarness({
-    prelude: `
-      ${practiceTokenSetSource}
-      const ui={world:"ocean"};
-      const s=id=>id==="ui.ready"?"Ready":id==="ritual.open"?"Let’s look closely together.":id==="question.coinValue"?"Which Canadian money value does this practice token stand for?":"";
-      function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
-      function accessibleOptionLabel(option){return String(option?.label||option?.value||"");}
-      function geometryVisualHtml(){return "";}
-      function shapeName(){return "";}
-      function shapeVisualHtml(){return "";}
-    `,
-    functions: [
-      "visualItemHtml",
-      "practiceTokenGuideItems",
-      "practiceTokenGuideSpeech",
-      "practiceTokenGuideHtml",
-    ],
-    exposed: "practiceTokenGuideItems,practiceTokenGuideSpeech,practiceTokenGuideHtml",
-    context: { E },
-  });
   const firstTokenQuestion = makeQuestion("MQ-048", {
     ordinal: 0,
     tier: "EASY",
     scaffolded: false,
     coldTest: false,
   });
-  const guideItems = Array.from(
-    guideHarness.practiceTokenGuideItems(firstTokenQuestion),
-    ({ tokenId, value }) => ({ tokenId, value }),
-  );
-  assert.deepEqual(guideItems, fixedVisualOracle,
-    "the first-use guide must teach every governed token/value mapping in curriculum order");
-  const guideHtml = String(guideHarness.practiceTokenGuideHtml(firstTokenQuestion));
-  assert.match(guideHtml, /data-practice-token-guide="true"/u);
-  assert.match(guideHtml, /<h2>Let’s look closely together\.<\/h2>/u);
-  assert.doesNotMatch(guideHtml, /Which Canadian money value does this practice token stand for\?/u,
-    "the five-token guide must not reuse a singular question with no unique referent");
-  assert.equal((guideHtml.match(/role="listitem"/gu) || []).length, 5);
-  for (const { tokenId, value } of fixedVisualOracle) {
-    assert.match(guideHtml, new RegExp(`data-practice-token="${tokenId}"`, "u"));
-    assert.match(guideHtml, new RegExp(`data-practice-token-value="${value.replace("$", "\\$")}"`, "u"));
-  }
-  assert.match(guideHtml, /data-action="physical-done">Ready<\/button>/u);
-  assert.doesNotMatch(guideHtml, /data-action="confirm"|<input|<select/iu,
-    "the teaching guide must not masquerade as an assessed answer screen");
-  const guideSpeech = String(guideHarness.practiceTokenGuideSpeech(firstTokenQuestion));
-  assert.match(guideSpeech, /^Let’s look closely together\./u);
-  for (const tokenName of [
-    "one-dot practice token",
-    "two-stripe practice token",
-    "three-dot practice token",
-    "cross practice token",
-    "ring-and-diamond practice token",
-  ]) assert.match(guideSpeech, new RegExp(tokenName, "iu"));
-
   const activationHarness = evaluateHarness({
     prelude: `
       let state,ui;
@@ -562,15 +503,15 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
       function save(){effects.saved+=1;return true;}
       function render(){effects.rendered+=1;}
       function focusColdStartTarget(){}
-      function replayText(){return "practice-token guide speech";}
       function questionSpeechText(){return "question speech";}
+      function practiceTokenGuideSpeech(){return "practice token guide speech";}
       function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
       function configure(question,{acquisition="UNSEEN",evidence=[],screen="session"}={}){
         state={skills:{[question.skillId]:{acquisition,evidence:[...evidence]}}};
         ui={screen,question:null,choiceCandidates:[],selected:null,entry:"",fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],responseState:{},modelTouched:false,hintUsed:false,selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null,isReteach:false,capstoneSubmitted:false,promptFinishedAt:0,replayMs:0,manipulationMs:0,manipulationStartedAt:0,idleStart:0,maxIdleMs:0,phase:"question"};
         effects.saved=0;effects.rendered=0;effects.served=0;effects.spoken=[];
       }
-      function snapshot(){return {phase:ui.phase,question:ui.question,acquisition:state.skills[ui.question.skillId].acquisition,effects:{saved:effects.saved,rendered:effects.rendered,served:effects.served,spoken:[...effects.spoken]}};}
+      function snapshot(){return {phase:ui.phase,question:ui.question,modelTouched:ui.modelTouched,acquisition:state.skills[ui.question.skillId].acquisition,effects:{saved:effects.saved,rendered:effects.rendered,served:effects.served,spoken:[...effects.spoken]}};}
     `,
     functions: ["activateQuestion"],
     exposed: "activateQuestion,configure,snapshot",
@@ -579,20 +520,21 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
   activationHarness.configure(firstTokenQuestion);
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
   const unseenActivation = activationHarness.snapshot();
-  assert.equal(unseenActivation.phase, "physical");
+  assert.equal(unseenActivation.phase, "practice-token-guide");
+  assert.equal(unseenActivation.modelTouched, false);
   assert.equal(unseenActivation.question.scaffolded, false,
-    "the visual guide is a separate teaching step and must not mutate the ordinary question contract");
+    "direct entry must not mutate the ordinary question contract");
   assert.equal(unseenActivation.acquisition, "LEARNING");
   assert.deepEqual(JSON.parse(JSON.stringify(unseenActivation.effects)), {
     saved: 1,
     rendered: 1,
     served: 1,
-    spoken: ["practice-token guide speech"],
+    spoken: ["practice token guide speech"],
   });
   activationHarness.configure(firstTokenQuestion, { acquisition: "PLACED" });
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
-  assert.equal(activationHarness.snapshot().phase, "physical",
-    "a placement-inferred skill with no real evidence must receive the guide before its first review");
+  assert.equal(activationHarness.snapshot().phase, "practice-token-guide",
+    "a placement-inferred skill with no real evidence must still receive the one-time token legend");
   activationHarness.configure(firstTokenQuestion, { acquisition: "PRACTISING", evidence: [{ recordId: "prior" }] });
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
   assert.equal(activationHarness.snapshot().phase, "question",
@@ -601,7 +543,7 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
   activationHarness.configure(previewQuestion);
   activationHarness.activateQuestion(previewQuestion, { ordinal: 0 });
   assert.equal(activationHarness.snapshot().phase, "question",
-    "preview and Parent Test paths must remain isolated from the child first-use guide");
+    "preview and Parent Test paths must open directly as answerable questions");
   const capstoneQuestion = makeQuestion("MQ-048", { ordinal: 0, tier: "EASY", capstone: true, scaffolded: true, coldTest: false });
   activationHarness.configure(capstoneQuestion);
   activationHarness.activateQuestion(capstoneQuestion, { ordinal: 0 });
@@ -609,6 +551,56 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
   activationHarness.configure(firstTokenQuestion);
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 }, { reteach: true });
   assert.equal(activationHarness.snapshot().phase, "reteach");
+
+  for (const concreteSkill of E.SKILLS.filter((candidate) => candidate.phases.includes("C"))) {
+    const question = makeQuestion(concreteSkill.skillId, {
+      ordinal: 0,
+      tier: "EASY",
+      representation: "CONCRETE",
+      scaffolded: false,
+      coldTest: false,
+    });
+    activationHarness.configure(question);
+    activationHarness.activateQuestion(question, { ordinal: 0 });
+    assert.equal(
+      activationHarness.snapshot().phase,
+      "question",
+      `${concreteSkill.skillId} must open directly without a grown-up acknowledgement gate`,
+    );
+  }
+  const guideHarness = evaluateHarness({
+    prelude: `
+      function s(id){return id==="ritual.open"?"Let’s look together":id==="ui.ready"?"Ready":id;}
+      function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
+      function accessibleOptionLabel(option){return String(option.label);}
+      function visualItemHtml(item){return '<span class="practice-coin-token" data-practice-token="'+escape(item.tokenId)+'"></span>';}
+    `,
+    functions: ["practiceTokenGuideItems", "practiceTokenGuideSpeech", "practiceTokenGuideHtml"],
+    exposed: "practiceTokenGuideItems,practiceTokenGuideSpeech,practiceTokenGuideHtml",
+    context: { E },
+  });
+  const guideItems = guideHarness.practiceTokenGuideItems(firstTokenQuestion);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(guideItems.map(({ tokenId, value }) => ({ tokenId, value })))),
+    fixedVisualOracle,
+    "the one-time legend must teach all five governed mappings exactly",
+  );
+  const guideHtml = guideHarness.practiceTokenGuideHtml(firstTokenQuestion);
+  assert.equal((guideHtml.match(/role="listitem"/gu) || []).length, 5);
+  assert.match(guideHtml, /data-action="practice-token-ready">Ready</u);
+  assert.doesNotMatch(guideHtml, /question-response|data-action="select"|data-action="confirm"|Which Canadian money value/iu,
+    "the legend must remain answer-free and separate from the assessed question");
+  assert.match(guideHarness.practiceTokenGuideSpeech(firstTokenQuestion), /practice token/iu);
+
+  for (const removedMarker of [
+    "physicalTaskHtml",
+    'data-action="physical-done"',
+    "instruction.physical",
+    "ui.physicalDone",
+    "We made it",
+  ]) {
+    assert.equal(adapter.includes(removedMarker), false, `${removedMarker} must not remain in the shipped adapter`);
+  }
 
   const guidedAttempt = E.submitAnswer(firstTokenQuestion, { optionId: firstTokenQuestion.options[firstTokenQuestion.correctIndex].optionId }, {
     promptFinishedAt: 100,
@@ -622,7 +614,7 @@ test("QA-007: physical guidance stays safe and MQ-048 uses answer-free original 
     playDay: 1,
   });
   assert.equal(guidedAttempt.evidenceClass, "GUESS_PRONE_SELECTION",
-    "after the separate guide, the unchanged ordinary question must remain governed by the existing mastery contract");
+    "the legend must not alter the existing mastery contract for the assessed question");
 });
 
 test("QA-033: the browser placement oracle submits valid complete responses for every adaptive boundary", () => {

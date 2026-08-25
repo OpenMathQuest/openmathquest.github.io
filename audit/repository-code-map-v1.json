@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.6.0",
+  "version": "1.13.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -15,7 +15,7 @@
       "path": "AGENTS.md",
       "startMarker": "<!-- AI-FIRST-DRIFT-CONTROL-START -->",
       "endMarker": "<!-- AI-FIRST-DRIFT-CONTROL-END -->",
-      "sha256": "6d8f0018125ed2d5a104e0e0c6aeecb94f22f0bb14069138aea1eacb3c0dc0f9"
+      "sha256": "9d310c620587d3e37d58e97a6c45222f2e6b18cb132335d0398764c6512cf8dd"
     },
     "canonicalRecordFormat": "CLOSED_JSON",
     "schemaClosure": "ADDITIONAL_PROPERTIES_FALSE",
@@ -31,6 +31,7 @@
       "CODE_MAP",
       "FEATURE_MAP",
       "TUTORIAL_MANIFEST",
+      "ART_DESIGN",
       "BLAST_RADIUS",
       "GATES"
     ]
@@ -119,7 +120,7 @@
     },
     {
       "id": "root-toolchain",
-      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.deep-ux)?\\.config\\.mjs)$",
+      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.(?:deep-ux|interaction-fuzz))?\\.config\\.mjs)$",
       "role": "toolchain",
       "releaseImpact": "DEVELOPMENT_ONLY"
     },
@@ -221,6 +222,148 @@
     }
   ],
   "factFamilies": [
+    {
+      "id": "art-design.asset-acceptance",
+      "owner": "audit/art-asset-register-v1.json",
+      "owns": [
+        "art-design.assets.acceptance-state",
+        "art-design.assets.evidence-bindings",
+        "art-design.assets.permitted-uses",
+        "art-design.assets.semantic-class"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-design-governance.test.mjs"
+      ]
+    },
+    {
+      "id": "art-design.migration-baseline",
+      "owner": "audit/art-migration-baseline-v1.json",
+      "owns": [
+        "art-design.migration-baseline.browser-evidence-binding",
+        "art-design.migration-baseline.claim-boundary",
+        "art-design.migration-baseline.fixture-contract",
+        "art-design.migration-baseline.source-bindings",
+        "art-design.migration-baseline.source-revision",
+        "art-design.migration-baseline.viewport-state-matrix"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-migration-baseline.test.mjs",
+        "audit/validate-art-migration-baseline.mjs"
+      ]
+    },
+    {
+      "id": "art-design.migration-browser-evidence",
+      "owner": "audit/art-migration-browser-evidence-v1.json",
+      "owns": [
+        "art-design.migration-browser-evidence.capture-contract",
+        "art-design.migration-browser-evidence.exact-browser-identity",
+        "art-design.migration-browser-evidence.exact-served-source",
+        "art-design.migration-browser-evidence.harness-adapter",
+        "art-design.migration-browser-evidence.passing-artifact-policy",
+        "art-design.migration-browser-evidence.request-integrity",
+        "art-design.migration-browser-evidence.visual-result-details",
+        "art-design.migration-browser-evidence.visual-result-set"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-migration-baseline.test.mjs",
+        "audit/validate-art-migration-baseline.mjs"
+      ]
+    },
+    {
+      "id": "art-design.runtime-tokens",
+      "owner": "assets/design/math-quest-design-tokens-v1.json",
+      "owns": [
+        "art-design.tokens.activation-state",
+        "art-design.tokens.approved-text-pairings",
+        "art-design.tokens.colour-values",
+        "art-design.tokens.dimensions",
+        "art-design.tokens.generated-projection-bytes",
+        "art-design.tokens.motion",
+        "art-design.tokens.runtime-consumer-contract",
+        "art-design.tokens.view-palettes"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.css",
+          "relationship": "GENERATED"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "index.html",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        }
+      ],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
+    },
+    {
+      "id": "art-design.source-decisions",
+      "owner": "audit/art-design-decision-register-v1.json",
+      "owns": [
+        "art-design.construction-workflow",
+        "art-design.design-rules",
+        "art-design.implementation-decisions",
+        "art-design.migration-sequence",
+        "art-design.observation-construction-zones",
+        "art-design.question-shell-and-instrument-rail",
+        "art-design.source-dispositions",
+        "art-design.theme-policy"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "AGENTS.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "audit/art-asset-register-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "curriculum/math-quest-feature-map-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "curriculum/math-quest-tutorial-manifest-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "index.html",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/art-question-shell.test.mjs"
+      ]
+    },
     {
       "id": "browser.reviewed-identity",
       "owner": "audit/browser-runner-evidence-v1.json",
@@ -676,6 +819,42 @@
       ]
     },
     {
+      "id": "testing.playwright-interaction-fuzz",
+      "owner": "audit/lib/playwright-interaction-fuzz.mjs",
+      "owns": [
+        "testing.playwright-interaction-fuzz.action-allowlist",
+        "testing.playwright-interaction-fuzz.diagnostic-claim-boundary",
+        "testing.playwright-interaction-fuzz.failure-evidence",
+        "testing.playwright-interaction-fuzz.project-profiles",
+        "testing.playwright-interaction-fuzz.replay-identity",
+        "testing.playwright-interaction-fuzz.resource-bounds",
+        "testing.playwright-interaction-fuzz.seed-identity"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/playwright/interaction-fuzz.spec.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "playwright.interaction-fuzz.config.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/playwright-interaction-fuzz.test.mjs"
+      ]
+    },
+    {
       "id": "toolchain.dependencies",
       "owner": "package.json",
       "owns": [
@@ -746,6 +925,204 @@
     }
   ],
   "artifactRelations": [
+    {
+      "id": "art-assets.decision",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "audit/art-asset-register-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-assets.evidence-paths",
+      "source": "licenses/evidence-paths-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.feature",
+      "source": "curriculum/math-quest-feature-map-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.release-shell",
+      "source": "release-shell-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.rights",
+      "source": "licenses/component-register-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.schema",
+      "source": "audit/schemas/art-asset-register-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-assets.tutorial",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-design.schema",
+      "source": "audit/schemas/art-design-decision-register-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-design.test",
+      "source": "audit/lib/art-design-governance.mjs",
+      "target": "audit/tests/art-design-governance.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-migration.browser-contract",
+      "source": "audit/lib/browser-smoke.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.browser-evidence-record",
+      "source": "audit/art-migration-browser-evidence-v1.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.browser-evidence-schema",
+      "source": "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-migration.engine-loader",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.record",
+      "source": "audit/art-migration-baseline-v1.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.schema",
+      "source": "audit/schemas/art-migration-baseline-v1.schema.json",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-migration.test",
+      "source": "audit/lib/art-migration-baseline.mjs",
+      "target": "audit/tests/art-migration-baseline.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-migration.validator",
+      "source": "audit/lib/art-migration-baseline.mjs",
+      "target": "audit/validate-art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-question-shell.browser-test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-shell.runtime",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "art-question-shell.test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/tests/art-question-shell.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-zones.browser-test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-question-zones.runtime",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "index.html",
+      "kind": "EMBEDS"
+    },
+    {
+      "id": "art-question-zones.test",
+      "source": "audit/lib/art-question-shell.mjs",
+      "target": "audit/tests/art-question-shell.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-token-projection.audit-oracle",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "audit.html",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.browser",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-token-projection.generator",
+      "source": "tools/build-design-token-projection.mjs",
+      "target": "assets/design/math-quest-design-tokens-v1.css",
+      "kind": "GENERATES"
+    },
+    {
+      "id": "art-token-projection.runtime",
+      "source": "assets/design/math-quest-design-tokens-v1.css",
+      "target": "index.html",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-token-projection.schema",
+      "source": "audit/schemas/design-tokens-v1.schema.json",
+      "target": "audit/lib/design-token-projection.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.shell",
+      "source": "release-shell-v1.json",
+      "target": "audit/lib/design-token-projection.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "art-token-projection.test",
+      "source": "audit/lib/design-token-projection.mjs",
+      "target": "audit/tests/design-token-projection.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "art-token-projection.tokens",
+      "source": "assets/design/math-quest-design-tokens-v1.json",
+      "target": "tools/build-design-token-projection.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-tokens.decision",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "assets/design/math-quest-design-tokens-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-tokens.schema",
+      "source": "audit/schemas/design-tokens-v1.schema.json",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "VALIDATES"
+    },
     {
       "id": "audit-browser.evidence-canonicalization",
       "source": "audit/lib/browser-smoke.mjs",
@@ -831,6 +1208,12 @@
       "kind": "EMBEDS"
     },
     {
+      "id": "feature.art-design",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "curriculum/math-quest-feature-map-v1.json",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "feature.gate",
       "source": "curriculum/math-quest-feature-map-v1.json",
       "target": "audit/run-audit.ps1",
@@ -879,6 +1262,12 @@
       "kind": "TESTS"
     },
     {
+      "id": "playwright.interaction-fuzz",
+      "source": "index.html",
+      "target": "audit/playwright/interaction-fuzz.spec.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "playwright.product",
       "source": "index.html",
       "target": "audit/playwright/critical-journeys.spec.mjs",
@@ -912,6 +1301,12 @@
       "id": "shell.worker",
       "source": "release-shell-v1.json",
       "target": "sw.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "tutorial.art-design",
+      "source": "audit/art-design-decision-register-v1.json",
+      "target": "curriculum/math-quest-tutorial-manifest-v1.json",
       "kind": "CONSUMES"
     },
     {
@@ -959,7 +1354,8 @@
   ],
   "dataArtifactPatterns": [
     "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
-    "^audit/(?:agent-collaboration-policy-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
+    "^assets/design/math-quest-design-tokens-v1\\.json$",
+    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|art-migration-baseline-v1|art-migration-browser-evidence-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
     "^curriculum/.*\\.json$",
     "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
   ],

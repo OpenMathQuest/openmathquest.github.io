@@ -20,3 +20,15 @@ $ajvManifest = Get-Content -LiteralPath $ajvManifestPath -Raw | ConvertFrom-Json
 if ($ajvManifest.name -cne 'ajv' -or $ajvManifest.version -cne '8.20.0') {
     throw 'The installed Ajv package does not match the reviewed 8.20.0 pin.'
 }
+
+$fastCheckManifestPath = Join-Path $PSScriptRoot '..\node_modules\fast-check\package.json'
+$fastCheckManifest = Get-Content -LiteralPath $fastCheckManifestPath -Raw | ConvertFrom-Json
+if ($fastCheckManifest.name -cne 'fast-check' -or $fastCheckManifest.version -cne '4.9.0') {
+    throw 'The installed fast-check package does not match the reviewed 4.9.0 pin.'
+}
+
+$pureRandManifestPath = Join-Path $PSScriptRoot '..\node_modules\pure-rand\package.json'
+$pureRandManifest = Get-Content -LiteralPath $pureRandManifestPath -Raw | ConvertFrom-Json
+if ($pureRandManifest.name -cne 'pure-rand' -or $pureRandManifest.version -cne '8.4.2') {
+    throw 'The installed pure-rand package does not match the reviewed 8.4.2 pin.'
+}

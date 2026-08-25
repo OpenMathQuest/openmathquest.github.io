@@ -36,6 +36,10 @@
     "audit.html",
     "audit/agent-collaboration-policy-v1.json",
     "audit/approved-visual-regression.js",
+    "audit/art-asset-register-v1.json",
+    "audit/art-design-decision-register-v1.json",
+    "audit/art-migration-baseline-v1.json",
+    "audit/art-migration-browser-evidence-v1.json",
     "audit/browser-runner-evidence-v1.json",
     "audit/certification-cadence-v1.json",
     "audit/compare-audit-execution-modes.mjs",
@@ -48,11 +52,15 @@
     "audit/fixtures/mq-coverage-calibration-partial.js",
     "audit/gate-integrity-policy-v1.json",
     "audit/install-reviewed-ci-dependencies.ps1",
+    "audit/lib/art-design-governance.mjs",
+    "audit/lib/art-migration-baseline.mjs",
+    "audit/lib/art-question-shell.mjs",
     "audit/lib/bounded-audit-lanes.mjs",
     "audit/lib/browser-runner-evidence.mjs",
     "audit/lib/browser-smoke.mjs",
     "audit/lib/child-strings.mjs",
     "audit/lib/curriculum-manifest.mjs",
+    "audit/lib/design-token-projection.mjs",
     "audit/lib/development-suite-plan.mjs",
     "audit/lib/engine-loader.mjs",
     "audit/lib/feature-map.mjs",
@@ -61,6 +69,7 @@
     "audit/lib/native-coverage.mjs",
     "audit/lib/playwright-deep-ux-census.mjs",
     "audit/lib/playwright-focused-contract.mjs",
+    "audit/lib/playwright-interaction-fuzz.mjs",
     "audit/lib/publication-clearance.mjs",
     "audit/lib/release-evidence-bundle.mjs",
     "audit/lib/release-evidence-successor.mjs",
@@ -77,6 +86,7 @@
     "audit/playwright/critical-journeys.spec.mjs",
     "audit/playwright/deep-ux-census.spec.mjs",
     "audit/playwright/fixtures.mjs",
+    "audit/playwright/interaction-fuzz.spec.mjs",
     "audit/public-candidate-guard.mjs",
     "audit/release-evidence-bundle-v1.json",
     "audit/repository-code-map-v1.json",
@@ -87,9 +97,15 @@
     "audit/run-coverage.mjs",
     "audit/run-playwright-deep-ux-census.mjs",
     "audit/run-playwright-focused.mjs",
+    "audit/run-playwright-interaction-fuzz.mjs",
     "audit/run-trusted-https-canary.mjs",
     "audit/run-trusted-https-canary.ps1",
+    "audit/schemas/art-asset-register-v1.schema.json",
+    "audit/schemas/art-design-decision-register-v1.schema.json",
+    "audit/schemas/art-migration-baseline-v1.schema.json",
+    "audit/schemas/art-migration-browser-evidence-v1.schema.json",
     "audit/schemas/blast-radius-result-v2.schema.json",
+    "audit/schemas/design-tokens-v1.schema.json",
     "audit/schemas/feature-map-v1.schema.json",
     "audit/schemas/gate-integrity-policy-v1.schema.json",
     "audit/schemas/release-evidence-bundle-v1.schema.json",
@@ -98,10 +114,14 @@
     "audit/test-launcher-identity.ps1",
     "audit/tests/adapter-syntax.test.mjs",
     "audit/tests/agent-collaboration-policy.test.mjs",
+    "audit/tests/art-design-governance.test.mjs",
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/tests/art-question-shell.test.mjs",
     "audit/tests/audit-lane-orchestration.test.mjs",
     "audit/tests/audit-orchestration.test.mjs",
     "audit/tests/blast-radius-lookup.test.mjs",
     "audit/tests/certification-cadence.test.mjs",
+    "audit/tests/design-token-projection.test.mjs",
     "audit/tests/development-suite-plan.test.mjs",
     "audit/tests/engine-suite.mjs",
     "audit/tests/feature-map.test.mjs",
@@ -115,6 +135,7 @@
     "audit/tests/placement-adapter-effects.test.mjs",
     "audit/tests/playwright-deep-ux-census.test.mjs",
     "audit/tests/playwright-focused-contract.test.mjs",
+    "audit/tests/playwright-interaction-fuzz.test.mjs",
     "audit/tests/publication-clearance.test.mjs",
     "audit/tests/pwa-release.test.mjs",
     "audit/tests/qa-tour.test.mjs",
@@ -124,6 +145,7 @@
     "audit/tests/trusted-https-canary.test.mjs",
     "audit/tests/tutorial-manifest.test.mjs",
     "audit/trusted-https-canary-beta7-v1.json",
+    "audit/validate-art-migration-baseline.mjs",
     "audit/validate-hosted-windows-observation.mjs",
     "audit/validate-publication-clearance.mjs",
     "audit/validate-trusted-https-canary.mjs",
@@ -161,6 +183,7 @@
     "package.json",
     "playwright.config.mjs",
     "playwright.deep-ux.config.mjs",
+    "playwright.interaction-fuzz.config.mjs",
     "release-shell-v1.json",
     "research/build-axioms.md",
     "research/clean-room-curriculum-log.md",
@@ -171,6 +194,7 @@
     "sw.js",
     "tools/blast-radius-lookup.mjs",
     "tools/build-app-icons.mjs",
+    "tools/build-design-token-projection.mjs",
     "tools/build-pwa-release-manifest.mjs",
     "tools/build-tutorial-manifest.mjs",
     "tools/normalize-curriculum-manifest.mjs",
@@ -180,6 +204,40 @@
     "tools/sync-tutorial-manifest.mjs"
   ],
   "bundledComponents": [
+    {
+      "id": "math-quest-design-tokens-v1",
+      "kind": "design-token-contract",
+      "origin": "original-project",
+      "paths": [
+        "assets/design/math-quest-design-tokens-v1.json"
+      ],
+      "sha256": "f546db2734d3ff8aab536eb5ac93c6fa169c6a615abb942baf11c37125521d3e",
+      "licence": "MIT",
+      "version": "1.6.0",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/design/math-quest-design-tokens-v1.json",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/design-tokens.md",
+      "modified": false
+    },
+    {
+      "id": "math-quest-design-token-projection-v1",
+      "kind": "design-token-contract",
+      "origin": "original-project",
+      "paths": [
+        "assets/design/math-quest-design-tokens-v1.css"
+      ],
+      "sha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee",
+      "licence": "MIT",
+      "version": "1.6.0",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/design/math-quest-design-tokens-v1.css",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/design-tokens.md",
+      "modified": false
+    },
     {
       "id": "inter-variable-font",
       "kind": "font",
@@ -538,6 +596,36 @@
       "scope": "focused and frozen-candidate browser journeys only"
     },
     {
+      "id": "fast-check-4.9.0",
+      "kind": "ci-only-property-based-testing-library",
+      "version": "4.9.0",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/dubzzz/fast-check/tree/0d3c2547dce556f72413607849377530d18ea283/packages/fast-check",
+      "sourceCommit": "0d3c2547dce556f72413607849377530d18ea283",
+      "licenceEvidence": "https://github.com/dubzzz/fast-check/blob/0d3c2547dce556f72413607849377530d18ea283/LICENSE",
+      "packageName": "fast-check",
+      "packageUrl": "https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz",
+      "packageSri": "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==",
+      "attributionRecord": "licenses/ci-toolchain.md",
+      "bundled": false,
+      "scope": "bounded seeded Playwright interaction-fuzz diagnostics only"
+    },
+    {
+      "id": "pure-rand-8.4.2",
+      "kind": "ci-only-transitive-pseudorandom-generator",
+      "version": "8.4.2",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/dubzzz/pure-rand/tree/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      "sourceCommit": "fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      "licenceEvidence": "https://github.com/dubzzz/pure-rand/blob/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6/LICENSE",
+      "packageName": "pure-rand",
+      "packageUrl": "https://registry.npmjs.org/pure-rand/-/pure-rand-8.4.2.tgz",
+      "packageSri": "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==",
+      "attributionRecord": "licenses/ci-toolchain.md",
+      "bundled": false,
+      "scope": "fast-check transitive seeded generator for interaction-fuzz diagnostics only"
+    },
+    {
       "id": "fsevents-2.3.2",
       "kind": "lockfile-only-optional-macos-dependency",
       "version": "2.3.2",
@@ -565,7 +653,7 @@
       "packageSri": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "tutorial-manifest build, synchronization, and focused validation only"
+      "scope": "closed repository JSON-contract build, synchronization, and focused validation only"
     },
     {
       "id": "fast-deep-equal-3.1.3",
@@ -580,7 +668,7 @@
       "packageSri": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "fast-uri-3.1.5",
@@ -595,7 +683,7 @@
       "packageSri": "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "json-schema-traverse-1.0.0",
@@ -610,7 +698,7 @@
       "packageSri": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
       "id": "require-from-string-2.0.2",
@@ -625,7 +713,7 @@
       "packageSri": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
-      "scope": "Ajv transitive dependency for tutorial-manifest validation only"
+      "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     }
   ],
   "prohibitedSources": [

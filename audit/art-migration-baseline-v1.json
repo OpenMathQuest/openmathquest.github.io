@@ -1,0 +1,2083 @@
+{
+  "baselineId": "math-quest-art-migration-baseline",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "recordState": "FROZEN_REFERENCE",
+  "primaryConsumer": "AI_AGENT",
+  "authority": "THIS_FILE",
+  "licence": {
+    "spdx": "MIT",
+    "scope": "Original Math Quest historical art-migration baseline, fixture joins, and sanitized structured render evidence.",
+    "originalWork": true
+  },
+  "migrationStepId": "ART-MIG-01",
+  "entryGateId": "GOVERNANCE_FOUNDATION_VALID",
+  "exitGateId": "BASELINE_EVIDENCE_BOUND",
+  "claimBoundary": "HISTORICAL_COMPARISON_REFERENCE_NOT_ART_APPROVAL_HUMAN_LEGIBILITY_PROOF_REAL_DEVICE_PROOF_OR_RELEASE_CERTIFICATION",
+  "digestSemantics": {
+    "fileDigest": "SHA256_RAW_GIT_BLOB_BYTES",
+    "jsonDigest": "SHA256_CANONICAL_JSON_SORTED_OBJECT_KEYS_ARRAY_ORDER_PRESERVED",
+    "gitIdentity": "SHA1_GIT_OBJECT_ID",
+    "derivedDigest": "SHA256_EXACT_DERIVED_UTF8_BYTES_NO_TRAILING_NEWLINE",
+    "visualDetailsDigest": "SHA256_EXACT_TIMING_FREE_RESULT_DETAILS_UTF8"
+  },
+  "orderingContract": [
+    {
+      "jsonPointer": "/authorityBindings",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/runtimeBindings",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/fixtureContract/records",
+      "policy": "ORDER_ASCENDING"
+    },
+    {
+      "jsonPointer": "/fixtureContract/exclusions",
+      "policy": "LEXICOGRAPHIC_BY_FEATURE_ID"
+    },
+    {
+      "jsonPointer": "/visualEvidence/viewports",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/visualEvidence/states",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/visualEvidence/results",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    }
+  ],
+  "sourceRevision": {
+    "commitSha1": "cb25cf1734c0481ed0670b58137e76d312d05857",
+    "parentSha1": "e4c7433e92f8571cd5c1803889eedbda20adaece",
+    "treeOidSha1": "9e82db9f23a997fe5cd173d503274de5097c5c2e"
+  },
+  "authorityBindings": [
+    {
+      "id": "AUTH-ART-DESIGN",
+      "path": "audit/art-design-decision-register-v1.json",
+      "gitBlobOidSha1": "c0d85bbc42cb200ebb93a32cb60be05d6bb2857d",
+      "rawByteSha256": "3014000f3f0ad1797459110da3e3ac496b79d98750da05beb961d08c6df0c507",
+      "bytes": 77013,
+      "canonicalJsonSha256": "02372941f80f174724e65770b6468d434391f1e5dd82551f06ed0f01d36a924d"
+    },
+    {
+      "id": "AUTH-CODE-MAP",
+      "path": "audit/repository-code-map-v1.json",
+      "gitBlobOidSha1": "90df437816c71e5c0721dc4e0f17e1657b8e6028",
+      "rawByteSha256": "1c8053eebb5b19fee3addcfb711343a04d53b4d6bd88cbdae7ef89209c941629",
+      "bytes": 35743,
+      "canonicalJsonSha256": "19d48a0e73c34efecbd2b914c7c3865dfd13bd44c9d73c5d2d48e2555b75882c"
+    },
+    {
+      "id": "AUTH-CURRICULUM",
+      "path": "curriculum/math-quest-manifest-v1.json",
+      "gitBlobOidSha1": "dfd99c0d39425ce7da0b61c8b932e1b9e161e6a4",
+      "rawByteSha256": "0873aa394e5ad1df97ac044e2db51f0e605893ccbd4940bfd6b2e740d62daf47",
+      "bytes": 187467,
+      "canonicalJsonSha256": "2ce40b93faa242e989837405ceec81a5fc314f289e0ec4888ea7d18403b2b018"
+    },
+    {
+      "id": "AUTH-FEATURE-MAP",
+      "path": "curriculum/math-quest-feature-map-v1.json",
+      "gitBlobOidSha1": "983b492df8ac9f9c7ba3a7ce57ab0b06439d0ac0",
+      "rawByteSha256": "0df8dab54d5d827eb7dd4e23fada9bf1b4c7f1e2250df9cc2cc1f5cc13336d3b",
+      "bytes": 48939,
+      "canonicalJsonSha256": "a6835c74f3903937f682ce2362b387661ae6f29eaf611ded876ed8a169f18adf"
+    },
+    {
+      "id": "AUTH-GATE-POLICY",
+      "path": "audit/gate-integrity-policy-v1.json",
+      "gitBlobOidSha1": "c8122e242a4137c68cb6eced6eb15c473fb86a22",
+      "rawByteSha256": "80aae938059203af7ee2b80d1ab2e43fd101a23ee38cb1873d0d6f9453b621e4",
+      "bytes": 24527,
+      "canonicalJsonSha256": "a3d52fe59674c3ad923749ba929f37c9780b9409631dc0c23c8788bcdb415387"
+    },
+    {
+      "id": "AUTH-TUTORIAL-MANIFEST",
+      "path": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "gitBlobOidSha1": "f1b76c4bf43fdce2ff2645f9b7c30f94c706a007",
+      "rawByteSha256": "c04d6cb95e6bf9f5506107c8104ae69964f0f63565a11a67dcca4b8462e2ea44",
+      "bytes": 73387,
+      "canonicalJsonSha256": "e4cc88b1f03b21c761db29d0a22f1d30698d464a8d152f3e03af1bb3b221c149"
+    }
+  ],
+  "runtimeBindings": [
+    {
+      "id": "RUNTIME-AUDIT-HARNESS",
+      "path": "audit.html",
+      "gitBlobOidSha1": "69280ab216e037006df3cdab8689542be4608972",
+      "rawByteSha256": "49acf4892c5e171518159d8d9b38851945523f35fa8f8e3d12b74ab37fee1189",
+      "bytes": 426803,
+      "canonicalJsonSha256": null
+    },
+    {
+      "id": "RUNTIME-BROWSER-ORCHESTRATOR",
+      "path": "audit/lib/browser-smoke.mjs",
+      "gitBlobOidSha1": "2507f20a92b1281d90645821787ff146fe0ca163",
+      "rawByteSha256": "e0a7d0096fcc92c7d8cd60e06f0cfbf969a11947850b54fb28fd97d2b04f098f",
+      "bytes": 39278,
+      "canonicalJsonSha256": null
+    },
+    {
+      "id": "RUNTIME-DEEP-UX-CONTRACT",
+      "path": "audit/lib/playwright-deep-ux-census.mjs",
+      "gitBlobOidSha1": "5a1a2c040675700d4c807bac792f9af4feae129b",
+      "rawByteSha256": "211fbdb506fec73253a03857576693fbf589e14be69af42959c05c30bae50762",
+      "bytes": 26964,
+      "canonicalJsonSha256": null
+    },
+    {
+      "id": "RUNTIME-INDEX",
+      "path": "index.html",
+      "gitBlobOidSha1": "0df7cff30b5ec204c1a73843eca45d802ddcb0cb",
+      "rawByteSha256": "63f3accf255f15345996978002de7b0bc737d755f643819096d91fc4dc4365c0",
+      "bytes": 1237333,
+      "canonicalJsonSha256": null
+    },
+    {
+      "id": "RUNTIME-PWA-SHELL",
+      "path": "release-shell-v1.json",
+      "gitBlobOidSha1": "dcb46afce03570d133371250c3751faf1244ab12",
+      "rawByteSha256": "0d4b1a33b98ee6b10fe2146f3ea72feeb88679f6b6daf23615f646bbc494cf81",
+      "bytes": 3238,
+      "canonicalJsonSha256": "7c89b1fa48f66158655f5a0ebc5b6ceccbbc51d199c14842a02e42d2e6ba92fd"
+    },
+    {
+      "id": "RUNTIME-SERVICE-WORKER",
+      "path": "sw.js",
+      "gitBlobOidSha1": "0233de6f4e90a0bcdc169288801ed5e226d7b5f3",
+      "rawByteSha256": "a1db75ecdb1d3bc2fa55f42aed551eb41e32b66560a7f55a67363a63067fc4a0",
+      "bytes": 17354,
+      "canonicalJsonSha256": null
+    },
+    {
+      "id": "RUNTIME-VISUAL-ORACLE",
+      "path": "audit/approved-visual-regression.js",
+      "gitBlobOidSha1": "6354fc5ce00ae158cea43c1d53b47e7c68ee12f8",
+      "rawByteSha256": "2cf1a843a2a770ca5feae653d8349a3c2078875907f5e4737085f8c2b6965bb0",
+      "bytes": 184444,
+      "canonicalJsonSha256": null
+    }
+  ],
+  "engineBinding": {
+    "id": "DERIVED-ENGINE",
+    "sourceBindingId": "RUNTIME-INDEX",
+    "derivation": "ENGINE_MARKER_RAW_BYTES",
+    "bytes": 598281,
+    "rawByteSha256": "7edcb5b8855970b97139ef377d5f847f5145f196eacc4467319e08b0dee2e213"
+  },
+  "fixtureContract": {
+    "contractId": "qa-tour-v1",
+    "authorityPath": "index.html#QA_TOUR_V1",
+    "seed": 1363235889,
+    "generatorContractVersion": "question-generator-v6",
+    "sampleKeyVersion": "manifest-skill-task-stimulus-response-answer-v2",
+    "declarationBytes": 1673,
+    "declarationSha256": "4b69dda64c3583466501652e65ca73605e357e81c21ec1d98d8575e7df07e88f",
+    "evaluatedSpecBytes": 6477,
+    "evaluatedSpecSha256": "c7582b185721f36a2232b883c2bd28724feb593a093c1e95ba1f60b2e7e5d548",
+    "fullIdentityRowsBytes": 72251,
+    "fullIdentityRowsSha256": "da665f8956bd58ded9857a061d68584bdb6fa546be037e9334aada7cf168ea94",
+    "storedRecordSetSha256": "83e6beb7f53d99cd57c1c14fad55ebd79bad0c0ef0ae7062e61ebac82fb375cb",
+    "records": [
+      {
+        "id": "ART-FIX-001",
+        "order": 1,
+        "skillId": "MQ-001",
+        "featureId": "child.mechanic.pair-link",
+        "level": 1,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-identify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PAIR_LINK",
+        "taskType": "pair-each-object",
+        "semanticPromptStringId": "question.pairObjects",
+        "questionId": "MQ-001-0-664147248",
+        "sampleKeySha256": "66e0888aff948d3dbd49ab17af7c93fa0bdf163c15ee607119b5fceb29ca07d8",
+        "tutorialFamilyId": "CHOOSE_COMPARE_CLASSIFY",
+        "tutorialAnchorRoleIds": [
+          "CHOOSE_NOTICE",
+          "CHOOSE_PLAN",
+          "CHOOSE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-001|pair-each-object"
+      },
+      {
+        "id": "ART-FIX-002",
+        "order": 2,
+        "skillId": "MQ-002",
+        "featureId": "child.mechanic.count-touch",
+        "level": 1,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-identify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "COUNT_TOUCH",
+        "taskType": "count-a-set-to-three",
+        "semanticPromptStringId": "question.countSet",
+        "questionId": "MQ-002-0-1101913294",
+        "sampleKeySha256": "7ae33805e8fbb0448b2e97a49cdc97e1eb9a478c5b5bd88e483fb053aa17de9f",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-002|count-a-set-to-three"
+      },
+      {
+        "id": "ART-FIX-003",
+        "order": 3,
+        "skillId": "MQ-040",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 7,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-fluency",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "add-by-counting-on",
+        "semanticPromptStringId": "question.addition",
+        "questionId": "MQ-040-0-4213846615",
+        "sampleKeySha256": "e2abb8c819b9b6f72a86ba209b3bc0b529a1ab728f5bd988dc795b68dd9b864b",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-040|add-by-counting-on"
+      },
+      {
+        "id": "ART-FIX-004",
+        "order": 4,
+        "skillId": "MQ-004",
+        "featureId": "child.mechanic.pattern-build",
+        "level": 1,
+        "strand": "rule-structure",
+        "generatorProfile": "pattern-extend",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PATTERN_BUILD",
+        "taskType": "continue-an-ab-repeat",
+        "semanticPromptStringId": "question.patternVisualNext",
+        "questionId": "MQ-004-0-769391469",
+        "sampleKeySha256": "748f437ef8fd6869802e99af8f7f6cf5a52773bc50e9dc93c98e256a35855387",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-004|continue-an-ab-repeat"
+      },
+      {
+        "id": "ART-FIX-005",
+        "order": 5,
+        "skillId": "MQ-005",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 1,
+        "strand": "spatial-models",
+        "generatorProfile": "geometry-classify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "match-familiar-shapes",
+        "semanticPromptStringId": "question.shape",
+        "questionId": "MQ-005-0-987443100",
+        "sampleKeySha256": "85a2a88a7a8cf9bb76800bcac957a3305c7bf5e27f91c0187e33a7170a111f34",
+        "tutorialFamilyId": "CHOOSE_COMPARE_CLASSIFY",
+        "tutorialAnchorRoleIds": [
+          "CHOOSE_NOTICE",
+          "CHOOSE_PLAN",
+          "CHOOSE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-005|match-familiar-shapes"
+      },
+      {
+        "id": "ART-FIX-006",
+        "order": 6,
+        "skillId": "MQ-006",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 1,
+        "strand": "attribute-scaling",
+        "generatorProfile": "measure-compare",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "direct-compare",
+        "semanticPromptStringId": "question.eventDuration",
+        "questionId": "MQ-006-0-4221901248",
+        "sampleKeySha256": "8530804dda770b957614369f4fa6f35aeb9d078ce653b6fcbf034bf7f6eae41e",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-006|direct-compare"
+      },
+      {
+        "id": "ART-FIX-007",
+        "order": 7,
+        "skillId": "MQ-007",
+        "featureId": "child.mechanic.sort-bins",
+        "level": 2,
+        "strand": "evidence-uncertainty",
+        "generatorProfile": "data-display",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "SORT_BINS",
+        "taskType": "sort",
+        "semanticPromptStringId": "question.sortRule",
+        "questionId": "MQ-007-0-1935627710",
+        "sampleKeySha256": "d377fe862a32ed076137717b4c776d2f6cc46268ed2f003b23f26c4d59f8072a",
+        "tutorialFamilyId": "CHOOSE_COMPARE_CLASSIFY",
+        "tutorialAnchorRoleIds": [
+          "CHOOSE_NOTICE",
+          "CHOOSE_PLAN",
+          "CHOOSE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-007|sort"
+      },
+      {
+        "id": "ART-FIX-008",
+        "order": 8,
+        "skillId": "MQ-008",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 2,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-identify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "count-a-set-to-five",
+        "semanticPromptStringId": "question.countSet",
+        "questionId": "MQ-008-0-1799041192",
+        "sampleKeySha256": "21ab4c131f1e233e2c97e4921f9b8dc50fba174b211970faede6b3afbad67f18",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-008|count-a-set-to-five"
+      },
+      {
+        "id": "ART-FIX-009",
+        "order": 9,
+        "skillId": "MQ-009",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 2,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-identify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "recognize-structured-set-to-three",
+        "semanticPromptStringId": "question.structuredQuantity",
+        "questionId": "MQ-009-0-604992979",
+        "sampleKeySha256": "6a7961f17ab277be0735f4577454c5ff2a8a17bfd3ea8b0af9e7254e1f7464c5",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-009|recognize-structured-set-to-three"
+      },
+      {
+        "id": "ART-FIX-010",
+        "order": 10,
+        "skillId": "MQ-010",
+        "featureId": "child.mechanic.order-build",
+        "level": 2,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-order",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "ORDER_BUILD",
+        "taskType": "order-zero-to-five",
+        "semanticPromptStringId": "question.orderSetConnection",
+        "questionId": "MQ-010-0-4224860206",
+        "sampleKeySha256": "47f4aaf4b849fe8889d22490b5231726a84fe7a342b2afc258cf5087ccaf9801",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-010|order-zero-to-five"
+      },
+      {
+        "id": "ART-FIX-011",
+        "order": 11,
+        "skillId": "MQ-011",
+        "featureId": "child.mechanic.bond-split",
+        "level": 2,
+        "strand": "operation-systems",
+        "generatorProfile": "placevalue-compose",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "BOND_SPLIT",
+        "taskType": "make-a-small-whole-two-ways",
+        "semanticPromptStringId": "question.secondPartition",
+        "questionId": "MQ-011-0-1790614981",
+        "sampleKeySha256": "fd98a9aae044a03341560d3bd17ad80f98b8b58921965e609dcd277a3c4dbe47",
+        "tutorialFamilyId": "PART_WHOLE_FRACTIONS",
+        "tutorialAnchorRoleIds": [
+          "PARTS_NOTICE",
+          "PARTS_PLAN",
+          "PARTS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-011|make-a-small-whole-two-ways"
+      },
+      {
+        "id": "ART-FIX-012",
+        "order": 12,
+        "skillId": "MQ-012",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 2,
+        "strand": "attribute-scaling",
+        "generatorProfile": "measure-compare",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "compare-one-attribute-directly",
+        "semanticPromptStringId": "question.directCompare",
+        "questionId": "MQ-012-0-3559770895",
+        "sampleKeySha256": "6a746f8af70e5341101e64258fc2692cbfff2ccff7fcc93d1cb57bda561d8812",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-012|compare-one-attribute-directly"
+      },
+      {
+        "id": "ART-FIX-013",
+        "order": 13,
+        "skillId": "MQ-013",
+        "featureId": "child.mechanic.action-scene",
+        "level": 3,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "ACTION_SCENE",
+        "taskType": "show-one-joining",
+        "semanticPromptStringId": "question.addition",
+        "questionId": "MQ-013-0-2852068921",
+        "sampleKeySha256": "49b303c3a8fd81d714c31b54643474e0e04386535d9de114e210430b13b36173",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-013|show-one-joining"
+      },
+      {
+        "id": "ART-FIX-014",
+        "order": 14,
+        "skillId": "MQ-041",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 7,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-fluency",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "subtract-by-counting-back",
+        "semanticPromptStringId": "question.subtraction",
+        "questionId": "MQ-041-0-470786493",
+        "sampleKeySha256": "d1d2bdc50df168d466f6b811f0bbbcef55a49e3b691aab327ef3f55bca66e11c",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-041|subtract-by-counting-back"
+      },
+      {
+        "id": "ART-FIX-015",
+        "order": 15,
+        "skillId": "MQ-015",
+        "featureId": "child.mechanic.share-deal",
+        "level": 3,
+        "strand": "operation-systems",
+        "generatorProfile": "grouping-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "SHARE_DEAL",
+        "taskType": "share-small-sets-fairly",
+        "semanticPromptStringId": "question.fairShare",
+        "questionId": "MQ-015-0-3906093650",
+        "sampleKeySha256": "767f0c5fa839e586d3a138980ffb22fffe3dec50e8a208e3aa11b4e3b45b4a2a",
+        "tutorialFamilyId": "GROUPS_PROPORTION_MONEY",
+        "tutorialAnchorRoleIds": [
+          "GROUPS_NOTICE",
+          "GROUPS_PLAN",
+          "GROUPS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-015|share-small-sets-fairly"
+      },
+      {
+        "id": "ART-FIX-016",
+        "order": 16,
+        "skillId": "MQ-079",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 14,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-fluency",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "multiply-two-digits-by-one-digit",
+        "semanticPromptStringId": "question.multiplication",
+        "questionId": "MQ-079-0-1899323085",
+        "sampleKeySha256": "34f031066b64860c5c852d002d13d6b2997446c6fa1543b43a96499892ac449e",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-079|multiply-two-digits-by-one-digit"
+      },
+      {
+        "id": "ART-FIX-017",
+        "order": 17,
+        "skillId": "MQ-017",
+        "featureId": "child.mechanic.landmark-place",
+        "level": 3,
+        "strand": "spatial-models",
+        "generatorProfile": "geometry-transform",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "LANDMARK_PLACE",
+        "taskType": "place-it-by-a-landmark",
+        "semanticPromptStringId": "question.landmarkPosition",
+        "questionId": "MQ-017-0-2477841236",
+        "sampleKeySha256": "2e2385a8a116d16a6e206d4291d454b3b9acb2a551d42231f9995f2c9480bb79",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-017|place-it-by-a-landmark"
+      },
+      {
+        "id": "ART-FIX-018",
+        "order": 18,
+        "skillId": "MQ-018",
+        "featureId": "child.mechanic.graph-build",
+        "level": 3,
+        "strand": "evidence-uncertainty",
+        "generatorProfile": "data-display",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "GRAPH_BUILD",
+        "taskType": "record-a-two-group-sort",
+        "semanticPromptStringId": "question.sortRecord",
+        "questionId": "MQ-018-0-3316242543",
+        "sampleKeySha256": "acbf35d5bce52bc903efb97613e36756d7a056210e8d0575619fd0be78d07424",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-018|record-a-two-group-sort"
+      },
+      {
+        "id": "ART-FIX-019",
+        "order": 19,
+        "skillId": "MQ-019",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 4,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-identify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "connect-numbers-zero-to-ten",
+        "semanticPromptStringId": "question.numberConnection",
+        "questionId": "MQ-019-0-778861299",
+        "sampleKeySha256": "4021f370ee87314dda521b93d29fd7cd83e52698f3e0d62bb3489e639e5d8e5a",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-019|connect-numbers-zero-to-ten"
+      },
+      {
+        "id": "ART-FIX-020",
+        "order": 20,
+        "skillId": "MQ-095",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 16,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-fluency",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "addition",
+        "semanticPromptStringId": "question.addition",
+        "questionId": "MQ-095-0-3563532493",
+        "sampleKeySha256": "f87ae5cf273f6baf87d4fac87a17e65a85f3eccdaef3fde9e2068fb88d73cfbf",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-095|addition"
+      },
+      {
+        "id": "ART-FIX-021",
+        "order": 21,
+        "skillId": "MQ-021",
+        "featureId": "child.mechanic.pair-link",
+        "level": 4,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-compare",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PAIR_LINK",
+        "taskType": "compare-collections-to-ten",
+        "semanticPromptStringId": "question.compare",
+        "questionId": "MQ-021-0-2258157690",
+        "sampleKeySha256": "be7803f86fd85980d97566e0f7c075c9b63af98fa8e4482680cf3f7a654fc824",
+        "tutorialFamilyId": "CHOOSE_COMPARE_CLASSIFY",
+        "tutorialAnchorRoleIds": [
+          "CHOOSE_NOTICE",
+          "CHOOSE_PLAN",
+          "CHOOSE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-021|compare-collections-to-ten"
+      },
+      {
+        "id": "ART-FIX-022",
+        "order": 22,
+        "skillId": "MQ-101",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 17,
+        "strand": "rule-structure",
+        "generatorProfile": "expression-solve",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "addition",
+        "semanticPromptStringId": "question.missingPart",
+        "questionId": "MQ-101-0-3026395475",
+        "sampleKeySha256": "8ce176b8c7a733baf2b9ab8d7cdc2c1aa76d3bfcbf9cf032872bfb7e82183026",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-101|addition"
+      },
+      {
+        "id": "ART-FIX-023",
+        "order": 23,
+        "skillId": "MQ-026",
+        "featureId": "child.mechanic.ten-frame",
+        "level": 5,
+        "strand": "amount-order",
+        "generatorProfile": "placevalue-compose",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "TEN_FRAME",
+        "taskType": "see-ten-inside-teen-numbers",
+        "semanticPromptStringId": "question.teenBuild",
+        "questionId": "MQ-026-0-2800003098",
+        "sampleKeySha256": "ccebdb7da04195470fdb10d29acf47affb07347991a1dd8de7e6560b3a8548d7",
+        "tutorialFamilyId": "PART_WHOLE_FRACTIONS",
+        "tutorialAnchorRoleIds": [
+          "PARTS_NOTICE",
+          "PARTS_PLAN",
+          "PARTS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-026|see-ten-inside-teen-numbers"
+      },
+      {
+        "id": "ART-FIX-024",
+        "order": 24,
+        "skillId": "MQ-028",
+        "featureId": "child.mechanic.slot-composer",
+        "level": 5,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-equation",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "SLOT_COMPOSER",
+        "taskType": "write-joining-equations-to-ten",
+        "semanticPromptStringId": "question.addition",
+        "questionId": "MQ-028-0-2385078866",
+        "sampleKeySha256": "27c43d3fea12601568af0b84fcd171205df4b9c1d5376f7ffd621e9e5733a63d",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-028|write-joining-equations-to-ten"
+      },
+      {
+        "id": "ART-FIX-025",
+        "order": 25,
+        "skillId": "MQ-032",
+        "featureId": "child.mechanic.group-build",
+        "level": 6,
+        "strand": "operation-systems",
+        "generatorProfile": "grouping-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "GROUP_BUILD",
+        "taskType": "make-equal-groups-to-ten",
+        "semanticPromptStringId": "question.multiplication",
+        "questionId": "MQ-032-0-1460185016",
+        "sampleKeySha256": "abf3831561f97d8a14a6f54489d35775f923cd996fb84292cb897a74da40f84e",
+        "tutorialFamilyId": "GROUPS_PROPORTION_MONEY",
+        "tutorialAnchorRoleIds": [
+          "GROUPS_NOTICE",
+          "GROUPS_PLAN",
+          "GROUPS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-032|make-equal-groups-to-ten"
+      },
+      {
+        "id": "ART-FIX-026",
+        "order": 26,
+        "skillId": "MQ-033",
+        "featureId": "child.mechanic.pattern-build",
+        "level": 6,
+        "strand": "rule-structure",
+        "generatorProfile": "pattern-extend",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PATTERN_BUILD",
+        "taskType": "extend",
+        "semanticPromptStringId": "question.patternNext",
+        "questionId": "MQ-033-0-2536765537",
+        "sampleKeySha256": "093c64b3b3d590e47acc141654f4cb8dbd4f76979fcc23e86d13042268cf79ad",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-033|extend"
+      },
+      {
+        "id": "ART-FIX-027",
+        "order": 27,
+        "skillId": "MQ-042",
+        "featureId": "child.mechanic.clock-read",
+        "level": 7,
+        "strand": "attribute-scaling",
+        "generatorProfile": "time-read",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "CLOCK_READ",
+        "taskType": "read-hour-and-half-hour",
+        "semanticPromptStringId": "question.timeReadMinute",
+        "questionId": "MQ-042-0-3114493327",
+        "sampleKeySha256": "492d07fbabf647a255197fb76218256f8cdab28c0fbf1daf8bab514e160ee201",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-042|read-hour-and-half-hour"
+      },
+      {
+        "id": "ART-FIX-028",
+        "order": 28,
+        "skillId": "MQ-043",
+        "featureId": "child.mechanic.fact-family",
+        "level": 8,
+        "strand": "rule-structure",
+        "generatorProfile": "operation-equation",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "FACT_FAMILY",
+        "taskType": "build-an-add-subtract-family",
+        "semanticPromptStringId": "question.factFamilyBuild",
+        "questionId": "MQ-043-0-1696265773",
+        "sampleKeySha256": "ed841c727bcaee8a9f2b3af74f1aa900c264bd9f6e45f85ffc2d235b3336c999",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-043|build-an-add-subtract-family"
+      },
+      {
+        "id": "ART-FIX-029",
+        "order": 29,
+        "skillId": "MQ-046",
+        "featureId": "child.mechanic.measure-object",
+        "level": 8,
+        "strand": "attribute-scaling",
+        "generatorProfile": "measure-instrument",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "MEASURE_OBJECT",
+        "taskType": "measure-with-equal-informal-units",
+        "semanticPromptStringId": "question.informalMeasure",
+        "questionId": "MQ-046-0-2080620534",
+        "sampleKeySha256": "fec0a14ea14f280beecf8b45a8cb11a3864953a9a7399aeb68bcf17016ffb598",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-046|measure-with-equal-informal-units"
+      },
+      {
+        "id": "ART-FIX-030",
+        "order": 30,
+        "skillId": "MQ-051",
+        "featureId": "child.mechanic.coin-build",
+        "level": 9,
+        "strand": "operation-systems",
+        "generatorProfile": "money-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "COIN_BUILD",
+        "taskType": "match-equivalent-coin-amounts",
+        "semanticPromptStringId": "question.coinEquivalent",
+        "questionId": "MQ-051-0-3907533905",
+        "sampleKeySha256": "4ace2ae13368f2ea63e1e83e1b7ee042e4b756d3c78cb99ac3e1161a6b69039d",
+        "tutorialFamilyId": "GROUPS_PROPORTION_MONEY",
+        "tutorialAnchorRoleIds": [
+          "GROUPS_NOTICE",
+          "GROUPS_PLAN",
+          "GROUPS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-051|match-equivalent-coin-amounts"
+      },
+      {
+        "id": "ART-FIX-031",
+        "order": 31,
+        "skillId": "MQ-053",
+        "featureId": "child.mechanic.grid-route",
+        "level": 9,
+        "strand": "spatial-models",
+        "generatorProfile": "geometry-transform",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "GRID_ROUTE",
+        "taskType": "give-and-follow-directions",
+        "semanticPromptStringId": "question.routeFinish",
+        "questionId": "MQ-053-0-46600839",
+        "sampleKeySha256": "9577a162f8b6a6c0bb6ae9c0bad13390a033dab88914ebebae50454d97032dc1",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-053|give-and-follow-directions"
+      },
+      {
+        "id": "ART-FIX-032",
+        "order": 32,
+        "skillId": "MQ-056",
+        "featureId": "child.mechanic.place-value-build",
+        "level": 10,
+        "strand": "amount-order",
+        "generatorProfile": "placevalue-compose",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PLACE_VALUE_BUILD",
+        "taskType": "partition-and-rename-three-digits",
+        "semanticPromptStringId": "question.renamePlace",
+        "questionId": "MQ-056-0-470476594",
+        "sampleKeySha256": "bf7abf7b685ba05697085863d44471bac99bd6ec575af671101aececa2dc26bd",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-056|partition-and-rename-three-digits"
+      },
+      {
+        "id": "ART-FIX-033",
+        "order": 33,
+        "skillId": "MQ-061",
+        "featureId": "child.mechanic.number-pad",
+        "level": 11,
+        "strand": "operation-systems",
+        "generatorProfile": "operation-fluency",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "NUMBER_PAD",
+        "taskType": "recall-two-times-facts",
+        "semanticPromptStringId": "question.multiplication",
+        "questionId": "MQ-061-0-2551026695",
+        "sampleKeySha256": "a7063bbbdbe9cae6bf4366f191911a98f37c3117af563a2f6804a9ae96bdffbb",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-061|recall-two-times-facts"
+      },
+      {
+        "id": "ART-FIX-034",
+        "order": 34,
+        "skillId": "MQ-069",
+        "featureId": "child.mechanic.metric-scale",
+        "level": 12,
+        "strand": "attribute-scaling",
+        "generatorProfile": "measure-instrument",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 1,
+        "inputMethod": "METRIC_SCALE",
+        "taskType": "choose-and-use-early-metric-units",
+        "semanticPromptStringId": "question.metricRead",
+        "questionId": "MQ-069-1-2454185899",
+        "sampleKeySha256": "40b7078732b03d167a7f497b48518ff273a8f2053fc3b5c4233728fd521338da",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-069|choose-and-use-early-metric-units"
+      },
+      {
+        "id": "ART-FIX-035",
+        "order": 35,
+        "skillId": "MQ-072",
+        "featureId": "child.mechanic.graph-build",
+        "level": 12,
+        "strand": "evidence-uncertainty",
+        "generatorProfile": "data-investigate",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "GRAPH_BUILD",
+        "taskType": "build-and-interpret-survey-display",
+        "semanticPromptStringId": "question.surveyResponseList",
+        "questionId": "MQ-072-0-2093094556",
+        "sampleKeySha256": "72be7649194f0eb66581328480182bad0ee7f3e7dcbfc7f4ccad6de5ca6dd93b",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-072|build-and-interpret-survey-display"
+      },
+      {
+        "id": "ART-FIX-036",
+        "order": 36,
+        "skillId": "MQ-075",
+        "featureId": "child.mechanic.number-line",
+        "level": 13,
+        "strand": "amount-order",
+        "generatorProfile": "rounding-estimate",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "NUMBER_LINE",
+        "taskType": "round-to-tens-and-hundreds",
+        "semanticPromptStringId": "question.rounding",
+        "questionId": "MQ-075-0-3106006799",
+        "sampleKeySha256": "655cff990101c17764ef3b995f2c867167e8eeadaad699d5d856842d78282864",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-075|round-to-tens-and-hundreds"
+      },
+      {
+        "id": "ART-FIX-037",
+        "order": 37,
+        "skillId": "MQ-084",
+        "featureId": "child.mechanic.number-pad",
+        "level": 14,
+        "strand": "rule-structure",
+        "generatorProfile": "pattern-rule",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "NUMBER_PAD",
+        "taskType": "addition",
+        "semanticPromptStringId": "question.patternNext",
+        "questionId": "MQ-084-0-2122822752",
+        "sampleKeySha256": "edd43642e69fc04c426a2a2e6ab15b3efb31e08ff934bbab8d0fd6057635a582",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-084|addition"
+      },
+      {
+        "id": "ART-FIX-038",
+        "order": 38,
+        "skillId": "MQ-088",
+        "featureId": "child.mechanic.sort-bins",
+        "level": 15,
+        "strand": "spatial-models",
+        "generatorProfile": "geometry-classify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "SORT_BINS",
+        "taskType": "property-classification",
+        "semanticPromptStringId": "question.shapeProperty",
+        "questionId": "MQ-088-0-1519165211",
+        "sampleKeySha256": "3b4c9035e5af9092fb0da6521f703641bc3f7ef9e835dcbe66585a00008c90cd",
+        "tutorialFamilyId": "CHOOSE_COMPARE_CLASSIFY",
+        "tutorialAnchorRoleIds": [
+          "CHOOSE_NOTICE",
+          "CHOOSE_PLAN",
+          "CHOOSE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-088|property-classification"
+      },
+      {
+        "id": "ART-FIX-039",
+        "order": 39,
+        "skillId": "MQ-090",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 15,
+        "strand": "evidence-uncertainty",
+        "generatorProfile": "chance-experiment",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "repeat-and-compare",
+        "semanticPromptStringId": "question.chanceRunCompare",
+        "questionId": "MQ-090-0-1860623280",
+        "sampleKeySha256": "e8d3d8c359532fafd813a2ba113326acc7d599263c1822a91e566f689cda3c7a",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-090|repeat-and-compare"
+      },
+      {
+        "id": "ART-FIX-040",
+        "order": 40,
+        "skillId": "MQ-091",
+        "featureId": "child.mechanic.picture-choice",
+        "level": 16,
+        "strand": "amount-order",
+        "generatorProfile": "quantity-order",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "PICTURE_CHOICE",
+        "taskType": "read-and-order-to-one-hundred-thousand",
+        "semanticPromptStringId": "question.numberOrder",
+        "questionId": "MQ-091-0-1676830746",
+        "sampleKeySha256": "3a7f36877781f93641fc6ae1a5b38d01d2cb7c49ede40707ee49dcb66c138e1b",
+        "tutorialFamilyId": "COUNT_SEQUENCE_POSITION",
+        "tutorialAnchorRoleIds": [
+          "COUNT_NOTICE",
+          "COUNT_PLAN",
+          "COUNT_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-091|read-and-order-to-one-hundred-thousand"
+      },
+      {
+        "id": "ART-FIX-041",
+        "order": 41,
+        "skillId": "MQ-097",
+        "featureId": "child.mechanic.strategy-build",
+        "level": 17,
+        "strand": "rule-structure",
+        "generatorProfile": "factor-classify",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "STRATEGY_BUILD",
+        "taskType": "addition",
+        "semanticPromptStringId": "question.parity",
+        "questionId": "MQ-097-0-2845782923",
+        "sampleKeySha256": "00cdd6c392537f4c0c17b08f98ce30f67e2c12aa069c52288a0b2c866a4eaf17",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-097|addition"
+      },
+      {
+        "id": "ART-FIX-042",
+        "order": 42,
+        "skillId": "MQ-098",
+        "featureId": "child.mechanic.fraction-partition",
+        "level": 17,
+        "strand": "operation-systems",
+        "generatorProfile": "fraction-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "FRACTION_PARTITION",
+        "taskType": "generate-equivalent-fractions",
+        "semanticPromptStringId": "question.fractionEquivalent",
+        "questionId": "MQ-098-0-1138229968",
+        "sampleKeySha256": "2071df8d1b4c63fcfcd71d2189f7c3c64cae72af067535e2da088e109b82e1db",
+        "tutorialFamilyId": "PART_WHOLE_FRACTIONS",
+        "tutorialAnchorRoleIds": [
+          "PARTS_NOTICE",
+          "PARTS_PLAN",
+          "PARTS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-098|generate-equivalent-fractions"
+      },
+      {
+        "id": "ART-FIX-043",
+        "order": 43,
+        "skillId": "MQ-105",
+        "featureId": "child.mechanic.bar-model",
+        "level": 18,
+        "strand": "attribute-scaling",
+        "generatorProfile": "area-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "BAR_MODEL",
+        "taskType": "rectangle-area",
+        "semanticPromptStringId": "question.areaRectangle",
+        "questionId": "MQ-105-0-2960741484",
+        "sampleKeySha256": "24f87d52610c2ad813ff64c40cfe4719e66372aa98eec807223b66ea66dd671a",
+        "tutorialFamilyId": "GROUPS_PROPORTION_MONEY",
+        "tutorialAnchorRoleIds": [
+          "GROUPS_NOTICE",
+          "GROUPS_PLAN",
+          "GROUPS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-105|rectangle-area"
+      },
+      {
+        "id": "ART-FIX-044",
+        "order": 44,
+        "skillId": "MQ-106",
+        "featureId": "child.mechanic.symmetry-build",
+        "level": 18,
+        "strand": "spatial-models",
+        "generatorProfile": "geometry-transform",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 1,
+        "inputMethod": "SYMMETRY_BUILD",
+        "taskType": "complete",
+        "semanticPromptStringId": "question.symmetryComplete",
+        "questionId": "MQ-106-1-3631930024",
+        "sampleKeySha256": "de95a0507be70f1073775d2235f5aaa07937d1bc58856b54a089cf2b3ed7a6f4",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-106|complete"
+      },
+      {
+        "id": "ART-FIX-045",
+        "order": 45,
+        "skillId": "MQ-114",
+        "featureId": "child.mechanic.mixed-number-entry",
+        "level": 19,
+        "strand": "operation-systems",
+        "generatorProfile": "grouping-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 1,
+        "inputMethod": "MIXED_NUMBER_ENTRY",
+        "taskType": "divide-large-numbers-and-interpret-remainders",
+        "semanticPromptStringId": "question.remainderFraction",
+        "questionId": "MQ-114-1-675312607",
+        "sampleKeySha256": "76e03c56c6bdfcb85f4c6aa23f999a27304cfeb63d66dfe720832629083fca70",
+        "tutorialFamilyId": "PART_WHOLE_FRACTIONS",
+        "tutorialAnchorRoleIds": [
+          "PARTS_NOTICE",
+          "PARTS_PLAN",
+          "PARTS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-114|divide-large-numbers-and-interpret-remainders"
+      },
+      {
+        "id": "ART-FIX-046",
+        "order": 46,
+        "skillId": "MQ-116",
+        "featureId": "child.mechanic.fraction-entry",
+        "level": 20,
+        "strand": "operation-systems",
+        "generatorProfile": "decimal-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "FRACTION_ENTRY",
+        "taskType": "percent-to-fraction",
+        "semanticPromptStringId": "question.percentFraction",
+        "questionId": "MQ-116-0-2041853877",
+        "sampleKeySha256": "dc1d90db269952707a0c841da8af640a7b4ad0c0702e4177c545345e2b35776c",
+        "tutorialFamilyId": "PART_WHOLE_FRACTIONS",
+        "tutorialAnchorRoleIds": [
+          "PARTS_NOTICE",
+          "PARTS_PLAN",
+          "PARTS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-116|percent-to-fraction"
+      },
+      {
+        "id": "ART-FIX-047",
+        "order": 47,
+        "skillId": "MQ-119",
+        "featureId": "child.mechanic.expression-build",
+        "level": 20,
+        "strand": "rule-structure",
+        "generatorProfile": "expression-solve",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "EXPRESSION_BUILD",
+        "taskType": "pattern-addition",
+        "semanticPromptStringId": "question.patternRuleExpression",
+        "questionId": "MQ-119-0-3090783963",
+        "sampleKeySha256": "1883fedebc15f84e05de741d6abc3163544d27f3c54b02d3c77a69914cf146f5",
+        "tutorialFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "tutorialAnchorRoleIds": [
+          "OPERATIONS_NOTICE",
+          "OPERATIONS_PLAN",
+          "OPERATIONS_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-119|pattern-addition"
+      },
+      {
+        "id": "ART-FIX-048",
+        "order": 48,
+        "skillId": "MQ-121",
+        "featureId": "child.mechanic.area-decompose",
+        "level": 21,
+        "strand": "attribute-scaling",
+        "generatorProfile": "area-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "AREA_DECOMPOSE",
+        "taskType": "composite-area",
+        "semanticPromptStringId": "question.compositeArea",
+        "questionId": "MQ-121-0-1610485206",
+        "sampleKeySha256": "2e53eebb8fccc7087767c538dad09ec65f1e334d1b0a8514da689fec95f61adc",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-121|composite-area"
+      },
+      {
+        "id": "ART-FIX-049",
+        "order": 49,
+        "skillId": "MQ-122",
+        "featureId": "child.mechanic.volume-inspect",
+        "level": 21,
+        "strand": "attribute-scaling",
+        "generatorProfile": "volume-model",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "VOLUME_INSPECT",
+        "taskType": "rectangular-prism-volume",
+        "semanticPromptStringId": "question.prismVolume",
+        "questionId": "MQ-122-0-9274961",
+        "sampleKeySha256": "5b002ca71a78adf766d1a2efd836a24ae0e1d0e1844a4b0495a6649cf6932eef",
+        "tutorialFamilyId": "DATA_SPATIAL",
+        "tutorialAnchorRoleIds": [
+          "DATA_NOTICE",
+          "DATA_PLAN",
+          "DATA_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-122|rectangular-prism-volume"
+      },
+      {
+        "id": "ART-FIX-050",
+        "order": 50,
+        "skillId": "MQ-124",
+        "featureId": "child.mechanic.angle-measure",
+        "level": 21,
+        "strand": "spatial-models",
+        "generatorProfile": "measure-instrument",
+        "tier": "HARD/TARGET",
+        "representation": "PICTORIAL",
+        "theme": "forest",
+        "ordinal": 0,
+        "inputMethod": "ANGLE_MEASURE",
+        "taskType": "angle-measure",
+        "semanticPromptStringId": "question.angleMeasure",
+        "questionId": "MQ-124-0-1755191898",
+        "sampleKeySha256": "de2ea9d778303252112e305e3b7260f657b768c113665c5848a7916599622353",
+        "tutorialFamilyId": "TIME_MEASUREMENT",
+        "tutorialAnchorRoleIds": [
+          "MEASURE_NOTICE",
+          "MEASURE_PLAN",
+          "MEASURE_CHECK"
+        ],
+        "tutorialVisualCueIds": [
+          "NOTICE_SPOTLIGHT",
+          "PLAN_SEQUENCE",
+          "CHECK_VERIFY"
+        ],
+        "tutorialObligationKey": "MQ-124|angle-measure"
+      }
+    ],
+    "coverage": {
+      "questionCount": 50,
+      "levels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "strands": [
+        "amount-order",
+        "attribute-scaling",
+        "evidence-uncertainty",
+        "operation-systems",
+        "rule-structure",
+        "spatial-models"
+      ],
+      "generatorProfiles": [
+        "area-model",
+        "chance-experiment",
+        "data-display",
+        "data-investigate",
+        "decimal-model",
+        "expression-solve",
+        "factor-classify",
+        "fraction-model",
+        "geometry-classify",
+        "geometry-transform",
+        "grouping-model",
+        "measure-compare",
+        "measure-instrument",
+        "money-model",
+        "operation-equation",
+        "operation-fluency",
+        "operation-model",
+        "pattern-extend",
+        "pattern-rule",
+        "placevalue-compose",
+        "quantity-compare",
+        "quantity-identify",
+        "quantity-order",
+        "rounding-estimate",
+        "time-read",
+        "volume-model"
+      ],
+      "releaseReachableInputMethods": [
+        "ACTION_SCENE",
+        "ANGLE_MEASURE",
+        "AREA_DECOMPOSE",
+        "BAR_MODEL",
+        "BOND_SPLIT",
+        "CLOCK_READ",
+        "COIN_BUILD",
+        "COUNT_TOUCH",
+        "EXPRESSION_BUILD",
+        "FACT_FAMILY",
+        "FRACTION_ENTRY",
+        "FRACTION_PARTITION",
+        "GRAPH_BUILD",
+        "GRID_ROUTE",
+        "GROUP_BUILD",
+        "LANDMARK_PLACE",
+        "MEASURE_OBJECT",
+        "METRIC_SCALE",
+        "MIXED_NUMBER_ENTRY",
+        "NUMBER_LINE",
+        "NUMBER_PAD",
+        "ORDER_BUILD",
+        "PAIR_LINK",
+        "PATTERN_BUILD",
+        "PICTURE_CHOICE",
+        "PLACE_VALUE_BUILD",
+        "SHARE_DEAL",
+        "SLOT_COMPOSER",
+        "SORT_BINS",
+        "STRATEGY_BUILD",
+        "SYMMETRY_BUILD",
+        "TEN_FRAME",
+        "VOLUME_INSPECT"
+      ],
+      "strategyBuildSkillIds": [
+        "MQ-040",
+        "MQ-041",
+        "MQ-079",
+        "MQ-095",
+        "MQ-097",
+        "MQ-101"
+      ]
+    },
+    "exclusions": [
+      {
+        "featureId": "child.mechanic.number-bond",
+        "inputMethod": "NUMBER_BOND",
+        "state": "RENDERER_CAPABLE_NOT_RELEASE_REACHABLE_AT_SOURCE_REVISION",
+        "proofResultId": "VIS-CAPABILITIES"
+      },
+      {
+        "featureId": "child.mechanic.number-choice",
+        "inputMethod": "NUMBER_CHOICE",
+        "state": "RENDERER_CAPABLE_NOT_RELEASE_REACHABLE_AT_SOURCE_REVISION",
+        "proofResultId": "VIS-CAPABILITIES"
+      }
+    ]
+  },
+  "browserEvidenceBinding": {
+    "path": "audit/art-migration-browser-evidence-v1.json",
+    "rawByteSha256": "b1134226011173f7c97556f762e316748f7d9ff24299df7077aaf002799e970b",
+    "bytes": 300373,
+    "canonicalJsonSha256": "e0e16cd8d4695748d344b355ddcf709c6242fdd70f18cfcca67e7657f4945aeb"
+  },
+  "visualEvidence": {
+    "evidenceClass": "SANITIZED_TIMING_FREE_RENDERED_STRUCTURE",
+    "disposition": "FREEZES_CURRENT_BEHAVIOR_WITHOUT_APPROVING_VISUAL_QUALITY",
+    "passingArtifactPolicy": "NO_SCREENSHOTS_TRACES_VIDEO_OR_CHILD_DATA",
+    "capture": {
+      "method": "EFFECT_SENSITIVE_BROWSER_AUDIT_VISUAL_SHARD_WITH_EXPORT_ONLY_ADAPTER",
+      "automaticRetries": 0,
+      "attemptCount": 1,
+      "acceptedAttempt": 1
+    },
+    "browserIdentity": {
+      "productName": "Microsoft Edge",
+      "fullVersion": "151.0.4129.101",
+      "executableName": "msedge.exe",
+      "executableSha256": "24f626e48dae3574b4d59adc8f23722f890fd0a64f78c772384b783b96bcf1a0",
+      "runnerKind": "LOCAL",
+      "status": "OBSERVED_LOCAL",
+      "browserIdentityValid": true,
+      "validForPublication": false
+    },
+    "viewports": [
+      {
+        "id": "desktop",
+        "width": 1366,
+        "height": 768,
+        "touch": false,
+        "mobile": false,
+        "deviceScaleFactor": 1
+      },
+      {
+        "id": "large-tablet-landscape",
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "mobile": true,
+        "deviceScaleFactor": 2
+      },
+      {
+        "id": "phone-landscape",
+        "width": 844,
+        "height": 390,
+        "touch": true,
+        "mobile": true,
+        "deviceScaleFactor": 3
+      },
+      {
+        "id": "phone-portrait",
+        "width": 390,
+        "height": 844,
+        "touch": true,
+        "mobile": true,
+        "deviceScaleFactor": 3
+      },
+      {
+        "id": "tablet-landscape",
+        "width": 1024,
+        "height": 768,
+        "touch": true,
+        "mobile": true,
+        "deviceScaleFactor": 2
+      },
+      {
+        "id": "tablet-portrait",
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "mobile": true,
+        "deviceScaleFactor": 2
+      }
+    ],
+    "states": [
+      "EXPECTED_REVEALED",
+      "INITIAL",
+      "PARTIAL_RESPONSE",
+      "TEACHING_MODEL_WHEN_AVAILABLE",
+      "TUTORIAL_STEP_1_DIFFERENT_EXAMPLE",
+      "TUTORIAL_STEP_2_PLAN",
+      "TUTORIAL_STEP_3_CHECK"
+    ],
+    "results": [
+      {
+        "id": "PROFILE-AREA-MODEL",
+        "status": "PASS",
+        "detailsSha256": "cc088ebcccbfe289d1b4db27b434e0372e761b9e4e699fbd5384af6a5f1be4bb"
+      },
+      {
+        "id": "PROFILE-CHANCE-EXPERIMENT",
+        "status": "PASS",
+        "detailsSha256": "02480e25eec2c36ad929e5a58b35e442b0cbb69c55489f80ae13fbc6599ad15d"
+      },
+      {
+        "id": "PROFILE-DATA-DISPLAY",
+        "status": "PASS",
+        "detailsSha256": "3b0b157907616bd9603a39c5de403eb9bcb7f50bda20fb76ef1c89462c9bc6b6"
+      },
+      {
+        "id": "PROFILE-DATA-INVESTIGATE",
+        "status": "PASS",
+        "detailsSha256": "d461633328b624af1f8ca6bc61684b950678f664cc9d6397c5cdf73871e3b032"
+      },
+      {
+        "id": "PROFILE-DECIMAL-MODEL",
+        "status": "PASS",
+        "detailsSha256": "2e0ae7a201567608c833b69a21056a9fdf13c00b41b76d64649865061d579ac3"
+      },
+      {
+        "id": "PROFILE-EXPRESSION-SOLVE",
+        "status": "PASS",
+        "detailsSha256": "dc038eaf474c276ea87cc5ed51bd8816cf554bb525e496aedd4ed4520ffbf494"
+      },
+      {
+        "id": "PROFILE-FACTOR-CLASSIFY",
+        "status": "PASS",
+        "detailsSha256": "cc847bdd1e8f513b156f271701211f4bf06833eac901e534b78c415cf1a98b22"
+      },
+      {
+        "id": "PROFILE-FRACTION-MODEL",
+        "status": "PASS",
+        "detailsSha256": "3c39231a2479467146ab734ee45f46e617e56554f84cbac471b6582163bef52d"
+      },
+      {
+        "id": "PROFILE-GEOMETRY-CLASSIFY",
+        "status": "PASS",
+        "detailsSha256": "c7230c98e31178168c03c994bb58de9a6eb9598df95bf27933b38feec6f399ef"
+      },
+      {
+        "id": "PROFILE-GEOMETRY-TRANSFORM",
+        "status": "PASS",
+        "detailsSha256": "a4f4648941938d1d1f885c8efb386fd356935585cf18ad8c55fb51fa66f5d367"
+      },
+      {
+        "id": "PROFILE-GROUPING-MODEL",
+        "status": "PASS",
+        "detailsSha256": "4fce0686dcb45aca56eaaeb8e51c01fc978e704ce74a89a373976ef4828bb12d"
+      },
+      {
+        "id": "PROFILE-MEASURE-COMPARE",
+        "status": "PASS",
+        "detailsSha256": "cb3c569ec25bed3c10fb1e761ced655320d9f28d627415ff222685b327a4d30d"
+      },
+      {
+        "id": "PROFILE-MEASURE-INSTRUMENT",
+        "status": "PASS",
+        "detailsSha256": "c3d7bc9de0ad473362e1a55d25ad1accc43e6dd0b2d7f37d1ec3e2cc3280ef88"
+      },
+      {
+        "id": "PROFILE-MONEY-MODEL",
+        "status": "PASS",
+        "detailsSha256": "0e99d4c4630f34f373addab3b84eb1e9a28de8388083185b9c654f406e5123ce"
+      },
+      {
+        "id": "PROFILE-OPERATION-EQUATION",
+        "status": "PASS",
+        "detailsSha256": "31b3c05d1c03f705e3c72637b15c48702122d4110f220da480a0c24b96ec5b8a"
+      },
+      {
+        "id": "PROFILE-OPERATION-FLUENCY",
+        "status": "PASS",
+        "detailsSha256": "8e2965871c92ddc29f53508f3d4a7812e154a95acf016c6e7c1f35a3dbf9b756"
+      },
+      {
+        "id": "PROFILE-OPERATION-MODEL",
+        "status": "PASS",
+        "detailsSha256": "9e50cf1952163c25fa33932539383040a169cab5a08342417555c4b1fb452876"
+      },
+      {
+        "id": "PROFILE-PATTERN-EXTEND",
+        "status": "PASS",
+        "detailsSha256": "525a1c71fa043b1450a01098a17c3a5eafacc702f92b95eb8506f928d4f78b74"
+      },
+      {
+        "id": "PROFILE-PATTERN-RULE",
+        "status": "PASS",
+        "detailsSha256": "2ca36dca88bb2c1e2bee42536f372251411afa2cfd96bf681ad24baee92db709"
+      },
+      {
+        "id": "PROFILE-PLACEVALUE-COMPOSE",
+        "status": "PASS",
+        "detailsSha256": "762d0bebf8a0e49314c98bbf1af300af8612eeffade38b6c6b6a7a1791919188"
+      },
+      {
+        "id": "PROFILE-QUANTITY-COMPARE",
+        "status": "PASS",
+        "detailsSha256": "3bb1c1d16357f711df7a1d60f996abc886f2a5ac8ee4d97ee4656e75495ed191"
+      },
+      {
+        "id": "PROFILE-QUANTITY-IDENTIFY",
+        "status": "PASS",
+        "detailsSha256": "b02de4534afc7a3575518a447873fe5cc87707af622269ddb758943c58fd1d4a"
+      },
+      {
+        "id": "PROFILE-QUANTITY-ORDER",
+        "status": "PASS",
+        "detailsSha256": "8d7631e61336e6a8c6c0e66a8ccf045bcf5db0f32a282b150c9f209ac65a58ef"
+      },
+      {
+        "id": "PROFILE-ROUNDING-ESTIMATE",
+        "status": "PASS",
+        "detailsSha256": "44deed74efa670f6e78dea7905f407a2909c081c8985d5d8468890e1e59cf43b"
+      },
+      {
+        "id": "PROFILE-TIME-READ",
+        "status": "PASS",
+        "detailsSha256": "21ac537c744653e2792027e2ae5de30f13ad46bfbaa0102e6726df790a458e95"
+      },
+      {
+        "id": "PROFILE-VOLUME-MODEL",
+        "status": "PASS",
+        "detailsSha256": "689a3716a51a27d503ef6ff94fe6b720ff107c59f72d2828c9d97c878f20e0d3"
+      },
+      {
+        "id": "VIS-CANADIAN-MONEY",
+        "status": "PASS",
+        "detailsSha256": "bc5d442b42f3dd780052d78a1f8c8d5082741f0abc8caedf528e19965cc242d5"
+      },
+      {
+        "id": "VIS-CAPABILITIES",
+        "status": "PASS",
+        "detailsSha256": "18615b05e27131643eec168ca0eabf005793d452ee655cac3615516439507351"
+      },
+      {
+        "id": "VIS-CONSTRAINTS",
+        "status": "PASS",
+        "detailsSha256": "458d3b5f732c9ef411f88ba4cf872e155b482dd79de3a1675d5d80bc892ec2ef"
+      },
+      {
+        "id": "VIS-DESKTOP-LAYOUT",
+        "status": "PASS",
+        "detailsSha256": "49f87e9a0fec23d4f8dedb3bcb3c744bb8aa8d29c5086263bf8535a796c04dee"
+      },
+      {
+        "id": "VIS-LAB-CONTROLS",
+        "status": "PASS",
+        "detailsSha256": "69987be83fcbf9bc37898963fe7418895eeb6cdf972229aa0fa177bceed028c3"
+      },
+      {
+        "id": "VIS-LAB-MODELS",
+        "status": "PASS",
+        "detailsSha256": "c00a503d3ec6a759750af991619488fc4285b177d0ec70e55575f1b71f565807"
+      },
+      {
+        "id": "VIS-MANIFEST",
+        "status": "PASS",
+        "detailsSha256": "0e09358d7d7a7cb2f3e75b174f516cf3ab695b733cec188b84fe2f218b307560"
+      },
+      {
+        "id": "VIS-MOBILE-LAYOUT",
+        "status": "PASS",
+        "detailsSha256": "594f341070eeec86769ee1098dd95046c2a1c62888e1204061bd97c6c389c8b3"
+      },
+      {
+        "id": "VIS-PLACEMENT-LAYOUT",
+        "status": "PASS",
+        "detailsSha256": "00003c3e98ea17740a94337f0e66383b9588892b1cd8aea329b1d5c569d655e4"
+      },
+      {
+        "id": "VIS-PWA-STATUS",
+        "status": "PASS",
+        "detailsSha256": "5657efed7b544cd8de7d46a173fd23c0c685ff7d1f4f4cae68deba3cd90b81d8"
+      }
+    ],
+    "resultSetSha256": "f374a4865cf5983ffe26b9ecbf8caaee310ff49e0073043bff2490e877d0f420",
+    "passedCount": 36,
+    "failedCount": 0,
+    "skippedCount": 0,
+    "missingCount": 0,
+    "unknownCount": 0
+  }
+}

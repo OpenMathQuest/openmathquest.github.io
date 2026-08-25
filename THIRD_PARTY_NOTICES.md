@@ -119,3 +119,8 @@ licensed and pinned to immutable reviewed commits. Their exact repositories,
 commit IDs, and licence evidence are recorded in
 `licenses/component-register-v1.json`. Node.js 24 is an open-source audit and
 build tool and is not bundled with the game.
+Other development-only browser and validation dependencies—including
+Playwright, Ajv, fast-check, and pure-rand—are recorded with exact versions,
+source revisions, licences, and registry integrity values in
+`licenses/ci-toolchain.md` and `licenses/component-register-v1.json`. None is
+included in the child-facing Pages payload.

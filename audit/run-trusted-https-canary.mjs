@@ -69,6 +69,7 @@ const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.7-";
 const CANDIDATE_STAGING_SUFFIX = "-staging";
 const EXPECTED_BROWSER_PROBE_PATHS = Object.freeze(["/favicon.ico"]);
 const EXPECTED_RELEASE_ENTRIES = Object.freeze([
+  ["assets/design/math-quest-design-tokens-v1.css", "text/css"],
   ["assets/fonts/Inter-Variable.ttf", "font/ttf"],
   ["assets/icons/apple-touch-icon.png", "image/png"],
   ["assets/icons/icon-192.png", "image/png"],
@@ -103,6 +104,7 @@ const BETA1_RUNTIME_PATHS = Object.freeze([
   "licenses/app-icons.md",
 ]);
 const MIME = Object.freeze({
+  ".css": "text/css",
   ".html": "text/html",
   ".webmanifest": "application/manifest+json",
   ".json": "application/json",

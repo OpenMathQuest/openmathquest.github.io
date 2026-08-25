@@ -255,9 +255,9 @@ suite and PWA shell validation.
 
 ## Driftless repository-system effect map
 
-The six connected layers are Owners → Code Map → Feature Map → Tutorial
-Manifest → Blast Radius → Gates. `audit/repository-code-map-v1.json` is the
-machine owner and pointer map. Its six focused tests require every tracked
+The seven connected layers are Owners → Code Map → Feature Map → Tutorial
+Manifest → Art Design → Blast Radius → Gates. `audit/repository-code-map-v1.json` is the
+machine owner and pointer map. Its focused suite requires every tracked
 path to receive exactly one role, every governed data artifact to have one
 owner or declared projection, every dependency edge to resolve, hermetic Git
 enumeration, retired duplicate-map paths to remain absent, and the exact
@@ -314,7 +314,7 @@ fail safe to the broad development suite.
 `audit/playwright/critical-journeys.spec.mjs` supplements the exhaustive
 72-record browser audit with native, direct-user interactions. Each stable
 case runs in installed Microsoft Edge at 1366x768 desktop and 390x844 touch
-phone profiles, producing exactly 24 closed results. Playwright's ordinary
+phone profiles, producing exactly 34 closed results. Playwright's ordinary
 actionability checks must succeed; the suite forbids forced clicks, synthetic
 event dispatch, direct DOM `.click()`, and scripted `.focus()` as substitutes
 for real pointer or keyboard operation. Service workers are blocked for these
@@ -330,13 +330,18 @@ state.
 | `PW-F-03` | A real selection response can be chosen and confirmed, producing visible correct feedback and a usable advance action. |
 | `PW-F-04` | A real incorrect selection produces the distinct visible try-again outcome and keeps the correction/review path operable. |
 | `PW-F-05` | **Show me how** opens through its real control with a preserved live response, uses the exact V2 resolution/disclosure contract, traverses Notice / Plan / Check and Previous, hides worked results before Check, and binds each phase's declared cue to exactly one visible prompt, stimulus, or worked-model anchor. The browser requires a visible SVG cue, phase-specific outline and geometry, accessible instruction relationship, 44 px actions, and return to the exact selected response. |
-| `PW-F-06` | Native Tab and Enter operate the child flow, Home returns through its real button, and Parent Test traverses the same three-step tutorial while leaving the complete child save byte-identical. The same isolated journey proves procedure-only Check omits its terminal answer; all three real in-app legal documents render semantically, including the actual attribution links, emphasis, and table without raw Markdown; an action scene starts without an answer and accepts both correct and plausible wrong results; and the two-child sharing panels remain centred. |
+| `PW-F-06` | Native Tab and Enter operate the child flow, every ordinary question exposes its response controls without a generic `physical-done` acknowledgement, Home returns through its real button, and Parent Test traverses the same three-step tutorial while leaving the complete child save byte-identical. The same isolated journey proves procedure-only Check omits its terminal answer; all three real in-app legal documents render semantically, including the actual attribution links, emphasis, and table without raw Markdown; an action scene starts without an answer and accepts both correct and plausible wrong results; and the two-child sharing panels remain centred. |
 | `PW-F-07` | A real `PAIR_LINK` construction is completed with native pointer/touch actions and confirmed through the shipped construction controls. |
 | `PW-F-08` | An unfinished answer survives an actual page reload and returns as the same usable response rather than being lost or falsely graded. |
 | `PW-F-09` | A real ordinary MQ-004 pattern presents its answer-free source and empty or filled answer space as one contained, non-wrapping left-to-right row on desktop and touch-phone Edge. The row remains exact after native token input. The incorrect construction is evidentiary before help; opening the offered tutorial commits its feedback exactly once, records no skill evidence/practice/miss change, and makes the correct retry exact `NON_EVIDENCE` / `CORRECT_WITH_STRUGGLE`. |
 | `PW-F-10` | An open tutorial, exact step, source/example identity, and selected response survive a real reload and return to the original question intact. |
 | `PW-F-11` | Find Your Level retains Replay and Not sure but exposes no tutorial before or during placement, so the heuristic remains uncoached. |
 | `PW-F-12` | Native Tab and Enter reach and operate tutorial, Next, Previous, and Back controls without scripted focus or synthetic activation. |
+| `PW-F-13` | The exact generated Conservatory stylesheet loads once with 64 collision-safe properties, and every ART-MIG-04 through ART-MIG-06 runtime use equals the closed selector/property/token allowlist; unlisted, dynamic, escaped, or inline consumers are detected. |
+| `PW-F-14` | Functional rocket, focus, selected state, and Resonance Disc remain truthful and accessible through focus, forced-colour, reduced-motion, speech start/end/error/cancel/replacement, and the single session Replay control. The child journey reaches an answerable response region without any generic `physical-done` control. |
+| `PW-F-15` | One question shell and one naturally ordered instrument rail preserve actual response controls → Confirm → Replay → Show me how → Stop across the six governed viewport sizes. DOM positions, individual CSS order, tab order, and exact visible/accessibility names are pinned, with no duplicates, hidden rail, clipped labels, undersized targets, nested scrolling, horizontal overflow, or overlap with mathematics. |
+| `PW-F-16` | One static observation zone precedes one interactive construction zone across all six governed viewport sizes and the exact 900/901/1023/1024px boundaries. Real selection, pattern-construction, and reteach questions prove static/reference-versus-interactive ownership, response → Confirm → rail order, touch-phone first-screen response/tutorial availability, natural stacking through 1023px, measured selection pairing from 1024px, non-colour boundary distinction, 44px targets, no zone overlap or horizontal overflow, no target-content clipping, and no nested question/support scrolling. |
+| `PW-F-17` | The exact MQ-002 early-counting fixture renders its question-owned three objects and bounded number bank through the ART-MIG-06 renderer across six governed viewports in untouched and one-counted states. The counted state must combine an original CSS-drawn geometric check, text, and accessible pressed/name cues; Confirm stays disabled while incomplete; the answer remains undisclosed; every response target is at least 44 px; and no first-screen, horizontal-overflow, or nested-scroll regression is allowed. |
 
 `audit/lib/playwright-focused-contract.mjs` rejects unknown, duplicate,
 missing, skipped, retried, wrong-project, failed, or privacy-unsafe reports.
@@ -345,6 +350,29 @@ failure-only artifacts, the exact case/project matrix, native-action policy,
 and disposable-server cleanup. This automation is rendered-browser evidence,
 not physical iPhone/iPad, Safari, VoiceOver, software-keyboard, pronunciation,
 or child-comprehension evidence.
+
+## Seeded Playwright interaction-fuzz effect map
+
+`audit/lib/playwright-interaction-fuzz.mjs` owns a bounded, diagnostic-only
+stateful interaction lane. It uses fast-check 4.9.0 and its pure-rand 8.4.2
+dependency to generate reproducible command sequences, then uses the existing
+Playwright fixture's native click or tap. It cannot satisfy or enlarge a
+release gate.
+
+| Contract | Protected effect |
+|---|---|
+| Closed resources | Exactly two reviewed Edge profiles each run 12 fixed-seed properties with at most 16 generated commands, one worker, zero retries, and a 180-second Playwright timeout. |
+| Synthetic isolation | Every generated sequence clears browser storage, reloads the real app, and enters through **Continue without a name**. A named identity, invalid save, escaped route, missing app root, unexpected request, page error, or console error fails the property. |
+| Safe action model | Only approved child controls for world choice, start, answer construction, confirm, tutorial traversal, advance, and Home may be selected. Grown-up, import, export, reset, name, placement, preview, and other destructive or identity-bearing controls are excluded by a fail-closed allowlist. |
+| Native effect oracle | Playwright actionability remains active and `force` is forbidden. After every activation, the rendered app plus local-storage digest must change. A visible button that accepts input but produces no observable effect is a failure, not a pass. |
+| Shrink and replay | A failure records the fast-check seed, counterexample path, command replay path when supplied, minimized command sequence, exact action trace, state digests, and one synthetic screenshot. Passing runs retain only the compact closed summary. |
+| Negative controls | Focused Node tests prove the oracle rejects an unchanged-state no-op, the action policy rejects a destructive control, and the report rejects retries, missing projects, actionless passes, and incorrect literal totals. |
+| Claim boundary | The lane discovers state-machine and interaction defects. It does not prove curriculum completeness, mathematical correctness, visual quality, child comprehension, Safari/iOS behavior, physical touch, PWA installation, offline operation, or release readiness. |
+
+Run it explicitly with `node audit/run-playwright-interaction-fuzz.mjs`. The
+changed-path planner routes its implementation through the ordinary Playwright
+and shared policy checks, but routine focused development does not launch the
+fuzzer itself.
 
 ## Playwright Deep UX Census effect map
 
@@ -592,7 +620,7 @@ ending.
 | `QA-004` | Every displayed rectangular-prism strategy (`count` and `multiply`) reaches an exact answer-entry state and grades the same mathematically correct volume. |
 | `QA-005` | A destructive confirmation cannot run during the opening pointer gesture; a later deliberate confirmation is the first activation allowed to mutate progress. The mandatory browser review additionally covers the real modal, all destructive targets, cancellation, keyboard containment, focus return, and rapid mouse/touch activation. |
 | `QA-006` / `QA-016` | Cold boot creates no child UI before the exclusive progress lease settles. After a successful lease, fresh Home focuses Start and a resumed choice focuses its first task card before PWA work begins. Browser races separately prove clean-warning, inert failure, response preservation, and exact Tab/Shift-Tab order. |
-| `QA-007` | Universal early physical guidance names only grown-up-approved large materials. MQ-048 has one frozen public five-row token/value authority from which the renderer allowlist and first-use guide derive. Every Canadian denomination maps to a distinct original practice token; the ordinary stimulus stays answer-free; unknown designs are rejected; and the independent exact oracle cannot collapse the five designs into one semantic prompt row. A child session with no real MQ-048 evidence—including placement-inferred progress—first renders all five accessible mappings with no answer controls. Ready opens the unchanged ordinary question without submitting an attempt; preview, re-teach, capstone, and later evidenced sessions do not trigger the guide. The physical-phase checkpoint survives exact export/load. |
+| `QA-007` | Every ordinary Concrete question opens directly with its response controls and without a grown-up acknowledgement gate. MQ-048 has one frozen public five-row token/value authority from which the renderer allowlist and distinct nonphysical first-use legend derive. Every Canadian denomination maps to a distinct original practice token; the ordinary stimulus stays answer-free; unknown designs are rejected; and the independent exact oracle cannot collapse the five designs into one semantic prompt row. A child session with no real MQ-048 evidence—including placement-inferred progress—first renders all five accessible mappings with no answer controls. Ready opens the unchanged ordinary question without submitting an attempt; preview, re-teach, capstone, and later evidenced sessions do not trigger the legend. Version-2 generic physical checkpoints migrate losslessly to the question, while legitimate MQ-048 checkpoints migrate losslessly to `practice-token-guide`. |
 | `QA-008` | Both joining and leaving action scenes begin with a labelled visible quantity and no selected answer. The move control changes the shown set without calculating the response, after which at least three independent numerical choices appear. A plausible wrong choice is a valid incorrect submission and the independently derived result remains correct. The ordinary direct-action control also retains its readable white foreground token; computed rendered contrast remains a browser assertion. |
 | `QA-009` | The original zero number-connection variant renders a bounded, explicitly labelled empty set, and its teaching support visibly connects that empty set to numeral `0`; the added frame-to-number variant is covered separately by the exact screen-native semantic and rendered-browser matrices. |
 | `QA-010` | Deliberate Replay at the two-card choice point speaks positional cues and both currently displayed candidate prompts in order while automatic speech remains off by default. |
@@ -610,11 +638,11 @@ ending.
 | `QA-024` | Home does not expose a misleading Home control that can only rerender the current screen. Session, grown-up, and parent-information headers retain their working route back to Home. |
 | `QA-025` | A new regular session rotates across the level's due obligations instead of repeating one skill, while each skill's early exposures preserve declared Concrete-to-Pictorial progression. |
 | `QA-026` | Pictorial-only or reversed-phase evidence cannot create mastery. Ordered Concrete-to-Pictorial evidence can, and obsolete Beta 2 P-only mastery records migrate to a safe non-solid state instead of retaining false mastery. |
-| `QA-027` / `QA-027B` | Pre-response speech, Replay, semantic model labels, and structured clock/angle/metric control labels expose an answer-free equivalent stimulus rather than stating the assessed result. Object quantities are individually countable, clock hands are described by position, and unlabeled scale/angle intervals are grouped without naming the final measurement. Help, re-teach, and feedback instead use a cloned worked descriptor, resolve number-bond unknowns, preserve proportional-bar values with units, name categorical sort bins, reject malformed object/undefined/NaN speech, and expose the worked result in visible and accessible output. Concrete physical-task instructions still name the current mathematical task. This replaces the obsolete assertion that required exact target narration before an answer. |
+| `QA-027` / `QA-027B` | Pre-response speech, Replay, semantic model labels, and structured clock/angle/metric control labels expose an answer-free equivalent stimulus rather than stating the assessed result. Object quantities are individually countable, clock hands are described by position, and unlabeled scale/angle intervals are grouped without naming the final measurement. Help, re-teach, and feedback instead use a cloned worked descriptor, resolve number-bond unknowns, preserve proportional-bar values with units, name categorical sort bins, reject malformed object/undefined/NaN speech, and expose the worked result in visible and accessible output. Direct screen-native questions retain their complete mathematical task. This replaces the obsolete assertion that required exact target narration before an answer. |
 | `QA-028` | MQ-111 estimates division from the displayed rounded operands exactly, including fractional quotients, under an independent oracle; MQ-035 uses neutral grammatical attribute-comparison wording. |
 | `QA-029` | Every child answer submission renders and focuses an explicit, large `Correct.` or `Not correct yet.` outcome before progression is offered; its labelled focus group is not simultaneously an assertive status/live region. |
 | `QA-030` | Early pattern tasks render every answer token as a visible glyph with a spoken label, so blank or visually identical cards cannot be presented to a pre-reader. The answer-free source model and its answer spaces share one non-wrapping response-row wrapper in source-then-answer order. |
-| `QA-031` | Tutorial controls remain enabled and exposed only for an active question, re-teach phase, or incorrect-feedback offer; pick, physical, correct-feedback, capstone, missing-question, non-session, and already-open tutorial states hide and disable every tutorial control. |
+| `QA-031` | Tutorial controls remain enabled and exposed only for an active question, re-teach phase, or incorrect-feedback offer; pick, `practice-token-guide`, correct-feedback, capstone, missing-question, non-session, and already-open tutorial states hide and disable every tutorial control. |
 | `QA-032` | Each feedback transition clears stale global live text and focuses the one labelled outcome exactly once with no second live-region announcement. |
 | `QA-033` | The browser placement oracle completes every adaptive level-boundary traversal with only valid child responses. Comparison pair-link fixtures include the visible `more`/`fewer`/`same` decision; strategy-bearing classification constructions preserve their textual result; and multiplication/division fact-family fixtures use the four governed multiplication/division equations. This replaces stale fixture assumptions from before those task contracts changed and prevents an obsolete oracle from aborting all later rendered-browser checks. |
 | `QA-034` | A multiplication/division fact-family question renders the exact four governed multiplication and division equations plus only same-family distractors, labels the source as product and factors, and the real engine grades the rendered four-equation response as correct. This permanently detects the defect where MQ-063 displayed addition/subtraction equations that its grader could never accept. |
@@ -713,6 +741,38 @@ truthful semantic model descriptors; and preserved task type on submission.
 | `GEN-EXHAUSTIVE` | All 126 skills generate and self-grade across both tiers, all three representations, all three themes, and 32 ordinals (72,576 questions total); 40,824 bounded question-choice searches preserve one mastery/input contract and expose only distinct reachable prompts. Selection contexts reject exploitable answer-location patterns by requiring sample-volume-appropriate position diversity and rejecting any position above a 75% share. |
 
 ## Publication and browser-evidence proof
+
+### Conservatory migration baseline
+
+`audit/tests/art-migration-baseline.test.mjs` protects `ART-MIG-01` as a
+historical reference boundary. It binds the exact pre-migration commit, parent,
+tree, runtime source bytes, 50 deterministic QA Tour fixtures, their Feature
+Map and Tutorial Manifest joins, and 36 sanitized rendered-result identities
+covering seven states across six viewports. The baseline binds the raw and
+canonical SHA-256 values of one retained, closed-schema browser-evidence file.
+That file preserves all 36 timing-free result-detail records, the exact local
+Edge identity, one accepted attempt with zero automatic retries, successful
+process teardown, and the exact 19-request set with no unexpected request. It
+also binds all 20 served files to their exact historical Git-object bytes and
+discloses the capture-only adapter as one exact source transformation: adding
+the `export` keyword to the unique visual-shard function declaration, without
+changing its body or call path. The existing browser payload validator
+revalidates the retained details, served-source set, and adapter transformation.
+Local evidence is explicitly not publication evidence, art approval,
+human-legibility proof, real-device proof, or release certification;
+screenshots, traces, video, child data, raw timing, and private paths are
+prohibited from the record.
+
+`NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE` mutates the revision, runtime
+hash, fixture ordinal and membership, method coverage, exclusion truth,
+Feature/Tutorial join, rendered-result membership and status, retry history,
+details digest, publication claim, screenshot fields, exact served-source
+provenance, and the disclosed harness adapter. Each mutation must fail closed.
+A coordinated mutant also changes retained result details and
+recomputes the result digest, aggregate digest, byte count, and both evidence
+digests; it must still fail against the independently pinned reviewed evidence
+bytes. The dedicated validator emits one compact machine-readable PASS record
+only after the same contract succeeds.
 
 `audit/tests/trusted-https-canary.test.mjs` protects the separate manual
 GitHub-hosted Windows canary. Its closed evidence schema rejects reordered,
@@ -827,8 +887,8 @@ payload SHA-256 and tree OID into the same clearance matcher; omitting either
 identity is an effect-tested failure rather than a late deployment surprise.
 
 `audit/run-audit.mjs` predicts and observes all eight records separately. The
-24 direct Playwright journeys raise the closed technical-plus-external total
-from 267 to 291. The decision helper requires the
+26 direct Playwright journeys raise the closed technical-plus-external total
+from 267 to 293. The decision helper requires the
 exact eight IDs in exact order. For Beta 6 it requires five mandatory results
 `PASS`, including exact digest-bound `EXT-CANARY: PASS` from `RECONCILED`
 evidence; exact evaluator-bound `EXT-HOST: DEFERRED`; both optional results as

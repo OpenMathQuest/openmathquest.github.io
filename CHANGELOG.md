@@ -17,11 +17,18 @@ All notable public changes to Math Quest are recorded here.
   actionability, accessibility, different-example identity, save isolation,
   and return paths. The full Deep UX Census remains governed by its even-beta
   cadence and is not required for Beta 7.
+- Added a bounded seeded Playwright interaction fuzzer for safe child controls.
+  It records exact replay data, rejects no-op actions, invalid saves, runtime
+  errors, and unexpected requests, and remains explicitly non-certifying.
 - Added AI-first Owners, Code Map, Feature Map, Tutorial Manifest, Blast Radius,
   and Gate contracts with closed schemas, stable identifiers, typed dependency
   edges, deterministic ordering, and fail-closed drift checks.
 - Kept pattern source and response tokens in one visual row, made joining and
   leaving scenes independently answerable, and centered sharing recipients.
+- Removed the generic grown-up “make this with real objects” pause so ordinary
+  questions begin directly on screen. MQ-048 retains its distinct one-time,
+  answer-free practice-token legend, and old paused sessions migrate without
+  losing their question or progress.
 
 ## 1.0.0-beta.6 — 2026-08-13
 

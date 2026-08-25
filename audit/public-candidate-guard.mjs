@@ -56,10 +56,12 @@ const REQUIRED_RIGHTS_PATHS = Object.freeze([
   "licenses/Inter-OFL.txt",
   "licenses/app-icons.md",
   "licenses/ci-toolchain.md",
+  "licenses/design-tokens.md",
   "licenses/sound-effects.md",
 ]);
 const APPROVED_LICENCES = new Set(["Apache-2.0", "BSD-3-Clause", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
 const KIND_LICENCES = Object.freeze({
+  "design-token-contract": new Set(["MIT"]),
   font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
   image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
   audio: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
@@ -830,10 +832,10 @@ function registerFindings(register, entries, blobs, manifest) {
   const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
   const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
   const packageToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
-  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 11) {
-    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the eleven reviewed Node.js, Caddy, Playwright, and Ajv dependency records`);
+  if (!Array.isArray(register.toolchain) || register.toolchain.length !== 13) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the thirteen reviewed Node.js, Caddy, Playwright, Ajv, fast-check, and pure-rand dependency records`);
   } else {
-    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
+    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fastCheckTool, pureRandTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
     if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
       if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
       if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
@@ -899,6 +901,36 @@ function registerFindings(register, entries, blobs, manifest) {
       bundled: false,
       scope: "focused and frozen-candidate browser journeys only",
     };
+    const exactFastCheck = {
+      id: "fast-check-4.9.0",
+      kind: "ci-only-property-based-testing-library",
+      version: "4.9.0",
+      licence: "MIT",
+      sourceUrl: "https://github.com/dubzzz/fast-check/tree/0d3c2547dce556f72413607849377530d18ea283/packages/fast-check",
+      sourceCommit: "0d3c2547dce556f72413607849377530d18ea283",
+      licenceEvidence: "https://github.com/dubzzz/fast-check/blob/0d3c2547dce556f72413607849377530d18ea283/LICENSE",
+      packageName: "fast-check",
+      packageUrl: "https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz",
+      packageSri: "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "bounded seeded Playwright interaction-fuzz diagnostics only",
+    };
+    const exactPureRand = {
+      id: "pure-rand-8.4.2",
+      kind: "ci-only-transitive-pseudorandom-generator",
+      version: "8.4.2",
+      licence: "MIT",
+      sourceUrl: "https://github.com/dubzzz/pure-rand/tree/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      sourceCommit: "fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
+      licenceEvidence: "https://github.com/dubzzz/pure-rand/blob/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6/LICENSE",
+      packageName: "pure-rand",
+      packageUrl: "https://registry.npmjs.org/pure-rand/-/pure-rand-8.4.2.tgz",
+      packageSri: "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==",
+      attributionRecord: "licenses/ci-toolchain.md",
+      bundled: false,
+      scope: "fast-check transitive seeded generator for interaction-fuzz diagnostics only",
+    };
     const exactFsevents = {
       id: "fsevents-2.3.2",
       kind: "lockfile-only-optional-macos-dependency",
@@ -927,7 +959,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "tutorial-manifest build, synchronization, and focused validation only",
+      scope: "closed repository JSON-contract build, synchronization, and focused validation only",
     };
     const exactFastDeepEqual = {
       id: "fast-deep-equal-3.1.3",
@@ -942,7 +974,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactFastUri = {
       id: "fast-uri-3.1.5",
@@ -957,7 +989,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactSchemaTraverse = {
       id: "json-schema-traverse-1.0.0",
@@ -972,7 +1004,7 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     const exactRequireFromString = {
       id: "require-from-string-2.0.2",
@@ -987,19 +1019,21 @@ function registerFindings(register, entries, blobs, manifest) {
       packageSri: "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
       attributionRecord: "licenses/ci-toolchain.md",
       bundled: false,
-      scope: "Ajv transitive dependency for tutorial-manifest validation only",
+      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
     };
     for (const [tool, keys, expected, index] of [
       [caddyTool, caddyToolKeys, exactCaddy, 1],
       [playwrightCoreTool, packageToolKeys, exactPlaywright, 2],
       [playwrightTestTool, packageToolKeys, exactPlaywrightTest, 3],
       [playwrightRunnerTool, packageToolKeys, exactPlaywrightRunner, 4],
-      [fseventsTool, packageToolKeys, exactFsevents, 5],
-      [ajvTool, packageToolKeys, exactAjv, 6],
-      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 7],
-      [fastUriTool, packageToolKeys, exactFastUri, 8],
-      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 9],
-      [requireFromStringTool, packageToolKeys, exactRequireFromString, 10],
+      [fastCheckTool, packageToolKeys, exactFastCheck, 5],
+      [pureRandTool, packageToolKeys, exactPureRand, 6],
+      [fseventsTool, packageToolKeys, exactFsevents, 7],
+      [ajvTool, packageToolKeys, exactAjv, 8],
+      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 9],
+      [fastUriTool, packageToolKeys, exactFastUri, 10],
+      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 11],
+      [requireFromStringTool, packageToolKeys, exactRequireFromString, 12],
     ]) {
       const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
       if (exactKeys(tool, keys, label, findings)
@@ -1119,7 +1153,7 @@ function licenceGuardMutationFindings(register, entries, blobs, manifest) {
     candidateRegister.referenceComponents[0].attributionRecord = "vendor/copied.js";
   }, /attributionRecord must be a reviewed evidence path/u);
   run("a licence incompatible with its component kind", ({ register: candidateRegister }) => {
-    candidateRegister.bundledComponents[0].kind = "audio";
+    candidateRegister.bundledComponents.find((component) => component.kind === "font").kind = "audio";
   }, /is not approved for component kind/u);
   run("an empty attribution record", ({ blobs: candidateBlobs }) => {
     candidateBlobs.set("THIRD_PARTY_NOTICES.md", Buffer.from(""));

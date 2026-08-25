@@ -153,7 +153,7 @@ effects earlier, but do not constitute another complete cycle.
 - [ ] Kill every required disposable mutation family.
 - [ ] Run browser smoke tests against the newly frozen shipped page with zero
   unexplained failures.
-- [ ] Run all 24 direct-user Playwright journeys in the exact installed-Edge
+- [ ] Run all 26 direct-user Playwright journeys in the exact installed-Edge
   desktop and touch-phone projects with zero failures, skips, retries,
   unexpected requests, page errors, or console errors.
 - [x] Record the complete hosted Playwright Deep UX Census as

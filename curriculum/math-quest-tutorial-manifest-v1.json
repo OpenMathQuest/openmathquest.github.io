@@ -1,6 +1,6 @@
 {
   "manifestId": "math-quest-tutorials",
-  "version": "2.0.0",
+  "version": "2.4.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -14,6 +14,8 @@
   "aiSemantics": {
     "methodJoinKey": "inputMethod",
     "featureJoinKey": "featureId",
+    "artDesignJoinKey": "artDesignBinding.path",
+    "artDesignBoundary": "ART_DESIGN_MAY_SKIN_VISUAL_ANCHORS_AND_CUES_NOT_PHASE_IDENTITY_TEACHING_SEMANTICS_OR_DISCLOSURE",
     "profileJoinKey": "generatorProfile",
     "promptJoinKey": "semanticPromptStringId",
     "obligationJoinKey": "skillId|taskType",
@@ -65,6 +67,10 @@
     "projectionSha256": "081de1231837f0a4b2df57586ea7a582fb8c73363b000322222458f88fb420bf",
     "skillCount": 126,
     "taskObligationCount": 166
+  },
+  "artDesignBinding": {
+    "path": "audit/art-design-decision-register-v1.json",
+    "sha256": "c00ef66e4c4f4672804617468f2272633a49c212d7c1495b28e8babdf7d85993"
   },
   "differentExample": {
     "salt": "math-quest-different-example-v2",

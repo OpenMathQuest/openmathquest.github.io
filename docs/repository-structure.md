@@ -7,9 +7,9 @@ records in distinct locations.
 |---|---|
 | `/` | Persistent agent governance, runtime entry points, Windows launchers, install manifest, service worker, exact release-shell manifest, standard project files, and a private CI-only Node dependency manifest/lockfile excluded from the child payload |
 | `.github/` | Issue, pull-request, dependency, audit, and deployment automation |
-| `assets/` | Bundled app icons, fonts, sounds, and their first-party generation source |
-| `audit/` | Machine-readable collaboration, certification-cadence, and finished-work mirrors; executable focused-development and complete-release checks; direct-user Playwright journeys; the alternating-beta Deep UX Census planner, runner, evidence validator, and anomaly-only renderer; the reviewed browser/runner tuple and exact direct-evidence-successor validator; and the disposable trusted-HTTPS canary runner, validator, and regressions |
-| `curriculum/` | Canonical versioned curriculum manifest, fail-closed tutorial-linkage manifest, and provenance |
+| `assets/` | Bundled app icons, fonts, sounds, their first-party generation source, and canonical machine-readable Conservatory design tokens; design-token targets do not affect runtime until a separately validated projection is activated |
+| `audit/` | Machine-readable collaboration, certification-cadence, finished-work, Conservatory art-decision, and governed-art-asset records; their closed schemas and fail-closed validators; executable focused-development and complete-release checks; direct-user Playwright journeys; the alternating-beta Deep UX Census planner, runner, evidence validator, and anomaly-only renderer; the reviewed browser/runner tuple and exact direct-evidence-successor validator; and the disposable trusted-HTTPS canary runner, validator, and regressions |
+| `curriculum/` | Canonical versioned curriculum, feature, and fail-closed tutorial-linkage manifests, including hash-bound references to the art-design authority, plus provenance |
 | `docs/development/` | Stable development contract |
 | `docs/release/` | Release gates, checklists, reviews, and public-tree inventory |
 | `docs/testing/` | Human-readable test coverage and effect maps |
@@ -33,6 +33,14 @@ reviewed wrapper with both reviewed hashes enforced. None of these tools,
 dependency metadata, browser artifacts, traces, or `licenses/ci-toolchain.md`
 is included in `release-shell-v1.json`, the service-worker cache, or the Pages
 runtime payload.
+
+The canonical Conservatory governance chain is
+`art-design-decision-register → feature/tutorial manifests → art-asset register → design tokens → blast radius → gates`.
+The external art-design Bible is source suggestion material only and is not a
+runtime or repository authority. All human- or AI-created game art follows the
+tiered 53-step construction workflow in the decision register. Mathematical
+facts remain owned by deterministic code and independently checked oracles;
+theme art may add atmosphere but may not change, obscure, or answer a task.
 
 `playwright.deep-ux.config.mjs` is a separate release diagnostic rather than
 an expansion of the 24-result focused journey lane. Its complete mode is
@@ -75,6 +83,11 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 
 | Fact family | Sole owner | Declared projections | Validators |
 |---|---|---|---|
+| `art-design.asset-acceptance` | `audit/art-asset-register-v1.json` | — | `audit/tests/art-design-governance.test.mjs` |
+| `art-design.migration-baseline` | `audit/art-migration-baseline-v1.json` | — | `audit/tests/art-migration-baseline.test.mjs`<br>`audit/validate-art-migration-baseline.mjs` |
+| `art-design.migration-browser-evidence` | `audit/art-migration-browser-evidence-v1.json` | — | `audit/tests/art-migration-baseline.test.mjs`<br>`audit/validate-art-migration-baseline.mjs` |
+| `art-design.runtime-tokens` | `assets/design/math-quest-design-tokens-v1.json` | `assets/design/math-quest-design-tokens-v1.css`<br>`audit.html`<br>`index.html`<br>`release-shell-v1.json` | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/tests/art-design-governance.test.mjs`<br>`audit/tests/design-token-projection.test.mjs` |
+| `art-design.source-decisions` | `audit/art-design-decision-register-v1.json` | `AGENTS.md`<br>`assets/design/math-quest-design-tokens-v1.json`<br>`audit/art-asset-register-v1.json`<br>`curriculum/math-quest-feature-map-v1.json`<br>`curriculum/math-quest-tutorial-manifest-v1.json`<br>`index.html` | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/tests/art-design-governance.test.mjs`<br>`audit/tests/art-question-shell.test.mjs` |
 | `browser.reviewed-identity` | `audit/browser-runner-evidence-v1.json` | `PUBLICATION_CLEARANCE.md` | `audit/tests/publication-clearance.test.mjs` |
 | `certification.cadence` | `audit/certification-cadence-v1.json` | `AGENTS.md` | `audit/tests/certification-cadence.test.mjs` |
 | `certification.gates` | `audit/run-audit.mjs` | — | `audit/tests/audit-lane-orchestration.test.mjs`<br>`audit/tests/audit-orchestration.test.mjs` |
@@ -91,6 +104,7 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 | `repository.structure` | `audit/repository-code-map-v1.json` | `docs/repository-structure.md` | `audit/tests/repository-code-map.test.mjs` |
 | `rights.components` | `licenses/component-register-v1.json` | `licenses/first-party-paths-v1.txt` | `audit/public-candidate-guard.mjs` |
 | `rights.evidence-paths` | `licenses/evidence-paths-v1.json` | — | `audit/public-candidate-guard.mjs` |
+| `testing.playwright-interaction-fuzz` | `audit/lib/playwright-interaction-fuzz.mjs` | `audit/playwright/interaction-fuzz.spec.mjs`<br>`audit/run-playwright-interaction-fuzz.mjs`<br>`docs/testing/test-to-branch-effect-map.md`<br>`playwright.interaction-fuzz.config.mjs` | `audit/tests/playwright-interaction-fuzz.test.mjs` |
 | `toolchain.dependencies` | `package.json` | `licenses/ci-toolchain.md`<br>`licenses/component-register-v1.json`<br>`package-lock.json` | `audit/tests/trusted-https-canary.test.mjs` |
 | `tutorial.linkage` | `curriculum/math-quest-tutorial-manifest-v1.json` | `curriculum/math-quest-feature-map-v1.json`<br>`docs/development/build-spec.md`<br>`index.html`<br>`release-shell-v1.json` | `audit/playwright/critical-journeys.spec.mjs`<br>`audit/playwright/deep-ux-census.spec.mjs`<br>`audit/tests/tutorial-manifest.test.mjs` |
 

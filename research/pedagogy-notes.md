@@ -18,18 +18,20 @@ meaning is established.
 
 ## Concrete, Pictorial, and Abstract progression
 
-- **Concrete:** the child handles physical objects with a grown-up. A physical
-  prompt must name the objects, action, and stopping point.
-- **Pictorial:** the child builds, marks, places, partitions, or labels an
-  on-screen representation. Looking at an answer-revealing diagram is not an
-  equivalent interaction.
+- **Concrete:** the child acts directly on individually visible on-screen
+  objects. The action and stopping point are part of the playable task.
+- **Pictorial:** the child interprets or builds a representation by marking,
+  placing, partitioning, arranging, or labelling it. Looking at an
+  answer-revealing diagram is not an equivalent interaction.
 - **Abstract:** the child works with numerals, operation signs, mathematical
   language, or exact entry after the symbols have been linked to meaning.
 
-An on-screen manipulative is Pictorial, not Concrete. A skill that does not
-benefit from physical work can start Pictorial only when the manifest records
-that decision. Teaching, hints, worked models, and re-teaching are always
-non-evidentiary.
+The manifest determines whether an on-screen action is Concrete or Pictorial
+from its semantic purpose, not from whether a hand touches glass. Off-screen
+construction and grown-up acknowledgement never gate an assessed question.
+Physical-object play can remain an optional grown-up-led extension, but it
+does not block play or add evidence. Teaching, hints, worked models, and
+re-teaching are always non-evidentiary.
 
 ## Representation families
 

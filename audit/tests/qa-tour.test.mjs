@@ -358,6 +358,7 @@ test("render routes qaConfirm explicitly rather than falling through to another 
     function renderDestructiveOverlay(){}
     function applyTutorialAvailability(){}
     function applySelectedStateIndicators(){}
+    function applyFunctionalArt(){}
     function resumePendingPwaReloadAtBoundary(){}
     function checkPwaUpdateAtBoundary(){}
     ${extractFunction("render")}

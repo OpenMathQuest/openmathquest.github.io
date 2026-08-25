@@ -879,40 +879,70 @@ test("Home discards a zero-queue preview capstone but preserves a zero-queue reg
   assert.equal(regular.ui.screen, "home");
 });
 
-test("the first-use guide Ready action opens the unchanged question without submitting evidence", () => {
-  const physicalDoneBody = extractActionBranch("physical-done");
-  const question = Object.freeze({
-    questionId: "MQ-048-guide-test",
+test("MQ-048 Ready opens the unchanged question and rolls back cleanly when saving fails", async () => {
+  const { engine } = await loadShippedEngine(new URL("../../index.html", import.meta.url));
+  const question = engine.makeQuestion({
     skillId: "MQ-048",
-    prompt: "Which Canadian money value does this practice token stand for?",
-    scaffolded: false,
+    seed: 0x4d515558,
+    ordinal: 0,
+    eligibleQuestionOrdinal: 0,
+    tier: "EASY",
+    representation: "PICTORIAL",
+    theme: "ocean",
   });
-  const effects = { saves: 0, renders: 0, focusSelectors: [], spoken: [], now: 1700, question };
-  const harness = evaluateHarness({
-    prelude: `
-      let ui={phase:"physical",question:effects.question,modelTouched:false,promptFinishedAt:0,idleStart:0};
-      const now=()=>effects.now;
-      function save(){effects.saves+=1;return true;}
-      function renderPlayAndFocus(selector){effects.renders+=1;effects.focusSelectors.push(selector);}
-      function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
-    `,
-    functions: [],
-    body: `function chooseReady(){${physicalDoneBody}}`,
-    exposed: "chooseReady,ui:()=>ui",
-    context: { effects },
-  });
-  harness.chooseReady();
-  const ui = harness.ui();
-  assert.equal(ui.phase, "question");
-  assert.equal(ui.question, question);
-  assert.equal(ui.question.scaffolded, false);
-  assert.equal(ui.modelTouched, true);
-  assert.equal(effects.saves, 1);
-  assert.equal(effects.renders, 1);
-  assert.equal(effects.spoken.at(-1), question.prompt);
-  assert.equal(ui.promptFinishedAt, effects.now);
-  assert.equal(ui.idleStart, effects.now);
-  assert.equal(effects.focusSelectors.length, 1);
+  const runCase = ({ phase = "practice-token-guide", skillId = "MQ-048", saveOk = true } = {}) => {
+    const effects = { question, phase, skillId, saveOk, saves: 0, renders: 0, focus: [], speech: [] };
+    const harness = evaluateHarness({
+      prelude: `
+        let ui={screen:"session",phase:effects.phase,question:{...effects.question,skillId:effects.skillId},modelTouched:false,promptFinishedAt:0,idleStart:0};
+        const now=()=>4200;
+        function save(){effects.saves+=1;return effects.saveOk;}
+        function render(){effects.renders+=1;}
+        function renderPlayAndFocus(selector){effects.focus.push(selector);}
+        function questionSpeechText(options){effects.speechOptions=options;return "question speech";}
+        function speak(text,callback){effects.speech.push(String(text));if(callback)callback();}
+      `,
+      functions: [],
+      body: `function run(){const action="practice-token-ready";${extractActionBranch("practice-token-ready")}}`,
+      exposed: "run,ui:()=>ui",
+      context: { effects },
+    });
+    harness.run();
+    return { ui: harness.ui(), effects };
+  };
+
+  const success = runCase();
+  assert.equal(success.ui.phase, "question");
+  assert.equal(success.ui.modelTouched, true);
+  assert.equal(success.ui.question.questionId, question.questionId);
+  assert.deepEqual(JSON.parse(JSON.stringify(success.ui.question)), JSON.parse(JSON.stringify(question)));
+  assert.equal(success.ui.promptFinishedAt, 4200);
+  assert.equal(success.ui.idleStart, 4200);
+  assert.equal(success.effects.saves, 1);
+  assert.equal(success.effects.renders, 0);
+  assert.equal(success.effects.focus.length, 1);
+  assert.deepEqual(success.effects.speech, ["question speech"]);
+  assert.equal(success.effects.speechOptions?.includeHelp, false);
+
+  const failedSave = runCase({ saveOk: false });
+  assert.equal(failedSave.ui.phase, "practice-token-guide");
+  assert.equal(failedSave.ui.modelTouched, false);
+  assert.equal(failedSave.effects.renders, 1);
+  assert.deepEqual(failedSave.effects.focus, []);
+  assert.deepEqual(failedSave.effects.speech, []);
+
+  for (const guarded of [
+    runCase({ phase: "question" }),
+    runCase({ skillId: "MQ-047" }),
+  ]) {
+    assert.equal(guarded.effects.saves, 0);
+    assert.equal(guarded.effects.renders, 0);
+    assert.deepEqual(guarded.effects.speech, []);
+  }
+  assert.equal(adapter.includes('data-action="physical-done"'), false);
+  assert.equal(adapter.includes("physicalTaskHtml"), false);
+  assert.equal(adapter.includes("practiceTokenGuideHtml"), true);
+  assert.equal(adapter.includes('data-action="practice-token-ready"'), true);
 });
 
 test("safe-boundary checks include name gate, home, and grown-ups; explicit Home and Retry checks bypass debounce", async () => {

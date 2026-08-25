@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-feature-map",
-  "version": "1.2.0",
+  "version": "1.6.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -14,6 +14,8 @@
   "aiSemantics": {
     "featureIdentityKey": "id",
     "mechanicJoinKey": "inputMethod",
+    "artDesignJoinKey": "artDesignBinding.path",
+    "artDesignBoundary": "ART_DESIGN_MAY_CONSTRAIN_PRESENTATION_NOT_MECHANIC_IDENTITY_OR_BEHAVIOR",
     "invariantIdentityKey": "id",
     "invariantPredicateKey": "predicate",
     "stepActionKey": "action",
@@ -36,7 +38,11 @@
   },
   "tutorialBinding": {
     "path": "curriculum/math-quest-tutorial-manifest-v1.json",
-    "sha256": "136fd3e3ddabc3f8f8fcbe7a5a69e235a4cff814b3cb298f619d29e78a7f06c8"
+    "sha256": "b9ba8940ad4dad1a348f6543a51e82002b2e54ccd444e5143c73ae322054087a"
+  },
+  "artDesignBinding": {
+    "path": "audit/art-design-decision-register-v1.json",
+    "sha256": "c00ef66e4c4f4672804617468f2272633a49c212d7c1495b28e8babdf7d85993"
   },
   "proofKindCatalog": [
     { "kind": "a11y", "predicate": "ACCESSIBILITY_TREE_AND_TARGET_CONTRACT_HOLDS", "observationClass": "A11Y_TREE" },

@@ -24,6 +24,8 @@ SECURITY.md
 Serve-MathQuest.ps1
 THIRD_PARTY_NOTICES.md
 VERSION
+assets/design/math-quest-design-tokens-v1.css
+assets/design/math-quest-design-tokens-v1.json
 assets/fonts/Inter-Variable.ttf
 assets/icons/apple-touch-icon.png
 assets/icons/icon-192.png
@@ -38,6 +40,10 @@ audit.bat
 audit.html
 audit/agent-collaboration-policy-v1.json
 audit/approved-visual-regression.js
+audit/art-asset-register-v1.json
+audit/art-design-decision-register-v1.json
+audit/art-migration-baseline-v1.json
+audit/art-migration-browser-evidence-v1.json
 audit/browser-runner-evidence-v1.json
 audit/certification-cadence-v1.json
 audit/compare-audit-execution-modes.mjs
@@ -50,11 +56,15 @@ audit/fixtures/mq-coverage-calibration-full.js
 audit/fixtures/mq-coverage-calibration-partial.js
 audit/gate-integrity-policy-v1.json
 audit/install-reviewed-ci-dependencies.ps1
+audit/lib/art-design-governance.mjs
+audit/lib/art-migration-baseline.mjs
+audit/lib/art-question-shell.mjs
 audit/lib/bounded-audit-lanes.mjs
 audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
 audit/lib/child-strings.mjs
 audit/lib/curriculum-manifest.mjs
+audit/lib/design-token-projection.mjs
 audit/lib/development-suite-plan.mjs
 audit/lib/engine-loader.mjs
 audit/lib/feature-map.mjs
@@ -63,6 +73,7 @@ audit/lib/hosted-windows-observation.mjs
 audit/lib/native-coverage.mjs
 audit/lib/playwright-deep-ux-census.mjs
 audit/lib/playwright-focused-contract.mjs
+audit/lib/playwright-interaction-fuzz.mjs
 audit/lib/publication-clearance.mjs
 audit/lib/release-evidence-bundle.mjs
 audit/lib/release-evidence-successor.mjs
@@ -79,6 +90,7 @@ audit/playwright/compact-reporter.mjs
 audit/playwright/critical-journeys.spec.mjs
 audit/playwright/deep-ux-census.spec.mjs
 audit/playwright/fixtures.mjs
+audit/playwright/interaction-fuzz.spec.mjs
 audit/public-candidate-guard.mjs
 audit/release-evidence-bundle-v1.json
 audit/repository-code-map-v1.json
@@ -89,9 +101,15 @@ audit/run-browser-smoke.mjs
 audit/run-coverage.mjs
 audit/run-playwright-deep-ux-census.mjs
 audit/run-playwright-focused.mjs
+audit/run-playwright-interaction-fuzz.mjs
 audit/run-trusted-https-canary.mjs
 audit/run-trusted-https-canary.ps1
+audit/schemas/art-asset-register-v1.schema.json
+audit/schemas/art-design-decision-register-v1.schema.json
+audit/schemas/art-migration-baseline-v1.schema.json
+audit/schemas/art-migration-browser-evidence-v1.schema.json
 audit/schemas/blast-radius-result-v2.schema.json
+audit/schemas/design-tokens-v1.schema.json
 audit/schemas/feature-map-v1.schema.json
 audit/schemas/gate-integrity-policy-v1.schema.json
 audit/schemas/release-evidence-bundle-v1.schema.json
@@ -100,10 +118,14 @@ audit/schemas/tutorial-manifest-v1.schema.json
 audit/test-launcher-identity.ps1
 audit/tests/adapter-syntax.test.mjs
 audit/tests/agent-collaboration-policy.test.mjs
+audit/tests/art-design-governance.test.mjs
+audit/tests/art-migration-baseline.test.mjs
+audit/tests/art-question-shell.test.mjs
 audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/blast-radius-lookup.test.mjs
 audit/tests/certification-cadence.test.mjs
+audit/tests/design-token-projection.test.mjs
 audit/tests/development-suite-plan.test.mjs
 audit/tests/engine-suite.mjs
 audit/tests/feature-map.test.mjs
@@ -117,6 +139,7 @@ audit/tests/page-adapter-effects.test.mjs
 audit/tests/placement-adapter-effects.test.mjs
 audit/tests/playwright-deep-ux-census.test.mjs
 audit/tests/playwright-focused-contract.test.mjs
+audit/tests/playwright-interaction-fuzz.test.mjs
 audit/tests/publication-clearance.test.mjs
 audit/tests/pwa-release.test.mjs
 audit/tests/qa-tour.test.mjs
@@ -126,6 +149,7 @@ audit/tests/strategy-build-oracle.mjs
 audit/tests/trusted-https-canary.test.mjs
 audit/tests/tutorial-manifest.test.mjs
 audit/trusted-https-canary-beta7-v1.json
+audit/validate-art-migration-baseline.mjs
 audit/validate-hosted-windows-observation.mjs
 audit/validate-publication-clearance.mjs
 audit/validate-trusted-https-canary.mjs
@@ -160,6 +184,7 @@ licenses/Inter-OFL.txt
 licenses/app-icons.md
 licenses/ci-toolchain.md
 licenses/component-register-v1.json
+licenses/design-tokens.md
 licenses/evidence-paths-v1.json
 licenses/first-party-paths-v1.txt
 licenses/sound-effects.md
@@ -168,6 +193,7 @@ package-lock.json
 package.json
 playwright.config.mjs
 playwright.deep-ux.config.mjs
+playwright.interaction-fuzz.config.mjs
 release-shell-v1.json
 research/build-axioms.md
 research/clean-room-curriculum-log.md
@@ -178,6 +204,7 @@ research/tiny-polka-dot-mechanics-review.md
 sw.js
 tools/blast-radius-lookup.mjs
 tools/build-app-icons.mjs
+tools/build-design-token-projection.mjs
 tools/build-pwa-release-manifest.mjs
 tools/build-tutorial-manifest.mjs
 tools/normalize-curriculum-manifest.mjs

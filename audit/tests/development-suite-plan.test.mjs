@@ -23,7 +23,7 @@ test("documentation-only work avoids product and engine execution", () => {
 
 test("single-file product changes select every affected independent layer", () => {
   const plan = planDevelopmentSuites(["index.html"]);
-  for (const id of ["governance", "metadata", "product", "pwa", "engine", "tutorial", "driftless", "playwright", "guard"]) {
+  for (const id of ["governance", "metadata", "art-design", "product", "pwa", "engine", "tutorial", "driftless", "playwright", "guard"]) {
     assert.equal(plan.suites.includes(id), true, id);
   }
   assert.equal(plan.suites.includes("canary"), false);
@@ -79,6 +79,50 @@ test("driftless maps and blast-radius controls select their shared focused gate"
   }
 });
 
+test("art decisions, tokens, assets, and tutorial or feature joins select the focused art gate", () => {
+  for (const file of [
+    "audit.html",
+    "audit/art-design-decision-register-v1.json",
+    "audit/art-asset-register-v1.json",
+    "audit/art-migration-baseline-v1.json",
+    "audit/art-migration-browser-evidence-v1.json",
+    "audit/lib/design-token-projection.mjs",
+    "audit/lib/art-migration-baseline.mjs",
+    "audit/schemas/art-migration-baseline-v1.schema.json",
+    "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+    "audit/tests/art-migration-baseline.test.mjs",
+    "audit/tests/design-token-projection.test.mjs",
+    "audit/validate-art-migration-baseline.mjs",
+    "assets/design/math-quest-design-tokens-v1.css",
+    "assets/design/math-quest-design-tokens-v1.json",
+    "curriculum/math-quest-feature-map-v1.json",
+    "curriculum/math-quest-tutorial-manifest-v1.json",
+    "licenses/component-register-v1.json",
+    "licenses/evidence-paths-v1.json",
+    "release-shell-v1.json",
+    "tools/build-design-token-projection.mjs",
+  ]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+    assert.equal(plan.suites.includes("art-design"), true, file);
+    assert.equal(plan.suites.includes("driftless"), true, file);
+  }
+  const engineLoader = planDevelopmentSuites(["audit/lib/engine-loader.mjs"]);
+  assert.equal(engineLoader.suites.includes("art-design"), true);
+  assert.equal(engineLoader.suites.includes("engine"), true);
+});
+
+test("the audit entry point executes the selected art-design suite", async () => {
+  const runner = await readFile(path.join(root, "audit", "run-audit.ps1"), "utf8");
+  assert.match(runner, /developmentPlan\.suites -contains 'art-design'/u);
+  assert.match(runner, /tests\\art-design-governance\.test\.mjs/u);
+  assert.match(runner, /tests\\design-token-projection\.test\.mjs/u);
+  assert.match(runner, /tests\\art-migration-baseline\.test\.mjs/u);
+  assert.match(runner, /validate-art-migration-baseline\.mjs/u);
+  assert.match(runner, /MQ_ART_GOVERNANCE_MODE = if \(\$DevelopmentOnly\) \{ 'DEVELOPMENT' \} else \{ 'RELEASE' \}/u);
+  assert.match(runner, /Conservatory art-design governance, migration baseline, and fail-closed projection checks passed/u);
+});
+
 test("Playwright Test changes select only the focused browser and shared policy layers", () => {
   const config = planDevelopmentSuites(["playwright.config.mjs"]);
   assert.deepEqual(config.suites, ["governance", "metadata", "playwright", "guard"]);
@@ -91,6 +135,11 @@ test("Playwright Test changes select only the focused browser and shared policy 
     "audit/playwright/deep-ux-census.spec.mjs",
     "audit/run-playwright-deep-ux-census.mjs",
     "audit/tests/playwright-deep-ux-census.test.mjs",
+    "playwright.interaction-fuzz.config.mjs",
+    "audit/lib/playwright-interaction-fuzz.mjs",
+    "audit/playwright/interaction-fuzz.spec.mjs",
+    "audit/run-playwright-interaction-fuzz.mjs",
+    "audit/tests/playwright-interaction-fuzz.test.mjs",
   ]) assert.equal(planDevelopmentSuites([file]).suites.includes("playwright"), true, file);
 });
 
