@@ -1,8 +1,8 @@
 {
   "designSystemId": "math-quest-conservatory",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "schemaVersion": 1,
-  "status": "RUNTIME_EARLY_COUNTING_ACTIVE",
+  "status": "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE",
   "primaryConsumer": "AI_AGENT",
   "authority": "THIS_FILE",
   "licence": {
@@ -12,7 +12,7 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "565ef1afff6ca53f838eaf0d47914dae093d7a775e6d1bc21ceda4b6aa3f7a62"
+    "sha256": "dedbc0e42f2c38d7926466a5a5d7e099b7bdc448bdc1cbb00f58bbe694f919b4"
   },
   "sourceDecisionIds": [
     "ART-SRC-005",
@@ -43,17 +43,17 @@
       "VIEW_PALETTES"
     ],
     "consumerPolicy": "EXACT_SELECTOR_PROPERTY_TOKEN_ALLOWLIST_ART_MIG_04_06",
-    "renderedChangePolicy": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_AND_EARLY_COUNTING_ONLY_THROUGH_ART_MIG_06",
-    "activationGate": "EARLY_COUNTING_COUNT_TOUCH_PLAIN_BASELINE_AND_ORACLE_VERIFIED",
-    "consumerContractSha256": "4aeb78a5a267e1c87b73c6fb3ae56e890a179a7e4e81e03d9d5fd12db9810521",
-    "consumerRecordCount": 100,
-    "semanticInputSha256": "f5e91081bec82ec8f6d3491e4b004e82227e0c89b8484883c5a1e96de4a37ab4",
-    "cssSha256": "02d3fe21cc07849543ffaa87c0d2579adc81194a120007e64068222b8316d62a",
+    "renderedChangePolicy": "FUNCTIONAL_ART_QUESTION_SHELL_ZONES_EARLY_COUNTING_AND_EARLY_FRAME_ONLY_THROUGH_ART_MIG_06",
+    "activationGate": "EARLY_COUNTING_COUNT_TOUCH_AND_MQ_026_TEN_FRAME_PLAIN_BASELINES_AND_ORACLES_VERIFIED",
+    "consumerContractSha256": "22f947586beb84f8374379863ee5936dfa8d46b96fd8463360572a3327d3aa90",
+    "consumerRecordCount": 116,
+    "semanticInputSha256": "dc44451054e075966ebe27a30accdc529f5e96195b865748cfaf38feeea0fbb6",
+    "cssSha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee",
     "cssBytes": 3402
   },
   "runtimeConsumerContract": {
     "id": "ART-MIG-04-06-GOVERNED-RUNTIME-CONSUMERS",
-    "version": 4,
+    "version": 5,
     "sourcePath": "index.html",
     "styleMarkers": [
       "style[data-mq-functional-art=\"ART-MIG-05\"]",
@@ -358,6 +358,137 @@
         "cssProperty": "box-shadow",
         "tokenIds": [
           "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.warm.old-gold"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-counter.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::before",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-pip.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled-pip.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on::after",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.celadon"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-filled.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell.on",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.action.primary",
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-well.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell::before",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell-well.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell::before",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.ivory"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.cell.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .model-cell",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.mineral",
+          "colour.surface.pale-wood"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.row-divider.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe::after",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.background-color",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "background-color",
+        "tokenIds": [
+          "colour.surface.mineral"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.border",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "border",
+        "tokenIds": [
+          "colour.ink.structural"
+        ]
+      },
+      {
+        "id": "consumer.early-frame.tray.box-shadow",
+        "selector": ".play-shell .question[data-input-method=\"TEN_FRAME\"] .ten-frame-construction .tenframe",
+        "cssProperty": "box-shadow",
+        "tokenIds": [
+          "colour.surface.ivory",
+          "colour.surface.pale-wood"
         ]
       },
       {

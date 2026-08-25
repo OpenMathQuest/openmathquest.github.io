@@ -4,6 +4,7 @@ export const ART_QUESTION_SHELL_ACTION_ORDER = Object.freeze(["replay", "tutoria
 export const ART_QUESTION_SHELL_MINIMUM_TARGET_PX = 44;
 export const ART_QUESTION_ZONE_NARROW_MAX_PX = 1023;
 export const ART_EARLY_COUNTING_RENDERER_FAMILY = "ART-MIG-06-EARLY-COUNTING";
+export const ART_EARLY_FRAME_RENDERER_FAMILY = "ART-MIG-06-TEN-FRAME";
 export const ART_QUESTION_SHELL_RAIL_LABELS = Object.freeze({
   replay: "Replay",
   tutorial: "? Show me how",
@@ -101,6 +102,29 @@ export function artEarlyCountingIssues(snapshot) {
   if (snapshot.horizontalDocumentOverflow || snapshot.nestedQuestionScroll) issues.push("early-counting renderer introduces horizontal or nested question scrolling");
   for (const target of snapshot.targets || []) {
     if (target.width < ART_QUESTION_SHELL_MINIMUM_TARGET_PX || target.height < ART_QUESTION_SHELL_MINIMUM_TARGET_PX) issues.push(`early-counting ${target.kind} target is below ${ART_QUESTION_SHELL_MINIMUM_TARGET_PX}px`);
+  }
+  return Object.freeze(issues);
+}
+
+export function artEarlyFrameIssues(snapshot) {
+  const issues = [];
+  if (!snapshot || typeof snapshot !== "object") return Object.freeze(["early-frame snapshot is missing"]);
+  if (snapshot.skillId !== "MQ-026" || snapshot.inputMethod !== "TEN_FRAME" || snapshot.semanticPromptStringId !== "question.teenBuild" || snapshot.taskType !== "see-ten-inside-teen-numbers") issues.push("early-frame identity is not the governed MQ-026 TEN_FRAME teen-number family");
+  if (snapshot.rendererFamily !== ART_EARLY_FRAME_RENDERER_FAMILY) issues.push("early-frame renderer-family marker is missing or incorrect");
+  if (!Number.isInteger(snapshot.answerOracle) || snapshot.answerOracle < 11 || snapshot.answerOracle > 19) issues.push("early-frame answer oracle is outside the governed teen-number domain");
+  if (snapshot.declaredCellCount !== 20 || snapshot.frameCount !== 2 || !same(snapshot.frameCapacities, [10, 10]) || !same(snapshot.cellsPerFrame, [10, 10])) issues.push("early-frame must expose exactly two ten-cell frames");
+  if (!same(snapshot.frameIndexes, [0, 1]) || !same(snapshot.cellIndexes, Array.from({ length: 20 }, (_, index) => index)) || !same(snapshot.cellPositions, [...Array.from({ length: 10 }, (_, index) => index + 1), ...Array.from({ length: 10 }, (_, index) => index + 1)])) issues.push("early-frame data-owned frame or cell order drifted");
+  if (!snapshot.fiveByTwoStructure) issues.push("each early frame must retain an exact five-by-two geometry");
+  if (snapshot.pressedCount !== snapshot.expectedPressedCount) issues.push("early-frame pressed-state cardinality does not equal the exercised response state");
+  const expectedResponseValue = snapshot.expectedPressedCount > 0 ? String(snapshot.expectedPressedCount) : "";
+  if (snapshot.responseValue !== expectedResponseValue) issues.push("early-frame saved numeric response does not equal the pressed-cell count");
+  if (snapshot.expectedPressedCount > 0 && (!snapshot.filledHasCssCounterCue || !snapshot.filledHasCentrePipCue || !snapshot.filledHasAccessibleCue)) issues.push("filled early-frame state depends on colour instead of CSS counter geometry, a centre pip, and accessible pressed state");
+  if (snapshot.answerDisclosureCount !== 0) issues.push("early-frame response discloses the target answer before submission");
+  if (snapshot.confirmDisabled !== (snapshot.expectedPressedCount === 0)) issues.push("early-frame Confirm availability does not match response completeness");
+  if (!snapshot.firstResponseOnFirstScreen) issues.push("first early-frame response is not visible on the first screen");
+  if (snapshot.horizontalDocumentOverflow || snapshot.nestedQuestionScroll) issues.push("early-frame renderer introduces horizontal or nested question scrolling");
+  for (const target of snapshot.targets || []) {
+    if (target.width < ART_QUESTION_SHELL_MINIMUM_TARGET_PX || target.height < ART_QUESTION_SHELL_MINIMUM_TARGET_PX) issues.push(`early-frame cell target is below ${ART_QUESTION_SHELL_MINIMUM_TARGET_PX}px`);
   }
   return Object.freeze(issues);
 }

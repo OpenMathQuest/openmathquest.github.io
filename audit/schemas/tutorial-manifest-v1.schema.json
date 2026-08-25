@@ -28,7 +28,7 @@
   ],
   "properties": {
     "manifestId": { "const": "math-quest-tutorials" },
-    "version": { "const": "2.3.0" },
+    "version": { "const": "2.4.0" },
     "schemaVersion": { "const": 1 },
     "licence": {
       "type": "object",

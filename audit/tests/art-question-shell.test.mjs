@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { artEarlyCountingIssues, artQuestionShellIssues, artQuestionZoneIssues } from "../lib/art-question-shell.mjs";
+import { artEarlyCountingIssues, artEarlyFrameIssues, artQuestionShellIssues, artQuestionZoneIssues } from "../lib/art-question-shell.mjs";
 
 const valid = () => ({
   questionCount: 1,
@@ -216,5 +216,73 @@ test("[NC-ART-EARLY-COUNTING-SEMANTICS-STATE-GEOMETRY] retargeting, count drift,
     const snapshot = validEarlyCounting();
     mutate(snapshot);
     assert.notDeepEqual(artEarlyCountingIssues(snapshot), [], `early-counting mutant ${index + 1} escaped`);
+  }
+});
+
+const validEarlyFrame = () => ({
+  skillId: "MQ-026",
+  inputMethod: "TEN_FRAME",
+  semanticPromptStringId: "question.teenBuild",
+  taskType: "see-ten-inside-teen-numbers",
+  rendererFamily: "ART-MIG-06-TEN-FRAME",
+  answerOracle: 15,
+  declaredCellCount: 20,
+  frameCount: 2,
+  frameCapacities: [10, 10],
+  cellsPerFrame: [10, 10],
+  frameIndexes: [0, 1],
+  cellIndexes: Array.from({ length: 20 }, (_, index) => index),
+  cellPositions: [...Array.from({ length: 10 }, (_, index) => index + 1), ...Array.from({ length: 10 }, (_, index) => index + 1)],
+  fiveByTwoStructure: true,
+  pressedCount: 12,
+  expectedPressedCount: 12,
+  responseValue: "12",
+  filledHasCssCounterCue: true,
+  filledHasCentrePipCue: true,
+  filledHasAccessibleCue: true,
+  answerDisclosureCount: 0,
+  confirmDisabled: false,
+  firstResponseOnFirstScreen: true,
+  horizontalDocumentOverflow: false,
+  nestedQuestionScroll: false,
+  targets: [{ width: 44, height: 44 }],
+});
+
+test("ART-MIG-06 early-frame oracle accepts the exact MQ-026 two-frame construction with redundant filled cues", () => {
+  assert.deepEqual(artEarlyFrameIssues(validEarlyFrame()), []);
+});
+
+test("[NC-ART-EARLY-FRAME-IDENTITY-STRUCTURE-STATE-GEOMETRY] retargeting, frame drift, response drift, answer disclosure, colour-only state, and undersized cells fail closed", () => {
+  const mutants = [
+    (value) => { value.skillId = "MQ-023"; },
+    (value) => { value.inputMethod = "PICTURE_CHOICE"; },
+    (value) => { value.semanticPromptStringId = "question.frameNumber"; },
+    (value) => { value.taskType = "build-and-break-ten"; },
+    (value) => { value.rendererFamily = "ART-MIG-06-EARLY-COUNTING"; },
+    (value) => { value.answerOracle = 20; },
+    (value) => { value.declaredCellCount = 10; },
+    (value) => { value.frameCount = 1; },
+    (value) => { value.frameCapacities[1] = 9; },
+    (value) => { value.cellsPerFrame[0] = 9; },
+    (value) => { value.frameIndexes.reverse(); },
+    (value) => { value.cellIndexes[19] = 18; },
+    (value) => { value.cellPositions[10] = 10; },
+    (value) => { value.fiveByTwoStructure = false; },
+    (value) => { value.pressedCount = 11; },
+    (value) => { value.responseValue = "11"; },
+    (value) => { value.filledHasCssCounterCue = false; },
+    (value) => { value.filledHasCentrePipCue = false; },
+    (value) => { value.filledHasAccessibleCue = false; },
+    (value) => { value.answerDisclosureCount = 1; },
+    (value) => { value.confirmDisabled = true; },
+    (value) => { value.firstResponseOnFirstScreen = false; },
+    (value) => { value.horizontalDocumentOverflow = true; },
+    (value) => { value.nestedQuestionScroll = true; },
+    (value) => { value.targets[0].width = 43; },
+  ];
+  for (const [index, mutate] of mutants.entries()) {
+    const snapshot = validEarlyFrame();
+    mutate(snapshot);
+    assert.notDeepEqual(artEarlyFrameIssues(snapshot), [], `early-frame mutant ${index + 1} escaped`);
   }
 });

@@ -1,6 +1,6 @@
 {
   "registerId": "math-quest-art-assets",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -12,7 +12,7 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "565ef1afff6ca53f838eaf0d47914dae093d7a775e6d1bc21ceda4b6aa3f7a62"
+    "sha256": "dedbc0e42f2c38d7926466a5a5d7e099b7bdc448bdc1cbb00f58bbe694f919b4"
   },
   "scope": {
     "governedPathPattern": "^assets/design/",

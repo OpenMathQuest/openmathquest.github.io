@@ -37,9 +37,9 @@ test("ART-MIG-04 through ART-MIG-06 projection is exact, collision-safe, linked,
   assert.equal(new Set(designTokenProjectionProperties(tokens).map((record) => record.name)).size, 64);
   assert.deepEqual(tokens.projection.projectedValueClasses, DESIGN_TOKEN_PROJECTED_VALUE_CLASSES);
   assert.deepEqual(tokens.projection, expectedDesignTokenProjection(tokens));
-  assert.equal(expectedRuntimeConsumers(tokens).length, 100);
+  assert.equal(expectedRuntimeConsumers(tokens).length, 116);
   assert.equal(cssBytes.toString("utf8"), renderDesignTokenProjectionCss(tokens));
-  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "EARLY_COUNTING_COUNT_TOUCH_PLAIN_BASELINE_AND_ORACLE_VERIFIED");
+  assert.equal((await loadDesignTokenProjection()).projection.activationGate, "EARLY_COUNTING_COUNT_TOUCH_AND_MQ_026_TEN_FRAME_PLAIN_BASELINES_AND_ORACLES_VERIFIED");
 });
 
 test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {

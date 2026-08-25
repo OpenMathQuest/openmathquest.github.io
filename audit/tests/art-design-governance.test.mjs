@@ -167,9 +167,9 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
   assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
   assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-06");
-  assert.equal(result.tokens.status, "RUNTIME_EARLY_COUNTING_ACTIVE");
+  assert.equal(result.tokens.status, "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
-  assert.equal(result.assets.version, "1.4.0");
+  assert.equal(result.assets.version, "1.5.0");
   assert.equal(result.assets.records.length, 0);
 });
 
@@ -200,6 +200,8 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   const earlyCounting = decisions.implementationDecisionLog.entries[5];
   const earlyCountingApproval = decisions.implementationDecisionLog.entries[6];
   const correctedEarlyCountingApproval = decisions.implementationDecisionLog.entries[7];
+  const earlyFrame = decisions.implementationDecisionLog.entries[8];
+  const earlyFrameApproval = decisions.implementationDecisionLog.entries[9];
   assert.equal(entry.id, "ART-DEC-001");
   assert.equal(entry.baseRevision, "f3a0c39b939d860c7531355489bddc1a0b4f3db9");
   assert.deepEqual(entry.affectedDesignRuleIds, ["ART-R-008", "ART-R-021"]);
@@ -236,6 +238,24 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.ok(correctedEarlyCountingApproval.adopted.includes("CORRECTION_COMPARISON_EVIDENCE_SHA256_18F9562FD3814EA0A47D6063B3BD20D893A50F8944587BD3A5A2093A1B336CCF"));
   assert.ok(correctedEarlyCountingApproval.adopted.includes("INITIAL_IMAGES_BYTE_IDENTICAL_6_OF_6"));
   assert.ok(correctedEarlyCountingApproval.constraints.includes("ORIGINAL_PLATFORM_GLYPH_APPROVAL_SUPERSEDED"));
+  assert.equal(earlyFrame.id, "ART-DEC-009");
+  assert.equal(earlyFrame.decisionId, "APPLY_CONSERVATORY_TEN_FRAME_TRAYS_WITH_EXACT_FIVE_AND_FIVE_AND_REDUNDANT_FILLED_CUES");
+  assert.equal(earlyFrame.baseRevision, "741ec0050e38c0793a3515508025a6a3d13ee8c3");
+  assert.deepEqual(earlyFrame.affectedDesignRuleIds, ["ART-R-008", "ART-R-009", "ART-R-029", "ART-R-034", "ART-R-046", "ART-R-048"]);
+  assert.ok(earlyFrame.adopted.includes("EXACT_FIVE_BY_TWO_STRUCTURE_PER_FRAME"));
+  assert.ok(earlyFrame.rejected.includes("PICTURE_CHOICE_FRAME_SCOPE_EXPANSION"));
+  assert.ok(earlyFrame.constraints.includes("OWNER_HANDOFF_REQUIRED_BEFORE_INTEGRATION_OR_PUSH"));
+  assert.equal(earlyFrameApproval.id, "ART-DEC-010");
+  assert.equal(earlyFrameApproval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_06_MQ_026_TEN_FRAME_RENDERED_HANDOFF");
+  assert.equal(earlyFrameApproval.baseRevision, "741ec0050e38c0793a3515508025a6a3d13ee8c3");
+  assert.deepEqual(earlyFrameApproval.affectedDesignRuleIds, ["ART-R-008", "ART-R-009", "ART-R-029", "ART-R-034", "ART-R-046", "ART-R-048"]);
+  assert.ok(earlyFrameApproval.adopted.includes("AFTER_RESPONSE_INITIAL_PHONE_PORTRAIT_SHA256_976F8432892F22DCC96A10E6CFE4116A3C6ADBC19F71E01C1C5CA90D7231BA7F"));
+  assert.ok(earlyFrameApproval.adopted.includes("AFTER_RESPONSE_PARTIAL_12_DESKTOP_SHA256_FEB4E7D6A0E45D280FD9C80529E2016B8344570A77BEDDB3EF97DC0610764147"));
+  assert.ok(earlyFrameApproval.adopted.includes("CAPTURE_EVIDENCE_SHA256_1E9F44A7FD3754C88DCC7E4ED3F0F73CC6CD53F35305245D6A7AD2DFEEBEBFEB"));
+  assert.ok(earlyFrameApproval.adopted.includes("COMPARISON_PARTIAL_12_SHA256_7E7F4C9C33C929FE7DE5A07FB43D703AF4A4EAE778C91267272F216F6A7F72CC"));
+  assert.ok(earlyFrameApproval.constraints.includes("INTEGRATED_RESPONSE_CROPS_BYTE_IDENTICAL_12_OF_12"));
+  assert.ok(earlyFrameApproval.constraints.includes("INTEGRATED_RENDER_MUST_REPRODUCE_ALL_APPROVED_RESPONSE_BYTES"));
+  assert.ok(earlyFrameApproval.rejected.includes("APPROVAL_FOR_PICTURE_CHOICE_STATIC_FRAMES"));
 
   const unknownRule = clone(decisions);
   unknownRule.implementationDecisionLog.entries[0].affectedDesignRuleIds = ["ART-R-999"];

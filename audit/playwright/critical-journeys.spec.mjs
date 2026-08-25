@@ -7,6 +7,7 @@ import {
   ART_QUESTION_SHELL_RAIL_LABELS,
   ART_QUESTION_ZONE_NARROW_MAX_PX,
   artEarlyCountingIssues,
+  artEarlyFrameIssues,
   artQuestionShellIssues,
   artQuestionZoneIssues,
 } from "../lib/art-question-shell.mjs";
@@ -36,7 +37,7 @@ const FUNCTIONAL_ART_STYLE_ORIGINS = Object.freeze({
   shellAndZones: 'style[data-mq-functional-art="ART-MIG-05"]',
 });
 const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(DESIGN_TOKENS).map((record) => Object.freeze({
-  origin: record.selector.includes('[data-input-method="count_touch"]')
+  origin: record.selector.includes('[data-input-method="count_touch"]') || record.selector.includes('[data-input-method="ten_frame"]')
     ? FUNCTIONAL_ART_STYLE_ORIGINS.earlyCounting
     : FUNCTIONAL_ART_STYLE_ORIGINS.shellAndZones,
   ...record,
@@ -1342,5 +1343,184 @@ test("[PW-F-17] ART-MIG-06 early counting preserves the oracle, answer boundary,
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     expect(artEarlyCountingIssues(await earlyCountingSnapshot(page, 1)), `partial-${viewport.id}`).toEqual([]);
+  }
+});
+
+async function openGovernedEarlyFrameQuestion(page) {
+  await page.clock.setFixedTime("2026-08-24T12:00:00-03:00");
+  await openFreshHome(page);
+  const identity = await page.evaluate(() => {
+    const engine = window.MathQuestEngine;
+    const playDay = 20689;
+    const seed = 9;
+    const skill = engine.SKILL_BY_ID["MQ-026"];
+    const slotFor = (index) => {
+      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
+      return {
+        skillId: skill.skillId,
+        ordinal: index,
+        baseOrdinal: index,
+        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
+        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: 2 }).includes(index + 1),
+        mandatorySecondExposure: false,
+        obligation: "NEW",
+        preview: false,
+      };
+    };
+    const queue = [slotFor(0), slotFor(1)];
+    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
+    const state = engine.createInitialState(playDay);
+    state.earnedLevel = Math.max(state.earnedLevel, question.level);
+    state.activeSession = {
+      sessionId: "art-mig-06-early-frame-playwright",
+      playDay,
+      level: question.level,
+      stage: question.stage,
+      seed,
+      queue,
+      baseSlotCount: queue.length,
+      effectivePracticeLimit: queue.length,
+      effectivePlannedCount: queue.length,
+      effectiveTimeCapMs: 60000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 1,
+      world: "ocean",
+      servedCount: 2,
+      servedOrdinals: [0, 1],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
+        screen: "session",
+        phase: "question",
+        question,
+        choiceCandidates: [],
+        choiceResolved: { 0: 0 },
+        selected: null,
+        entry: "",
+        fractionParts: { whole: "", numerator: "", denominator: "" },
+        modelCells: [],
+        responseState: engine.createResponseState(question),
+        modelTouched: false,
+        hintUsed: false,
+        tutorialOpen: false,
+        tutorialStep: 1,
+        selectionChanged: false,
+        feedback: null,
+        lastAttempt: null,
+        attemptCommitted: true,
+        replayMs: 0,
+        manipulationMs: 0,
+        maxIdleMs: 0,
+        stopRequested: false,
+        fatiguePending: false,
+        reteachPending: null,
+        reteachAdvancesIndex: false,
+        isReteach: false,
+        capstoneSubmitted: false,
+      },
+    };
+    const issue = engine.validateState(state);
+    if (issue !== null) throw new Error(`Invalid early-frame Playwright fixture: ${issue}`);
+    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
+    return { questionId: question.questionId, answerOracle: Number(question.answer.value) };
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const question = page.locator('section.question[data-skill-id="MQ-026"][data-input-method="TEN_FRAME"]');
+  await expect(question).toBeVisible();
+  expect(identity.questionId).toBe("MQ-026-1-3301471712");
+  expect(identity.answerOracle).toBe(15);
+  return question;
+}
+
+async function earlyFrameSnapshot(page, expectedPressedCount) {
+  return page.evaluate((expectedPressedCount) => {
+    const question = document.querySelector('section.question[data-skill-id="MQ-026"][data-input-method="TEN_FRAME"]');
+    const task = question?.querySelector('.ten-frame-construction[data-response-kind="TEN_FRAME"]');
+    const frames = [...(task?.querySelectorAll(":scope > .tenframe") || [])];
+    const cells = [...(task?.querySelectorAll('.model-cell[data-cell][data-cell-position]') || [])];
+    const filled = cells.find((cell) => cell.getAttribute("aria-pressed") === "true") || null;
+    const confirm = question?.querySelector('button[data-action="confirm"]') || null;
+    const support = question?.querySelector(".support-scroll") || null;
+    const saved = JSON.parse(localStorage.getItem(window.MathQuestEngine.CONSTANTS.STORAGE_NAMESPACE) || "null");
+    const savedUi = saved?.activeSession?.uiState || null;
+    const savedQuestion = savedUi?.question || null;
+    const firstBounds = cells[0]?.getBoundingClientRect() || null;
+    const near = (left, right) => Math.abs(left - right) <= 1;
+    const fiveByTwoStructure = frames.every((frame) => {
+      const frameCells = [...frame.querySelectorAll(":scope > .model-cell")];
+      if (frameCells.length !== 10) return false;
+      const bounds = frameCells.map((cell) => cell.getBoundingClientRect());
+      return bounds.slice(0, 5).every((rect) => near(rect.top, bounds[0].top))
+        && bounds.slice(5).every((rect) => near(rect.top, bounds[5].top))
+        && bounds[5].top > bounds[0].top
+        && bounds.slice(0, 5).every((rect, index) => near(rect.left, bounds[index + 5].left));
+    });
+    return {
+      skillId: question?.dataset.skillId || null,
+      inputMethod: question?.dataset.inputMethod || null,
+      semanticPromptStringId: savedQuestion?.semanticPromptStringId || null,
+      taskType: savedQuestion?.taskType || null,
+      rendererFamily: task?.dataset.artRendererFamily || null,
+      answerOracle: Number(savedQuestion?.answer?.value),
+      declaredCellCount: Number(task?.dataset.cellCount),
+      frameCount: frames.length,
+      frameCapacities: frames.map((frame) => Number(frame.dataset.frameCapacity)),
+      cellsPerFrame: frames.map((frame) => frame.querySelectorAll(":scope > .model-cell").length),
+      frameIndexes: frames.map((frame) => Number(frame.dataset.frameIndex)),
+      cellIndexes: cells.map((cell) => Number(cell.dataset.cell)),
+      cellPositions: cells.map((cell) => Number(cell.dataset.cellPosition)),
+      fiveByTwoStructure,
+      pressedCount: cells.filter((cell) => cell.getAttribute("aria-pressed") === "true").length,
+      expectedPressedCount,
+      responseValue: String(savedUi?.entry ?? ""),
+      filledHasCssCounterCue: Boolean(filled && (() => {
+        const cue = getComputedStyle(filled, "::before");
+        const renderedWidth = Number.parseFloat(cue.width) + Number.parseFloat(cue.borderLeftWidth) + Number.parseFloat(cue.borderRightWidth);
+        const renderedHeight = Number.parseFloat(cue.height) + Number.parseFloat(cue.borderTopWidth) + Number.parseFloat(cue.borderBottomWidth);
+        return cue.content === '\"\"' && cue.borderStyle === "solid" && renderedWidth >= 28 && renderedHeight >= 28;
+      })()),
+      filledHasCentrePipCue: Boolean(filled && (() => {
+        const cue = getComputedStyle(filled, "::after");
+        return cue.content === '\"\"' && cue.borderStyle === "solid" && Number.parseFloat(cue.width) >= 10 && Number.parseFloat(cue.height) >= 10;
+      })()),
+      filledHasAccessibleCue: Boolean(filled && filled.getAttribute("aria-pressed") === "true" && filled.getAttribute("aria-label")),
+      answerDisclosureCount: question?.querySelectorAll('[data-feedback-state],[data-correct-answer],.worked-answer,.feedback')?.length || 0,
+      confirmDisabled: confirm?.disabled === true,
+      firstResponseOnFirstScreen: Boolean(firstBounds && firstBounds.top >= 0 && firstBounds.bottom <= innerHeight),
+      horizontalDocumentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      nestedQuestionScroll: Boolean(support && support.scrollHeight > support.clientHeight && ["auto", "scroll"].includes(getComputedStyle(support).overflowY)),
+      targets: cells.map((cell) => ({ width: cell.getBoundingClientRect().width, height: cell.getBoundingClientRect().height })),
+    };
+  }, expectedPressedCount);
+}
+
+test("[PW-F-18] ART-MIG-06 early frame preserves the MQ-026 oracle, exact five-by-two trays, response count, filled cues, and responsive geometry", async ({ page }) => {
+  const question = await openGovernedEarlyFrameQuestion(page);
+  const viewports = [
+    { id: "phone-portrait", width: 390, height: 844 },
+    { id: "phone-landscape", width: 844, height: 390 },
+    { id: "tablet-portrait", width: 820, height: 1180 },
+    { id: "tablet-landscape", width: 1024, height: 768 },
+    { id: "large-tablet-landscape", width: 1180, height: 820 },
+    { id: "desktop", width: 1366, height: 768 },
+  ];
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyFrameIssues(await earlyFrameSnapshot(page, 0)), `initial-${viewport.id}`).toEqual([]);
+  }
+  for (let index = 0; index < 12; index += 1) {
+    await activate(question.locator(`.model-cell[data-cell="${index}"]`), page);
+  }
+  await expect(question.locator('.model-cell[aria-pressed="true"]')).toHaveCount(12);
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    expect(artEarlyFrameIssues(await earlyFrameSnapshot(page, 12)), `partial-${viewport.id}`).toEqual([]);
   }
 });
