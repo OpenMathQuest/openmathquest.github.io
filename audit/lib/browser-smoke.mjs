@@ -984,11 +984,41 @@ export async function runBrowserSmoke({
   if (!browserPath) return { status: "SKIP", reason: "No installed Edge or Chrome executable was located.", results: [] };
   const shardNames = Object.keys(BROWSER_AUDIT_SHARDS);
   const runOne = (shard) => runBrowserAuditShard({ root, browserPath, shard, timeoutMs });
-  const shardReports = process.env.GITHUB_ACTIONS === "true"
-    ? await Promise.all(shardNames.map(runOne))
-    : await shardNames.reduce(async (promise, shard) => [...await promise, await runOne(shard)], Promise.resolve([]));
+  const maximumConcurrent = browserShardMaximumFromEnvironment(process.env, shardNames.length);
+  const shardReports = await runBrowserShardTasks(shardNames, runOne, maximumConcurrent);
   return aggregateBrowserShardReports(shardReports, {
     browserPath,
-    executionMode: process.env.GITHUB_ACTIONS === "true" ? "PARALLEL_GITHUB_HOSTED" : "SEQUENTIAL_LOCAL",
+    executionMode: process.env.GITHUB_ACTIONS === "true" ? "SHARDED_GITHUB_HOSTED" : "SEQUENTIAL_LOCAL",
   });
+}
+
+export function browserShardMaximumFromEnvironment(environment = process.env, shardCount = Object.keys(BROWSER_AUDIT_SHARDS).length) {
+  const fallback = environment.GITHUB_ACTIONS === "true" ? shardCount : 1;
+  const raw = environment.MQ_BROWSER_SHARD_MAXIMUM;
+  const maximum = raw === undefined || raw === "" ? fallback : Number(raw);
+  if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > shardCount) {
+    throw new RangeError(`Browser shard maximum must be an integer from 1 through ${shardCount}.`);
+  }
+  return maximum;
+}
+
+export async function runBrowserShardTasks(shardNames, runOne, maximumConcurrent) {
+  if (!Array.isArray(shardNames) || shardNames.length === 0 || typeof runOne !== "function") {
+    throw new TypeError("Browser shard tasks require a non-empty shard list and runner.");
+  }
+  if (!Number.isSafeInteger(maximumConcurrent) || maximumConcurrent <= 0 || maximumConcurrent > shardNames.length) {
+    throw new RangeError("Browser shard task concurrency is invalid.");
+  }
+  const reports = new Array(shardNames.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= shardNames.length) return;
+      reports[index] = await runOne(shardNames[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: maximumConcurrent }, worker));
+  return reports;
 }

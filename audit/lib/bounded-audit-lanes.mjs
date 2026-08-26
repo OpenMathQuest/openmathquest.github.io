@@ -265,7 +265,8 @@ export function interpretJsonChildCompletion({ stdout = "", stderr = "", exitCod
 
 async function executeLaneProcess({
   browserPath, candidateId, indexPath, laneId, nestedProcessTimeoutMs = null,
-  nodePath, root, runId, timeoutMs,
+  nestedConcurrencyMaximum = null, nodePath, processEnvironment = process.env,
+  root, runId, timeoutMs,
 }) {
   const args = [
     path.join(root, "audit", "run-audit-lane.mjs"),
@@ -276,7 +277,11 @@ async function executeLaneProcess({
   ];
   if (nestedProcessTimeoutMs !== null) args.push(`--nested-process-timeout-ms=${nestedProcessTimeoutMs}`);
   if (browserPath) args.push(`--browser=${browserPath}`);
-  const processResult = await runTreeSupervisedProcess({ command: nodePath, args, cwd: root, env: process.env, timeoutMs });
+  const childEnvironment = { ...processEnvironment };
+  if (laneId === "browser" && nestedConcurrencyMaximum !== null) {
+    childEnvironment.MQ_BROWSER_SHARD_MAXIMUM = String(nestedConcurrencyMaximum);
+  }
+  const processResult = await runTreeSupervisedProcess({ command: nodePath, args, cwd: root, env: childEnvironment, timeoutMs });
   const fail = (executionStatus, message) => createAuditLaneEnvelope({
     candidateId,
     durationMs: processResult.durationMs,
@@ -309,6 +314,23 @@ export function nestedProcessTimeoutForLane(policy, laneId) {
   if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new RangeError(`${laneId} lane timeout is invalid`);
   if (!Number.isSafeInteger(reserve) || reserve <= 0 || reserve >= timeout) throw new RangeError(`${laneId} nested-process finalization reserve is invalid`);
   return timeout - reserve;
+}
+
+export function nestedConcurrencyMaximumForLane(policy, laneId, executionMode) {
+  const nested = policy?.nestedConcurrency;
+  if (laneId === "browser") {
+    const value = executionMode === policy?.githubHosted?.mode
+      ? nested?.browserShardMaximumWhenTopLevelParallel
+      : nested?.browserShardMaximum;
+    if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError("browser nested-concurrency maximum is invalid");
+    return value;
+  }
+  if (laneId === "playwright") {
+    const value = nested?.playwrightWorkers;
+    if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError("playwright nested-concurrency maximum is invalid");
+    return value;
+  }
+  return null;
 }
 
 function executionConfiguration(policy, environment) {
@@ -384,7 +406,9 @@ export async function runBoundedAuditLanes({
             candidateId,
             indexPath,
             laneId,
+            nestedConcurrencyMaximum: nestedConcurrencyMaximumForLane(policy, laneId, configuration.mode),
             nodePath,
+            processEnvironment: environment,
             root,
             runId,
             timeoutMs: policy.laneTimeoutMs[laneId],
@@ -487,6 +511,10 @@ export async function runBoundedAuditLanes({
       laneOrder: [...laneIds],
       boundedExecutionStartOrder: [...policy.boundedExecutionStartOrder],
       laneSchedulingClass: Object.fromEntries(laneIds.map((laneId) => [laneId, policy.laneSchedulingClass[laneId]])),
+      nestedConcurrencyMaximum: Object.fromEntries(laneIds.map((laneId) => [
+        laneId,
+        nestedConcurrencyMaximumForLane(policy, laneId, configuration.mode),
+      ])),
       wallDurationMs,
       serialEquivalentDurationMs,
       observedOverlapReductionPercent,
