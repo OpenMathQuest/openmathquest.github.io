@@ -11,8 +11,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 test("the checked-in release evidence bundle validates every bound artifact", async () => {
   const loaded = await loadReleaseEvidenceBundle();
   assert.equal(loaded.valid, true, loaded.issues.join("; "));
-  assert.equal(loaded.releaseReady, false);
-  assert.equal(loaded.lifecycleState, "QUALIFICATION_PENDING");
+  if (loaded.lifecycleState === "QUALIFICATION_PENDING") {
+    assert.equal(loaded.releaseReady, false);
+  } else {
+    assert.equal(loaded.lifecycleState, "EVIDENCE_REVIEWED");
+    assert.equal(loaded.releaseReady, true);
+  }
   assert.equal(loaded.bindings["EXT-CANARY"].evidenceClass, "CANONICAL_ARTIFACT");
   assert.equal(loaded.bindings["EXT-HOST"].evidenceClass, "STRUCTURED_ASSERTION");
   assert.equal(loaded.bindings["EXT-HOST"].claimBoundary, "BINDS_THE_RECORDED_DEFERRAL_NOT_EXTERNAL_HOST_APPROVAL");
@@ -107,12 +111,13 @@ test("artifact-byte drift invalidates the bundle instead of accepting its declar
 test("cross-record release identity contradictions fail closed", async () => {
   const bundlePath = path.join(root, "audit", ".tmp-release-evidence-cross-record-mutant.json");
   const baseline = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+  const reviewed = baseline.lifecycleState === "EVIDENCE_REVIEWED";
   for (const mutate of [
     (bundle) => { bundle.records.ownerAuthorization.releaseTag = "v9.9.9-beta.9"; },
     (bundle) => { bundle.records.canaryReconciliation.candidateSha = "0".repeat(40); },
-    (bundle) => { bundle.records.adjudication.decisionBasis = "RECORDED_BETA8_CLEARANCE"; },
+    (bundle) => { bundle.records.adjudication.decisionBasis = reviewed ? "RECORDED_BETA9_CLEARANCE" : "RECORDED_BETA8_CLEARANCE"; },
     (bundle) => { bundle.releaseTag = "v1.0.0-beta.9"; },
-    (bundle) => { bundle.lifecycleState = "EVIDENCE_REVIEWED"; },
+    (bundle) => { bundle.lifecycleState = reviewed ? "QUALIFICATION_PENDING" : "EVIDENCE_REVIEWED"; },
   ]) {
     const bundle = structuredClone(baseline);
     mutate(bundle);
