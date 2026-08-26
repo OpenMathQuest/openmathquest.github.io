@@ -1,5 +1,10 @@
 import { defineConfig } from "@playwright/test";
-import { PLAYWRIGHT_FOCUSED_WORKERS } from "./audit/lib/playwright-focused-contract.mjs";
+import {
+  PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES,
+  PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS,
+  PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS,
+  PLAYWRIGHT_FOCUSED_WORKERS,
+} from "./audit/lib/playwright-focused-contract.mjs";
 
 const executablePath = process.env.MQ_PLAYWRIGHT_EDGE_EXECUTABLE;
 if (!executablePath) throw new Error("MQ_PLAYWRIGHT_EDGE_EXECUTABLE must name the reviewed installed Edge executable.");
@@ -9,10 +14,10 @@ export default defineConfig({
   testMatch: "critical-journeys.spec.mjs",
   fullyParallel: false,
   forbidOnly: true,
-  retries: 0,
+  retries: PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES,
   workers: PLAYWRIGHT_FOCUSED_WORKERS,
-  timeout: 30_000,
-  expect: { timeout: 7_500 },
+  timeout: PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS,
+  expect: { timeout: PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS },
   outputDir: "audit/.tmp-playwright-results",
   reporter: [
     ["line"],

@@ -121,7 +121,7 @@
     "executionPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "laneOrder", "boundedExecutionStartOrder", "laneSchedulingClass", "local", "githubHosted", "laneTimeoutMs", "nestedProcessFinalizationReserveMs", "nestedProcessTimeoutCleanup", "nestedConcurrency", "automaticRetries", "resultOrdering", "reportWriter", "identityBinding", "equivalenceProjection", "minimumMeasuredWallTimeReductionPercent"],
+      "required": ["schemaVersion", "laneOrder", "boundedExecutionStartOrder", "laneSchedulingClass", "local", "githubHosted", "focusedPlaywright", "laneTimeoutMs", "nestedProcessFinalizationReserveMs", "nestedProcessTimeoutCleanup", "nestedConcurrency", "automaticRetries", "resultOrdering", "reportWriter", "identityBinding", "equivalenceProjection", "minimumMeasuredWallTimeReductionPercent"],
       "properties": {
         "schemaVersion": { "const": 1 },
         "laneOrder": { "const": ["coverage", "browser", "playwright", "mutation", "generator"] },
@@ -167,19 +167,48 @@
                 "evidenceEquivalent": true,
                 "outcome": "FAIL",
                 "issues": ["MEASURED_REDUCTION_BELOW_MINIMUM"]
+              },
+              {
+                "workflowRunId": 32945325690,
+                "candidateId": "bc082b0c2a72de0126128834abf89cea1ba01477:1088b7d2b9a22f2a7d1011e55d0b6c66583a3cfe0aa56c761840db810833cbaa",
+                "evidenceArtifactId": 9598351496,
+                "serialWallDurationMs": 462745,
+                "boundedWallDurationMs": null,
+                "measuredWallTimeReductionPercent": null,
+                "minimumRequiredWallTimeReductionPercent": 20,
+                "evidenceEquivalent": null,
+                "outcome": "FAIL",
+                "issues": ["SERIAL_REFERENCE_PLAYWRIGHT_TIMEOUT"]
               }
             ],
             "qualificationResult": {
-              "workflowRunId": 32941141949,
-              "candidateId": "0f5ed9f7c58cee06e2f89417b7d8fe9cabb5fc80:5cb92d8877279919fd714736d27a0b9d58015ada841e158f0dd158dbc7467f94",
-              "evidenceArtifactId": 9597169671,
-              "serialWallDurationMs": 518723,
-              "boundedWallDurationMs": 430815,
-              "measuredWallTimeReductionPercent": 16.95,
+              "workflowRunId": 32945325690,
+              "candidateId": "bc082b0c2a72de0126128834abf89cea1ba01477:1088b7d2b9a22f2a7d1011e55d0b6c66583a3cfe0aa56c761840db810833cbaa",
+              "evidenceArtifactId": 9598351496,
+              "serialWallDurationMs": 462745,
+              "boundedWallDurationMs": null,
+              "measuredWallTimeReductionPercent": null,
               "minimumRequiredWallTimeReductionPercent": 20,
-              "evidenceEquivalent": true,
+              "evidenceEquivalent": null,
               "outcome": "FAIL",
-              "issues": ["MEASURED_REDUCTION_BELOW_MINIMUM"]
+              "issues": ["SERIAL_REFERENCE_PLAYWRIGHT_TIMEOUT"]
+            }
+          }
+        },
+        "focusedPlaywright": {
+          "const": {
+            "testTimeoutMs": 60000,
+            "expectTimeoutMs": 7500,
+            "timeoutChangeEvidence": {
+              "workflowRunId": 32945325690,
+              "evidenceArtifactId": 9598351496,
+              "caseKey": "edge-desktop:PW-F-01",
+              "failedDurationMs": 35141,
+              "priorPassingWorkflowRunId": 32941141949,
+              "priorPassingDurationMs": 3390,
+              "sameHostedBrowserRunnerTuple": true,
+              "classification": "HOSTED_COLD_START_ACTIONABILITY_TIMEOUT",
+              "preservedControls": ["NATIVE_ACTIONABILITY", "NO_FORCED_INTERACTION", "ZERO_RETRIES"]
             }
           }
         },

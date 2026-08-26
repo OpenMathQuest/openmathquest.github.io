@@ -31,19 +31,34 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
   assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.githubHosted.qualificationEvidenceLocation, "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT");
-  assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts.length, 2);
+  assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts.length, 3);
   assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts[0].workflowRunId, 32557129231);
   assert.deepEqual(policy.executionPolicy.githubHosted.qualificationResult, {
-    workflowRunId: 32941141949,
-    candidateId: "0f5ed9f7c58cee06e2f89417b7d8fe9cabb5fc80:5cb92d8877279919fd714736d27a0b9d58015ada841e158f0dd158dbc7467f94",
-    evidenceArtifactId: 9597169671,
-    serialWallDurationMs: 518723,
-    boundedWallDurationMs: 430815,
-    measuredWallTimeReductionPercent: 16.95,
+    workflowRunId: 32945325690,
+    candidateId: "bc082b0c2a72de0126128834abf89cea1ba01477:1088b7d2b9a22f2a7d1011e55d0b6c66583a3cfe0aa56c761840db810833cbaa",
+    evidenceArtifactId: 9598351496,
+    serialWallDurationMs: 462745,
+    boundedWallDurationMs: null,
+    measuredWallTimeReductionPercent: null,
     minimumRequiredWallTimeReductionPercent: 20,
-    evidenceEquivalent: true,
+    evidenceEquivalent: null,
     outcome: "FAIL",
-    issues: ["MEASURED_REDUCTION_BELOW_MINIMUM"],
+    issues: ["SERIAL_REFERENCE_PLAYWRIGHT_TIMEOUT"],
+  });
+  assert.deepEqual(policy.executionPolicy.focusedPlaywright, {
+    testTimeoutMs: 60_000,
+    expectTimeoutMs: 7_500,
+    timeoutChangeEvidence: {
+      workflowRunId: 32945325690,
+      evidenceArtifactId: 9598351496,
+      caseKey: "edge-desktop:PW-F-01",
+      failedDurationMs: 35_141,
+      priorPassingWorkflowRunId: 32941141949,
+      priorPassingDurationMs: 3_390,
+      sameHostedBrowserRunnerTuple: true,
+      classification: "HOSTED_COLD_START_ACTIONABILITY_TIMEOUT",
+      preservedControls: ["NATIVE_ACTIONABILITY", "NO_FORCED_INTERACTION", "ZERO_RETRIES"],
+    },
   });
   assert.deepEqual(policy.executionPolicy.boundedExecutionStartOrder, ["coverage", "generator", "browser", "playwright", "mutation"]);
   assert.equal(policy.executionPolicy.laneSchedulingClass.coverage, "EXCLUSIVE");
@@ -69,6 +84,7 @@ test("policy mutations cannot weaken status, metric, retry, or family controls",
     (value) => { value.executionPolicy.githubHosted.qualificationResult.measuredWallTimeReductionPercent = 20; },
     (value) => { value.executionPolicy.githubHosted.qualificationAttempts.pop(); },
     (value) => { value.executionPolicy.githubHosted.qualificationEvidenceLocation = "REPOSITORY_CHECKOUT"; },
+    (value) => { value.executionPolicy.focusedPlaywright.testTimeoutMs = 600_000; },
     (value) => { value.executionPolicy.boundedExecutionStartOrder.reverse(); },
     (value) => { value.executionPolicy.laneSchedulingClass.coverage = "BOUNDED"; },
     (value) => { value.executionPolicy.nestedProcessFinalizationReserveMs.coverage = 0; },

@@ -4,9 +4,12 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES,
   PLAYWRIGHT_FOCUSED_CONTRACT_ID,
   PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS,
+  PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS,
   PLAYWRIGHT_FOCUSED_SCHEMA_VERSION,
+  PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS,
   PLAYWRIGHT_FOCUSED_WORKERS,
   PLAYWRIGHT_TEST_VERSION,
   playwrightChildProcessRunning,
@@ -78,7 +81,12 @@ test("Playwright configuration preserves one-worker, zero-retry, installed-Edge 
   const config = await readFile(path.join(root, "playwright.config.mjs"), "utf8");
   assert.match(config, /workers:\s*PLAYWRIGHT_FOCUSED_WORKERS/u);
   assert.equal(PLAYWRIGHT_FOCUSED_WORKERS, 1);
-  assert.match(config, /retries:\s*0/u);
+  assert.match(config, /retries:\s*PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES/u);
+  assert.equal(PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES, 0);
+  assert.match(config, /timeout:\s*PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS/u);
+  assert.equal(PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS, 60_000);
+  assert.match(config, /expect:\s*\{\s*timeout:\s*PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS\s*\}/u);
+  assert.equal(PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS, 7_500);
   assert.match(config, /executablePath/u);
   assert.match(config, /serviceWorkers:\s*"block"/u);
   assert.match(config, /trace:\s*"retain-on-failure"/u);
