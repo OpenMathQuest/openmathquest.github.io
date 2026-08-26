@@ -1,10 +1,19 @@
-import { RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY } from "./release-evidence-successor.mjs";
+import {
+  RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2,
+  RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY,
+} from "./release-evidence-successor.mjs";
 
 export const PUBLICATION_CLEARANCE_PATH = "PUBLICATION_CLEARANCE.md";
 export const CURRENT_RELEASE_TAG = "v1.0.0-beta.7";
 export const BETA4_RELEASE_TAG = "v1.0.0-beta.4";
-export const CURRENT_EVIDENCE_SUCCESSOR_POLICY = RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY;
 export const EMERGENCY_BETA3_RELEASE_TAG = "v1.0.0-beta.3";
+export function evidenceSuccessorPolicyForReleaseTag(releaseTag) {
+  const match = /^v\d+\.\d+\.\d+-beta\.(0|[1-9]\d*)$/u.exec(String(releaseTag || ""));
+  return match && Number(match[1]) >= 8
+    ? RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2
+    : RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY;
+}
+export const CURRENT_EVIDENCE_SUCCESSOR_POLICY = evidenceSuccessorPolicyForReleaseTag(CURRENT_RELEASE_TAG);
 export const EXTERNAL_RELEASE_GATE_IDS = Object.freeze([
   "EXT-HOST",
   "EXT-CANARY",

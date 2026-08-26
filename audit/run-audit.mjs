@@ -16,13 +16,14 @@ import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
   clearanceMatches,
   computeReleaseDecision,
+  CURRENT_EVIDENCE_SUCCESSOR_POLICY,
   CURRENT_RELEASE_TAG,
   evaluateExternalReleaseEvidence,
   EXTERNAL_RELEASE_GATE_IDS,
   parsePublicationClearance,
   PUBLICATION_CLEARANCE_PATH,
 } from "./lib/publication-clearance.mjs";
-import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { observeEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
 import { AI_READER_CONTRACT_REF } from "./lib/repository-code-map.mjs";
@@ -240,9 +241,12 @@ async function publicationClearance(engineSha256, curriculumManifest, rightsSha2
     const parsed = parsePublicationClearance(clearance);
     const releaseEvidenceBundle = await loadReleaseEvidenceBundle();
     expected.releaseEvidenceBindings = releaseEvidenceBundle.bindings;
+    if (!releaseEvidenceBundle.releaseReady && parsed.status !== "PENDING") {
+      throw new Error(`Release evidence bundle is not release-ready: ${releaseEvidenceBundle.issues.join("; ") || releaseEvidenceBundle.lifecycleState}`);
+    }
     const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
       ? { valid: true, issues: [] }
-      : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
+      : await observeEvidenceSuccessor(root, parsed.qualificationCommitSha, CURRENT_EVIDENCE_SUCCESSOR_POLICY, CURRENT_RELEASE_TAG);
     expected.qualificationCommitSha = parsed.qualificationCommitSha;
     expected.evidenceSuccessorValid = evidenceSuccessor.valid;
     expected.qualificationPayloadSha256 = evidenceSuccessor.qualificationPayloadSha256;

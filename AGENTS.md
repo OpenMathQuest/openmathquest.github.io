@@ -142,7 +142,9 @@ parameterized examples. Present both versions before requesting approval.
 status semantics, gate-family claim boundaries, versioned metric floors,
 retry rules, negative controls, GitHub enforcement expectations, and honest
 outcome reporting. `audit/release-evidence-bundle-v1.json` is the sole
-machine authority for the current release-evidence bindings.
+machine authority for the current release-evidence bindings. Its
+`QUALIFICATION_PENDING` lifecycle is structurally valid but never release-ready;
+only `EVIDENCE_REVIEWED` can bind a release decision.
 
 Every gate family must name and execute an effect-sensitive negative control.
 A syntactically valid digest proves nothing unless it matches validated
@@ -927,6 +929,40 @@ optional six-reviewer cycle. Both remain visible as exact
 `OPTIONAL_NOT_RUN` / `NONE` / zero-count records and make no pass, waiver,
 device-qualification, or independent-review claim. The ordinary bounded
 independent review remains required and separate.
+
+## Owner-authorized Beta 8 release-evidence successor
+
+On 2026-08-25, the project owner authorized end-to-end publication of
+`v1.0.0-beta.8`. The instruction did not select either optional six-lane
+physical-device or six-reviewer cycle; both remain exact `OPTIONAL_NOT_RUN`
+absence records and make no pass, waiver, platform, or independent-review
+claim. The ordinary bounded independent review remains mandatory and separate.
+
+Beta 8 uses `RELEASE_EVIDENCE_SUCCESSOR_V2`. Its protected-main qualification
+commit contains final game/runtime/PWA bytes, `Status: PENDING` clearance,
+pending browser-runner evidence, a structurally valid
+`QUALIFICATION_PENDING` release-evidence bundle, and the canonical pending
+`audit/trusted-https-canary-v1.json` record. The hosted-Windows observation and
+trusted-HTTPS canary both name that exact qualification commit.
+
+The Beta 8 evidence successor is the immediate, non-merge, sole child of the
+qualification commit. Its exact parent-to-child diff changes only these four
+evidence authorities:
+
+- `PUBLICATION_CLEARANCE.md`;
+- `audit/browser-runner-evidence-v1.json`;
+- `audit/release-evidence-bundle-v1.json`;
+- `audit/trusted-https-canary-v1.json`.
+
+The successor changes the bundle lifecycle to `EVIDENCE_REVIEWED`, binds the
+exact qualification SHA and hosted artifacts, and leaves every game,
+curriculum, PWA, service-worker, dependency, privacy, licence, deployment, and
+runtime byte unchanged. A merge, rebase, cherry-pick, skipped ancestor,
+additional changed path, already-reviewed qualification record, or mismatched
+artifact invalidates the boundary and requires a new qualification commit.
+The one complete certification gauntlet and cadence-required Deep UX Census run
+only on the exact successor. Only that successor may be tagged, released, or
+deployed as Beta 8.
 
 ## Certification framework entry points
 

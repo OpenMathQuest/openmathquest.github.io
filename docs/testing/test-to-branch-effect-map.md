@@ -886,6 +886,17 @@ The standalone Pages validator must pass the observer's exact qualification
 payload SHA-256 and tree OID into the same clearance matcher; omitting either
 identity is an effect-tested failure rather than a late deployment surprise.
 
+For Beta 8 and later betas, the suite also effect-tests
+`RELEASE_EVIDENCE_SUCCESSOR_V2`. The qualification commit must contain pending
+clearance, browser-runner evidence, release-evidence bundle, and canonical
+canary record. The immediate non-merge sole child must change exactly those
+four authorities and no other path. Pending-bundle validation proves structure
+and release-tag binding while reporting `releaseReady: false`; mixed lifecycle
+states, missing authorities, extra runtime or documentation paths, wrong
+parentage, and already-reviewed qualification evidence all fail closed. A real
+temporary Git repository exercises the V2 production observer across the exact
+four-path transition.
+
 `audit/run-audit.mjs` predicts and observes all eight records separately. The
 26 direct Playwright journeys raise the closed technical-plus-external total
 from 267 to 293. The decision helper requires the

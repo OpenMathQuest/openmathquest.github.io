@@ -425,7 +425,7 @@
       "independenceBoundary": "STRUCTURED_ASSERTIONS_BIND_THE_DECISION_RECORD_BUT_DO_NOT_IMPERSONATE_EXTERNAL_OBSERVATION",
       "nonRunPolicy": "FAIL",
       "negativeControl": { "id": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST", "executionMode": "NODE_TEST", "executionPath": "audit/tests/release-evidence-bundle.test.mjs", "testName": "[NC-PUBLICATION-ARBITRARY-HEX-DIGEST] a syntactically valid arbitrary digest cannot satisfy publication evidence" },
-      "implementationPaths": ["PUBLICATION_CLEARANCE.md", "audit/lib/publication-clearance.mjs", "audit/lib/release-evidence-bundle.mjs", "audit/release-evidence-bundle-v1.json"],
+      "implementationPaths": ["PUBLICATION_CLEARANCE.md", "audit/lib/publication-clearance.mjs", "audit/lib/release-evidence-bundle.mjs", "audit/lib/release-evidence-successor.mjs", "audit/release-evidence-bundle-v1.json", "audit/schemas/release-evidence-bundle-v1.schema.json"],
       "validatorPaths": ["audit/tests/publication-clearance.test.mjs", "audit/tests/release-evidence-bundle.test.mjs"]
     },
     {

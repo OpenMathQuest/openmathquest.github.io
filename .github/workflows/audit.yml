@@ -90,9 +90,9 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-          # RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1 must inspect the named qualification
-          # parent and its exact two-path diff. A one-commit shallow checkout
-          # cannot prove that relationship.
+          # The selected evidence-successor policy must inspect the named
+          # qualification parent and its exact closed evidence-only diff. A
+          # one-commit shallow checkout cannot prove that relationship.
           fetch-depth: 0
 
       - name: Verify immutable release-candidate boundary

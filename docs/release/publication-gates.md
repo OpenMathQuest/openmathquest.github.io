@@ -181,8 +181,10 @@ The closed machine authority for gate semantics is
 when the bundle validator proves their exact canonical artifact bytes or their
 explicitly typed structured assertion. A 64-character hexadecimal value by
 itself is not evidence. The canary binding is the exact sanitized
-`audit/trusted-https-canary-beta7-v1.json` artifact; optional-not-run records
-remain absence records and make no pass claim.
+artifact named by the bundle. Beta 7 retains its historical
+`audit/trusted-https-canary-beta7-v1.json`; Beta 8 uses the canonical
+`audit/trusted-https-canary-v1.json`. Optional-not-run records remain absence
+records and make no pass claim.
 
 Before release mutation, run
 `node audit/verify-github-gate-enforcement.mjs`. Its live GitHub snapshot must
@@ -191,19 +193,22 @@ dispatch-only `full-audit` job as required, and must show an active no-bypass
 `refs/tags/v*` ruleset prohibiting update and deletion. Synthetic fixtures
 test the evaluator but never substitute for this live preflight.
 
-Before qualification and independent review, create `PUBLICATION_CLEARANCE.md` with
-`Status: PENDING`, then synchronize the public-file manifest and component
-register. The pending record makes its path part of the candidate without
-claiming approval. Every other field in the exact schema must also contain
-`PENDING`, except that an eligible prerelease may already carry the exact
-digest-bound `DEFERRED_PRERELEASE` host pair. Preparatory canary and
+Before qualification and independent review, create `PUBLICATION_CLEARANCE.md`
+with `Status: PENDING`, pending browser-runner evidence, and the pending
+evidence authorities required by the selected successor policy; then
+synchronize the public-file manifest and component register. A pending record
+makes its path part of the candidate without claiming approval. Every other
+clearance field in the exact schema must also contain `PENDING`, except that an
+eligible prerelease may already carry the exact digest-bound
+`DEFERRED_PRERELEASE` host pair. A `QUALIFICATION_PENDING` evidence bundle is
+structurally valid but explicitly not release-ready. Preparatory canary and
 hosted-Windows evidence acquisition against that commit is diagnostic, not the
 final gauntlet. After both records are reconciled and reviewed, create exactly
-one runtime-equivalent evidence successor. It must have the qualification
-commit as its only parent and change exactly the two governed evidence
-paths—neither a subset nor a superset. The validator must prove exact
-game/runtime/PWA byte identity between the two commits. The successor is then
-the immutable candidate on which the single final gauntlet runs:
+one immediate non-merge evidence successor. It must have the qualification
+commit as its only parent and change exactly the governed evidence paths for
+the selected policy—neither a subset nor a superset. The validator must prove
+exact game/runtime/PWA byte identity between the two commits. The successor is
+then the immutable candidate on which the single final gauntlet runs:
 
 - `# Math Quest publication clearance`
 - `Status: APPROVED`
@@ -219,7 +224,7 @@ the immutable candidate on which the single final gauntlet runs:
 - `Reviewed public payload SHA-256: <64 lowercase hexadecimal characters>`
 - `Reviewed public payload tree OID: <40 or 64 lowercase hexadecimal characters>`
 - `Qualification commit SHA: <the exact 40-character sole-parent SHA>`
-- `Evidence successor policy: RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`
+- `Evidence successor policy: <the exact release-selected policy>`
 - `Reviewed browser product name: <Microsoft Edge or Google Chrome>`
 - `Reviewed browser full version: <exact four-part product version>`
 - `Reviewed browser executable SHA-256: <64 lowercase hexadecimal characters>`
@@ -291,6 +296,21 @@ qualification commit, proves the current candidate is its exact two-file
 successor, and separately requires the current successor's public-candidate
 guard to pass. Comparing those fields to the successor's necessarily changed
 evidence payload would create a circular and impossible gate.
+
+For Beta 8, `RELEASE_EVIDENCE_SUCCESSOR_V2` closes the lifecycle introduced by
+the sole-authority evidence bundle. The qualification commit contains all four
+pending authorities: `PUBLICATION_CLEARANCE.md`,
+`audit/browser-runner-evidence-v1.json`,
+`audit/release-evidence-bundle-v1.json`, and
+`audit/trusted-https-canary-v1.json`. The bundle must be exact
+`QUALIFICATION_PENDING`; it validates structure and the pending canary's release
+tag but cannot produce release-ready bindings. After the hosted-Windows
+observation and trusted-HTTPS canary bind that exact qualification SHA, the
+immediate non-merge sole child changes exactly those four paths. The reviewed
+bundle becomes exact `EVIDENCE_REVIEWED`, binds the canonical canary and browser
+artifact bytes, and is the sole source of the clearance digests. Missing any
+authority, changing an additional documentation/runtime path, mixing pending
+and reviewed states, or naming a different qualification SHA fails closed.
 
 ### Historical Beta 4 canary and successor exception
 

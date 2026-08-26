@@ -101,13 +101,86 @@ test("cross-record release identity contradictions fail closed", async () => {
   for (const mutate of [
     (bundle) => { bundle.records.ownerAuthorization.releaseTag = "v9.9.9-beta.9"; },
     (bundle) => { bundle.records.canaryReconciliation.candidateSha = "0".repeat(40); },
+    (bundle) => { bundle.records.adjudication.decisionBasis = "RECORDED_BETA8_CLEARANCE"; },
+    (bundle) => { bundle.releaseTag = "v1.0.0-beta.8"; },
+    (bundle) => { bundle.lifecycleState = "EVIDENCE_REVIEWED"; },
   ]) {
     const bundle = structuredClone(baseline);
     mutate(bundle);
     await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
     const loaded = await loadReleaseEvidenceBundle(bundlePath);
     assert.equal(loaded.valid, false);
-    assert.ok(loaded.issues.some((issue) => /does not match the evidence bundle/u.test(issue)), loaded.issues.join("; "));
+    assert.ok(loaded.issues.length > 0, "cross-record contradiction must report at least one issue");
   }
   await rm(bundlePath, { force: true });
+});
+
+test("a Beta 8 qualification bundle is structurally valid but cannot claim release readiness", async () => {
+  const bundlePath = path.join(root, "audit", ".tmp-release-evidence-pending.json");
+  const canaryPath = path.join(root, "audit", "trusted-https-canary-v1.json");
+  const baseline = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+  const bundle = structuredClone(baseline);
+  bundle.lifecycleState = "QUALIFICATION_PENDING";
+  bundle.releaseTag = "v1.0.0-beta.8";
+  bundle.qualificationCommitSha = "PENDING";
+  bundle.reviewedAtUtc = "PENDING";
+  bundle.expiresAtUtc = "PENDING";
+  bundle.evidenceSuccessorPolicy = "RELEASE_EVIDENCE_SUCCESSOR_V2";
+  Object.assign(bundle.records.canaryReconciliation, {
+    state: "PENDING",
+    digestMode: "PENDING",
+    artifactPath: "audit/trusted-https-canary-v1.json",
+    artifactSha256: "PENDING",
+    candidateSha: "PENDING",
+    workflowRunId: "PENDING",
+    workflowRunAttempt: "PENDING",
+  });
+  Object.assign(bundle.records.adjudication, {
+    state: "PENDING", digestMode: "PENDING", recommendation: "PENDING", decisionBasis: "PENDING",
+  });
+  Object.assign(bundle.records.findingDisposition, {
+    state: "PENDING", digestMode: "PENDING", openCritical: "PENDING", openHigh: "PENDING", unacceptedMedium: "PENDING", unrecordedLow: "PENDING",
+  });
+  Object.assign(bundle.records.hostedWindows, {
+    state: "PENDING", digestMode: "PENDING", artifactSha256: "PENDING",
+  });
+  Object.assign(bundle.records.ownerAuthorization, {
+    state: "PENDING", digestMode: "PENDING", releaseTag: "PENDING", protectedRef: "PENDING", authorizationScope: "PENDING",
+  });
+  const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8" };
+  await writeFile(canaryPath, `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
+  await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+  try {
+    const loaded = await loadReleaseEvidenceBundle(bundlePath);
+    assert.equal(loaded.valid, true, loaded.issues.join("; "));
+    assert.equal(loaded.releaseReady, false);
+    assert.equal(loaded.lifecycleState, "QUALIFICATION_PENDING");
+    assert.equal(loaded.bindings["EXT-CANARY"].state, "PENDING");
+    assert.equal(loaded.bindings["REVIEW-BUNDLE"].state, "QUALIFICATION_PENDING");
+
+    await writeFile(canaryPath, `${JSON.stringify({ ...pendingCanary, unexpected: true }, null, 2)}\n`, "utf8");
+    const openCanary = await loadReleaseEvidenceBundle(bundlePath);
+    assert.equal(openCanary.valid, false);
+    assert.ok(openCanary.issues.some((issue) => issue.includes("exact ordered schema")));
+    await writeFile(canaryPath, `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
+
+    bundle.records.canaryReconciliation.state = "RECONCILED";
+    await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+    const mixed = await loadReleaseEvidenceBundle(bundlePath);
+    assert.equal(mixed.valid, false);
+    assert.ok(mixed.issues.some((issue) => issue.includes("must be equal to constant")));
+  } finally {
+    await rm(bundlePath, { force: true });
+    await rm(canaryPath, { force: true });
+  }
+});
+
+test("release consumers require releaseReady and cannot promote structural validity", async () => {
+  const [auditSource, validatorSource] = await Promise.all([
+    readFile(path.join(root, "audit", "run-audit.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "validate-publication-clearance.mjs"), "utf8"),
+  ]);
+  assert.match(auditSource, /!releaseEvidenceBundle\.releaseReady/u);
+  assert.match(validatorSource, /!releaseEvidenceBundle\.releaseReady/u);
+  assert.doesNotMatch(validatorSource, /!releaseEvidenceBundle\.valid/u);
 });

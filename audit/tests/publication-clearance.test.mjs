@@ -21,6 +21,7 @@ import {
   CURRENT_EVIDENCE_SUCCESSOR_POLICY,
   CURRENT_RELEASE_TAG,
   EMERGENCY_BETA3_RELEASE_TAG,
+  evidenceSuccessorPolicyForReleaseTag,
   EMERGENCY_BETA3_WAIVED_GATE_IDS,
   evaluateExternalReleaseEvidence,
   EXTERNAL_RELEASE_GATE_IDS,
@@ -32,9 +33,13 @@ import {
   REQUIRED_EXTERNAL_RELEASE_GATE_IDS,
 } from "../lib/publication-clearance.mjs";
 import {
+  evaluateReleaseEvidenceSuccessorV2,
   evaluateRuntimeEquivalentEvidenceSuccessor,
   observeCommitPublicPayloadIdentity,
+  observeReleaseEvidenceSuccessorV2,
   observeRuntimeEquivalentEvidenceSuccessor,
+  RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2,
+  RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2,
   RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY,
   RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_PATHS,
 } from "../lib/release-evidence-successor.mjs";
@@ -61,6 +66,12 @@ const testReleaseEvidenceBindings = Object.freeze({
     testBinding("e".repeat(64), "EMERGENCY_BETA3_AUTHORIZED", { releaseTag: EMERGENCY_BETA3_RELEASE_TAG, protectedRef: "refs/heads/main" }),
   ],
   "REVIEW-BUNDLE": testBinding("f".repeat(64), "VALIDATED"),
+});
+
+test("evidence successor policy preserves historical betas and selects V2 for Beta 8 onward", () => {
+  assert.equal(evidenceSuccessorPolicyForReleaseTag("v1.0.0-beta.7"), RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_POLICY);
+  assert.equal(evidenceSuccessorPolicyForReleaseTag("v1.0.0-beta.8"), RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
+  assert.equal(evidenceSuccessorPolicyForReleaseTag("v1.0.0-beta.12"), RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
 });
 const expected = Object.freeze({
   engineSha256: "1".repeat(64),
@@ -140,6 +151,36 @@ function approvedClearance(overrides = {}) {
     ...overrides,
   };
   return `# Math Quest publication clearance\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n`;
+}
+
+function pendingClearance() {
+  const lines = approvedClearance().trimEnd().split("\n");
+  return `${lines.map((line, index) => index === 0 ? line : `${line.slice(0, line.indexOf(":"))}: PENDING`).join("\n")}\n`;
+}
+
+async function beta8PendingBundle() {
+  const bundle = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+  bundle.lifecycleState = "QUALIFICATION_PENDING";
+  bundle.releaseTag = "v1.0.0-beta.8";
+  bundle.qualificationCommitSha = "PENDING";
+  bundle.reviewedAtUtc = "PENDING";
+  bundle.expiresAtUtc = "PENDING";
+  bundle.evidenceSuccessorPolicy = "RELEASE_EVIDENCE_SUCCESSOR_V2";
+  Object.assign(bundle.records.canaryReconciliation, {
+    state: "PENDING", digestMode: "PENDING", artifactPath: "audit/trusted-https-canary-v1.json",
+    artifactSha256: "PENDING", candidateSha: "PENDING", workflowRunId: "PENDING", workflowRunAttempt: "PENDING",
+  });
+  Object.assign(bundle.records.adjudication, {
+    state: "PENDING", digestMode: "PENDING", recommendation: "PENDING", decisionBasis: "PENDING",
+  });
+  Object.assign(bundle.records.findingDisposition, {
+    state: "PENDING", digestMode: "PENDING", openCritical: "PENDING", openHigh: "PENDING", unacceptedMedium: "PENDING", unrecordedLow: "PENDING",
+  });
+  Object.assign(bundle.records.hostedWindows, { state: "PENDING", digestMode: "PENDING", artifactSha256: "PENDING" });
+  Object.assign(bundle.records.ownerAuthorization, {
+    state: "PENDING", digestMode: "PENDING", releaseTag: "PENDING", protectedRef: "PENDING", authorizationScope: "PENDING",
+  });
+  return bundle;
 }
 
 function emergencyClearance(overrides = {}) {
@@ -396,6 +437,125 @@ test("the Git observer proves an actual immediate Beta 7 runtime-equivalent evid
     const successorPayload = await observeCommitPublicPayloadIdentity(repository, observed.candidateCommitSha);
     assert.notEqual(observed.qualificationPayloadSha256, successorPayload.sha256);
     assert.notEqual(observed.qualificationPayloadTreeOid, successorPayload.treeOid);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("the Beta 8 release evidence successor changes the four closed evidence authorities and no runtime path", () => {
+  const candidateCommitSha = "1".repeat(40);
+  const qualificationCommitSha = "2".repeat(40);
+  const baseline = {
+    candidateCommitSha,
+    parentCommitShas: [qualificationCommitSha],
+    qualificationCommitSha,
+    changedPaths: [...RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2],
+    qualificationClearanceStatus: "PENDING",
+    qualificationBrowserEvidenceStatus: "PENDING",
+    qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
+    qualificationCanaryEvidenceStatus: "PENDING",
+    qualificationAuthoritiesValid: true,
+    qualificationReleaseTag: "v1.0.0-beta.8",
+    expectedReleaseTag: "v1.0.0-beta.8",
+  };
+  const exact = evaluateReleaseEvidenceSuccessorV2(baseline);
+  assert.equal(exact.valid, true, exact.issues.join("; "));
+  assert.equal(exact.policy, RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
+  assert.deepEqual(exact.changedPaths, RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2);
+
+  for (const [label, mutation] of [
+    ["merge commit", { parentCommitShas: [qualificationCommitSha, "3".repeat(40)] }],
+    ["missing evidence bundle", { changedPaths: RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2.filter((pathName) => pathName !== "audit/release-evidence-bundle-v1.json") }],
+    ["missing canary record", { changedPaths: RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2.filter((pathName) => pathName !== "audit/trusted-https-canary-v1.json") }],
+    ["runtime change", { changedPaths: [...RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2, "index.html"] }],
+    ["bundle already reviewed", { qualificationBundleLifecycleState: "EVIDENCE_REVIEWED" }],
+    ["canary already reconciled", { qualificationCanaryEvidenceStatus: "RECONCILED" }],
+    ["malformed qualification authority", { qualificationAuthoritiesValid: false }],
+    ["wrong release tag", { qualificationReleaseTag: "v1.0.0-beta.9" }],
+  ]) {
+    const result = evaluateReleaseEvidenceSuccessorV2({ ...baseline, ...mutation });
+    assert.equal(result.valid, false, label);
+  }
+});
+
+test("the V2 Git observer proves an actual four-file immediate evidence successor", async () => {
+  const repository = await mkdtemp(path.join(root, "audit", ".tmp-successor-v2-observer-"));
+  const git = (...args) => execFileSync("git", args, {
+    cwd: repository,
+    encoding: "utf8",
+    windowsHide: true,
+  }).trim();
+  try {
+    await mkdir(path.join(repository, "audit"));
+    git("init");
+    git("config", "user.name", "Math Quest Regression");
+    git("config", "user.email", "math-quest-regression");
+    const pendingBrowser = {
+      schemaVersion: 1,
+      status: "PENDING",
+      browserProductName: "PENDING",
+      browserFullVersion: "PENDING",
+      browserExecutableSha256: "PENDING",
+      runnerImageOS: "PENDING",
+      runnerImageVersion: "PENDING",
+    };
+    const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8" };
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
+    await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
+    await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
+    git("add", ".");
+    git("commit", "-m", "qualification");
+    const qualificationCommitSha = git("rev-parse", "HEAD");
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), "# Test\nStatus: APPROVED\n", "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), '{"status":"REVIEWED"}\n', "utf8");
+    await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), '{"lifecycleState":"EVIDENCE_REVIEWED"}\n', "utf8");
+    await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
+    git("add", ".");
+    git("commit", "-m", "evidence successor");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    assert.equal(observed.valid, true, observed.issues.join("; "));
+    assert.equal(observed.policy, RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
+    assert.deepEqual(observed.changedPaths, RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2);
+    assert.match(observed.qualificationPayloadSha256, /^[a-f0-9]{64}$/u);
+    assert.match(observed.qualificationPayloadTreeOid, /^[a-f0-9]{40}$/u);
+    const wrongRelease = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
+    assert.equal(wrongRelease.valid, false);
+    assert.ok(wrongRelease.issues.some((issue) => issue.includes("expected release tag")));
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("the V2 Git observer rejects malformed pending authorities even when all four marker values look correct", async () => {
+  const repository = await mkdtemp(path.join(root, "audit", ".tmp-successor-v2-invalid-observer-"));
+  const git = (...args) => execFileSync("git", args, { cwd: repository, encoding: "utf8", windowsHide: true }).trim();
+  try {
+    await mkdir(path.join(repository, "audit"));
+    git("init");
+    git("config", "user.name", "Math Quest Regression");
+    git("config", "user.email", "math-quest-regression");
+    const pendingBrowser = {
+      schemaVersion: 1, status: "PENDING", browserProductName: "PENDING", browserFullVersion: "PENDING",
+      browserExecutableSha256: "PENDING", runnerImageOS: "PENDING", runnerImageVersion: "PENDING",
+    };
+    const openCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8", unexpected: true };
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
+    await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
+    await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), `${JSON.stringify(openCanary, null, 2)}\n`, "utf8");
+    git("add", ".");
+    git("commit", "-m", "malformed qualification");
+    const qualificationCommitSha = git("rev-parse", "HEAD");
+    await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), "# Test\nStatus: APPROVED\n", "utf8");
+    await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), '{"status":"REVIEWED"}\n', "utf8");
+    await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), '{"lifecycleState":"EVIDENCE_REVIEWED"}\n', "utf8");
+    await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
+    git("add", ".");
+    git("commit", "-m", "evidence successor");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    assert.equal(observed.valid, false);
+    assert.ok(observed.issues.some((issue) => issue.includes("complete canonical pending evidence authorities")));
   } finally {
     await rm(repository, { recursive: true, force: true });
   }
