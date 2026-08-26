@@ -2,10 +2,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { GATE_INTEGRITY_POLICY } from "./gate-integrity-policy.mjs";
 
 export const PLAYWRIGHT_FOCUSED_SCHEMA_VERSION = 1;
 export const PLAYWRIGHT_FOCUSED_CONTRACT_ID = "math-quest-playwright-focused-v1";
-export const PLAYWRIGHT_FOCUSED_WORKERS = 1;
+export const PLAYWRIGHT_FOCUSED_WORKERS = GATE_INTEGRITY_POLICY.executionPolicy.nestedConcurrency.playwrightWorkers;
+export const PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS = GATE_INTEGRITY_POLICY.executionPolicy.focusedPlaywright.testTimeoutMs;
+export const PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS = GATE_INTEGRITY_POLICY.executionPolicy.focusedPlaywright.expectTimeoutMs;
+export const PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES = GATE_INTEGRITY_POLICY.executionPolicy.automaticRetries;
 export const PLAYWRIGHT_TEST_VERSION = "1.62.1";
 export const PLAYWRIGHT_FOCUSED_PROJECT_IDS = Object.freeze([
   "edge-desktop",

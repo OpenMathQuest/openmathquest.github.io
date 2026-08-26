@@ -314,12 +314,14 @@ fail safe to the broad development suite.
 `audit/playwright/critical-journeys.spec.mjs` supplements the exhaustive
 72-record browser audit with native, direct-user interactions. Each stable
 case runs in installed Microsoft Edge at 1366x768 desktop and 390x844 touch
-phone profiles, producing exactly 34 closed results. Playwright's ordinary
+phone profiles, producing exactly 36 closed results. Playwright's ordinary
 actionability checks must succeed; the suite forbids forced clicks, synthetic
 event dispatch, direct DOM `.click()`, and scripted `.focus()` as substitutes
 for real pointer or keyboard operation. Service workers are blocked for these
 focused UI journeys so the separate PWA audit remains the update/offline
-authority. Retries are zero; a retry cannot conceal a release failure. Traces
+authority. Each journey has one policy-owned 60-second ceiling so a hosted
+cold start can settle while remaining bounded. Retries are zero; a retry cannot
+conceal a release failure. Traces
 and screenshots are retained only on failure and use anonymous synthetic
 state.
 
