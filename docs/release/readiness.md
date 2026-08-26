@@ -1,4 +1,4 @@
-# Public Beta 7 release readiness
+# Public Beta 8 release readiness
 
 This document describes the release boundary; it is not publication approval.
 
@@ -15,10 +15,10 @@ production behavior is **implemented**, but not **release-certified**.
 When publication is the next intended action, create the qualification commit
 on protected `main` with final game/runtime/PWA bytes and pending clearance
 records. Run the trusted-HTTPS canary and hosted-Windows observation against
-that commit, then create its exact two-file runtime-equivalent evidence
-successor under PB-051. Freeze that successor as the candidate. Run the
-complete certification system once against that immutable commit and public
-payload. A clear owner publication instruction
+that commit, then create its exact four-authority evidence successor under
+PB-054. Freeze that successor as the candidate. Run the complete certification
+system and required Deep UX Census once against that immutable commit and
+public payload. A clear owner publication instruction
 authorizes the run. If it passes, tag and deploy the same bytes. If it fails or
 anything changes, use focused checks for the correction, freeze a new
 candidate, and rerun the complete system from the beginning. The Pages workflow
@@ -93,7 +93,7 @@ generated
 - a `REVIEWED` `audit/browser-runner-evidence-v1.json` tuple that matches the
   qualification artifact and the exact fields in `PUBLICATION_CLEARANCE.md`;
   the final audit independently validates and records its own hosted tuple.
-- exactly eight reported external release-evidence records: for Beta 7, five
+- exactly eight reported external release-evidence records: for Beta 8, five
   mandatory PASS gates for reconciled trusted-HTTPS canary evidence,
   independent adjudication, complete finding disposition, reviewed
   hosted-Windows evidence, and exact project-owner `PR_PUSH_AUTHORIZED`
@@ -104,7 +104,7 @@ generated
 - a current (already reviewed and not expired) external-evidence window, exact
   evidence digest for every mandatory gate and every completed optional
   cycle, zero open Critical/High findings, zero
-  unaccepted Medium findings, zero unrecorded Low findings, the Beta 7 tag and
+  unaccepted Medium findings, zero unrecorded Low findings, the Beta 8 tag and
   protected-main binding, and the canonical review-bundle digest.
 
 The generated report is intentionally ignored because it contains a run
@@ -129,7 +129,7 @@ binds the qualification commit and its runtime snapshot, while the successor
 validator proves that exact runtime equivalence. The single final certification
 run binds the successor's exact commit and final payload.
 
-The mandatory Beta 7 canary reconciliation, adjudication, finding,
+The mandatory Beta 8 canary reconciliation, adjudication, finding,
 hosted-Windows, and owner-authorization requirements; the visible prerelease
 host deferral; and the separately offered optional physical-device and
 six-reviewer cycles are listed in
@@ -137,15 +137,14 @@ six-reviewer cycles are listed in
 `docs/release/publication-gates.md`. The manual Pages workflow must not be run
 until all mandatory gates are independently completed.
 
-Beta 7 is odd-numbered, so its Playwright Deep UX Census is exact
-`NOT_REQUIRED_BY_CADENCE` under `ALTERNATING_BETA_V1`. The local 100-cell mode
-remains a non-certifying development benchmark and cannot satisfy or strengthen
-the release claim. Beta 4 was the first scheduled census release and Beta 8 is
-the next. Neither mode makes a physical-device,
+Beta 8 is even-numbered, so its complete Playwright Deep UX Census is mandatory
+under `ALTERNATING_BETA_V1`. The local 100-cell mode remains a non-certifying
+development benchmark and cannot satisfy or strengthen the release claim.
+Neither mode makes a physical-device,
 Safari, screen-reader, pronunciation, child-comprehension, or visual-taste
 claim.
 
-For `v1.0.0-beta.7`, the owner's 2026-08-14 release authorization did not
+For `v1.0.0-beta.8`, the owner's 2026-08-25 release authorization did not
 select either optional cycle.
 The clearance consequently retains exact `OPTIONAL_NOT_RUN` fields for the
 six-device and six-reviewer records, and this release will make neither a
@@ -153,8 +152,8 @@ physical-device qualification claim nor an independent-review claim.
 
 These requirements are now machine-enforced through the closed ordered
 `PUBLICATION_CLEARANCE.md` schema. The ordinary audit predicts and observes
-eight external records (293 total counted results, including 26 direct
-Playwright browser journeys). For Beta 7, five are mandatory PASS gates,
+eight external records (304 total counted results, including 36 direct
+Playwright browser journeys). For Beta 8, five are mandatory PASS gates,
 including `EXT-CANARY` backed by exact `RECONCILED` evidence; `EXT-HOST` is a
 separately visible `DEFERRED_PRERELEASE`/`DEFERRED` record, and two records are
 optional. A stable release requires affirmative host approval and all six
@@ -171,8 +170,8 @@ does not alter those fields.
 
 Historical Beta 4 evidence remains governed by its one-release
 `OWNER_SKIPPED_BETA4` canary state and `DIRECT_EVIDENCE_SUCCESSOR_V1`. Neither
-may be copied into Beta 7: the skip expired, and PB-051 instead requires
-`RECONCILED` canary evidence plus `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`.
+may be copied into Beta 8: the skip expired, and PB-054 instead requires
+`RECONCILED` canary evidence plus `RELEASE_EVIDENCE_SUCCESSOR_V2` under PB-054.
 
 The prerelease host deferral is never reported as a pass, waiver, or privacy
 clearance. It remains nonblocking only for a semantic-version prerelease and

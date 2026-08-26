@@ -44,21 +44,25 @@ test("certification cadence has a closed machine-readable contract", async () =>
     timing: "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
     scope: "COMPLETE_CERTIFICATION_SYSTEM",
     qualificationEvidenceSuccessor: {
-      policy: "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
-      releaseTag: "v1.0.0-beta.6",
+      policy: "RELEASE_EVIDENCE_SUCCESSOR_V2",
+      releaseTag: "v1.0.0-beta.8",
       parentCount: 1,
       parentMustEqualQualificationCommit: true,
       exactChangedPaths: [
         "PUBLICATION_CLEARANCE.md",
         "audit/browser-runner-evidence-v1.json",
+        "audit/release-evidence-bundle-v1.json",
+        "audit/trusted-https-canary-v1.json",
       ],
       qualificationClearanceStatus: "PENDING",
       qualificationBrowserEvidenceStatus: "PENDING",
+      qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
+      qualificationCanaryEvidenceStatus: "PENDING",
       requiredQualificationEvidence: [
         "RECONCILED_CANARY",
         "REVIEWED_HOSTED_WINDOWS",
       ],
-      finalCertificationTarget: "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR",
+      finalCertificationTarget: "RELEASE_EVIDENCE_SUCCESSOR_V2",
     },
     deepUxCensus: {
       policy: "ALTERNATING_BETA_V1",
@@ -243,11 +247,11 @@ test("human-facing policy preserves focused development and formal incompletenes
   assert.match(agents, /earlier complete run[\s\S]*must obtain[\s\S]*owner's explicit approval/iu);
   assert.match(agents, /OWNER_SKIPPED_BETA4[\s\S]*never `PASS`[\s\S]*expires after Beta 4/iu);
   assert.match(agents, /Beta 6[\s\S]*trusted-[\s\S]*HTTPS canary is mandatory[\s\S]*RECONCILED/iu);
-  assert.match(agents, /RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1/iu);
-  assert.match(agents, /Beta 6[\s\S]*OPTIONAL_NOT_RUN[\s\S]*six-reviewer cycle/iu);
-  assert.match(agents, /direct evidence successor[\s\S]*next commit[\s\S]*exactly[\s\S]*one parent/iu);
+  assert.match(agents, /RELEASE_EVIDENCE_SUCCESSOR_V2/iu);
+  assert.match(agents, /Beta 8[\s\S]*OPTIONAL_NOT_RUN[\s\S]*six-reviewer cycle/iu);
+  assert.match(agents, /Beta 8 evidence successor[\s\S]*immediate, non-merge, sole child/iu);
   assert.match(agents, /sole parent must be the named qualification commit/iu);
-  assert.match(agents, /must change exactly `PUBLICATION_CLEARANCE\.md` and\s*`audit\/browser-runner-evidence-v1\.json`, and no other path/iu);
+  assert.match(agents, /exact parent-to-child diff changes only these four[\s\S]*audit\/trusted-https-canary-v1\.json/iu);
   assert.match(agents, /every game,[\s\S]*runtime byte remains[\s\S]*byte-identical/iu);
   assert.match(agents, /public-payload digest is expected to[\s\S]*change/iu);
   assert.match(agents, /no feature, refactor, optimization, content update, or release[\s\S]*formally complete until/iu);

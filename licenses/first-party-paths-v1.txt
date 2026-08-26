@@ -134,6 +134,7 @@ audit/tests/strategy-build-oracle.mjs
 audit/tests/trusted-https-canary.test.mjs
 audit/tests/tutorial-manifest.test.mjs
 audit/trusted-https-canary-beta7-v1.json
+audit/trusted-https-canary-v1.json
 audit/validate-art-migration-baseline.mjs
 audit/validate-hosted-windows-observation.mjs
 audit/validate-publication-clearance.mjs

@@ -1,6 +1,6 @@
-# Math Quest Public Beta 7 release checklist
+# Math Quest Public Beta 8 release checklist
 
-Target tag: `v1.0.0-beta.7`
+Target tag: `v1.0.0-beta.8`
 
 Status terms follow the
 [`AGENTS.md` finished-work policy](../../AGENTS.md#what-counts-as-finished-work).
@@ -10,7 +10,7 @@ path and focused checks, and the Release section records when the certified
 bytes are **shipped**.
 
 Checked items describe current, reviewed evidence only. Beta 1 evidence and
-focused development runs do not satisfy an unchecked Beta 7 release item. The
+focused development runs do not satisfy an unchecked Beta 8 release item. The
 exact-candidate items below remain unchecked until the working tree is frozen,
 synchronized, and rerun through the complete gate.
 
@@ -18,13 +18,14 @@ During development, run `audit/run-audit.ps1 -DevelopmentOnly` plus the focused
 effect-sensitive checks required by each change. These runs may establish
 **implemented** status, but do not establish **release-certified** status or
 satisfy a release item. Once every planned game/runtime change is committed,
-create the Beta 7 qualification commit with final game/runtime/PWA bytes and
-pending clearance records. Run the trusted-HTTPS canary and hosted-Windows
-observation against that exact protected-main commit, then create the exact
-two-file runtime-equivalent evidence successor defined by PB-051. Freeze that
-successor as the candidate. Run the complete certification system once against
-it immediately before tagging and deployment. Any later change requires a new
-qualification/successor sequence, freeze, and complete rerun.
+create the Beta 8 qualification commit with final game/runtime/PWA bytes and
+the four pending evidence authorities. Run the trusted-HTTPS canary and
+hosted-Windows observation against that exact protected-main commit, then
+create the exact four-authority evidence successor defined by PB-054. Freeze
+that successor as the candidate. Run the complete certification system and
+Deep UX Census once against it immediately before tagging and deployment. Any
+later change requires a new qualification/successor sequence, freeze, and
+complete rerun.
 
 ## Public tree
 
@@ -123,9 +124,9 @@ qualification/successor sequence, freeze, and complete rerun.
 - [x] Verify required fonts, sounds, icons, and models are local or inline.
 - [x] Verify no post-load gameplay request, analytics, tracker, remote speech,
   cloud sync, or third-party runtime dependency.
-- [ ] Verify the exact detached Beta 7 shell manifest, byte hashes, MIME
+- [ ] Verify the exact detached Beta 8 shell manifest, byte hashes, MIME
   bindings, waiting-worker update, repair, and readiness protocol.
-- [x] For Beta 7, record that the owner's 2026-08-14 release authorization did
+- [x] For Beta 8, record that the owner's 2026-08-25 release authorization did
   not select either optional cycle. Use exact
   `OPTIONAL_NOT_RUN`/`NONE`/zero/`NOT_RUN` fields for
   physical devices and exact `OPTIONAL_NOT_RUN`/`NONE`/zero fields for the six
@@ -153,15 +154,15 @@ effects earlier, but do not constitute another complete cycle.
 - [ ] Kill every required disposable mutation family.
 - [ ] Run browser smoke tests against the newly frozen shipped page with zero
   unexplained failures.
-- [ ] Run all 26 direct-user Playwright journeys in the exact installed-Edge
+- [ ] Run all 36 direct-user Playwright journeys in the exact installed-Edge
   desktop and touch-phone projects with zero failures, skips, retries,
   unexpected requests, page errors, or console errors.
-- [x] Record the complete hosted Playwright Deep UX Census as
-  `NOT_REQUIRED_BY_CADENCE` for odd-numbered Beta 7. The local 100-cell
-  benchmark remains a non-certifying development check and cannot be reported
-  as a census pass.
+- [ ] Run and pass the complete hosted Playwright Deep UX Census required for
+  even-numbered Beta 8. The local 100-cell benchmark remains a non-certifying
+  development check and cannot be reported as a census pass.
 - [ ] Commit the qualification revision to protected `main` only after its
-  game/runtime/PWA bytes are final and both clearance records are pending. Run
+  game/runtime/PWA bytes are final and clearance, browser evidence, release
+  bundle, and canonical canary authority are all pending. Run
   the trusted-HTTPS canary and hosted-Windows identity observation against that
   exact commit. Require canary state `RECONCILED` with its canonical evidence
   digest, and download and review the machine-readable Windows artifact's exact
@@ -171,8 +172,10 @@ effects earlier, but do not constitute another complete cycle.
   `REVIEWED`, copy the same five-field tuple and the reconciled canary binding
   into publication clearance, and create the qualification commit's immediate
   non-merge sole child. Require its exact diff to contain only
-  `PUBLICATION_CLEARANCE.md` and `audit/browser-runner-evidence-v1.json`; prove
-  every game/runtime/PWA byte remains identical before the single final audit.
+  `PUBLICATION_CLEARANCE.md`, `audit/browser-runner-evidence-v1.json`,
+  `audit/release-evidence-bundle-v1.json`, and
+  `audit/trusted-https-canary-v1.json`; prove every game/runtime/PWA byte
+  remains identical before the single final audit and Deep UX Census.
 - [x] Record `windows-latest` as a Medium floating-runner residual; do not
   accept the label itself as reproducible evidence. Require the qualification
   artifact and final certification to validate and retain their own exact
@@ -185,44 +188,44 @@ effects earlier, but do not constitute another complete cycle.
 - [x] Before the final bounded independent review under `AGENTS.md`, add
   `PUBLICATION_CLEARANCE.md` with `Status: PENDING`, then synchronize and
   inspect the component register and public-file manifest.
-- [ ] In the runtime-equivalent evidence successor, promote that pending record
+- [ ] In the four-authority evidence successor, promote that pending record
   to `Status: APPROVED` only after successful independent review, bound to the
   exact manifest, engine, open-component rights state, successor public-payload
   digest, payload-tree OID, qualification runtime snapshot and canary evidence,
   browser executable, and GitHub-hosted runner image tuple.
 - [ ] Populate all eight closed-schema external evidence records in that same
-  clearance. For Beta 7, five mandatory PASS records are reconciled canary,
+  clearance. For Beta 8, five mandatory PASS records are reconciled canary,
   approved adjudication, complete finding dispositions, exact hosted-Windows
   evidence, and owner `PR_PUSH_AUTHORIZED` authorization for
-  `v1.0.0-beta.7` on `refs/heads/main`. Bind the current host review as exact
+  `v1.0.0-beta.8` on `refs/heads/main`. Bind the current host review as exact
   `DEFERRED_PRERELEASE`, which must appear as DEFERRED rather than PASS. The
-  owner did not select either optional cycle for Beta 7, so record the
+  owner did not select either optional cycle for Beta 8, so record the
   six-device and six-reviewer records as exact `OPTIONAL_NOT_RUN` with
   `NONE` evidence and zero required/completed counts.
 - [ ] Use one designated bounded adjudicator role. Do not infer a critic cohort
   from the mandatory adjudication or finding-disposition records.
 - [ ] Confirm the external evidence review window is current, every evidence
   digest and review-bundle digest is exact, Critical/High/open-unaccepted
-  Medium/unrecorded Low counts are zero, and the audit reports all five Beta 7
+  Medium/unrecorded Low counts are zero, and the audit reports all five Beta 8
   mandatory external gates PASS, including `EXT-CANARY: PASS` backed by exact
   `RECONCILED` evidence, `EXT-HOST` visibly DEFERRED, and each optional
   record either PASS or visibly OPTIONAL rather than merely matching the
   expected count.
 - [ ] After the canary and hosted evidence are reviewed, create only the
-  `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1` sole-child successor described
-  above. Validate its exact two-path diff and exact runtime/PWA byte identity,
-  then freeze that successor and run the single complete fail-closed
-  certification system from the beginning.
+  `RELEASE_EVIDENCE_SUCCESSOR_V2` sole-child successor described above.
+  Validate its exact four-path diff and exact runtime/PWA byte identity, then
+  freeze that successor and run the single complete fail-closed certification
+  system and required Deep UX Census from the beginning.
 
 Historical note: the Emergency Beta 3 exception applied to
-`v1.0.0-beta.3` only. It cannot authorize Beta 4 or Beta 7. The distinct
+`v1.0.0-beta.3` only. It cannot authorize Beta 4 or Beta 8. The distinct
 2026-08-02 owner directive ordinarily applies to Beta 4 and later
 semantic-version prereleases. For Beta 4, the later 2026-08-09 release-scoped
 decision yielded four mandatory PASS records, one visible non-passing host
 deferral, one visible non-passing owner-skipped canary, and two offered optional
 records under `DIRECT_EVIDENCE_SUCCESSOR_V1`. That canary skip and successor
-policy expired with Beta 4. Beta 7 returns to five mandatory PASS records and
-uses `RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1`; stable releases return to six
+policy expired with Beta 4. Beta 8 requires five mandatory PASS records and
+uses `RELEASE_EVIDENCE_SUCCESSOR_V2`; stable releases return to six
 mandatory PASS records unless a later owner directive explicitly changes them.
 
 ## Repository and Pages settings
@@ -239,14 +242,15 @@ mandatory PASS records unless a later owner directive explicitly changes them.
 - [x] Preserve and protect the immutable `v1.0.0-beta.3` release tag.
 - [x] Preserve and protect the immutable `v1.0.0-beta.4` release tag.
 - [x] Preserve and protect the immutable `v1.0.0-beta.6` release tag.
-- [ ] Protect `v1.0.0-beta.7` from deletion or movement after it is created.
+- [x] Preserve and protect the immutable `v1.0.0-beta.7` release tag.
+- [ ] Protect `v1.0.0-beta.8` from deletion or movement after it is created.
 - [ ] Configure GitHub Pages to deploy through GitHub Actions.
 - [x] Confirm no CNAME or custom domain is configured.
 - [x] Enforce HTTPS for `https://openmathquest.github.io/`.
 - [ ] Require the deployment workflow to run only in
   `OpenMathQuest/openmathquest.github.io`, dispatched from protected `main`
   while it points to the exact annotated tag supplied as `release_tag`,
-  `v1.0.0-beta.7`, with `VERSION` equal to `1.0.0-beta.7`.
+  `v1.0.0-beta.8`, with `VERSION` equal to `1.0.0-beta.8`.
 - [ ] Confirm the Pages action and API report the root origin
   `https://openmathquest.github.io`, an empty base path, an empty CNAME, and
   the GitHub Actions publishing source.
@@ -260,12 +264,12 @@ mandatory PASS records unless a later owner directive explicitly changes them.
 
 - [ ] Freeze the exact cleared commit on protected `main`, then dispatch
   **Math Quest checks** with `candidate_sha` equal to that commit and
-  `release_tag` equal to `v1.0.0-beta.7`. Require the complete, non-technical-
+  `release_tag` equal to `v1.0.0-beta.8`. Require the complete, non-technical-
   only certification job to pass before creating the tag.
-- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.7` tag without
+- [ ] Push the exact cleared commit and annotated `v1.0.0-beta.8` tag without
   altering the reviewed tree.
 - [ ] Run the manual **Deploy Math Quest to Pages** workflow from protected
-  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.7`; the
+  `main`, leaving the exact `release_tag` input as `v1.0.0-beta.8`; the
   workflow must check out and deploy that tag, reject any commit mismatch, and
   require a successful release-certification run for the same commit without
   rerunning the complete gauntlet.
@@ -275,7 +279,7 @@ mandatory PASS records unless a later owner directive explicitly changes them.
   HTTPS with no unexpected redirect, base path, CNAME, or third-party request.
 - [ ] Run the live hosted smoke in desktop Edge plus automated phone and tablet
   viewports. Retain physical iPhone/iPad observation as `OPTIONAL_NOT_RUN` for
-  Beta 7 and make no physical-device qualification claim.
+  Beta 8 and make no physical-device qualification claim.
 - [ ] Verify nickname entry/removal, touch controls, local sound and speech,
   reload persistence, backup, restore, reset, and Parent Test isolation.
 - [ ] Verify storage is absent from unrelated origins and confirm the
@@ -284,4 +288,4 @@ mandatory PASS records unless a later owner directive explicitly changes them.
 - [ ] Change the hosted URL in `README.md` from an approved target to a
   verified live deployment only after the hosted checks pass.
 - [ ] Publish beta-labelled GitHub release notes from the verified
-  `v1.0.0-beta.7` tag.
+  `v1.0.0-beta.8` tag.

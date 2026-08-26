@@ -129,7 +129,7 @@ function validEvidence() {
       caddyAccessLogSha256: sha("8"),
     },
     cacheProof: {
-      physicalCacheName: `math-quest-static-v1.0.0-beta.7-${sha("c")}`,
+      physicalCacheName: `math-quest-static-v1.0.0-beta.8-${sha("c")}`,
       expectedEntryCount: 14,
       waitingEntryCount: 14,
       activeEntryCount: 14,
@@ -147,9 +147,9 @@ function validEvidence() {
       originPortClosed: true,
       backendPortClosed: true,
       controllerScriptUrlSha256: sha("a"),
-      readinessRelease: "1.0.0-beta.7",
-      readinessBuildId: "math-quest-pwa-v1.0.0-beta.7",
-      readinessCacheIdentity: "math-quest-static-v1.0.0-beta.7",
+      readinessRelease: "1.0.0-beta.8",
+      readinessBuildId: "math-quest-pwa-v1.0.0-beta.8",
+      readinessCacheIdentity: "math-quest-static-v1.0.0-beta.8",
     },
     navigationProof: {
       expectedReloadCount: 1,
@@ -652,11 +652,11 @@ test("canary activates updates directly on Home and opens installation help only
     },
   };
 
-  await waitForCanaryHomeUpdate(page, "1.0.0-beta.7", 25);
-  assert.equal(state.requestedVersion, "1.0.0-beta.7");
+  await waitForCanaryHomeUpdate(page, "1.0.0-beta.8", 25);
+  assert.equal(state.requestedVersion, "1.0.0-beta.8");
   assert.deepEqual(state.actions, []);
   state.screen = "session";
-  await waitForCanaryHomeUpdate(page, "1.0.0-beta.7", 25);
+  await waitForCanaryHomeUpdate(page, "1.0.0-beta.8", 25);
   assert.deepEqual(state.actions, ['[data-action="home"]']);
   state.actions.length = 0;
   state.dialog = true;
@@ -684,11 +684,11 @@ test("canary deliberately reloads the existing Beta 1 page into the Home candida
       };
     },
   };
-  const candidate = await reloadCanaryCandidateFromBeta1(page, "1.0.0-beta.7", 75);
+  const candidate = await reloadCanaryCandidateFromBeta1(page, "1.0.0-beta.8", 75);
   assert.equal(candidate, page);
   assert.deepEqual(observations, [
     ["reload", "domcontentloaded", 75],
-    ["version", "1.0.0-beta.7", 75],
+    ["version", "1.0.0-beta.8", 75],
     ["control", '[data-action="pwa-check"], [data-action="home"]', "visible", 75],
     ["control", '[data-action="pwa-check"]', "visible", 75],
   ]);
@@ -745,7 +745,7 @@ test("waiting-cache observation requires the exact settled cache set", async () 
 });
 
 test("candidate cache observation retries a concurrent install and binds one atomic snapshot", async () => {
-  const expectedCacheName = "math-quest-static-v1.0.0-beta.7-digest";
+  const expectedCacheName = "math-quest-static-v1.0.0-beta.8-digest";
   const beta1CacheName = "math-quest-static-v1.0.0-beta.1";
   const exactNames = [beta1CacheName, expectedCacheName];
   let keysCall = 0;
@@ -847,9 +847,9 @@ test("canary checks emit progress markers and bind open-ended waits", async () =
   assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
   assert.doesNotMatch(runnerText, /fetch\("\.\/manifest\.webmanifest"/u);
   assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
-  assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.7"\)/u);
+  assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.8"\)/u);
   assert.match(runnerText, /activateCanaryHomeUpdate\(candidatePage\)/u);
-  assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(beta1Page, "1\.0\.0-beta\.7"\)/u);
+  assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(beta1Page, "1\.0\.0-beta\.8"\)/u);
   assert.match(runnerText, /RETIRED_BETA1_PRESERVED_FRESH_START/u);
   assert.match(runnerText, /MathQuestEngine\.exportState\(MathQuestEngine\.createInitialState\(state\.maxSeenPlayDay\)\)/u);
   assert.match(runnerText, /assert\.equal\(protectedBytes, expectedFreshBytes/u);

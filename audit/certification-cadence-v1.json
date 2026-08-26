@@ -23,21 +23,25 @@
     "timing": "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
     "scope": "COMPLETE_CERTIFICATION_SYSTEM",
     "qualificationEvidenceSuccessor": {
-      "policy": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1",
-      "releaseTag": "v1.0.0-beta.6",
+      "policy": "RELEASE_EVIDENCE_SUCCESSOR_V2",
+      "releaseTag": "v1.0.0-beta.8",
       "parentCount": 1,
       "parentMustEqualQualificationCommit": true,
       "exactChangedPaths": [
         "PUBLICATION_CLEARANCE.md",
-        "audit/browser-runner-evidence-v1.json"
+        "audit/browser-runner-evidence-v1.json",
+        "audit/release-evidence-bundle-v1.json",
+        "audit/trusted-https-canary-v1.json"
       ],
       "qualificationClearanceStatus": "PENDING",
       "qualificationBrowserEvidenceStatus": "PENDING",
+      "qualificationBundleLifecycleState": "QUALIFICATION_PENDING",
+      "qualificationCanaryEvidenceStatus": "PENDING",
       "requiredQualificationEvidence": [
         "RECONCILED_CANARY",
         "REVIEWED_HOSTED_WINDOWS"
       ],
-      "finalCertificationTarget": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR"
+      "finalCertificationTarget": "RELEASE_EVIDENCE_SUCCESSOR_V2"
     },
     "deepUxCensus": {
       "policy": "ALTERNATING_BETA_V1",
