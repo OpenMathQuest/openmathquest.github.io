@@ -2,13 +2,13 @@
 
 - **Register revision:** `AR-PUBLIC-22`
 - **Contract:** `docs/development/build-spec.md` version `3.7`
-- **Contract SHA-256:** `b896f09e42e0abec830e3dc245a3d8abc8dbfd0645d959df53c1b73c9d89bdb6`
+- **Contract SHA-256:** `b09bd01bf7015511111e8f25282231989c5f285ce676da03b52f68bc5404a94c`
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `14ef82f104a113f07f98c7593b3b8d3dc35a5d16bf75b7c307fc6bb6303355ad`
-- **Engine SHA-256:** `08f5e11f7b154dd3a61ae0d08128fa490f5df011bd14af2a833a6786ebe8ab5d`
+- **Engine SHA-256:** `389da3e1da0106c58dca8df7ed372ff772e73ef3601995297302e866b997c2d4`
 - **Approved child-string table:** `child-strings-v1`, 441 records, SHA-256 `a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`; approved by the project owner on 2026-08-20
 - **State schema:** `3`
-- **Date:** `2026-08-24`
+- **Date:** `2026-08-25`
 
 ## Confirmed decisions
 
@@ -73,7 +73,7 @@
 
 The contract digest above binds this register to the exact current contract.
 The manifest, engine, and approved child-string identities above bind
-this register to the current Beta 7 work before its immutable release freeze.
+this register to the current Beta 8 work before its immutable release freeze.
 The exact 441-record child-string identity is approved as recorded in the
 release checklist.
 Changing the curriculum manifest, contract, engine, state contract, or governed

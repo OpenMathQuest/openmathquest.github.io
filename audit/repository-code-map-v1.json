@@ -571,8 +571,16 @@
           "relationship": "OPERATIONAL_CONFIG"
         },
         {
+          "path": "AGENTS.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
           "path": "audit.html",
           "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/certification-cadence-v1.json",
+          "relationship": "OPERATIONAL_CONFIG"
         },
         {
           "path": "audit/lib/playwright-focused-contract.mjs",
@@ -611,6 +619,10 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
+          "path": "audit/tests/certification-cadence.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "audit/tests/page-adapter-effects.test.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
@@ -631,11 +643,15 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
+          "path": "audit/tests/release-evidence-bundle.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "audit/tests/trusted-https-canary.test.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
-          "path": "audit/trusted-https-canary-beta7-v1.json",
+          "path": "audit/trusted-https-canary-v1.json",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
@@ -660,6 +676,10 @@
         },
         {
           "path": "docs/release/readiness.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
           "relationship": "DOCUMENTED_REFERENCE"
         },
         {
@@ -717,6 +737,10 @@
         },
         {
           "path": "audit/trusted-https-canary-beta7-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/trusted-https-canary-v1.json",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
@@ -1355,7 +1379,7 @@
   "dataArtifactPatterns": [
     "^(?:package(?:-lock)?\\.json|release-shell-v1\\.json)$",
     "^assets/design/math-quest-design-tokens-v1\\.json$",
-    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|art-migration-baseline-v1|art-migration-browser-evidence-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1)\\.json$",
+    "^audit/(?:agent-collaboration-policy-v1|art-asset-register-v1|art-design-decision-register-v1|art-migration-baseline-v1|art-migration-browser-evidence-v1|browser-runner-evidence-v1|certification-cadence-v1|finished-work-policy-v1|gate-integrity-policy-v1|release-evidence-bundle-v1|repository-code-map-v1|trusted-https-canary-beta7-v1|trusted-https-canary-v1)\\.json$",
     "^curriculum/.*\\.json$",
     "^licenses/(?:component-register-v1|evidence-paths-v1)\\.json$"
   ],

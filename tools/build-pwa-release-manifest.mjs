@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(root, "release-shell-v1.json");
 const workerPath = path.join(root, "sw.js");
-const RELEASE = "1.0.0-beta.7";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.7";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.7";
+const RELEASE = "1.0.0-beta.8";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.8";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.8";
 const HASH_MARKER = /const RELEASE_MANIFEST_SHA256 = "[a-f0-9]{64}";/u;
 const ENTRIES = Object.freeze([
   ["./assets/design/math-quest-design-tokens-v1.css", "text/css"],

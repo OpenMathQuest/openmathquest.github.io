@@ -136,7 +136,7 @@ and marker all re-verify. The terminal marker prevents a virgin current save
 from rediscovering and replacing itself from the retained source on later
 boots. A missing protected save behind that marker, any source or guard race,
 or any unrecognized invalid legacy envelope fails closed. The grown-up notice
-must say plainly that the old save remains stored separately and that Beta 7
+must say plainly that the old save remains stored separately and that Beta 8
 starts fresh because the curriculum changed.
 
 Do not translate pre-beta mastery or evidence into the new curriculum: the

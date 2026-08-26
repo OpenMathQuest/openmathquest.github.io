@@ -1229,7 +1229,7 @@ test("browser audit rejects safe-boundary navigation and opens only the bound ph
   const physicalCacheNames = vm.runInNewContext(
     `(${adapterFunction(browserAudit, "pwaPhysicalCacheNames")})`,
   );
-  const logicalIdentity = "math-quest-static-v1.0.0-beta.7";
+  const logicalIdentity = "math-quest-static-v1.0.0-beta.8";
   const manifestSha = "a".repeat(64);
   const physicalName = `${logicalIdentity}-${manifestSha}`;
   assert.deepEqual(
@@ -1382,9 +1382,9 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       },
       {
         schemaVersion: 1,
-        release: "1.0.0-beta.7",
-        buildId: "math-quest-pwa-v1.0.0-beta.7",
-        cacheName: "math-quest-static-v1.0.0-beta.7",
+        release: "1.0.0-beta.8",
+        buildId: "math-quest-pwa-v1.0.0-beta.8",
+        cacheName: "math-quest-static-v1.0.0-beta.8",
         entryPath: "./index.html",
         excludedPaths: ["./release-shell-v1.json", "./sw.js"],
       },
@@ -1446,7 +1446,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
       await readFile(path.join(root, "tools", "build-pwa-release-manifest.mjs")),
     );
     await writeFile(path.join(freezeFixture, "sw.js"), originalWorker);
-    await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.7\n", "utf8");
+    await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.8\n", "utf8");
     for (const [entryPath] of RELEASE_ENTRY_SPECS) {
       const destination = path.join(freezeFixture, entryPath.slice(2));
       await mkdir(path.dirname(destination), { recursive: true });
@@ -1488,7 +1488,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
   }
 });
 
-test("Beta 7 release-shell manifest binds every declared byte", async () => {
+test("Beta 8 release-shell manifest binds every declared byte", async () => {
   const [text, worker] = await Promise.all([
     readFile(path.join(root, "release-shell-v1.json"), "utf8"),
     readFile(path.join(root, "sw.js"), "utf8"),
@@ -1507,9 +1507,9 @@ test("Beta 7 release-shell manifest binds every declared byte", async () => {
     },
     {
       schemaVersion: 1,
-      release: "1.0.0-beta.7",
-      buildId: "math-quest-pwa-v1.0.0-beta.7",
-      cacheName: "math-quest-static-v1.0.0-beta.7",
+      release: "1.0.0-beta.8",
+      buildId: "math-quest-pwa-v1.0.0-beta.8",
+      cacheName: "math-quest-static-v1.0.0-beta.8",
       entryPath: "./index.html",
       excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     },
@@ -2209,7 +2209,7 @@ test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a 
     const releaseManifestBytes = Buffer.from(
       `${JSON.stringify({
         schemaVersion: 1,
-        release: "1.0.0-beta.7",
+        release: "1.0.0-beta.8",
         buildId: "fixture",
         cacheName: "fixture",
         entryPath: "./index.html",
@@ -2322,9 +2322,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   }));
   const releaseManifest = {
     schemaVersion: 1,
-    release: "1.0.0-beta.7",
-    buildId: "math-quest-pwa-v1.0.0-beta.7",
-    cacheName: "math-quest-static-v1.0.0-beta.7",
+    release: "1.0.0-beta.8",
+    buildId: "math-quest-pwa-v1.0.0-beta.8",
+    cacheName: "math-quest-static-v1.0.0-beta.8",
     entryPath: "./index.html",
     excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     entries,
@@ -2342,9 +2342,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     workerText,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${expectedManifestHash}";`, "u"),
   );
-  const logicalBeta6Name = "math-quest-static-v1.0.0-beta.7";
-  const beta7Name = `${logicalBeta6Name}-${expectedManifestHash}`;
-  const stagingNames = () => [...cacheStores.keys()].filter((name) => name.startsWith(`${beta7Name}-`) && name.endsWith("-staging"));
+  const logicalBeta8Name = "math-quest-static-v1.0.0-beta.8";
+  const beta8Name = `${logicalBeta8Name}-${expectedManifestHash}`;
+  const stagingNames = () => [...cacheStores.keys()].filter((name) => name.startsWith(`${beta8Name}-`) && name.endsWith("-staging"));
   const publicBeta3PhysicalName =
     "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7";
   const handlers = new Map();
@@ -2506,9 +2506,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   handlers.get("install")({ waitUntil(promise) { failedInstallPromise = promise; } });
   await assert.rejects(failedInstallPromise);
   assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
-  assert.equal(cacheStores.has(beta7Name), false);
+  assert.equal(cacheStores.has(beta8Name), false);
 
-  cacheStores.set(logicalBeta6Name, new Map([["same-identity-old-shell", "preserve"]]));
+  cacheStores.set(logicalBeta8Name, new Map([["same-identity-old-shell", "preserve"]]));
   const firstManifestHashIndex = releaseManifestText.indexOf(releaseManifest.entries[0].sha256);
   assert.ok(firstManifestHashIndex > 0);
   const sameLengthTamperedManifest =
@@ -2524,17 +2524,17 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   handlers.get("install")({ waitUntil(promise) { tamperedManifestInstallPromise = promise; } });
   await assert.rejects(tamperedManifestInstallPromise, /release-manifest-hash/u);
   networkOverrides.delete("./release-shell-v1.json");
-  assert.equal(cacheStores.has(beta7Name), false);
-  assert.equal(cacheStores.has(logicalBeta6Name), true);
+  assert.equal(cacheStores.has(beta8Name), false);
+  assert.equal(cacheStores.has(logicalBeta8Name), true);
 
-  cacheStores.set(beta7Name, new Map([
+  cacheStores.set(beta8Name, new Map([
     [
       cacheKey("./orphan"),
       new MockResponse("orphan", new URL("./orphan", scope).href, "text/plain"),
     ],
   ]));
   cachePutFailure = {
-    cacheName: beta7Name,
+    cacheName: beta8Name,
     url: cacheKey("./index.html"),
   };
   networkEnabled = true;
@@ -2542,29 +2542,29 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   handlers.get("install")({ waitUntil(promise) { partialCopyInstallPromise = promise; } });
   await assert.rejects(partialCopyInstallPromise, /injected-cache-put-failure/u);
   assert.equal(
-    cacheStores.has(beta7Name),
+    cacheStores.has(beta8Name),
     false,
     "a failed copy must remove the already-invalid partial candidate cache",
   );
   assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
-  assert.equal(cacheStores.has(logicalBeta6Name), true);
+  assert.equal(cacheStores.has(logicalBeta8Name), true);
   assert.deepEqual(stagingNames(), []);
 
   let installPromise;
   handlers.get("install")({ waitUntil(promise) { installPromise = promise; } });
   await installPromise;
   assert.equal(skipWaitingCalls, 0);
-  let beta7 = cacheStores.get(beta7Name);
-  assert.equal(beta7.size, releaseManifest.entries.length + 1);
+  let beta8 = cacheStores.get(beta8Name);
+  assert.equal(beta8.size, releaseManifest.entries.length + 1);
 
-  cachePutFailure = { cacheName: beta7Name, url: null };
+  cachePutFailure = { cacheName: beta8Name, url: null };
   let idempotentInstallPromise;
   handlers.get("install")({ waitUntil(promise) { idempotentInstallPromise = promise; } });
   await idempotentInstallPromise;
   assert.ok(cachePutFailure, "an already exact live cache must receive no put effects");
   cachePutFailure = null;
 
-  const exactTap = beta7.get(cacheKey("./assets/sounds/tap.wav"));
+  const exactTap = beta8.get(cacheKey("./assets/sounds/tap.wav"));
   const sameLengthTamperedTap = Buffer.from(exactTap.bytes);
   sameLengthTamperedTap[0] ^= 0x01;
   assert.equal(sameLengthTamperedTap.byteLength, exactTap.bytes.byteLength);
@@ -2574,11 +2574,11 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   await assert.rejects(corruptNetworkInstallPromise, /shell-entry-invalid/u);
   networkOverrides.delete("./assets/sounds/tap.wav");
   assert.equal(
-    sha256(beta7.get(cacheKey("./assets/sounds/tap.wav")).bytes),
+    sha256(beta8.get(cacheKey("./assets/sounds/tap.wav")).bytes),
     sha256(exactTap.bytes),
     "a failed staging fetch must leave the exact live shell byte-for-byte intact",
   );
-  assert.equal(beta7.size, releaseManifest.entries.length + 1);
+  assert.equal(beta8.size, releaseManifest.entries.length + 1);
 
   for (const [label, override] of [
     ["wrong MIME", { mime: "text/plain" }],
@@ -2600,14 +2600,14 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     );
     networkOverrides.delete("./assets/sounds/tap.wav");
     assert.equal(
-      sha256(beta7.get(cacheKey("./assets/sounds/tap.wav")).bytes),
+      sha256(beta8.get(cacheKey("./assets/sounds/tap.wav")).bytes),
       sha256(exactTap.bytes),
       `${label} must not mutate the exact live shell`,
     );
   }
 
   self.registration.active = { scriptURL: self.location.href };
-  beta7.set(
+  beta8.set(
     cacheKey("./assets/sounds/tap.wav"),
     new MockResponse(
       "mutated before activation",
@@ -2629,7 +2629,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     "activation must preserve the exact public Beta 3 cache until the candidate is re-proved",
   );
   assert.equal(claimCalls, 0);
-  beta7.set(cacheKey("./assets/sounds/tap.wav"), exactTap.clone());
+  beta8.set(cacheKey("./assets/sounds/tap.wav"), exactTap.clone());
 
   claimShouldFail = true;
   let activatePromise;
@@ -2642,7 +2642,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     "activation must preserve the exact public Beta 3 cache for any older open tab",
   );
   assert.equal(
-    cacheStores.has(logicalBeta6Name),
+    cacheStores.has(logicalBeta8Name),
     true,
     "activation must not destroy an older same-identity storage cache",
   );
@@ -2821,7 +2821,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     assert.equal(intercepted, false, `${href} must remain outside the worker scope`);
   }
 
-  beta7.set(
+  beta8.set(
     cacheKey("./PRIVACY.md"),
     new MockResponse(
       "corrupt legal text",
@@ -2842,7 +2842,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     "an offline legal document with the wrong bytes must fail closed",
   );
 
-  beta7.set(
+  beta8.set(
     cacheKey("./index.html"),
     new MockResponse("corrupt", new URL("./index.html", scope).href, "text/html"),
   );
@@ -2862,11 +2862,11 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   });
   await failedRepairPromise;
   assert.equal(failedRepair.ready, false);
-  assert.equal(beta7.size, releaseManifest.entries.length + 1);
+  assert.equal(beta8.size, releaseManifest.entries.length + 1);
 
   networkEnabled = true;
   cachePutFailure = {
-    cacheName: beta7Name,
+    cacheName: beta8Name,
     url: cacheKey("./index.html"),
   };
   let partialRepair;
@@ -2879,7 +2879,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   await partialRepairPromise;
   assert.equal(partialRepair.ready, false);
   assert.equal(
-    cacheStores.get(beta7Name).size,
+    cacheStores.get(beta8Name).size,
     0,
     "readiness may reopen the cache, but no partial candidate byte may survive",
   );
@@ -2893,8 +2893,8 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   });
   await repairPromise;
   assert.equal(repair.ready, true);
-  beta7 = cacheStores.get(beta7Name);
-  assert.equal(beta7.size, releaseManifest.entries.length + 1);
+  beta8 = cacheStores.get(beta8Name);
+  assert.equal(beta8.size, releaseManifest.entries.length + 1);
 
   const manifestFetchesBeforeConcurrentRepair =
     networkRequestCounts.get("./release-shell-v1.json") || 0;
@@ -3012,7 +3012,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     activationChallenge: mutationChallenge,
   })).ready, true);
   const tapEntry = releaseManifest.entries.find((entry) => entry.path === "./assets/sounds/tap.wav");
-  beta7.set(
+  beta8.set(
     cacheKey(tapEntry.path),
     new MockResponse(
       "mutated after readiness",
@@ -3027,7 +3027,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   assert.equal(skipWaitingCalls, 0, "cache mutation after readiness must fail revalidation");
 
   const tapBytes = await readFile(path.join(root, tapEntry.path.slice(2)));
-  beta7.set(
+  beta8.set(
     cacheKey(tapEntry.path),
     new MockResponse(tapBytes, new URL(tapEntry.path, scope).href, tapEntry.mime),
   );

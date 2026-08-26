@@ -270,8 +270,10 @@ test("checked-in publication and browser evidence records are exact and mutually
   assert.equal(evidence.valid, true, evidence.issues.join("; "));
   if (clearance.status === "PENDING") {
     assert.equal(evidence.status, "PENDING");
-    assert.equal(clearance.hostQualificationState, PRERELEASE_HOST_QUALIFICATION_STATE);
-    assert.match(clearance.hostQualificationEvidenceSha256, /^[a-f0-9]{64}$/u);
+    assert.equal(clearance.hostQualificationState, "PENDING");
+    assert.equal(clearance.hostQualificationEvidenceSha256, "PENDING");
+    assert.equal(clearance.qualificationCommitSha, "PENDING");
+    assert.equal(clearance.evidenceSuccessorPolicy, "PENDING");
     assert.equal(clearanceMatches(clearance, expected), false);
   } else {
     assert.ok(["APPROVED", "EMERGENCY_APPROVED"].includes(clearance.status));
@@ -322,7 +324,7 @@ test("an emergency Beta 3 waiver is exact, visible, tag-bound, and cannot impers
   assert.equal(
     evaluateExternalReleaseEvidence(parsed, expected, expected.now).status,
     "BLOCKED",
-    "the Beta 3 emergency record must never authorize the Beta 7 candidate",
+    "the Beta 3 emergency record must never authorize the Beta 8 candidate",
   );
 
   assert.equal(computeReleaseDecision({
@@ -587,7 +589,7 @@ test("the standalone Pages validator binds clearance to the observed qualificati
   }), false);
 });
 
-test("five mandatory Beta 7 gates, the deferred host, and both optional cycles remain visible", () => {
+test("five mandatory Beta 8 gates, the deferred host, and both optional cycles remain visible", () => {
   const parsed = parsePublicationClearance(approvedClearance());
   const evidence = evaluateExternalReleaseEvidence(parsed, expected, expected.now);
   assert.equal(parsed.valid, true, parsed.issues.join("; "));
@@ -689,8 +691,8 @@ test("the owner-directed host deferral is non-passing and release-eligible only 
   }), false, "a synthetic DEFERRED status without evaluator-bound prerelease eligibility must not ship");
 });
 
-test("the Beta 4 canary skip is historical and cannot authorize Beta 7", () => {
-  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.7");
+test("the Beta 4 canary skip is historical and cannot authorize Beta 8", () => {
+  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.8");
   assert.equal(BETA4_RELEASE_TAG, "v1.0.0-beta.4");
   assert.deepEqual(BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS, ["EXT-CANARY"]);
   const parsed = parsePublicationClearance(deferredHostClearance({
