@@ -200,7 +200,9 @@ jobs:
   deep-ux-census:
     if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true
     runs-on: windows-latest
-    timeout-minutes: 120
+    # Six viewports run in three two-worker waves; Beta 8 measured each wave at
+    # roughly one hour, so retain the complete 4,242-cell plan with safe headroom.
+    timeout-minutes: 240
     env:
       MQ_AUDIT_RUNNER_LABEL: windows-latest
     steps:

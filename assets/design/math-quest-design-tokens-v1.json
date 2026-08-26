@@ -12,7 +12,7 @@
   },
   "decisionRegisterBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "77b83c8f3cac16d57ed7f6346c5df203924febecd9d928f1fefbc90bcd8c44bf"
+    "sha256": "35ee1b4bff254d465929f8374da369e0f90641eace59a406f8db1fd4a116f315"
   },
   "sourceDecisionIds": [
     "ART-SRC-005",

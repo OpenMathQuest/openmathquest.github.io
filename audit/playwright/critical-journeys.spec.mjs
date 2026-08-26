@@ -508,9 +508,13 @@ test("[PW-F-06] keyboard play and isolated Parent Test mechanics remain child-le
   await expect(volumeQuestion.locator(".isometric-prism")).toBeVisible();
   const prismPresentation = await volumeQuestion.locator(".isometric-prism").evaluate((element) => ({
     contained: element.getBoundingClientRect().width <= element.parentElement.getBoundingClientRect().width + 1,
+    labelCount: element.querySelectorAll("text").length,
+    minimumLabelFontSize: Math.min(...[...element.querySelectorAll("text")].map((label) => Number.parseFloat(getComputedStyle(label).fontSize))),
     separatorsUnfilled: [...element.querySelectorAll("polyline")].every((line) => getComputedStyle(line).fill === "none"),
   }));
   expect(prismPresentation.contained).toBe(true);
+  expect(prismPresentation.labelCount).toBeGreaterThan(0);
+  expect(prismPresentation.minimumLabelFontSize).toBeGreaterThanOrEqual(16);
   expect(prismPresentation.separatorsUnfilled).toBe(true);
 
   await selectLabSkill(page, 20, "MQ-115");
