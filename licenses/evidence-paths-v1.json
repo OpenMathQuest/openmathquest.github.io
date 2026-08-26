@@ -63,7 +63,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Original authorship, closed ART-MIG-04 through ART-MIG-06 runtime consumer contract, generation boundary, and exact hashes for the canonical Conservatory token contract and stylesheet projection.",
-      "sha256": "7db92ac486eb06374966d2c8836ae843188ec334ff43955c8ac468f3b982c47b"
+      "sha256": "952ddba63185943cec46b7e905eebdbae8cf8c2ff7c63e946cb5fe712875a814"
     },
     {
       "path": "licenses/sound-effects.md",

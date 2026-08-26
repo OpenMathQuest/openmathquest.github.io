@@ -125,6 +125,7 @@ test("ordinary automation cannot invoke complete certification", async () => {
   ]);
   const developmentJob = workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "";
   const releaseJob = workflow.split(/^  full-audit:\s*$/mu)[1]?.split(/^  deep-ux-census:\s*$/mu)[0] || "";
+  const deepUxJob = workflow.split(/^  deep-ux-census:\s*$/mu)[1]?.split(/^  audit-execution-qualification:\s*$/mu)[0] || "";
   const qualificationJob = workflow.split(/^  audit-execution-qualification:\s*$/mu)[1] || "";
   assert.match(workflow, /^\s{2}pull_request:\s*$/mu);
   assert.match(workflow, /^\s{2}push:\s*[\r\n]+\s{4}branches:\s*[\r\n]+\s{6}- main\s*$/mu);
@@ -146,7 +147,7 @@ test("ordinary automation cannot invoke complete certification", async () => {
   assert.match(workflow, /^  deep-ux-census:\s*$/mu);
   assert.match(workflow, /run-playwright-deep-ux-census\.mjs --full/u);
   assert.match(workflow, /MQ_DEEP_UX_CANDIDATE_SHA:\s*\$\{\{ inputs\.candidate_sha \}\}/u);
-  assert.match(workflow, /timeout-minutes:\s*120/u);
+  assert.match(deepUxJob, /timeout-minutes:\s*240/u);
   assert.match(workflow, /NON_CERTIFYING|alternating-beta|alternating beta/iu);
   assert.doesNotMatch(developmentJob, /run-playwright-deep-ux-census\.mjs/iu);
 });

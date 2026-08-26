@@ -209,6 +209,8 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(config, /actionTimeout:\s*2_500/u);
   assert.match(config, /trace:\s*"off"/u);
   assert.match(config, /screenshot:\s*"off"/u);
+  const censusJob = workflow.split(/  deep-ux-census:/u)[1]?.split(/  audit-execution-qualification:/u)[0] || "";
+  assert.match(censusJob, /timeout-minutes:\s*240/u);
   assert.match(censusLibrary, /scroll:\s*"none"/u);
   assert.match(censusLibrary, /locator\.tap\(options\)/u);
   assert.match(censusLibrary, /locator\.click\(options\)/u);

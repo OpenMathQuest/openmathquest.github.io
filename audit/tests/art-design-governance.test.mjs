@@ -166,7 +166,7 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
   assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
-  const beta8LayoutDecision = result.decisions.implementationDecisionLog.entries.at(-1);
+  const beta8LayoutDecision = result.decisions.implementationDecisionLog.entries.find((entry) => entry.id === "ART-DEC-011");
   assert.deepEqual({
     id: beta8LayoutDecision.id,
     order: beta8LayoutDecision.order,
@@ -188,6 +188,28 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.ok(beta8LayoutDecision.adopted.includes("OWNER_APPROVED_BETA_8_CANDIDATE_2026_08_26"));
   assert.ok(beta8LayoutDecision.constraints.includes("NO_HORIZONTAL_OR_NESTED_QUESTION_SCROLL"));
   assert.ok(beta8LayoutDecision.constraints.includes("MINIMUM_INTERACTIVE_TARGET_44_CSS_PX"));
+  const mq122CorrectionDecision = result.decisions.implementationDecisionLog.entries.at(-1);
+  assert.deepEqual({
+    id: mq122CorrectionDecision.id,
+    order: mq122CorrectionDecision.order,
+    migrationId: mq122CorrectionDecision.migrationId,
+    baseRevision: mq122CorrectionDecision.baseRevision,
+    status: mq122CorrectionDecision.status,
+    scopeId: mq122CorrectionDecision.scopeId,
+    decisionId: mq122CorrectionDecision.decisionId,
+  }, {
+    id: "ART-DEC-012",
+    order: 12,
+    migrationId: "ART-MIG-05",
+    baseRevision: "52b2d4f33c3328e7d9b7fecf587ccee6063bfbce",
+    status: "ACTIVE",
+    scopeId: "BETA_8_MQ_122_TEXT_FLOOR_CORRECTION_RENDERED_OWNER_HANDOFF",
+    decisionId: "OWNER_ACCEPTED_EXACT_BETA_8_MQ_122_TEXT_FLOOR_CORRECTION_HANDOFF",
+  });
+  assert.ok(mq122CorrectionDecision.adopted.includes("HANDOFF_RENDER_SOURCE_INDEX_HTML_SHA256_DEC1256A70BE62ED58826FB4F4E6E72A681883E2208CDBC6BF13F10C3C18522E"));
+  assert.ok(mq122CorrectionDecision.adopted.includes("OWNER_APPROVED_CORRECTIONS_2026_08_26"));
+  assert.ok(mq122CorrectionDecision.constraints.includes("CENSUS_TEXT_FLOOR_REMAINS_16_CSS_PX"));
+  assert.ok(mq122CorrectionDecision.constraints.includes("SAME_QUESTION_SAMPLE_TIER_REPRESENTATION_AND_THEME_IN_EVERY_PAIR"));
   assert.equal(result.tokens.status, "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
   assert.equal(result.assets.version, "1.5.0");
