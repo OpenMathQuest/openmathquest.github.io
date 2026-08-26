@@ -166,7 +166,28 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.equal(result.decisions.sourceBundle.authorityClass, "SOURCE_SUGGESTION_ONLY");
   assert.equal(result.decisions.sourceBundle.repositoryProjectionPolicy, "DIRECT_SOURCE_PROJECTION_FORBIDDEN");
   assert.equal(result.decisions.implementationDecisionLog.appendPolicy, "APPEND_ONLY_ORDER_ASCENDING");
-  assert.equal(result.decisions.implementationDecisionLog.entries.at(-1).migrationId, "ART-MIG-06");
+  const beta8LayoutDecision = result.decisions.implementationDecisionLog.entries.at(-1);
+  assert.deepEqual({
+    id: beta8LayoutDecision.id,
+    order: beta8LayoutDecision.order,
+    migrationId: beta8LayoutDecision.migrationId,
+    baseRevision: beta8LayoutDecision.baseRevision,
+    status: beta8LayoutDecision.status,
+    scopeId: beta8LayoutDecision.scopeId,
+    decisionId: beta8LayoutDecision.decisionId,
+  }, {
+    id: "ART-DEC-011",
+    order: 11,
+    migrationId: "ART-MIG-05",
+    baseRevision: "3e933ad7d28dd708f9b940ee42618354364ae705",
+    status: "ACTIVE",
+    scopeId: "BETA_8_LAYOUT_CORRECTION_RENDERED_OWNER_HANDOFF",
+    decisionId: "OWNER_ACCEPTED_EXACT_BETA_8_RETEACH_LAYOUT_CORRECTION_HANDOFF",
+  });
+  assert.ok(beta8LayoutDecision.adopted.includes("HANDOFF_RENDER_SOURCE_INDEX_HTML_SHA256_9D9404135F5F8315831D0679E2362F674B055226C5FD0F6AFD8FC237604370A7"));
+  assert.ok(beta8LayoutDecision.adopted.includes("OWNER_APPROVED_BETA_8_CANDIDATE_2026_08_26"));
+  assert.ok(beta8LayoutDecision.constraints.includes("NO_HORIZONTAL_OR_NESTED_QUESTION_SCROLL"));
+  assert.ok(beta8LayoutDecision.constraints.includes("MINIMUM_INTERACTIVE_TARGET_44_CSS_PX"));
   assert.equal(result.tokens.status, "RUNTIME_EARLY_COUNTING_AND_EARLY_FRAME_ACTIVE");
   assert.equal(result.tokens.projection.state, "ACTIVATED_EXACT_CONSUMERS");
   assert.equal(result.assets.version, "1.5.0");
