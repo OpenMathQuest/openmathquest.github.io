@@ -31,19 +31,19 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
   assert.equal(policy.executionPolicy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
   assert.equal(policy.executionPolicy.githubHosted.qualificationEvidenceLocation, "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT");
-  assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts.length, 3);
+  assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts.length, 4);
   assert.equal(policy.executionPolicy.githubHosted.qualificationAttempts[0].workflowRunId, 32557129231);
   assert.deepEqual(policy.executionPolicy.githubHosted.qualificationResult, {
-    workflowRunId: 32945325690,
-    candidateId: "bc082b0c2a72de0126128834abf89cea1ba01477:1088b7d2b9a22f2a7d1011e55d0b6c66583a3cfe0aa56c761840db810833cbaa",
-    evidenceArtifactId: 9598351496,
-    serialWallDurationMs: 462745,
-    boundedWallDurationMs: null,
-    measuredWallTimeReductionPercent: null,
+    workflowRunId: 32948683475,
+    candidateId: "863afd09c21502291f6da7501adcbb7d8e896acb:4a223fab070d951ee4deb3cce3b90d61d853ba7fe7d3fdea982cb91b36ad8423",
+    evidenceArtifactId: 9599935551,
+    serialWallDurationMs: 496489,
+    boundedWallDurationMs: 412932,
+    measuredWallTimeReductionPercent: 16.83,
     minimumRequiredWallTimeReductionPercent: 20,
-    evidenceEquivalent: null,
+    evidenceEquivalent: true,
     outcome: "FAIL",
-    issues: ["SERIAL_REFERENCE_PLAYWRIGHT_TIMEOUT"],
+    issues: ["MEASURED_REDUCTION_BELOW_MINIMUM"],
   });
   assert.deepEqual(policy.executionPolicy.focusedPlaywright, {
     testTimeoutMs: 60_000,
