@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import {
   BROWSER_AUDIT_SHARDS,
   aggregateBrowserShardReports,
+  browserShardMaximumFromEnvironment,
   browserShardEvidenceProjection,
+  runBrowserShardTasks,
 } from "../lib/browser-smoke.mjs";
 import { runNativeCoverage } from "../lib/native-coverage.mjs";
 import { PLAYWRIGHT_FOCUSED_WORKERS } from "../lib/playwright-focused-contract.mjs";
@@ -126,6 +128,28 @@ test("browser shard aggregation accepts exactly one complete identity-bound part
     );
   }
   assert.equal(Object.hasOwn(aggregate, "shardReports"), false);
+});
+
+test("browser shard execution obeys the mode-aware resource budget and preserves declared order", async () => {
+  assert.equal(browserShardMaximumFromEnvironment({}, 2), 1);
+  assert.equal(browserShardMaximumFromEnvironment({ GITHUB_ACTIONS: "true" }, 2), 2);
+  assert.equal(browserShardMaximumFromEnvironment({ GITHUB_ACTIONS: "true", MQ_BROWSER_SHARD_MAXIMUM: "1" }, 2), 1);
+  assert.throws(() => browserShardMaximumFromEnvironment({ MQ_BROWSER_SHARD_MAXIMUM: "0" }, 2), /integer from 1 through 2/u);
+  assert.throws(() => browserShardMaximumFromEnvironment({ MQ_BROWSER_SHARD_MAXIMUM: "3" }, 2), /integer from 1 through 2/u);
+  let active = 0;
+  let observed = 0;
+  const runOne = async (shard) => {
+    active += 1;
+    observed = Math.max(observed, active);
+    await new Promise((resolve) => setTimeout(resolve, shard === "core" ? 5 : 1));
+    active -= 1;
+    return shard;
+  };
+  assert.deepEqual(await runBrowserShardTasks(["core", "visual"], runOne, 1), ["core", "visual"]);
+  assert.equal(observed, 1);
+  observed = 0;
+  assert.deepEqual(await runBrowserShardTasks(["core", "visual"], runOne, 2), ["core", "visual"]);
+  assert.equal(observed, 2);
 });
 
 test("browser shard evidence ignores request order and duplicate multiplicity but preserves request identity", () => {
@@ -265,6 +289,7 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   const boundedRunner = await read("audit/lib/bounded-audit-lanes.mjs");
   const policy = JSON.parse(await read("audit/gate-integrity-policy-v1.json"));
   assert.match(browserRunner, /GITHUB_ACTIONS === "true"[\s\S]*Promise\.all/iu);
+  assert.match(browserRunner, /MQ_BROWSER_SHARD_MAXIMUM/u);
   assert.match(browserRunner, /SEQUENTIAL_LOCAL/u);
   assert.match(auditRunner, /policy: gateIntegrityPolicy\.executionPolicy/u);
   assert.match(boundedRunner, /policy\.laneSchedulingClass\[laneId\] === "EXCLUSIVE"/u);
@@ -277,6 +302,7 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   assert.equal(policy.executionPolicy.nestedProcessTimeoutCleanup.coverage, "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES");
   assert.equal(policy.executionPolicy.automaticRetries, 0);
   assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximum, Object.keys(BROWSER_AUDIT_SHARDS).length);
+  assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximumWhenTopLevelParallel, 1);
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);
 });
 

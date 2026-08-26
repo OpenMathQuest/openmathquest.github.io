@@ -11,6 +11,7 @@ import {
   compareAuditExecutionReports,
   createAuditLaneEnvelope,
   interpretJsonChildCompletion,
+  nestedConcurrencyMaximumForLane,
   nestedProcessTimeoutForLane,
   processTreeCleanupVerified,
   runBoundedAuditLanes,
@@ -37,6 +38,7 @@ const policy = Object.freeze({
   },
   laneTimeoutMs: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, 1_000])),
   nestedProcessFinalizationReserveMs: { coverage: 100 },
+  nestedConcurrency: { browserShardMaximum: 2, browserShardMaximumWhenTopLevelParallel: 1, playwrightWorkers: 1 },
   minimumMeasuredWallTimeReductionPercent: 20,
 });
 const resultFor = (laneId) => ({
@@ -60,7 +62,7 @@ test("bounded execution preserves declared result order and never exceeds two to
   const overlapViolations = [];
   const nestedBudgets = new Map();
   const starts = [];
-  const execute = async ({ laneId, nestedProcessTimeoutMs }) => {
+  const execute = async ({ laneId, nestedConcurrencyMaximum, nestedProcessTimeoutMs }) => {
     if (laneId === "coverage" && activeLaneIds.size > 0) overlapViolations.push(`coverage overlapped ${[...activeLaneIds].join(",")}`);
     if (laneId !== "coverage" && activeLaneIds.has("coverage")) overlapViolations.push(`${laneId} overlapped coverage`);
     active += 1;
@@ -68,6 +70,7 @@ test("bounded execution preserves declared result order and never exceeds two to
     starts.push(laneId);
     observed = Math.max(observed, active);
     nestedBudgets.set(laneId, nestedProcessTimeoutMs);
+    nestedBudgets.set(`${laneId}:concurrency`, nestedConcurrencyMaximum);
     await new Promise((resolve) => setTimeout(resolve, laneId === "coverage" ? 20 : 2));
     active -= 1;
     activeLaneIds.delete(laneId);
@@ -86,6 +89,9 @@ test("bounded execution preserves declared result order and never exceeds two to
   assert.deepEqual(overlapViolations, []);
   assert.equal(nestedBudgets.get("coverage"), 900);
   assert.equal(nestedBudgets.get("browser"), null);
+  assert.equal(nestedBudgets.get("browser:concurrency"), 1);
+  assert.equal(nestedBudgets.get("playwright:concurrency"), 1);
+  assert.equal(nestedBudgets.get("generator:concurrency"), null);
   assert.deepEqual(starts.slice(0, 3), ["coverage", "generator", "browser"]);
   assert.equal(parallel.report.maximumObservedConcurrency, 2);
   assert.deepEqual(parallel.report.boundedExecutionStartOrder, policy.boundedExecutionStartOrder);
@@ -94,8 +100,10 @@ test("bounded execution preserves declared result order and never exceeds two to
   const pendingHostedDefault = await runBoundedAuditLanes({ candidateId, environment: { GITHUB_ACTIONS: "true" }, execute, indexPath: "index.html", policy, root: ".", runId });
   assert.equal(pendingHostedDefault.report.executionMode, "SERIAL_REFERENCE");
   assert.equal(pendingHostedDefault.report.maximumObservedConcurrency, 1);
+  assert.equal(pendingHostedDefault.report.nestedConcurrencyMaximum.browser, 2);
   const serial = await runBoundedAuditLanes({ candidateId, environment: {}, execute, indexPath: "index.html", policy, root: ".", runId });
   assert.equal(serial.report.maximumObservedConcurrency, 1);
+  assert.equal(serial.report.nestedConcurrencyMaximum.browser, 2);
 });
 
 test("nested process budgets derive from the sole lane timeout authority and fail closed", () => {
@@ -104,6 +112,17 @@ test("nested process budgets derive from the sole lane timeout authority and fai
   assert.throws(
     () => nestedProcessTimeoutForLane({ ...policy, nestedProcessFinalizationReserveMs: { coverage: 1_000 } }, "coverage"),
     /finalization reserve is invalid/u,
+  );
+});
+
+test("nested concurrency budgets prevent browser oversubscription only in top-level bounded mode", () => {
+  assert.equal(nestedConcurrencyMaximumForLane(policy, "browser", "SERIAL_REFERENCE"), 2);
+  assert.equal(nestedConcurrencyMaximumForLane(policy, "browser", "BOUNDED_PARALLEL"), 1);
+  assert.equal(nestedConcurrencyMaximumForLane(policy, "playwright", "BOUNDED_PARALLEL"), 1);
+  assert.equal(nestedConcurrencyMaximumForLane(policy, "generator", "BOUNDED_PARALLEL"), null);
+  assert.throws(
+    () => nestedConcurrencyMaximumForLane({ ...policy, nestedConcurrency: { ...policy.nestedConcurrency, browserShardMaximumWhenTopLevelParallel: 0 } }, "browser", "BOUNDED_PARALLEL"),
+    /nested-concurrency maximum is invalid/u,
   );
 });
 

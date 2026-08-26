@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -165,18 +165,48 @@
       "defaultBeforeQualification": "SERIAL_REFERENCE",
       "qualificationWorkflowInput": "execution_qualification",
       "qualificationEvidenceLocation": "RUNNER_TEMP_OUTSIDE_REPOSITORY_CHECKOUT",
+      "qualificationAttempts": [
+        {
+          "workflowRunId": 32557129231,
+          "candidateId": "1259a58b55a8954addda13151e0e1df3b2067452:803f72f99a3084f0187e39794a0997e6d38fd84ee3fdd47e2efe76456823d6fc",
+          "evidenceArtifactId": 9471938142,
+          "serialWallDurationMs": 410960,
+          "boundedWallDurationMs": 331017,
+          "measuredWallTimeReductionPercent": 19.45,
+          "minimumRequiredWallTimeReductionPercent": 20,
+          "evidenceEquivalent": false,
+          "outcome": "FAIL",
+          "issues": [
+            "TIMING_FREE_CANONICAL_GATE_EVIDENCE_DIFFERED",
+            "MEASURED_REDUCTION_BELOW_MINIMUM"
+          ]
+        },
+        {
+          "workflowRunId": 32941141949,
+          "candidateId": "0f5ed9f7c58cee06e2f89417b7d8fe9cabb5fc80:5cb92d8877279919fd714736d27a0b9d58015ada841e158f0dd158dbc7467f94",
+          "evidenceArtifactId": 9597169671,
+          "serialWallDurationMs": 518723,
+          "boundedWallDurationMs": 430815,
+          "measuredWallTimeReductionPercent": 16.95,
+          "minimumRequiredWallTimeReductionPercent": 20,
+          "evidenceEquivalent": true,
+          "outcome": "FAIL",
+          "issues": [
+            "MEASURED_REDUCTION_BELOW_MINIMUM"
+          ]
+        }
+      ],
       "qualificationResult": {
-        "workflowRunId": 32557129231,
-        "candidateId": "1259a58b55a8954addda13151e0e1df3b2067452:803f72f99a3084f0187e39794a0997e6d38fd84ee3fdd47e2efe76456823d6fc",
-        "evidenceArtifactId": 9471938142,
-        "serialWallDurationMs": 410960,
-        "boundedWallDurationMs": 331017,
-        "measuredWallTimeReductionPercent": 19.45,
+        "workflowRunId": 32941141949,
+        "candidateId": "0f5ed9f7c58cee06e2f89417b7d8fe9cabb5fc80:5cb92d8877279919fd714736d27a0b9d58015ada841e158f0dd158dbc7467f94",
+        "evidenceArtifactId": 9597169671,
+        "serialWallDurationMs": 518723,
+        "boundedWallDurationMs": 430815,
+        "measuredWallTimeReductionPercent": 16.95,
         "minimumRequiredWallTimeReductionPercent": 20,
-        "evidenceEquivalent": false,
+        "evidenceEquivalent": true,
         "outcome": "FAIL",
         "issues": [
-          "TIMING_FREE_CANONICAL_GATE_EVIDENCE_DIFFERED",
           "MEASURED_REDUCTION_BELOW_MINIMUM"
         ]
       }
@@ -196,6 +226,7 @@
     },
     "nestedConcurrency": {
       "browserShardMaximum": 2,
+      "browserShardMaximumWhenTopLevelParallel": 1,
       "playwrightWorkers": 1
     },
     "automaticRetries": 0,
