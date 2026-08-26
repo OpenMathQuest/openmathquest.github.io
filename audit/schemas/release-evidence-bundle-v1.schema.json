@@ -11,10 +11,11 @@
     "schemaVersion": { "const": 1 },
     "authority": { "const": "THIS_FILE" },
     "releaseTag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" },
-    "qualificationCommitSha": { "$ref": "#/$defs/sha40" },
-    "reviewedAtUtc": { "$ref": "#/$defs/utc" },
-    "expiresAtUtc": { "$ref": "#/$defs/utc" },
-    "evidenceSuccessorPolicy": { "const": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1" },
+    "lifecycleState": { "enum": ["QUALIFICATION_PENDING", "EVIDENCE_REVIEWED"] },
+    "qualificationCommitSha": { "oneOf": [{ "$ref": "#/$defs/sha40" }, { "const": "PENDING" }] },
+    "reviewedAtUtc": { "oneOf": [{ "$ref": "#/$defs/utc" }, { "const": "PENDING" }] },
+    "expiresAtUtc": { "oneOf": [{ "$ref": "#/$defs/utc" }, { "const": "PENDING" }] },
+    "evidenceSuccessorPolicy": { "enum": ["RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1", "RELEASE_EVIDENCE_SUCCESSOR_V2"] },
     "licence": {
       "type": "object",
       "additionalProperties": false,
@@ -41,6 +42,78 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["lifecycleState"],
+        "properties": { "lifecycleState": { "const": "QUALIFICATION_PENDING" } }
+      },
+      "then": {
+        "properties": {
+          "qualificationCommitSha": { "const": "PENDING" },
+          "reviewedAtUtc": { "const": "PENDING" },
+          "expiresAtUtc": { "const": "PENDING" },
+          "evidenceSuccessorPolicy": { "const": "RELEASE_EVIDENCE_SUCCESSOR_V2" },
+          "records": {
+            "type": "object",
+            "properties": {
+              "canaryReconciliation": { "type": "object", "properties": { "state": { "const": "PENDING" }, "digestMode": { "const": "PENDING" }, "artifactPath": { "const": "audit/trusted-https-canary-v1.json" }, "artifactSha256": { "const": "PENDING" }, "candidateSha": { "const": "PENDING" }, "workflowRunId": { "const": "PENDING" }, "workflowRunAttempt": { "const": "PENDING" } } },
+              "adjudication": { "type": "object", "properties": { "state": { "const": "PENDING" }, "digestMode": { "const": "PENDING" }, "recommendation": { "const": "PENDING" }, "decisionBasis": { "const": "PENDING" } } },
+              "findingDisposition": { "type": "object", "properties": { "state": { "const": "PENDING" }, "digestMode": { "const": "PENDING" }, "openCritical": { "const": "PENDING" }, "openHigh": { "const": "PENDING" }, "unacceptedMedium": { "const": "PENDING" }, "unrecordedLow": { "const": "PENDING" } } },
+              "hostedWindows": { "type": "object", "properties": { "state": { "const": "PENDING" }, "digestMode": { "const": "PENDING" }, "artifactSha256": { "const": "PENDING" } } },
+              "ownerAuthorization": { "type": "object", "properties": { "state": { "const": "PENDING" }, "digestMode": { "const": "PENDING" }, "releaseTag": { "const": "PENDING" }, "protectedRef": { "const": "PENDING" }, "authorizationScope": { "const": "PENDING" } } }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "qualificationCommitSha": { "$ref": "#/$defs/sha40" },
+          "reviewedAtUtc": { "$ref": "#/$defs/utc" },
+          "expiresAtUtc": { "$ref": "#/$defs/utc" },
+          "records": {
+            "type": "object",
+            "properties": {
+              "canaryReconciliation": { "type": "object", "properties": { "state": { "const": "RECONCILED" }, "digestMode": { "const": "RAW_FILE_BYTES" }, "artifactSha256": { "$ref": "#/$defs/sha64" }, "candidateSha": { "$ref": "#/$defs/sha40" }, "workflowRunId": { "type": "integer", "minimum": 1 }, "workflowRunAttempt": { "type": "integer", "minimum": 1 } } },
+              "adjudication": { "type": "object", "properties": { "state": { "const": "APPROVED" }, "digestMode": { "const": "CANONICAL_RECORD" }, "recommendation": { "const": "RELEASE" }, "decisionBasis": { "type": "string", "pattern": "^RECORDED_BETA[1-9][0-9]*_CLEARANCE$" } } },
+              "findingDisposition": { "type": "object", "properties": { "state": { "const": "COMPLETE" }, "digestMode": { "const": "CANONICAL_RECORD" }, "openCritical": { "const": 0 }, "openHigh": { "const": 0 }, "unacceptedMedium": { "const": 0 }, "unrecordedLow": { "const": 0 } } },
+              "hostedWindows": { "type": "object", "properties": { "state": { "const": "REVIEWED" }, "digestMode": { "const": "RAW_FILE_BYTES" }, "artifactSha256": { "$ref": "#/$defs/sha64" } } },
+              "ownerAuthorization": { "type": "object", "properties": { "state": { "const": "PR_PUSH_AUTHORIZED" }, "digestMode": { "const": "CANONICAL_RECORD" }, "releaseTag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" }, "protectedRef": { "const": "refs/heads/main" }, "authorizationScope": { "const": "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS" } } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "not": { "required": ["lifecycleState"] } },
+      "then": {
+        "properties": {
+          "releaseTag": { "type": "string", "pattern": "^v1\\.0\\.0-beta\\.7$" },
+          "evidenceSuccessorPolicy": { "const": "RUNTIME_EQUIVALENT_EVIDENCE_SUCCESSOR_V1" },
+          "records": {
+            "type": "object",
+            "properties": {
+              "adjudication": {
+                "type": "object",
+                "properties": { "decisionBasis": { "const": "RECORDED_BETA7_CLEARANCE" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["lifecycleState"],
+        "properties": { "lifecycleState": { "const": "EVIDENCE_REVIEWED" } }
+      },
+      "then": {
+        "properties": {
+          "evidenceSuccessorPolicy": { "const": "RELEASE_EVIDENCE_SUCCESSOR_V2" }
+        }
+      }
+    }
+  ],
   "$defs": {
     "sha40": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
     "sha64": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
@@ -65,13 +138,13 @@
       "properties": {
         "id": { "const": "EXT-CANARY" },
         "evidenceClass": { "const": "CANONICAL_ARTIFACT" },
-        "state": { "const": "RECONCILED" },
-        "digestMode": { "const": "RAW_FILE_BYTES" },
+        "state": { "enum": ["PENDING", "RECONCILED"] },
+        "digestMode": { "enum": ["PENDING", "RAW_FILE_BYTES"] },
         "artifactPath": { "$ref": "#/$defs/path" },
-        "artifactSha256": { "$ref": "#/$defs/sha64" },
-        "candidateSha": { "$ref": "#/$defs/sha40" },
-        "workflowRunId": { "type": "integer", "minimum": 1 },
-        "workflowRunAttempt": { "type": "integer", "minimum": 1 },
+        "artifactSha256": { "oneOf": [{ "$ref": "#/$defs/sha64" }, { "const": "PENDING" }] },
+        "candidateSha": { "oneOf": [{ "$ref": "#/$defs/sha40" }, { "const": "PENDING" }] },
+        "workflowRunId": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "const": "PENDING" }] },
+        "workflowRunAttempt": { "oneOf": [{ "type": "integer", "minimum": 1 }, { "const": "PENDING" }] },
         "claimBoundary": { "const": "BINDS_VALIDATED_SANITIZED_CANARY_BYTES_FOR_THE_EXACT_CANDIDATE" }
       }
     },
@@ -108,10 +181,10 @@
       "properties": {
         "id": { "const": "EXT-ADJUDICATION" },
         "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
-        "state": { "const": "APPROVED" },
-        "digestMode": { "const": "CANONICAL_RECORD" },
-        "recommendation": { "const": "RELEASE" },
-        "decisionBasis": { "const": "RECORDED_BETA7_CLEARANCE" },
+        "state": { "enum": ["PENDING", "APPROVED"] },
+        "digestMode": { "enum": ["PENDING", "CANONICAL_RECORD"] },
+        "recommendation": { "enum": ["PENDING", "RELEASE"] },
+        "decisionBasis": { "oneOf": [{ "const": "PENDING" }, { "type": "string", "pattern": "^RECORDED_BETA[1-9][0-9]*_CLEARANCE$" }] },
         "claimBoundary": { "const": "BINDS_THE_RECORDED_ADJUDICATION_DECISION_NOT_REVIEWER_IDENTITY" }
       }
     },
@@ -121,12 +194,12 @@
       "properties": {
         "id": { "const": "EXT-FINDINGS" },
         "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
-        "state": { "const": "COMPLETE" },
-        "digestMode": { "const": "CANONICAL_RECORD" },
-        "openCritical": { "const": 0 },
-        "openHigh": { "const": 0 },
-        "unacceptedMedium": { "const": 0 },
-        "unrecordedLow": { "const": 0 },
+        "state": { "enum": ["PENDING", "COMPLETE"] },
+        "digestMode": { "enum": ["PENDING", "CANONICAL_RECORD"] },
+        "openCritical": { "enum": ["PENDING", 0] },
+        "openHigh": { "enum": ["PENDING", 0] },
+        "unacceptedMedium": { "enum": ["PENDING", 0] },
+        "unrecordedLow": { "enum": ["PENDING", 0] },
         "claimBoundary": { "const": "BINDS_THE_RECORDED_FINDING_COUNTS_NOT_UNDISCOVERED_DEFECT_ABSENCE" }
       }
     },
@@ -136,10 +209,10 @@
       "properties": {
         "id": { "const": "EXT-HOSTED-WINDOWS" },
         "evidenceClass": { "const": "EXTERNAL_CANONICAL_ARTIFACT" },
-        "state": { "const": "REVIEWED" },
-        "digestMode": { "const": "RAW_FILE_BYTES" },
+        "state": { "enum": ["PENDING", "REVIEWED"] },
+        "digestMode": { "enum": ["PENDING", "RAW_FILE_BYTES"] },
         "artifactPath": { "$ref": "#/$defs/path" },
-        "artifactSha256": { "$ref": "#/$defs/sha64" },
+        "artifactSha256": { "oneOf": [{ "$ref": "#/$defs/sha64" }, { "const": "PENDING" }] },
         "claimBoundary": { "const": "BINDS_THE_REVIEWED_BROWSER_AND_RUNNER_IDENTITY_RECORD" }
       }
     },
@@ -149,11 +222,11 @@
       "properties": {
         "id": { "const": "EXT-OWNER" },
         "evidenceClass": { "const": "STRUCTURED_ASSERTION" },
-        "state": { "const": "PR_PUSH_AUTHORIZED" },
-        "digestMode": { "const": "CANONICAL_RECORD" },
-        "releaseTag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" },
-        "protectedRef": { "const": "refs/heads/main" },
-        "authorizationScope": { "const": "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS" },
+        "state": { "enum": ["PENDING", "PR_PUSH_AUTHORIZED"] },
+        "digestMode": { "enum": ["PENDING", "CANONICAL_RECORD"] },
+        "releaseTag": { "oneOf": [{ "const": "PENDING" }, { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+-[0-9A-Za-z.-]+$" }] },
+        "protectedRef": { "enum": ["PENDING", "refs/heads/main"] },
+        "authorizationScope": { "enum": ["PENDING", "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS"] },
         "claimBoundary": { "const": "BINDS_THE_RECORDED_OWNER_DECISION_NOT_GITHUB_AUTHENTICATION" }
       }
     }

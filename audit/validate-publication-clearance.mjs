@@ -6,6 +6,7 @@ import { loadShippedEngine } from "./lib/engine-loader.mjs";
 import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
   clearanceMatches,
+  CURRENT_EVIDENCE_SUCCESSOR_POLICY,
   CURRENT_RELEASE_TAG,
   evaluateExternalReleaseEvidence,
   parsePublicationClearance,
@@ -16,7 +17,7 @@ import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   parseReviewedBrowserRunnerEvidence,
 } from "./lib/browser-runner-evidence.mjs";
-import { observeRuntimeEquivalentEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
+import { observeEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
 import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -41,12 +42,12 @@ try {
   if (!browserEvidence.valid || browserEvidence.status !== "REVIEWED") {
     throw new Error(`Reviewed browser/runner evidence is not approved: ${browserEvidence.issues.join("; ") || browserEvidence.status}`);
   }
-  if (!releaseEvidenceBundle.valid) {
-    throw new Error(`Release evidence bundle is invalid: ${releaseEvidenceBundle.issues.join("; ")}`);
+  if (!releaseEvidenceBundle.releaseReady) {
+    throw new Error(`Release evidence bundle is not release-ready: ${releaseEvidenceBundle.issues.join("; ") || releaseEvidenceBundle.lifecycleState}`);
   }
   const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
     ? { valid: true, issues: [] }
-    : await observeRuntimeEquivalentEvidenceSuccessor(root, parsed.qualificationCommitSha);
+    : await observeEvidenceSuccessor(root, parsed.qualificationCommitSha, CURRENT_EVIDENCE_SUCCESSOR_POLICY, CURRENT_RELEASE_TAG);
   if (!evidenceSuccessor.valid) {
     throw new Error(`Runtime-equivalent release-evidence successor is invalid: ${evidenceSuccessor.issues.join("; ")}`);
   }
