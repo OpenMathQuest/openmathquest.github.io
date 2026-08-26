@@ -4,9 +4,9 @@
   "schemaVersion": 1,
   "authority": "THIS_FILE",
   "releaseTag": "v1.0.0-beta.8",
-  "qualificationCommitSha": "4900417d95feb099a507d3df82ee3b5372a2e049",
-  "reviewedAtUtc": "2026-08-26T01:58:33Z",
-  "expiresAtUtc": "2026-09-25T01:58:33Z",
+  "qualificationCommitSha": "PENDING",
+  "reviewedAtUtc": "PENDING",
+  "expiresAtUtc": "PENDING",
   "evidenceSuccessorPolicy": "RELEASE_EVIDENCE_SUCCESSOR_V2",
   "licence": {
     "spdx": "MIT",
@@ -26,13 +26,13 @@
     "canaryReconciliation": {
       "id": "EXT-CANARY",
       "evidenceClass": "CANONICAL_ARTIFACT",
-      "state": "RECONCILED",
-      "digestMode": "RAW_FILE_BYTES",
+      "state": "PENDING",
+      "digestMode": "PENDING",
       "artifactPath": "audit/trusted-https-canary-v1.json",
-      "artifactSha256": "9d08e5f7307ace97cd68b2ee7b5968bdc89240c9a3cfb8236c64d98d40e734bf",
-      "candidateSha": "4900417d95feb099a507d3df82ee3b5372a2e049",
-      "workflowRunId": 32920797766,
-      "workflowRunAttempt": 1,
+      "artifactSha256": "PENDING",
+      "candidateSha": "PENDING",
+      "workflowRunId": "PENDING",
+      "workflowRunAttempt": "PENDING",
       "claimBoundary": "BINDS_VALIDATED_SANITIZED_CANARY_BYTES_FOR_THE_EXACT_CANDIDATE"
     },
     "physicalDevice": {
@@ -57,42 +57,42 @@
     "adjudication": {
       "id": "EXT-ADJUDICATION",
       "evidenceClass": "STRUCTURED_ASSERTION",
-      "state": "APPROVED",
-      "digestMode": "CANONICAL_RECORD",
-      "recommendation": "RELEASE",
-      "decisionBasis": "RECORDED_BETA8_CLEARANCE",
+      "state": "PENDING",
+      "digestMode": "PENDING",
+      "recommendation": "PENDING",
+      "decisionBasis": "PENDING",
       "claimBoundary": "BINDS_THE_RECORDED_ADJUDICATION_DECISION_NOT_REVIEWER_IDENTITY"
     },
     "findingDisposition": {
       "id": "EXT-FINDINGS",
       "evidenceClass": "STRUCTURED_ASSERTION",
-      "state": "COMPLETE",
-      "digestMode": "CANONICAL_RECORD",
-      "openCritical": 0,
-      "openHigh": 0,
-      "unacceptedMedium": 0,
-      "unrecordedLow": 0,
+      "state": "PENDING",
+      "digestMode": "PENDING",
+      "openCritical": "PENDING",
+      "openHigh": "PENDING",
+      "unacceptedMedium": "PENDING",
+      "unrecordedLow": "PENDING",
       "claimBoundary": "BINDS_THE_RECORDED_FINDING_COUNTS_NOT_UNDISCOVERED_DEFECT_ABSENCE"
     },
     "hostedWindows": {
       "id": "EXT-HOSTED-WINDOWS",
       "evidenceClass": "EXTERNAL_CANONICAL_ARTIFACT",
-      "state": "REVIEWED",
-      "digestMode": "RAW_FILE_BYTES",
+      "state": "PENDING",
+      "digestMode": "PENDING",
       "artifactPath": "audit/browser-runner-evidence-v1.json",
-      "artifactSha256": "85bd45759580253e14e476911abceaafb8333ab4cb9459fe7ba458f34b2ee01f",
+      "artifactSha256": "PENDING",
       "claimBoundary": "BINDS_THE_REVIEWED_BROWSER_AND_RUNNER_IDENTITY_RECORD"
     },
     "ownerAuthorization": {
       "id": "EXT-OWNER",
       "evidenceClass": "STRUCTURED_ASSERTION",
-      "state": "PR_PUSH_AUTHORIZED",
-      "digestMode": "CANONICAL_RECORD",
-      "releaseTag": "v1.0.0-beta.8",
-      "protectedRef": "refs/heads/main",
-      "authorizationScope": "NAMED_BETA_RELEASE_AND_DIRECT_SUCCESSORS",
+      "state": "PENDING",
+      "digestMode": "PENDING",
+      "releaseTag": "PENDING",
+      "protectedRef": "PENDING",
+      "authorizationScope": "PENDING",
       "claimBoundary": "BINDS_THE_RECORDED_OWNER_DECISION_NOT_GITHUB_AUTHENTICATION"
     }
   },
-  "lifecycleState": "EVIDENCE_REVIEWED"
+  "lifecycleState": "QUALIFICATION_PENDING"
 }
