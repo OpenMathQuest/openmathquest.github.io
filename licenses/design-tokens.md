@@ -16,5 +16,5 @@ feature, tutorial, accessibility, PWA, browser, and release gates.
 
 | Shipped file | Version | SHA-256 |
 |---|---|---|
-| `math-quest-design-tokens-v1.json` | `1.6.0` | `f546db2734d3ff8aab536eb5ac93c6fa169c6a615abb942baf11c37125521d3e` |
+| `math-quest-design-tokens-v1.json` | `1.6.0` | `be950b8caac41efe0f8857e8143f63263d73cf6c0de98fa062ae8023dead098b` |
 | `math-quest-design-tokens-v1.css` | `1.6.0` | `f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee` |

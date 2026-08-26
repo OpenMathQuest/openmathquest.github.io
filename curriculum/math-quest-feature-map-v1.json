@@ -38,11 +38,11 @@
   },
   "tutorialBinding": {
     "path": "curriculum/math-quest-tutorial-manifest-v1.json",
-    "sha256": "b9ba8940ad4dad1a348f6543a51e82002b2e54ccd444e5143c73ae322054087a"
+    "sha256": "23376a6eb2316c46f5febdf6d28ea3928bfe85a69ddbe2a95d96129cd58df139"
   },
   "artDesignBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "c00ef66e4c4f4672804617468f2272633a49c212d7c1495b28e8babdf7d85993"
+    "sha256": "1447fece906478b054fe76ab36592121019d2d14f8f37d8b7becbb6e7d72d02f"
   },
   "proofKindCatalog": [
     { "kind": "a11y", "predicate": "ACCESSIBILITY_TREE_AND_TARGET_CONTRACT_HOLDS", "observationClass": "A11Y_TREE" },
