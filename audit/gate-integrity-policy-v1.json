@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -832,7 +832,11 @@
       },
       "implementationPaths": [
         ".github/workflows/pages.yml",
-        "audit/lib/gate-integrity-policy.mjs"
+        "audit/lib/ci-dependency-policy.mjs",
+        "audit/lib/gate-integrity-policy.mjs",
+        "audit/quality-gate-policy-v1.json",
+        "package-lock.json",
+        "package.json"
       ],
       "validatorPaths": [
         "audit/tests/pwa-release.test.mjs"

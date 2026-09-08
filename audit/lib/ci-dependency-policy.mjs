@@ -374,6 +374,41 @@ export function ciDependencyPolicyFindings(input) {
   return findings;
 }
 
+function pagesValidationLockPackages(lock) {
+  const packages = {};
+  const pending = ["ajv"];
+  while (pending.length) {
+    const key = `node_modules/${pending.pop()}`;
+    if (Object.hasOwn(packages, key)) continue;
+    const record = lock.packages[key];
+    const restricted = ["os", "cpu", "optionalDependencies", "peerDependencies", "hasInstallScript"];
+    if (!record || restricted.some((field) => Object.hasOwn(record, field))
+        || Object.keys(lock.packages).some((candidate) => candidate.startsWith(`${key}/node_modules/`))) {
+      throw new Error(`Pages validation requires a flat, platform-independent, script-free locked package: ${key}`);
+    }
+    packages[key] = structuredClone(record);
+    pending.push(...Object.keys(record.dependencies || {}));
+  }
+  return Object.fromEntries(Object.entries(packages).sort(([left], [right]) => left.localeCompare(right, "en")));
+}
+
+export function pagesValidationDependencyProjection(input) {
+  const findings = ciDependencyPolicyFindings(input);
+  if (findings.length) throw new Error(findings.join("\n"));
+  const manifest = JSON.parse(input.packageJsonText);
+  const lock = JSON.parse(input.packageLockText);
+  const packageJson = {
+    name: manifest.name, version: manifest.version, private: true,
+    license: manifest.license, engines: manifest.engines,
+    devDependencies: { ajv: manifest.devDependencies.ajv },
+  };
+  const root = { name: packageJson.name, version: packageJson.version,
+    license: packageJson.license, devDependencies: packageJson.devDependencies, engines: packageJson.engines };
+  const packageLock = { name: lock.name, version: lock.version, lockfileVersion: lock.lockfileVersion,
+    requires: true, packages: { "": root, ...pagesValidationLockPackages(lock) } };
+  return Object.freeze({ packageJson, packageLock });
+}
+
 export function ciDependencyPolicyMutationFailures(input) {
   const failures = [];
   const run = (label, field, change, expected) => {

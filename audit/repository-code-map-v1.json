@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.51.0",
+  "version": "1.52.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -1261,6 +1261,25 @@
       "validators": [
         "audit/tests/publication-clearance.test.mjs",
         "audit/tests/release-evidence-bundle.test.mjs"
+      ]
+    },
+    {
+      "id": "release.pages-validation-dependencies",
+      "owner": "audit/lib/ci-dependency-policy.mjs",
+      "owns": [
+        "release.pages-validation-dependencies.approved-lock-subset",
+        "release.pages-validation-dependencies.schema-validator-root"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/pwa-release.test.mjs"
       ]
     },
     {
@@ -4279,6 +4298,36 @@
       "source": "audit/tests/operation-cleanup.test.mjs",
       "target": "audit/tests/audit-orchestration.test.mjs",
       "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.lock",
+      "source": "package-lock.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.manifest",
+      "source": "package.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.policy",
+      "source": "audit/lib/ci-dependency-policy.mjs",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.reviewed-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.test",
+      "source": "audit/lib/ci-dependency-policy.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "TESTS"
     },
     {
       "id": "placement-engine-reuse.test-entry",

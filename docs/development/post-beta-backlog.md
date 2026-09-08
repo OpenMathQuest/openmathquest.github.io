@@ -1406,6 +1406,17 @@ reproduced the original failure before correction. The original failed hosted
 artifact is retained; a new qualification commit and fresh hosted evidence are
 required.
 
+The release preflight also identified the prior Beta 8 Pages failure in workflow
+run `33020623770`: the publishing job invoked its schema-backed guard without
+installing Ajv. The public site consequently still served Beta 7. Beta 9 adds
+a temporary, private Pages validation project projected from the existing
+reviewed package manifest, exact lockfile and supply-chain policy. It installs
+only Ajv and its four locked dependencies with lifecycle scripts disabled;
+package versions, integrity records, licences and the full repository lockfile
+remain unchanged. The projection rejects an unreviewed input or an unsupported
+platform-specific, nested, optional, peer or lifecycle-script package. Focused
+checks bind the projection and mandatory installation before the Pages guard.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,

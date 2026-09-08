@@ -143,6 +143,32 @@ jobs:
           node-version: 24.14.0
           package-manager-cache: false
 
+      - name: Install reviewed Pages validation dependencies
+        shell: bash
+        env:
+          MQ_PAGES_VALIDATION_PROJECT: ${{ runner.temp }}/math-quest-pages-validation
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { mkdir, readFile, writeFile } from "node:fs/promises";
+          import path from "node:path";
+          import { pagesValidationDependencyProjection } from "./audit/lib/ci-dependency-policy.mjs";
+          const [packageJsonText, packageLockText, qualityPolicyText] = await Promise.all([
+            readFile("package.json", "utf8"), readFile("package-lock.json", "utf8"),
+            readFile("audit/quality-gate-policy-v1.json", "utf8"),
+          ]);
+          const projected = pagesValidationDependencyProjection({ packageJsonText, packageLockText, qualityPolicyText });
+          const target = process.env.MQ_PAGES_VALIDATION_PROJECT;
+          await mkdir(target);
+          for (const [name, value] of [["package.json", projected.packageJson], ["package-lock.json", projected.packageLock]]) {
+            await writeFile(path.join(target, name), JSON.stringify(value, null, 2) + "\n", { flag: "wx" });
+          }
+          NODE
+          npm --prefix "$MQ_PAGES_VALIDATION_PROJECT" ci --ignore-scripts --omit=optional --no-audit --no-fund
+          test ! -e node_modules
+          mv "$MQ_PAGES_VALIDATION_PROJECT/node_modules" node_modules
+          git diff --exit-code -- package.json package-lock.json audit/quality-gate-policy-v1.json
+
       - name: Reject private, legacy, or unregistered material
         id: public_payload
         shell: bash
