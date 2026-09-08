@@ -63,6 +63,8 @@ const EXPECTED_RELEASE_ENTRIES = Object.freeze([
   ["assets/icons/apple-touch-icon.png", "image/png"],
   ["assets/icons/icon-192.png", "image/png"],
   ["assets/icons/icon-512.png", "image/png"],
+  ["assets/js/math-quest-progress-source.js", "text/javascript"],
+  ["assets/js/math-quest-pwa-status.js", "text/javascript"],
   ["assets/sounds/close.wav", "audio/wav"],
   ["assets/sounds/confirm.wav", "audio/wav"],
   ["assets/sounds/incorrect.wav", "audio/wav"],
