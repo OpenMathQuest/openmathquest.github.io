@@ -3009,3 +3009,7 @@ gate.
 The deliverable should be a proposed development/release test cadence, an
 evidence invalidation matrix, audit-stage timing data, and a prioritized list
 of safe efficiency improvements for owner approval.
+
+The Pages dependency regression stays in the existing public-candidate
+dependency-policy test module. Its relocation preserves all assertions and
+the PWA test file’s downward source-size limit; no quality ceiling is raised.

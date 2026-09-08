@@ -1148,7 +1148,8 @@ types, unknown or duplicate entries, and reordering. This catches runtime-list
 drift before the hosted canary begins materializing its committed snapshots.
 
 Pages validation derives its private install project only after the canonical
-CI dependency policy validates the full source manifest and lockfile. Tests
+CI dependency policy validates the full source manifest and lockfile. The
+existing public-candidate dependency-policy tests
 require the exact Ajv closure, byte-equivalent locked package records, disabled
 lifecycle scripts, and installation before the publication guard. Changed
 dependency inputs, omitted installation and bypassed projection are rejected.

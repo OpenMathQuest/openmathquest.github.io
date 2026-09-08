@@ -16,7 +16,6 @@ import { promisify } from "node:util";
 import vm from "node:vm";
 import "./page-adapter-effects.test.mjs";
 import { releaseCertificationRunEligible } from "../lib/gate-integrity-policy.mjs";
-import { pagesValidationDependencyProjection } from "../lib/ci-dependency-policy.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const pwaStatusSource = await readFile(path.join(root, "assets", "js", "math-quest-pwa-status.js"), "utf8");
@@ -1003,57 +1002,6 @@ test("[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed ru
     assert.equal(server.includes(`@('${blocked}'`), false);
   }
 });
-
-async function pagesDependencyInputs() {
-  const [packageJsonText, packageLockText, qualityPolicyText] = await Promise.all([
-    readFile(path.join(root, "package.json"), "utf8"),
-    readFile(path.join(root, "package-lock.json"), "utf8"),
-    readFile(path.join(root, "audit/quality-gate-policy-v1.json"), "utf8"),
-  ]);
-  return { packageJsonText, packageLockText, qualityPolicyText };
-}
-
-test("Pages validation projects only the approved locked schema-validator closure", async () => {
-  const input = await pagesDependencyInputs();
-  const original = JSON.parse(input.packageLockText);
-  const { packageJson, packageLock } = pagesValidationDependencyProjection(input);
-  assert.equal(packageJson.private, true);
-  assert.equal(packageJson.scripts, undefined);
-  assert.deepEqual(packageJson.devDependencies, { ajv: original.packages["node_modules/ajv"].version });
-  assert.deepEqual(Object.keys(packageLock.packages), ["", "node_modules/ajv", "node_modules/fast-deep-equal",
-    "node_modules/fast-uri", "node_modules/json-schema-traverse", "node_modules/require-from-string"]);
-  for (const [key, record] of Object.entries(packageLock.packages).slice(1)) {
-    assert.deepEqual(record, original.packages[key], key);
-  }
-});
-
-test("[NC-PAGES-VALIDATOR-BOOTSTRAP] unreviewed dependencies and missing installation fail closed", async () => {
-  const input = await pagesDependencyInputs();
-  assert.throws(() => pagesValidationDependencyProjection({ ...input, packageLockText: input.packageLockText + " " }), /SHA-256/u);
-  const manifest = JSON.parse(input.packageJsonText);
-  manifest.devDependencies.ajv = "8.19.0";
-  assert.throws(() => pagesValidationDependencyProjection({ ...input, packageJsonText: JSON.stringify(manifest) }), /direct dev dependencies/u);
-  const workflow = await readFile(path.join(root, ".github/workflows/pages.yml"), "utf8");
-  assertPagesValidationBootstrap(workflow);
-  const withoutInstall = workflow.replace(/      - name: Install reviewed Pages validation dependencies[\s\S]*?(?=      - name: Reject private, legacy, or unregistered material)/u, "");
-  assert.notEqual(withoutInstall, workflow);
-  assert.throws(() => assertPagesValidationBootstrap(withoutInstall), { name: "AssertionError" });
-  assert.throws(() => assertPagesValidationBootstrap(workflow.replace("ci --ignore-scripts", "ci")), { name: "AssertionError" });
-  assert.throws(() => assertPagesValidationBootstrap(workflow.replace("pagesValidationDependencyProjection({", "missingProjection({")), { name: "AssertionError" });
-});
-
-function assertPagesValidationBootstrap(workflow) {
-  const setup = workflow.indexOf("- name: Set up Node.js 24");
-  const install = workflow.indexOf("- name: Install reviewed Pages validation dependencies");
-  const guard = workflow.indexOf("- name: Reject private, legacy, or unregistered material");
-  assert.ok(setup >= 0 && install > setup && guard > install);
-  const step = workflow.slice(install, guard);
-  assert.match(step, /pagesValidationDependencyProjection\(\{ packageJsonText, packageLockText, qualityPolicyText \}\)/u);
-  assert.match(step, /ci --ignore-scripts --omit=optional --no-audit --no-fund/u);
-  assert.match(step, /test ! -e node_modules/u);
-  assert.match(step, /mv "\$MQ_PAGES_VALIDATION_PROJECT\/node_modules" node_modules/u);
-  assert.match(step, /git diff --exit-code -- package\.json package-lock\.json audit\/quality-gate-policy-v1\.json/u);
-}
 
 test("Pages upload is an immutable, canonical snapshot of the verified tagged blobs", async () => {
   const [pagesWorkflow, manifestText] = await Promise.all([

@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.52.0",
+  "version": "1.53.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -1279,7 +1279,7 @@
         }
       ],
       "validators": [
-        "audit/tests/pwa-release.test.mjs"
+        "audit/tests/public-candidate-refactor-policies.test.mjs"
       ]
     },
     {
@@ -4326,7 +4326,13 @@
     {
       "id": "pages.validation-bootstrap.test",
       "source": "audit/lib/ci-dependency-policy.mjs",
-      "target": "audit/tests/pwa-release.test.mjs",
+      "target": "audit/tests/public-candidate-refactor-policies.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pages.validation-bootstrap.workflow-test",
+      "source": ".github/workflows/pages.yml",
+      "target": "audit/tests/public-candidate-refactor-policies.test.mjs",
       "kind": "TESTS"
     },
     {

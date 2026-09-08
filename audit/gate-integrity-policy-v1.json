@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -839,6 +839,7 @@
         "package.json"
       ],
       "validatorPaths": [
+        "audit/tests/public-candidate-refactor-policies.test.mjs",
         "audit/tests/pwa-release.test.mjs"
       ]
     },
