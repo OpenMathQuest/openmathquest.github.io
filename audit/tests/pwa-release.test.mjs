@@ -1067,7 +1067,7 @@ function snapshotProgramFromWorkflow(pagesWorkflow) {
   assert.match(pagesWorkflow, /actions\/runs\/\$\{run_id\}\/jobs\?filter=all/iu);
   assert.match(pagesWorkflow, /\.name == "full-audit" and \.status == "completed" and \.conclusion == "success"/u);
   const scriptMatch = pagesWorkflow.match(
-    /node --input-type=module <<'NODE'\r?\n([\s\S]*?)\r?\n {10}NODE/u,
+    /- name: Construct, verify, and seal exact tagged Pages snapshot[\s\S]*?node --input-type=module <<'NODE'\r?\n([\s\S]*?)\r?\n {10}NODE/u,
   );
   assert.ok(scriptMatch, "the executable snapshot program is extractable");
   const snapshotProgram = scriptMatch[1]

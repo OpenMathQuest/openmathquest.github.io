@@ -1141,6 +1141,19 @@ module. The canary rights control mutates all three runner modules independently
 the focused canary command includes the runner-effect test file. Routing checks
 require every extracted fixture/module to select its protecting suite.
 
+The canary snapshot regression executes the actual closed manifest validator
+against the independently generated shipped release manifest. It includes both
+approved browser helpers and rejects either helper's omission, altered MIME
+types, unknown or duplicate entries, and reordering. This catches runtime-list
+drift before the hosted canary begins materializing its committed snapshots.
+
+Pages validation derives its private install project only after the canonical
+CI dependency policy validates the full source manifest and lockfile. The
+existing public-candidate dependency-policy tests
+require the exact Ajv closure, byte-equivalent locked package records, disabled
+lifecycle scripts, and installation before the publication guard. Changed
+dependency inputs, omitted installation and bypassed projection are rejected.
+
 Release-version comparison executes both immutable R0 and shipped engines.
 It verifies CONSTANTS.PRODUCT_VERSION, initial-state productVersion and the
 single canonical exported productVersion against each revision's VERSION.

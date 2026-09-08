@@ -8,6 +8,51 @@ import { createSourceExtractor } from "./source-extraction.mjs";
 const runnerSource = await readFile(new URL("../run-trusted-https-canary.mjs", import.meta.url), "utf8");
 const extract = createSourceExtractor(runnerSource, { sourceType: "module" });
 
+async function canarySnapshotManifestValidator() {
+  const source = await readFile(new URL("../lib/trusted-https-canary-runner-platform.mjs", import.meta.url), "utf8");
+  const extractor = createSourceExtractor(source, { sourceType: "module" });
+  const marker = "const EXPECTED_RELEASE_ENTRIES = Object.freeze(";
+  const start = source.indexOf(marker);
+  assert.ok(start >= 0);
+  assert.equal(source.lastIndexOf(marker), start);
+  const open = source.indexOf("[", start);
+  const close = extractor.matchingDelimiter(open, "[", "]");
+  return vm.runInThisContext(`(assert) => {
+    ${source.slice(start, close + 1)});
+    ${extractor.functionDeclaration("verifySnapshotManifest")}
+    return verifySnapshotManifest;
+  }`)(assert);
+}
+
+test("canary accepts the actual shipped release manifest including browser helpers", async () => {
+  const verify = await canarySnapshotManifestValidator();
+  const manifest = JSON.parse(await readFile(new URL("../../release-shell-v1.json", import.meta.url), "utf8"));
+  assert.doesNotThrow(() => verify(manifest));
+});
+
+test("[NC-CANARY-RUNTIME-ALLOWLIST] missing helpers and altered runtime entries fail closed", async () => {
+  const verify = await canarySnapshotManifestValidator();
+  const manifest = JSON.parse(await readFile(new URL("../../release-shell-v1.json", import.meta.url), "utf8"));
+  assert.doesNotThrow(() => verify(manifest));
+  for (const helper of ["math-quest-progress-source.js", "math-quest-pwa-status.js"]) {
+    const missing = structuredClone(manifest);
+    missing.entries = missing.entries.filter((entry) => !entry.path.endsWith(helper));
+    assert.notDeepEqual(missing, manifest);
+    assert.throws(() => verify(missing), { name: "AssertionError" });
+  }
+  for (const mutate of [
+    (entries) => { entries[0].mime = "application/octet-stream"; },
+    (entries) => { entries.push({ ...entries[0], path: "./assets/js/unreviewed.js" }); },
+    (entries) => { entries.push({ ...entries[0] }); },
+    (entries) => { entries.reverse(); },
+  ]) {
+    const changed = structuredClone(manifest);
+    mutate(changed.entries);
+    assert.notDeepEqual(changed, manifest);
+    assert.throws(() => verify(changed), { name: "AssertionError" });
+  }
+});
+
 function activeCacheRunFixture() {
   const controls = [];
   const locator = {

@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.16.0",
+  "version": "1.19.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -668,10 +668,12 @@
       },
       "implementationPaths": [
         ".github/workflows/trusted-https-canary.yml",
+        "audit/lib/trusted-https-canary-runner-platform.mjs",
         "audit/lib/trusted-https-canary.mjs",
         "audit/validate-trusted-https-canary.mjs"
       ],
       "validatorPaths": [
+        "audit/tests/canary-runner-effects.test.mjs",
         "audit/tests/trusted-https-canary.test.mjs"
       ]
     },
@@ -830,9 +832,14 @@
       },
       "implementationPaths": [
         ".github/workflows/pages.yml",
-        "audit/lib/gate-integrity-policy.mjs"
+        "audit/lib/ci-dependency-policy.mjs",
+        "audit/lib/gate-integrity-policy.mjs",
+        "audit/quality-gate-policy-v1.json",
+        "package-lock.json",
+        "package.json"
       ],
       "validatorPaths": [
+        "audit/tests/public-candidate-refactor-policies.test.mjs",
         "audit/tests/pwa-release.test.mjs"
       ]
     },

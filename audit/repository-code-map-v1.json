@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.50.0",
+  "version": "1.53.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -1261,6 +1261,25 @@
       "validators": [
         "audit/tests/publication-clearance.test.mjs",
         "audit/tests/release-evidence-bundle.test.mjs"
+      ]
+    },
+    {
+      "id": "release.pages-validation-dependencies",
+      "owner": "audit/lib/ci-dependency-policy.mjs",
+      "owns": [
+        "release.pages-validation-dependencies.approved-lock-subset",
+        "release.pages-validation-dependencies.schema-validator-root"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/public-candidate-refactor-policies.test.mjs"
       ]
     },
     {
@@ -4281,6 +4300,42 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "pages.validation-bootstrap.lock",
+      "source": "package-lock.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.manifest",
+      "source": "package.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.policy",
+      "source": "audit/lib/ci-dependency-policy.mjs",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.reviewed-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pages.validation-bootstrap.test",
+      "source": "audit/lib/ci-dependency-policy.mjs",
+      "target": "audit/tests/public-candidate-refactor-policies.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pages.validation-bootstrap.workflow-test",
+      "source": ".github/workflows/pages.yml",
+      "target": "audit/tests/public-candidate-refactor-policies.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "placement-engine-reuse.test-entry",
       "source": "audit/tests/placement-engine-reuse.test.mjs",
       "target": "audit/tests/adapter-syntax.test.mjs",
@@ -4467,6 +4522,18 @@
       "kind": "VALIDATES"
     },
     {
+      "id": "progress-source.canary-runtime",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.canary-runtime-test",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "progress-source.launcher",
       "source": "assets/js/math-quest-progress-source.js",
       "target": "Serve-MathQuest.ps1",
@@ -4549,6 +4616,18 @@
       "source": "assets/js/math-quest-pwa-status.js",
       "target": "audit/run-audit.ps1",
       "kind": "VALIDATES"
+    },
+    {
+      "id": "pwa-status.canary-runtime",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.canary-runtime-test",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
     },
     {
       "id": "pwa-status.launcher",

@@ -1392,6 +1392,31 @@ declared product-version fields using the baseline value; all other constants,
 state fields and serialized bytes remain under exact comparison. This release
 metadata projection does not rewrite R0 or substitute an engine implementation.
 
+The first hosted Beta 9 canary on qualification commit
+`88e34c96de7a2c5db5f477de4e7c53d4ae859376` failed in workflow run
+`34215892759` before the browser journey. Its independent runtime allowlist
+omitted the approved progress-source and PWA-status JavaScript helpers, so it
+rejected the correct shipped manifest. This is an obsolete harness contract
+and a focused-test coverage gap; the failure occurred before update or learning
+behavior was exercised. The correction adds only those two exact paths and
+MIME types to the closed allowlist. A regression executes the actual manifest
+validator against the shipped manifest and rejects missing helpers, changed
+MIME types, unknown or duplicate entries, and reordering. The new regression
+reproduced the original failure before correction. The original failed hosted
+artifact is retained; a new qualification commit and fresh hosted evidence are
+required.
+
+The release preflight also identified the prior Beta 8 Pages failure in workflow
+run `33020623770`: the publishing job invoked its schema-backed guard without
+installing Ajv. The public site consequently still served Beta 7. Beta 9 adds
+a temporary, private Pages validation project projected from the existing
+reviewed package manifest, exact lockfile and supply-chain policy. It installs
+only Ajv and its four locked dependencies with lifecycle scripts disabled;
+package versions, integrity records, licences and the full repository lockfile
+remain unchanged. The projection rejects an unreviewed input or an unsupported
+platform-specific, nested, optional, peer or lifecycle-script package. Focused
+checks bind the projection and mandatory installation before the Pages guard.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,
@@ -2984,3 +3009,7 @@ gate.
 The deliverable should be a proposed development/release test cadence, an
 evidence invalidation matrix, audit-stage timing data, and a prioritized list
 of safe efficiency improvements for owner approval.
+
+The Pages dependency regression stays in the existing public-candidate
+dependency-policy test module. Its relocation preserves all assertions and
+the PWA test file’s downward source-size limit; no quality ceiling is raised.
