@@ -55,6 +55,23 @@ jobs:
         shell: powershell
         run: node .\audit\run-ai-change-loop.mjs --progress
 
+      - name: Retain synthetic interaction-fuzz failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-interaction-fuzz-failure-${{ github.sha }}
+          path: |
+            audit/.tmp-playwright-interaction-fuzz-report.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop.json
+            audit/.tmp-playwright-interaction-fuzz/edge-phone.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop-original-failure.json
+            audit/.tmp-playwright-interaction-fuzz/edge-phone-original-failure.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop-failure.png
+            audit/.tmp-playwright-interaction-fuzz/edge-phone-failure.png
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
+
   full-audit:
     if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true
     runs-on: windows-latest

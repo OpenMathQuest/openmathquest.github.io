@@ -386,7 +386,7 @@
       "legacyViolationCeilings": {
         "javascript": {
           "cyclomatic": 0,
-          "abcMagnitude": 56,
+          "abcMagnitude": 55,
           "cognitive": 4,
           "functionLines": 3,
           "maxNesting": 0
@@ -532,9 +532,9 @@
   },
   "performanceBudgets": {
     "stylesheetMaximumBytes": 234769,
-    "javascriptMaximumBytes": 1044928,
+    "javascriptMaximumBytes": 1044905,
     "compiledAssetMaximumBytes": 932443,
-    "productionPayloadMaximumBytes": 2701427,
+    "productionPayloadMaximumBytes": 2701404,
     "engineScenarioMaximumWallTimeMs": 12000,
     "qualityGateMaximumWallTimeMs": 120000
   },

@@ -1417,6 +1417,41 @@ remain unchanged. The projection rejects an unreviewed input or an unsupported
 platform-specific, nested, optional, peer or lifecycle-script package. Focused
 checks bind the projection and mandatory installation before the Pages guard.
 
+The subsequent Beta 9 evidence pull request failed its browser interaction
+fuzz stage in hosted run `34223740439`. The desktop property's minimized replay
+did not reproduce its failure. The harness discarded the original action trace
+and captured its screenshot after replay; CI retained no diagnostic artifact.
+The original browser failure remains unresolved. A local diagnostic pass does
+not clear it. The repair retains the original failure before shrinking, keeps
+the minimized and replay traces separate, and uploads bounded synthetic failure
+evidence even when later shard validation fails. Focused negative controls must
+prove that a later passing execution cannot erase or pass the original failure.
+Further diagnosis and a reviewed resolution remain necessary before release;
+this evidence repair alone does not establish a product or environment cause.
+The focused size-ratchet check also exposed ceilings 23 bytes above the already
+committed runtime: JavaScript measured 1,044,905 bytes and the production payload
+2,701,404 bytes. `index.html` and `sw.js` were byte-identical to qualification
+commit `a3bfa95d88a10df985465d3d937d6e6c25e8ce33`; the correction tightens these
+stale ceilings to the measurements. The evidence helper simplification also
+reduces JavaScript ABC exceptions from 56 to 55, with that ceiling tightened.
+Three predeclared local diagnostic attempts with the repaired capture code each
+passed both profiles and 184 native actions. Every log and report is retained;
+the preceding launcher interruption produced no browser verdict. These local
+observations did not reproduce or resolve hosted run `34223740439` and provide
+no release clearance.
+Hosted repair run `34234323417` likewise passed the browser-fuzz stage (both
+profiles, 184 actions), along with the preceding compiler, architecture, tests,
+and differential checks and subsequent mutation and security checks. It then
+failed the source-size gate because the repaired module had 627 lines against
+the unchanged 600-line limit. The correction removes duplicated action/selector
+declarations by deriving ordinary selectors from their existing action lists.
+The module is 589 lines; all 11 exported constants, including selector bytes,
+action ordering and frozen action records, match the failed candidate exactly.
+Focused verification of the correction passed 26 tests and the quality stage;
+coverage input for that focused stage came from the retained hosted run only
+after its engine SHA-256 matched the unchanged current engine. The original
+browser-failure risk remains pending the owner's release decision.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,
