@@ -1,5 +1,5 @@
 export const BROWSER_RUNNER_EVIDENCE_PATH = "audit/browser-runner-evidence-v1.json";
-export const BROWSER_RUNNER_EVIDENCE_SCHEMA_VERSION = 1;
+const BROWSER_RUNNER_EVIDENCE_SCHEMA_VERSION = 1;
 
 const EVIDENCE_KEYS = Object.freeze([
   "schemaVersion",
@@ -24,11 +24,7 @@ function exactKeys(value, expected) {
   );
 }
 
-export function browserRunnerTupleIssues(value) {
-  const issues = [];
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return ["browser/runner tuple must be an object"];
-  }
+function browserIdentityIssues(value, issues) {
   if (!ALLOWED_BROWSER_PRODUCTS.has(value.browserProductName)) {
     issues.push("browserProductName must be Microsoft Edge or Google Chrome");
   }
@@ -38,6 +34,9 @@ export function browserRunnerTupleIssues(value) {
   if (!/^[a-f0-9]{64}$/u.test(String(value.browserExecutableSha256 || ""))) {
     issues.push("browserExecutableSha256 must be 64 lowercase hexadecimal characters");
   }
+}
+
+function runnerImageIssues(value, issues) {
   if (value.runnerImageOS === "PENDING"
     || !/^[A-Za-z0-9._-]{1,100}$/u.test(String(value.runnerImageOS || ""))) {
     issues.push("runnerImageOS must be a nonempty GitHub-hosted image identifier");
@@ -46,6 +45,15 @@ export function browserRunnerTupleIssues(value) {
     || !/^[A-Za-z0-9._-]{1,100}$/u.test(String(value.runnerImageVersion || ""))) {
     issues.push("runnerImageVersion must be a nonempty GitHub-hosted image version");
   }
+}
+
+export function browserRunnerTupleIssues(value) {
+  const issues = [];
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return ["browser/runner tuple must be an object"];
+  }
+  browserIdentityIssues(value, issues);
+  runnerImageIssues(value, issues);
   return issues;
 }
 
@@ -57,16 +65,24 @@ export function browserRunnerTuplesMatch(left, right) {
   );
 }
 
-export function publicationBrowserEvidenceState(live, reviewed) {
-  const liveValid = live?.status === "OBSERVED_GITHUB_HOSTED"
-    && live?.validForPublication === true
-    && live?.browserIdentityValid === true
-    && live?.runnerKind === "GITHUB_HOSTED"
-    && live?.requestedRunnerLabel === "windows-latest"
+function livePublicationBrowserValid(live) {
+  if (live?.status !== "OBSERVED_GITHUB_HOSTED") return false;
+  return live.validForPublication === true
+    && live.browserIdentityValid === true
+    && live.runnerKind === "GITHUB_HOSTED"
+    && live.requestedRunnerLabel === "windows-latest"
     && browserRunnerTupleIssues(live).length === 0;
-  const reviewedValid = reviewed?.valid === true
-    && reviewed?.status === "REVIEWED"
+}
+
+function reviewedPublicationBrowserValid(reviewed) {
+  return reviewed?.valid === true
+    && reviewed.status === "REVIEWED"
     && browserRunnerTupleIssues(reviewed).length === 0;
+}
+
+export function publicationBrowserEvidenceState(live, reviewed) {
+  const liveValid = livePublicationBrowserValid(live);
+  const reviewedValid = reviewedPublicationBrowserValid(reviewed);
   const reviewedTuple = reviewedValid
     ? Object.freeze(Object.fromEntries(TUPLE_KEYS.map((key) => [key, reviewed[key]])))
     : null;
@@ -79,9 +95,7 @@ export function publicationBrowserEvidenceState(live, reviewed) {
   });
 }
 
-export function parseReviewedBrowserRunnerEvidence(text) {
-  const issues = [];
-  const source = String(text);
+function readBrowserEvidenceFields(source, issues) {
   if (source.includes("\r")) issues.push("browser/runner evidence must use LF line endings");
   if (!source.endsWith("\n") || source.endsWith("\n\n")) {
     issues.push("browser/runner evidence must end with exactly one LF");
@@ -92,6 +106,10 @@ export function parseReviewedBrowserRunnerEvidence(text) {
   } catch {
     issues.push("browser/runner evidence is not valid JSON");
   }
+  return fields;
+}
+
+function browserEvidenceDeclarationIssues(fields, issues) {
   if (!exactKeys(fields, EVIDENCE_KEYS)) {
     issues.push("browser/runner evidence must contain only the exact ordered schema");
   }
@@ -107,9 +125,9 @@ export function parseReviewedBrowserRunnerEvidence(text) {
     }
   }
   if (fields.status === "REVIEWED") issues.push(...browserRunnerTupleIssues(fields));
-  if (Object.keys(fields).length && `${JSON.stringify(fields, null, 2)}\n` !== source) {
-    issues.push("browser/runner evidence must use the canonical two-space JSON form");
-  }
+}
+
+function browserEvidenceResult(fields, issues) {
   return Object.freeze({
     valid: issues.length === 0,
     status: fields.status || "INVALID",
@@ -120,4 +138,15 @@ export function parseReviewedBrowserRunnerEvidence(text) {
     runnerImageVersion: fields.runnerImageVersion || null,
     issues: Object.freeze([...issues]),
   });
+}
+
+export function parseReviewedBrowserRunnerEvidence(text) {
+  const issues = [];
+  const source = String(text);
+  const fields = readBrowserEvidenceFields(source, issues);
+  browserEvidenceDeclarationIssues(fields, issues);
+  if (Object.keys(fields).length && `${JSON.stringify(fields, null, 2)}\n` !== source) {
+    issues.push("browser/runner evidence must use the canonical two-space JSON form");
+  }
+  return browserEvidenceResult(fields, issues);
 }

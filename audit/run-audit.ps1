@@ -380,7 +380,7 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'The changed-path development-suite planner and watcher batching tests failed.'
     }
-    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-focused-contract.test.mjs')
+    & $node.Path --test (Join-Path $auditDirectory 'tests\playwright-focused-contract.test.mjs') (Join-Path $auditDirectory 'tests\axe-accessibility.test.mjs')
     if ($LASTEXITCODE -ne 0) {
         throw 'The closed direct Playwright journey, privacy, and toolchain contract tests failed.'
     }
@@ -436,7 +436,7 @@ try {
         Write-Host 'Product adapter and UX checks not selected by the changed-path development plan.'
     }
     if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'canary') {
-        & $node.Path --test (Join-Path $auditDirectory 'tests\trusted-https-canary.test.mjs')
+        & $node.Path --test (Join-Path $auditDirectory 'tests\trusted-https-canary.test.mjs') (Join-Path $auditDirectory 'tests\canary-runner-effects.test.mjs')
         if ($LASTEXITCODE -ne 0) {
             throw 'The trusted-HTTPS canary contract and teardown regressions failed.'
         }
@@ -450,7 +450,7 @@ try {
             if ($LASTEXITCODE -ne 0) {
                 throw 'The PWA release-shell manifest or worker hash binding is stale.'
             }
-            & $node.Path --test (Join-Path $auditDirectory 'tests\pwa-release.test.mjs')
+            & $node.Path --test @((Join-Path $auditDirectory 'tests\progress-source.test.mjs'), (Join-Path $auditDirectory 'tests\pwa-release.test.mjs'), (Join-Path $auditDirectory 'tests\pwa-status.test.mjs'))
             if ($LASTEXITCODE -ne 0) {
                 throw 'The PWA release-shell, lifecycle, and caregiver-copy effect tests failed.'
             }
@@ -462,7 +462,7 @@ try {
         Write-Host 'PWA checks not selected by the changed-path development plan.'
     }
     if ($DevelopmentOnly -and $developmentPlan.suites -contains 'engine') {
-        & $node.Path --test (Join-Path $auditDirectory 'tests\node-engine.test.mjs')
+        & $node.Path --test @((Join-Path $auditDirectory 'tests\node-engine.test.mjs'), (Join-Path $auditDirectory 'tests\child-string-validation.test.mjs'))
         if ($LASTEXITCODE -ne 0) {
             throw 'The focused deterministic engine and semantic development checks failed.'
         }

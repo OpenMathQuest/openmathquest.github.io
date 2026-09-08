@@ -36,7 +36,7 @@ export class AuditHarness {
   }
 }
 
-export class AuditSkip extends Error {
+class AuditSkip extends Error {
   constructor(message) { super(message); this.name = "AuditSkip"; }
 }
 
@@ -44,7 +44,7 @@ export function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-export function canonicalData(value) {
+function canonicalData(value) {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(canonicalData);
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalData(value[key])]));
@@ -57,9 +57,4 @@ export function canonicalStringify(value) {
 export function functionFrom(engine, ...names) {
   const name = names.find((candidate) => typeof engine[candidate] === "function");
   return name ? { name, fn: engine[name].bind(engine) } : null;
-}
-
-export function constantFrom(constants, ...names) {
-  for (const name of names) if (Object.hasOwn(constants, name)) return constants[name];
-  return undefined;
 }

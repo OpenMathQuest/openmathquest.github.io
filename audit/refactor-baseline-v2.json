@@ -1,0 +1,4060 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "MATH_QUEST_REFACTOR_BASELINE_V2",
+  "checkpoint": "R0",
+  "status": "BASELINE_RECORDED_WITH_FINDINGS",
+  "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+  "captureBoundary": "WHOLE_TRACKED_CODEBASE_BEFORE_STRUCTURAL_PRODUCT_REFACTOR",
+  "sourceSnapshotSha256": "20603d215ada5c1f11e103c577dc06b753fff112f51753577c42e11636477499",
+  "captureInventory": {
+    "trackedPaths": 253,
+    "sourceFiles": 239,
+    "excludedGeneratedPaths": [
+      "audit/function-quality-baseline-v1.json",
+      "audit/refactor-baseline-v2.json"
+    ]
+  },
+  "hardGateContract": {
+    "cyclomaticMaximum": 10,
+    "meaningfulCoverageMinimumPercent": 80,
+    "zeroLintErrors": true,
+    "zeroLintWarningsFinishLine": true,
+    "noUnexplainedLintSuppressions": true,
+    "noUntrackedWorkMarkers": true,
+    "noSecurityOrDependencyFindings": true,
+    "legacyRatchetsMayOnlyDecrease": true
+  },
+  "functionQuality": {
+    "javascriptArtifact": "audit/function-quality-baseline-v1.json",
+    "javascriptArtifactSha256": "903a6934fc13086515e3e5d3ed46fd8956f78369ca8380db2b1cbe3863af4049",
+    "javascript": {
+      "functions": 4981,
+      "violationFunctions": 359,
+      "maxima": {
+        "cyclomatic": 628,
+        "abcMagnitude": 960.07,
+        "cognitive": 443,
+        "functionLines": 3319,
+        "maxNesting": 8
+      },
+      "violationCounts": {
+        "cyclomatic": 185,
+        "abcMagnitude": 260,
+        "cognitive": 117,
+        "functionLines": 126,
+        "maxNesting": 11
+      },
+      "parseErrors": [],
+      "currentCheckpoint": {
+        "units": 132,
+        "functions": 5507,
+        "parseErrors": [],
+        "maxima": {
+          "cyclomatic": 628,
+          "abcMagnitude": 960.07,
+          "cognitive": 445,
+          "functionLines": 3319,
+          "maxNesting": 8
+        },
+        "violationFunctions": 363,
+        "violationCounts": {
+          "cyclomatic": 187,
+          "abcMagnitude": 261,
+          "cognitive": 118,
+          "functionLines": 126,
+          "maxNesting": 11
+        }
+      },
+      "currentClassification": {
+        "unchanged": 4938,
+        "added": 542,
+        "modified": 27,
+        "deleted": 16,
+        "newOrModified": 569,
+        "newOrModifiedViolations": 8
+      }
+    },
+    "powershell": {
+      "contract": {
+        "id": "MATH_QUEST_POWERSHELL_FUNCTION_QUALITY_V1",
+        "parser": "SYSTEM_MANAGEMENT_AUTOMATION_AST",
+        "cyclomatic": "ONE_PLUS_IF_CLAUSES_SWITCH_CLAUSES_LOOPS_CATCH_TRAP_TERNARY_LOGICAL_AND_PIPELINE_CHAINS",
+        "abc": "ASSIGNMENTS_COMMAND_OR_METHOD_BRANCHES_AND_BOOLEAN_CONDITIONS_EUCLIDEAN_MAGNITUDE",
+        "cognitive": "NESTED_CONTROL_FLOW_LOGICAL_CHAINS_AND_LABELED_JUMPS",
+        "functionLoc": "PHYSICAL_INCLUSIVE_SOURCE_LINES",
+        "nesting": "CONTROL_AST_ANCESTOR_DEPTH"
+      },
+      "limits": {
+        "cyclomatic": 10,
+        "abcMagnitude": 30,
+        "cognitive": 15,
+        "functionLines": 80,
+        "maxNesting": 4
+      },
+      "files": 10,
+      "functions": 48,
+      "parseErrors": [],
+      "maxima": {
+        "cyclomatic": 21,
+        "abcMagnitude": 48.28,
+        "cognitive": 18,
+        "functionLines": 78,
+        "maxNesting": 3
+      },
+      "violationFunctions": 7,
+      "violationCounts": {
+        "cyclomatic": 6,
+        "abcMagnitude": 3,
+        "cognitive": 4,
+        "functionLines": 0,
+        "maxNesting": 0
+      },
+      "rows": [
+        {
+          "functionId": "assets/sounds/generate-sounds.ps1::Write-ToneWav#1",
+          "path": "assets/sounds/generate-sounds.ps1",
+          "name": "Write-ToneWav",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 2,
+          "endLine": 37,
+          "functionLines": 36,
+          "parameters": 1,
+          "sourceSha256": "975ce4294f29338faad0f862a91b4050b704c5f22f97075a58b6029832ad280d",
+          "cyclomatic": 3,
+          "assignments": 9,
+          "branches": 24,
+          "conditions": 3,
+          "abcMagnitude": 25.81,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 11,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-Sha256#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-Sha256",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 29,
+          "endLine": 38,
+          "functionLines": 10,
+          "parameters": 1,
+          "sourceSha256": "48ce6492208c8f817d43f521907b40f68b956d91398a1d2341fdaf3d4e78aee6",
+          "cyclomatic": 1,
+          "assignments": 2,
+          "branches": 7,
+          "conditions": 0,
+          "abcMagnitude": 7.28,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-TypeName#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-TypeName",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 40,
+          "endLine": 43,
+          "functionLines": 4,
+          "parameters": 1,
+          "sourceSha256": "3cabece6d24d06ff17115afee29eef28ee36c999419e66b54530a016bcb0dd03",
+          "cyclomatic": 1,
+          "assignments": 0,
+          "branches": 1,
+          "conditions": 0,
+          "abcMagnitude": 1,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 1,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Test-IsNestedFunctionNode#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Test-IsNestedFunctionNode",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 45,
+          "endLine": 56,
+          "functionLines": 12,
+          "parameters": 1,
+          "sourceSha256": "74d5c215825b25a87c66e8a6593c80a346e5a30a3fd1fe413d874132834329c5",
+          "cyclomatic": 4,
+          "assignments": 2,
+          "branches": 0,
+          "conditions": 6,
+          "abcMagnitude": 6.32,
+          "cognitive": 4,
+          "maxNesting": 2,
+          "statements": 6,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-ControlDepth#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-ControlDepth",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 58,
+          "endLine": 70,
+          "functionLines": 13,
+          "parameters": 1,
+          "sourceSha256": "c07575febc22a99fbf92bd47d145f8d670c212281f284ac1e39a15c03c23a436",
+          "cyclomatic": 4,
+          "assignments": 4,
+          "branches": 1,
+          "conditions": 6,
+          "abcMagnitude": 7.28,
+          "cognitive": 4,
+          "maxNesting": 2,
+          "statements": 7,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-DecisionIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-DecisionIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 72,
+          "endLine": 82,
+          "functionLines": 11,
+          "parameters": 1,
+          "sourceSha256": "339e0048f21cf34179bacdd5430d9b253ffa304df048c1b7c291dfe9298ea4c7",
+          "cyclomatic": 8,
+          "assignments": 1,
+          "branches": 1,
+          "conditions": 14,
+          "abcMagnitude": 14.07,
+          "cognitive": 7,
+          "maxNesting": 1,
+          "statements": 14,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-ConditionIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-ConditionIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 84,
+          "endLine": 93,
+          "functionLines": 10,
+          "parameters": 1,
+          "sourceSha256": "da36548004eddd6acde7b32676de87d5936bf24efcfd993d968d1962813c08a3",
+          "cyclomatic": 7,
+          "assignments": 1,
+          "branches": 1,
+          "conditions": 12,
+          "abcMagnitude": 12.08,
+          "cognitive": 6,
+          "maxNesting": 1,
+          "statements": 12,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-StructuralCognitiveIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-StructuralCognitiveIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 95,
+          "endLine": 107,
+          "functionLines": 13,
+          "parameters": 1,
+          "sourceSha256": "5d405a80d4d7f4e8b7f31877799f017d754cdc71ce042d3392513031aaddd877",
+          "cyclomatic": 5,
+          "assignments": 2,
+          "branches": 4,
+          "conditions": 8,
+          "abcMagnitude": 9.17,
+          "cognitive": 3,
+          "maxNesting": 1,
+          "statements": 7,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-LogicalCognitiveIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-LogicalCognitiveIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 109,
+          "endLine": 117,
+          "functionLines": 9,
+          "parameters": 1,
+          "sourceSha256": "e4eacbce4b11a393852a72b115866b0d901d4f4e01e862dc1889bd945cdbab4a",
+          "cyclomatic": 5,
+          "assignments": 2,
+          "branches": 2,
+          "conditions": 8,
+          "abcMagnitude": 8.49,
+          "cognitive": 5,
+          "maxNesting": 2,
+          "statements": 6,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-JumpCognitiveIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-JumpCognitiveIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 119,
+          "endLine": 124,
+          "functionLines": 6,
+          "parameters": 1,
+          "sourceSha256": "4405041bda0010f2844d0f1daab8c64083249aa6dc34c9647bc33381d5e7facb",
+          "cyclomatic": 3,
+          "assignments": 1,
+          "branches": 1,
+          "conditions": 4,
+          "abcMagnitude": 4.24,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-CognitiveIncrement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-CognitiveIncrement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 126,
+          "endLine": 132,
+          "functionLines": 7,
+          "parameters": 1,
+          "sourceSha256": "d09496cb1ca60618515e5bcb0a491e06a95b7c3adbe835ea6272c2b4c7a73a25",
+          "cyclomatic": 1,
+          "assignments": 0,
+          "branches": 3,
+          "conditions": 0,
+          "abcMagnitude": 3,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 1,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-FunctionMeasurement#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-FunctionMeasurement",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 134,
+          "endLine": 194,
+          "functionLines": 61,
+          "parameters": 1,
+          "sourceSha256": "640dac9ca9b102336c56f1285410a96f9f6e9b1b206fb13a97a70650fa2b26bb",
+          "cyclomatic": 9,
+          "assignments": 22,
+          "branches": 13,
+          "conditions": 13,
+          "abcMagnitude": 28.67,
+          "cognitive": 12,
+          "maxNesting": 2,
+          "statements": 29,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/measure-powershell-function-quality.ps1::Get-Maximum#1",
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "name": "Get-Maximum",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 196,
+          "endLine": 200,
+          "functionLines": 5,
+          "parameters": 1,
+          "sourceSha256": "55c906ac02267c40c6ec8271fa04f8c780943258a70a39448a3e2e248c7a1d86",
+          "cyclomatic": 2,
+          "assignments": 0,
+          "branches": 1,
+          "conditions": 2,
+          "abcMagnitude": 2.24,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/on-change-audit.ps1::Invoke-DevelopmentChecks#1",
+          "path": "audit/on-change-audit.ps1",
+          "name": "Invoke-DevelopmentChecks",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 14,
+          "endLine": 24,
+          "functionLines": 11,
+          "parameters": 1,
+          "sourceSha256": "bc2af168e980a709684350e3cbe94fcfc675bfcfdae7c0060c86f9b7150f99e6",
+          "cyclomatic": 3,
+          "assignments": 3,
+          "branches": 4,
+          "conditions": 4,
+          "abcMagnitude": 6.4,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 5,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Get-NodeCandidates#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Get-NodeCandidates",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 16,
+          "endLine": 36,
+          "functionLines": 21,
+          "parameters": 1,
+          "sourceSha256": "d3e2a589cb8941ecafaf076583662333969598457b853ea33fa427590f2969db",
+          "cyclomatic": 9,
+          "assignments": 5,
+          "branches": 22,
+          "conditions": 8,
+          "abcMagnitude": 23.94,
+          "cognitive": 8,
+          "maxNesting": 1,
+          "statements": 11,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Stage-Node24#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Stage-Node24",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 38,
+          "endLine": 60,
+          "functionLines": 23,
+          "parameters": 1,
+          "sourceSha256": "a90a518db7e2c52a203ab64be529d9109c5fed8538823e33b5d6d1e341727c0a",
+          "cyclomatic": 7,
+          "assignments": 6,
+          "branches": 8,
+          "conditions": 10,
+          "abcMagnitude": 14.14,
+          "cognitive": 10,
+          "maxNesting": 2,
+          "statements": 16,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Find-Browser#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Find-Browser",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 62,
+          "endLine": 78,
+          "functionLines": 17,
+          "parameters": 1,
+          "sourceSha256": "8e10740c47d761240b99eb68008e9088da278db9ed1838a1535b60f16cfc2a74",
+          "cyclomatic": 9,
+          "assignments": 2,
+          "branches": 17,
+          "conditions": 9,
+          "abcMagnitude": 19.34,
+          "cognitive": 8,
+          "maxNesting": 2,
+          "statements": 9,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Set-BrowserAuditIdentity#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Set-BrowserAuditIdentity",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 80,
+          "endLine": 146,
+          "functionLines": 67,
+          "parameters": 1,
+          "sourceSha256": "959d5b5791472ef00549d878b624652d8573d7defa78affd41fd0b94d5a40648",
+          "cyclomatic": 16,
+          "assignments": 16,
+          "branches": 12,
+          "conditions": 20,
+          "abcMagnitude": 28.28,
+          "cognitive": 17,
+          "maxNesting": 2,
+          "statements": 36,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 16,
+              "maximum": 10
+            },
+            {
+              "metric": "cognitive",
+              "observed": 17,
+              "maximum": 15
+            }
+          ]
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Test-PublicFilesystemMetadata#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Test-PublicFilesystemMetadata",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 148,
+          "endLine": 176,
+          "functionLines": 29,
+          "parameters": 1,
+          "sourceSha256": "8fb065d1ef10927feefe242dcebf62ad7ba247f8539e0fa169d08a546c1afaf5",
+          "cyclomatic": 10,
+          "assignments": 5,
+          "branches": 11,
+          "conditions": 15,
+          "abcMagnitude": 19.26,
+          "cognitive": 15,
+          "maxNesting": 3,
+          "statements": 16,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Test-LauncherPort#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Test-LauncherPort",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 178,
+          "endLine": 189,
+          "functionLines": 12,
+          "parameters": 1,
+          "sourceSha256": "57fa0bd1c46d75b4c31cfa29e8f53b83ff2dd53126c4c6c034be92c8cb916500",
+          "cyclomatic": 3,
+          "assignments": 2,
+          "branches": 6,
+          "conditions": 2,
+          "abcMagnitude": 6.63,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 8,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Get-LauncherAuditSha256Hex#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Get-LauncherAuditSha256Hex",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 191,
+          "endLine": 200,
+          "functionLines": 10,
+          "parameters": 1,
+          "sourceSha256": "de2e390372a053eaf92bdb0f92d49516f652d217a0b6656944edf0c7e2bb1d11",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 6,
+          "conditions": 0,
+          "abcMagnitude": 6.08,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Get-LauncherAuditFileSha256Hex#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Get-LauncherAuditFileSha256Hex",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 202,
+          "endLine": 213,
+          "functionLines": 12,
+          "parameters": 1,
+          "sourceSha256": "faa1a897272017694fb1f0e9393b39fcccd864f15095225ca6a2b9f770937160",
+          "cyclomatic": 1,
+          "assignments": 2,
+          "branches": 8,
+          "conditions": 0,
+          "abcMagnitude": 8.25,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Get-LauncherAuditExpectation#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Get-LauncherAuditExpectation",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 215,
+          "endLine": 276,
+          "functionLines": 62,
+          "parameters": 1,
+          "sourceSha256": "f13a61c3d678bec49f743f8a3502758dce8caf92b28540d19baf7c9143a52a73",
+          "cyclomatic": 7,
+          "assignments": 17,
+          "branches": 24,
+          "conditions": 8,
+          "abcMagnitude": 30.48,
+          "cognitive": 8,
+          "maxNesting": 2,
+          "statements": 24,
+          "thresholdViolations": [
+            {
+              "metric": "abcMagnitude",
+              "observed": 30.48,
+              "maximum": 30
+            }
+          ]
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Test-LauncherIdentity#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Test-LauncherIdentity",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 278,
+          "endLine": 328,
+          "functionLines": 51,
+          "parameters": 1,
+          "sourceSha256": "58148c111a3e06c5c97ba04b8def84f015dd449e757940a603bf92d46aa1bca1",
+          "cyclomatic": 18,
+          "assignments": 19,
+          "branches": 30,
+          "conditions": 28,
+          "abcMagnitude": 45.22,
+          "cognitive": 17,
+          "maxNesting": 2,
+          "statements": 41,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 18,
+              "maximum": 10
+            },
+            {
+              "metric": "abcMagnitude",
+              "observed": 45.22,
+              "maximum": 30
+            },
+            {
+              "metric": "cognitive",
+              "observed": 17,
+              "maximum": 15
+            }
+          ]
+        },
+        {
+          "functionId": "audit/run-audit.ps1::Invoke-PublicCandidateGuard#1",
+          "path": "audit/run-audit.ps1",
+          "name": "Invoke-PublicCandidateGuard",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 330,
+          "endLine": 352,
+          "functionLines": 23,
+          "parameters": 1,
+          "sourceSha256": "d44192deac80da36bf0f9a9e86cba102a462292a8688cc8d01b389d9fa4d9887",
+          "cyclomatic": 5,
+          "assignments": 4,
+          "branches": 11,
+          "conditions": 9,
+          "abcMagnitude": 14.76,
+          "cognitive": 4,
+          "maxNesting": 1,
+          "statements": 11,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Assert-True#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Assert-True",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 37,
+          "endLine": 47,
+          "functionLines": 11,
+          "parameters": 1,
+          "sourceSha256": "cd1e1ab5a5e0df8e02ad534e50bf32062c6bae5bef01d3ba8efd23a83fe6d195",
+          "cyclomatic": 2,
+          "assignments": 1,
+          "branches": 0,
+          "conditions": 1,
+          "abcMagnitude": 1.41,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-TestSha256Hex#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-TestSha256Hex",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 49,
+          "endLine": 58,
+          "functionLines": 10,
+          "parameters": 1,
+          "sourceSha256": "315908c676ce52a7d91c2f1ccb72d1adefc9d16550ad57a7ddaa9ce243065572",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 6,
+          "conditions": 0,
+          "abcMagnitude": 6.08,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-TestFileSha256Hex#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-TestFileSha256Hex",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 60,
+          "endLine": 71,
+          "functionLines": 12,
+          "parameters": 1,
+          "sourceSha256": "d1d2144ec65379f3c61d052cf52cc8c479a8a3b486a5cb26d53a0e210f2de8ae",
+          "cyclomatic": 1,
+          "assignments": 2,
+          "branches": 8,
+          "conditions": 0,
+          "abcMagnitude": 8.25,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-TestHealthBody#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-TestHealthBody",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 73,
+          "endLine": 102,
+          "functionLines": 30,
+          "parameters": 1,
+          "sourceSha256": "4693805c4d1a372902f36efeb59756a81bd091c25b9fc2076e63e7ab01a730ce",
+          "cyclomatic": 3,
+          "assignments": 10,
+          "branches": 19,
+          "conditions": 2,
+          "abcMagnitude": 21.56,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 13,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Copy-LauncherFixture#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Copy-LauncherFixture",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 104,
+          "endLine": 121,
+          "functionLines": 18,
+          "parameters": 1,
+          "sourceSha256": "f6305839c1648e495b5277370a9a1718546e1aa1651740d8912395091774aa7a",
+          "cyclomatic": 2,
+          "assignments": 5,
+          "branches": 15,
+          "conditions": 1,
+          "abcMagnitude": 15.84,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 6,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-FreeLoopbackPort#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-FreeLoopbackPort",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 123,
+          "endLine": 131,
+          "functionLines": 9,
+          "parameters": 1,
+          "sourceSha256": "5c0faba345189b60fb1ed6c6cca79f4f25a903046ca8b2ee7916d07e0c728c68",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 3,
+          "conditions": 0,
+          "abcMagnitude": 3.16,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-LoopbackResponse#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-LoopbackResponse",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 133,
+          "endLine": 165,
+          "functionLines": 33,
+          "parameters": 1,
+          "sourceSha256": "707db52fcec63eaea65e7d675ba85d6889c8ee558d6493c0513bb4da5bb42e2b",
+          "cyclomatic": 3,
+          "assignments": 8,
+          "branches": 14,
+          "conditions": 4,
+          "abcMagnitude": 16.61,
+          "cognitive": 3,
+          "maxNesting": 2,
+          "statements": 14,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Get-ResponseBodyText#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Get-ResponseBodyText",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 167,
+          "endLine": 175,
+          "functionLines": 9,
+          "parameters": 1,
+          "sourceSha256": "1a699aa9b4a6f8742d378aa2a503dc8a4ff1bc7e7d868cc705bd326d7cef6e7f",
+          "cyclomatic": 2,
+          "assignments": 1,
+          "branches": 2,
+          "conditions": 2,
+          "abcMagnitude": 3,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "audit/test-launcher-identity.ps1::Invoke-LauncherProbe#1",
+          "path": "audit/test-launcher-identity.ps1",
+          "name": "Invoke-LauncherProbe",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 177,
+          "endLine": 194,
+          "functionLines": 18,
+          "parameters": 1,
+          "sourceSha256": "8c0498ea4d34bf7ffae6507764b74b944a8ae733478deb560397a8f52b6b5d89",
+          "cyclomatic": 2,
+          "assignments": 1,
+          "branches": 4,
+          "conditions": 1,
+          "abcMagnitude": 4.24,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 4,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Get-Sha256Hex#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Get-Sha256Hex",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 46,
+          "endLine": 56,
+          "functionLines": 11,
+          "parameters": 1,
+          "sourceSha256": "b61164d928e8cdad7df44d4fff86323d5ae780e8cf91a6999093ad0097a05884",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 6,
+          "conditions": 0,
+          "abcMagnitude": 6.08,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Get-NormalizedRootIdentityInput#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Get-NormalizedRootIdentityInput",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 58,
+          "endLine": 66,
+          "functionLines": 9,
+          "parameters": 1,
+          "sourceSha256": "baa01e88b9c2492da940d35311cb20a8c9b14309a81c57dbca2ba8305ea76a10",
+          "cyclomatic": 1,
+          "assignments": 4,
+          "branches": 5,
+          "conditions": 0,
+          "abcMagnitude": 6.4,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 5,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Get-CurrentRootId#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Get-CurrentRootId",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 68,
+          "endLine": 71,
+          "functionLines": 4,
+          "parameters": 1,
+          "sourceSha256": "89b8185b7305af9643d506474bebcc95fb9f2c271b35de684c71e6d608c8ce7e",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 3,
+          "conditions": 0,
+          "abcMagnitude": 3.16,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 2,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Test-NoReparsePoint#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Test-NoReparsePoint",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 73,
+          "endLine": 90,
+          "functionLines": 18,
+          "parameters": 1,
+          "sourceSha256": "b3c7101d471a43c0b0babdc2b5bc0fc2c96ec4268d5a95a7370cd5f8abe64513",
+          "cyclomatic": 5,
+          "assignments": 3,
+          "branches": 4,
+          "conditions": 5,
+          "abcMagnitude": 7.07,
+          "cognitive": 8,
+          "maxNesting": 3,
+          "statements": 10,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Get-CurrentServedPayloadSha256#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Get-CurrentServedPayloadSha256",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 92,
+          "endLine": 129,
+          "functionLines": 38,
+          "parameters": 1,
+          "sourceSha256": "f76fa7ab0fbea0d0c72d99b40897b38038be3955de39daeee2df30afbd01a9dd",
+          "cyclomatic": 10,
+          "assignments": 9,
+          "branches": 19,
+          "conditions": 13,
+          "abcMagnitude": 24.72,
+          "cognitive": 13,
+          "maxNesting": 3,
+          "statements": 18,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Open-GamePage#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Open-GamePage",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 135,
+          "endLine": 145,
+          "functionLines": 11,
+          "parameters": 1,
+          "sourceSha256": "c92ae851c91fe1e5548d77e549a6763e68ad3c2ff6b81adfee3bc994492af54b",
+          "cyclomatic": 3,
+          "assignments": 0,
+          "branches": 2,
+          "conditions": 2,
+          "abcMagnitude": 2.83,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Test-TcpListener#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Test-TcpListener",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 147,
+          "endLine": 170,
+          "functionLines": 24,
+          "parameters": 1,
+          "sourceSha256": "cb0e017459b97d745de804d75bdb9344fa5bae6f802bdc3a555a4f89ebfc6324",
+          "cyclomatic": 3,
+          "assignments": 2,
+          "branches": 6,
+          "conditions": 2,
+          "abcMagnitude": 6.63,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 8,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Test-ExpectedServer#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Test-ExpectedServer",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 172,
+          "endLine": 249,
+          "functionLines": 78,
+          "parameters": 1,
+          "sourceSha256": "8b13001e287a0247a642b7a9c8c9a71035ed4e2037136e63a9bcf59e9f5f0c38",
+          "cyclomatic": 18,
+          "assignments": 23,
+          "branches": 31,
+          "conditions": 29,
+          "abcMagnitude": 48.28,
+          "cognitive": 17,
+          "maxNesting": 2,
+          "statements": 44,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 18,
+              "maximum": 10
+            },
+            {
+              "metric": "abcMagnitude",
+              "observed": 48.28,
+              "maximum": 30
+            },
+            {
+              "metric": "cognitive",
+              "observed": 17,
+              "maximum": 15
+            }
+          ]
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Get-ContentType#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Get-ContentType",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 251,
+          "endLine": 277,
+          "functionLines": 27,
+          "parameters": 1,
+          "sourceSha256": "dc0f7b8f096972e101f7114911fb8cb613ff7cf2854fcb1b308b56b10571c494",
+          "cyclomatic": 21,
+          "assignments": 0,
+          "branches": 2,
+          "conditions": 20,
+          "abcMagnitude": 20.1,
+          "cognitive": 1,
+          "maxNesting": 1,
+          "statements": 22,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 21,
+              "maximum": 10
+            }
+          ]
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Write-HttpResponse#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Write-HttpResponse",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 279,
+          "endLine": 311,
+          "functionLines": 33,
+          "parameters": 1,
+          "sourceSha256": "c862c30116fc916abfafce98dbf3261d815cf634df8fd06175507b23e8e627b0",
+          "cyclomatic": 3,
+          "assignments": 2,
+          "branches": 4,
+          "conditions": 3,
+          "abcMagnitude": 5.39,
+          "cognitive": 2,
+          "maxNesting": 1,
+          "statements": 3,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Write-TextResponse#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Write-TextResponse",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 313,
+          "endLine": 324,
+          "functionLines": 12,
+          "parameters": 1,
+          "sourceSha256": "1df51ed16dc10f3c77f8802952fc8592151155783e28ab1dcda1ab9991583a26",
+          "cyclomatic": 1,
+          "assignments": 1,
+          "branches": 2,
+          "conditions": 0,
+          "abcMagnitude": 2.24,
+          "cognitive": 0,
+          "maxNesting": 0,
+          "statements": 1,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Resolve-SafeRuntimePath#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Resolve-SafeRuntimePath",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 326,
+          "endLine": 361,
+          "functionLines": 36,
+          "parameters": 1,
+          "sourceSha256": "98cf8c6842451c5d70b764a83253d88fce81d6bfb571b9e10cdc892e00251991",
+          "cyclomatic": 10,
+          "assignments": 5,
+          "branches": 7,
+          "conditions": 12,
+          "abcMagnitude": 14.76,
+          "cognitive": 10,
+          "maxNesting": 2,
+          "statements": 19,
+          "thresholdViolations": []
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Read-HttpRequest#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Read-HttpRequest",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 363,
+          "endLine": 410,
+          "functionLines": 48,
+          "parameters": 1,
+          "sourceSha256": "c3590348412e79d2d95b8e44464d8703e5d77f3c039ec439b5a32beabdb7790a",
+          "cyclomatic": 13,
+          "assignments": 13,
+          "branches": 10,
+          "conditions": 22,
+          "abcMagnitude": 27.44,
+          "cognitive": 18,
+          "maxNesting": 2,
+          "statements": 31,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 13,
+              "maximum": 10
+            },
+            {
+              "metric": "cognitive",
+              "observed": 18,
+              "maximum": 15
+            }
+          ]
+        },
+        {
+          "functionId": "Serve-MathQuest.ps1::Invoke-ClientRequest#1",
+          "path": "Serve-MathQuest.ps1",
+          "name": "Invoke-ClientRequest",
+          "kind": "FunctionDefinitionAst",
+          "startLine": 412,
+          "endLine": 469,
+          "functionLines": 58,
+          "parameters": 1,
+          "sourceSha256": "21280912b94bcea77b51cc1b29f0aa2eb4df21db379daf3ee65d20bf807c403c",
+          "cyclomatic": 12,
+          "assignments": 13,
+          "branches": 15,
+          "conditions": 21,
+          "abcMagnitude": 28.9,
+          "cognitive": 12,
+          "maxNesting": 2,
+          "statements": 27,
+          "thresholdViolations": [
+            {
+              "metric": "cyclomatic",
+              "observed": 12,
+              "maximum": 10
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "files": {
+    "immutableBaseline": {
+      "files": 198,
+      "lines": 96212,
+      "bytes": 6194591,
+      "maxima": {
+        "lines": 8228,
+        "bytes": 1274131
+      },
+      "rows": [
+        {
+          "path": ".github/dependabot.yml",
+          "lines": 8,
+          "bytes": 146,
+          "sha256": "f189d9d143de87be9682943b9c89703ed16bb6f6c5fe2ff886af2d16ea974694"
+        },
+        {
+          "path": ".github/ISSUE_TEMPLATE/bug-report.yml",
+          "lines": 52,
+          "bytes": 1470,
+          "sha256": "f43ba5cd5bf84ac956dd27b75b258eb00bf296f18ec977b2f70eec44531d9813"
+        },
+        {
+          "path": ".github/ISSUE_TEMPLATE/config.yml",
+          "lines": 1,
+          "bytes": 28,
+          "sha256": "1f103c6a9dd07cd13a9a6f17ace6b813f47747eb9cb7e00488cb2073caaf91bb"
+        },
+        {
+          "path": ".github/pull_request_template.md",
+          "lines": 21,
+          "bytes": 945,
+          "sha256": "5e95154389a4f75a73a5c4470331522d840a6dab63ad82f5979027e9bb1fe6fc"
+        },
+        {
+          "path": ".github/workflows/audit.yml",
+          "lines": 367,
+          "bytes": 17777,
+          "sha256": "78f06420aab3cb61f3f7a8813e4cdaea81d5108910c0b0658063ccf8ee1d4f28"
+        },
+        {
+          "path": ".github/workflows/hosted-windows-observation.yml",
+          "lines": 99,
+          "bytes": 4125,
+          "sha256": "137558a77b5f802967d7350c775e776125b134b216bb6f77d6ee0a79e7282ba5"
+        },
+        {
+          "path": ".github/workflows/pages.yml",
+          "lines": 602,
+          "bytes": 26645,
+          "sha256": "72bf135bf061fbe8995cd009368471c3e3d9a7f64ef64e34ad604d5d47fdba59"
+        },
+        {
+          "path": ".github/workflows/trusted-https-canary.yml",
+          "lines": 133,
+          "bytes": 5889,
+          "sha256": "80cac4ccc64abb3dfa015008d8f0ecdc66e271bd2c57e971c6d6e7dca157a750"
+        },
+        {
+          "path": "AGENTS.md",
+          "lines": 1022,
+          "bytes": 57898,
+          "sha256": "0d57d18a05e33c7f33bb8c405f25406d985f00eeaf9b7509d1558ae6f64ec829"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.css",
+          "lines": 67,
+          "bytes": 3402,
+          "sha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.json",
+          "lines": 1476,
+          "bytes": 47862,
+          "sha256": "3eab2d38116bb6a58cc18365d81c5ed21165803012414695774acc9879a6f85d"
+        },
+        {
+          "path": "assets/icons/math-quest-icon.svg",
+          "lines": 14,
+          "bytes": 883,
+          "sha256": "2e84ab4fc3b1760cfc4baa6a64cce3d08e66510f9a29cd1dcb0769c2543098e2"
+        },
+        {
+          "path": "assets/sounds/generate-sounds.ps1",
+          "lines": 44,
+          "bytes": 1470,
+          "sha256": "8dcb268a51d0e0d6e2a56f19014cfe7a5c79953b3de258f9943db1d22a624890"
+        },
+        {
+          "path": "audit.html",
+          "lines": 8228,
+          "bytes": 426164,
+          "sha256": "17dd3bcea357041aa37e0930501e46ea101b2c93c44c7aabfd155087a232f133"
+        },
+        {
+          "path": "audit/agent-collaboration-policy-v1.json",
+          "lines": 95,
+          "bytes": 2749,
+          "sha256": "4cc738466234a64080ffd30e00f770b3a3754c81f9fbd6fe36d5569e1eea0ea2"
+        },
+        {
+          "path": "audit/approved-visual-regression.js",
+          "lines": 3319,
+          "bytes": 184273,
+          "sha256": "08f7df9519ee532b33387eb33d0a986c06c96c362100f320f63171d87e5f0fbb"
+        },
+        {
+          "path": "audit/art-asset-register-v1.json",
+          "lines": 48,
+          "bytes": 2314,
+          "sha256": "205eef956c1bc1a754cd04806a555d309379973e3562ac2315cb4a17684539ad"
+        },
+        {
+          "path": "audit/art-design-decision-register-v1.json",
+          "lines": 492,
+          "bytes": 111367,
+          "sha256": "35ee1b4bff254d465929f8374da369e0f90641eace59a406f8db1fd4a116f315"
+        },
+        {
+          "path": "audit/art-migration-baseline-v1.json",
+          "lines": 2083,
+          "bytes": 70501,
+          "sha256": "e23712f49ce42b2cfd87ebe899e2a6e120d186ca529cac21dcc8aaee5eeec198"
+        },
+        {
+          "path": "audit/art-migration-browser-evidence-v1.json",
+          "lines": 475,
+          "bytes": 300373,
+          "sha256": "b1134226011173f7c97556f762e316748f7d9ff24299df7077aaf002799e970b"
+        },
+        {
+          "path": "audit/browser-runner-evidence-v1.json",
+          "lines": 9,
+          "bytes": 307,
+          "sha256": "9a41ddf9d7db12935b37ad5e5bbbba7e71730c9c3cc059381b757c5cbe48660d"
+        },
+        {
+          "path": "audit/certification-cadence-v1.json",
+          "lines": 77,
+          "bytes": 2525,
+          "sha256": "4278b496653bb0491604d9bc93f2f6b80398ca41565e03cde8bac39b59915f63"
+        },
+        {
+          "path": "audit/compare-audit-execution-modes.mjs",
+          "lines": 23,
+          "bytes": 1234,
+          "sha256": "a27c690e4550a5f1c6eed4d077b4f6fbd9d299ae659fe512205c94d7954c60d9"
+        },
+        {
+          "path": "audit/exhaustive-generator-audit.mjs",
+          "lines": 782,
+          "bytes": 41952,
+          "sha256": "a10b269b26916b31838998c4507921aaf88c14b4dd50eccf741e8e72a40c0545"
+        },
+        {
+          "path": "audit/extract-child-strings.mjs",
+          "lines": 18,
+          "bytes": 881,
+          "sha256": "d76c43321e27702a391579cafb153534385924aa0d01c4c2d74be40b17d86c58"
+        },
+        {
+          "path": "audit/finished-work-policy-v1.json",
+          "lines": 126,
+          "bytes": 5525,
+          "sha256": "f488737322cfcb9bc57781290f60acb9068467bc4853fe1b7df60eb4fbb6783b"
+        },
+        {
+          "path": "audit/fixtures/coverage-calibration.test.mjs",
+          "lines": 28,
+          "bytes": 1410,
+          "sha256": "a21901dc540903dab995645c0c286363bc18f50413c499c45058a3aa80dd0042"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-aggregate.js",
+          "lines": 3,
+          "bytes": 71,
+          "sha256": "4693eb2b704e24b33c73c02f71c6d8abeed3be2f8a6b00a23105d4f2a10f743f"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-full.js",
+          "lines": 1,
+          "bytes": 78,
+          "sha256": "64f6ef96e8eb98c96bab29bea336bc33ba4e774b33217cc5c48febce5603fc4d"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-partial.js",
+          "lines": 1,
+          "bytes": 81,
+          "sha256": "9ccf558cabcfad036186fa0685e77b5265af32189ebd666723ba67075cda286f"
+        },
+        {
+          "path": "audit/gate-integrity-policy-v1.json",
+          "lines": 531,
+          "bytes": 34498,
+          "sha256": "ef4ac4ee94767394d81181175b8af5196b3997c7d8a2dea72fa89e6bcf98113c"
+        },
+        {
+          "path": "audit/install-reviewed-ci-dependencies.ps1",
+          "lines": 34,
+          "bytes": 1648,
+          "sha256": "cddfc60701aa465242d4a9aad9e66a9163f1b3debaf4e3bf083f9787372c482b"
+        },
+        {
+          "path": "audit/lib/art-design-governance.mjs",
+          "lines": 414,
+          "bytes": 31302,
+          "sha256": "f70ce9cdf65179fc767e66096376af550dc12c272e33f62aefd84f195ae2f7eb"
+        },
+        {
+          "path": "audit/lib/art-migration-baseline.mjs",
+          "lines": 565,
+          "bytes": 31095,
+          "sha256": "8efa81536cb33ef25d530d29b80ca9e546a3f38e954bfbb5fed1a4a0a3b4aaac"
+        },
+        {
+          "path": "audit/lib/art-question-shell.mjs",
+          "lines": 130,
+          "bytes": 14013,
+          "sha256": "81f9d8388ebd51431a85bdadd86d21591b4340a08236f3e7a493fc44b6420152"
+        },
+        {
+          "path": "audit/lib/bounded-audit-lanes.mjs",
+          "lines": 684,
+          "bytes": 30044,
+          "sha256": "e7afa528170c1a2098379a738bd06f1768cf8f2c5f2d5e02ae351f1309533035"
+        },
+        {
+          "path": "audit/lib/browser-runner-evidence.mjs",
+          "lines": 123,
+          "bytes": 4764,
+          "sha256": "0a51273c23d89cf162b74ff801d37b90fa733d1be5a3751b91204507152a1f8e"
+        },
+        {
+          "path": "audit/lib/browser-smoke.mjs",
+          "lines": 1024,
+          "bytes": 40702,
+          "sha256": "6404aabd57935a2318bbbd1b3b695ded73b2f964428a7a24810ad4c93094fbea"
+        },
+        {
+          "path": "audit/lib/child-strings.mjs",
+          "lines": 94,
+          "bytes": 4777,
+          "sha256": "c53b46ef5216c64833fceeb00ca286fdd97a2602c124f15b4321f94b087507bc"
+        },
+        {
+          "path": "audit/lib/curriculum-manifest.mjs",
+          "lines": 406,
+          "bytes": 24192,
+          "sha256": "c11c2bf666f97573f0121de2063528979182a088f405ad7d6ee303d63dd8127c"
+        },
+        {
+          "path": "audit/lib/design-token-projection.mjs",
+          "lines": 329,
+          "bytes": 18419,
+          "sha256": "fc0aa22e474153783e875e8598eb4a0445fec0f11cf6c0b452a001f2c67caed4"
+        },
+        {
+          "path": "audit/lib/development-suite-plan.mjs",
+          "lines": 66,
+          "bytes": 8272,
+          "sha256": "ed515ab688564d1f6f7131453b276a39c5786f00e3f4f1a80cc93b57b25a4c3e"
+        },
+        {
+          "path": "audit/lib/engine-loader.mjs",
+          "lines": 191,
+          "bytes": 7583,
+          "sha256": "fdabb52a943a959070f89d50d27b5fce83aa865a010bd7a426588e3db504d0f9"
+        },
+        {
+          "path": "audit/lib/feature-map.mjs",
+          "lines": 125,
+          "bytes": 9481,
+          "sha256": "0c609900a8124ea9723fbc0c740571f64a2fa00c7d6c5b6f6d9f36dc4a202219"
+        },
+        {
+          "path": "audit/lib/gate-integrity-policy.mjs",
+          "lines": 177,
+          "bytes": 11009,
+          "sha256": "89121a7fb82e2f27c3574ffa113d888fb7e6e9458c41ebf1cbc9d12dcf0cf311"
+        },
+        {
+          "path": "audit/lib/hosted-windows-observation.mjs",
+          "lines": 81,
+          "bytes": 4938,
+          "sha256": "bd9e8dc5ef8de9926709728187ed333121a5319d862440b2478b3baff1b3c22d"
+        },
+        {
+          "path": "audit/lib/native-coverage.mjs",
+          "lines": 93,
+          "bytes": 4227,
+          "sha256": "d644fef4283ef55fe8c212bd0027c6eb998cf5837db3e98a02ac6d68c323701e"
+        },
+        {
+          "path": "audit/lib/playwright-deep-ux-census.mjs",
+          "lines": 530,
+          "bytes": 26964,
+          "sha256": "211fbdb506fec73253a03857576693fbf589e14be69af42959c05c30bae50762"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "lines": 196,
+          "bytes": 9164,
+          "sha256": "3f43db6a2a5bb8e536eabdd3aadd684b1144b01b2bb15d1e5f0ef96ec92ebed7"
+        },
+        {
+          "path": "audit/lib/playwright-interaction-fuzz.mjs",
+          "lines": 495,
+          "bytes": 24437,
+          "sha256": "e0b95fd20fc6a7363ba51c5e665990054c84c0f0dfb35fe1f824d8729f31a930"
+        },
+        {
+          "path": "audit/lib/publication-clearance.mjs",
+          "lines": 855,
+          "bytes": 45530,
+          "sha256": "7ea16b96a716e8313ef5ef4259d675e71aee80233cbdfc8dbf68d9ba89c59be6"
+        },
+        {
+          "path": "audit/lib/release-evidence-bundle.mjs",
+          "lines": 175,
+          "bytes": 10058,
+          "sha256": "37d705834fcf2f91ba2d229bf0db6101bfe53fd6d6b0416bfcc2019cb9327c17"
+        },
+        {
+          "path": "audit/lib/release-evidence-successor.mjs",
+          "lines": 333,
+          "bytes": 16873,
+          "sha256": "a8f7b6463f58d75413c4c57dbfd7ea3449df300d22a3d1552cdbdda9e72a41b6"
+        },
+        {
+          "path": "audit/lib/repository-code-map.mjs",
+          "lines": 374,
+          "bytes": 20915,
+          "sha256": "df0fc628c3940a8c6a2a8a7039ebcbe6f34ed7faf29907ecf86d9770d9fc2712"
+        },
+        {
+          "path": "audit/lib/rights-state.mjs",
+          "lines": 67,
+          "bytes": 2421,
+          "sha256": "bad2edfbd2c0f8c10981dbb0f62790a5e125079864e847ed692197b9199d3e07"
+        },
+        {
+          "path": "audit/lib/test-harness.mjs",
+          "lines": 65,
+          "bytes": 2184,
+          "sha256": "50631cd1777c434297e2d0da91da4658740e683b3add967d15cd07c4099957b2"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-supply-chain.mjs",
+          "lines": 473,
+          "bytes": 31833,
+          "sha256": "72515f51365b5d31d506365ed82e75035c5b30c198166c588b3d53d336cff551"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary.mjs",
+          "lines": 882,
+          "bytes": 50369,
+          "sha256": "31d3bbd0b0c7a79ed6eaec4bf587cd56c11260b208b6d1430b31a2c5985cbb1d"
+        },
+        {
+          "path": "audit/lib/tutorial-manifest.mjs",
+          "lines": 236,
+          "bytes": 15641,
+          "sha256": "34cb6823974d7d794997f6f01f01b92bca1dc9d5fea21b725daac135c0437273"
+        },
+        {
+          "path": "audit/mutation-runner.mjs",
+          "lines": 223,
+          "bytes": 12151,
+          "sha256": "2147cf146e54bf008243297138193d396843328263efce4f208739a210e36fcf"
+        },
+        {
+          "path": "audit/observe-hosted-windows.ps1",
+          "lines": 119,
+          "bytes": 5245,
+          "sha256": "b85a92b3ef7421a36ee876dbcd938b54d1c771307c73e99e739e012aa731f827"
+        },
+        {
+          "path": "audit/on-change-audit.ps1",
+          "lines": 71,
+          "bytes": 3141,
+          "sha256": "3d81c56c31d088106557fdc14a9e86b57d7f74ef50ab522abbeadafa3b0040d6"
+        },
+        {
+          "path": "audit/playwright/compact-reporter.mjs",
+          "lines": 94,
+          "bytes": 4085,
+          "sha256": "32f0cd84f5993f336207309c3462cb437da220742dfa035719b41e6b3d6b46ec"
+        },
+        {
+          "path": "audit/playwright/critical-journeys.spec.mjs",
+          "lines": 1530,
+          "bytes": 89077,
+          "sha256": "066ecc5ee87eb6d6c54b3e1944f28705be94b421eea84f5336855f6d4d899481"
+        },
+        {
+          "path": "audit/playwright/deep-ux-census.spec.mjs",
+          "lines": 576,
+          "bytes": 36469,
+          "sha256": "261570ab6b10d7dffe621d457ab40519da7e57f938d4f4a2d14829ffed9ea5e9"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "lines": 272,
+          "bytes": 12751,
+          "sha256": "6b451e85e373f0ba1c1adf9894078b1fb843469024f5af9f8b01b09110ba6a7c"
+        },
+        {
+          "path": "audit/playwright/interaction-fuzz.spec.mjs",
+          "lines": 325,
+          "bytes": 13739,
+          "sha256": "c46f79851c1e4877c4daf595a08f1e0df6d1a91140f0cc3d6f5094f7f67639e4"
+        },
+        {
+          "path": "audit/public-candidate-guard.mjs",
+          "lines": 1322,
+          "bytes": 78927,
+          "sha256": "483a55b06709537a346d70fc65fa5a366e5f3d99b8c024d02b15ce88cf607eca"
+        },
+        {
+          "path": "audit/release-evidence-bundle-v1.json",
+          "lines": 98,
+          "bytes": 3749,
+          "sha256": "7e6b7fff93e0ba883d30998e481283a46930fbd767ecc1fdb1a90439987c65e6"
+        },
+        {
+          "path": "audit/repository-code-map-v1.json",
+          "lines": 1398,
+          "bytes": 43578,
+          "sha256": "f027803575f87a4155cd81374e9139756dc9b5e7db85784049996cab271c04be"
+        },
+        {
+          "path": "audit/run-audit-lane.mjs",
+          "lines": 126,
+          "bytes": 5338,
+          "sha256": "c3a98c49ae103d47136e366576e7d604cabb69f7598ba7e9e744c89d2440e310"
+        },
+        {
+          "path": "audit/run-audit.mjs",
+          "lines": 709,
+          "bytes": 48956,
+          "sha256": "24fe1a35288d74129c8bef94c8c6e5722b0a55112b075dd6f815282c3b5e197d"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "lines": 614,
+          "bytes": 30699,
+          "sha256": "0f4fd36eca6ed83fcb983b3ad0c4e3c837697919a80b882cbffdcc8f59541a48"
+        },
+        {
+          "path": "audit/run-browser-smoke.mjs",
+          "lines": 9,
+          "bytes": 463,
+          "sha256": "29197ed4c4dc00915ebf0a08e4c74b904d55872cafae78d823f7cfafc14850fa"
+        },
+        {
+          "path": "audit/run-coverage.mjs",
+          "lines": 328,
+          "bytes": 17810,
+          "sha256": "6bdaa9ab2120957d4e4fc22df042296ad299ef227f2ba6a66dd79bc57a51a111"
+        },
+        {
+          "path": "audit/run-playwright-deep-ux-census.mjs",
+          "lines": 251,
+          "bytes": 13172,
+          "sha256": "be82067fe38fca4de853f7112e167af1b14e7273bd4fb393725b75185572d3a5"
+        },
+        {
+          "path": "audit/run-playwright-focused.mjs",
+          "lines": 128,
+          "bytes": 6263,
+          "sha256": "33b411eab002b38fdd0944f43a144bcf144a5368c25ddffefd94c9f421b2db42"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "lines": 170,
+          "bytes": 8055,
+          "sha256": "3d741a908ec06203174d1bf92c2c3476fbe41cad2f9cd4c52e9c5185f70c29a4"
+        },
+        {
+          "path": "audit/run-trusted-https-canary.mjs",
+          "lines": 1576,
+          "bytes": 85611,
+          "sha256": "0cc6c7ba2f8695432daa0af55d925a6506f3f8dfe8942e92c5281cc5f75496f0"
+        },
+        {
+          "path": "audit/run-trusted-https-canary.ps1",
+          "lines": 171,
+          "bytes": 9371,
+          "sha256": "cc74a0c13e5be1310e23b86885c1cd11934dfad20f034044c487bee7f3571c1c"
+        },
+        {
+          "path": "audit/schemas/art-asset-register-v1.schema.json",
+          "lines": 213,
+          "bytes": 12075,
+          "sha256": "221d80fff7540cdc2e453822f63ca0fda1af3ae6af24be8b202af6b1f86ffb4f"
+        },
+        {
+          "path": "audit/schemas/art-design-decision-register-v1.schema.json",
+          "lines": 292,
+          "bytes": 16252,
+          "sha256": "8f60888da07fc35f27e261a4aad9cd14cbc64dd7528bbb999b87f227ecd12819"
+        },
+        {
+          "path": "audit/schemas/art-migration-baseline-v1.schema.json",
+          "lines": 296,
+          "bytes": 14398,
+          "sha256": "615c0db6d0842377333919be4e92896723ce0f1fca0f9e6476f67035325bf5f1"
+        },
+        {
+          "path": "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+          "lines": 213,
+          "bytes": 8188,
+          "sha256": "cb01335b86f7a303ca5bc2b3bb680a7ec3178506a470e4c697481acdab9efdff"
+        },
+        {
+          "path": "audit/schemas/blast-radius-result-v2.schema.json",
+          "lines": 216,
+          "bytes": 7610,
+          "sha256": "cb5309e5ea380aa4521d69bb30f89f948b1369d3c0a333ba6ee91722ff5c2f56"
+        },
+        {
+          "path": "audit/schemas/design-tokens-v1.schema.json",
+          "lines": 163,
+          "bytes": 8697,
+          "sha256": "f922aab285fbc748f82d4f058c755ce5a725b54390926627b37881b59b3fce2f"
+        },
+        {
+          "path": "audit/schemas/feature-map-v1.schema.json",
+          "lines": 172,
+          "bytes": 8489,
+          "sha256": "99c5aaf30dfcffb49838e273bd73649e062d419be0faa73bc67b40250112e304"
+        },
+        {
+          "path": "audit/schemas/gate-integrity-policy-v1.schema.json",
+          "lines": 310,
+          "bytes": 17565,
+          "sha256": "5c86eb0a7e7a7b1e79edd6b6ed80abd65b2a9da4d82e89878d01fc9cb37e3674"
+        },
+        {
+          "path": "audit/schemas/release-evidence-bundle-v1.schema.json",
+          "lines": 234,
+          "bytes": 13580,
+          "sha256": "e004d7f76ea0a7122f71dc340b8a61d02c5958b5e5df2e3c1a23cc18b784e169"
+        },
+        {
+          "path": "audit/schemas/repository-code-map-v1.schema.json",
+          "lines": 238,
+          "bytes": 9302,
+          "sha256": "6eaf8f869c8c189119aa832c919d524d5d4bb9d2638439fd57d3449f9bdcdd89"
+        },
+        {
+          "path": "audit/schemas/tutorial-manifest-v1.schema.json",
+          "lines": 223,
+          "bytes": 11269,
+          "sha256": "6cc0016854acd198692343e6313927343737a276d3d23d5092e0d75a7c89c69f"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "lines": 298,
+          "bytes": 11901,
+          "sha256": "adb0f1f035a90617412dea09a373e957d3056276a4ad12a23ce8ee9585e30617"
+        },
+        {
+          "path": "audit/tests/adapter-syntax.test.mjs",
+          "lines": 17,
+          "bytes": 597,
+          "sha256": "6ce1171fe9e9470f6d7bcaa9082fefa1e4f34c4240d4fc151613dc4db74b7870"
+        },
+        {
+          "path": "audit/tests/agent-collaboration-policy.test.mjs",
+          "lines": 179,
+          "bytes": 7639,
+          "sha256": "4e2ffd7d09d955c25148542fe982e952bc26b1451331c52fb7e9fa4ef939e584"
+        },
+        {
+          "path": "audit/tests/art-design-governance.test.mjs",
+          "lines": 508,
+          "bytes": 30566,
+          "sha256": "aef070efdbc9643cffea43d26b0001111dde7fafbb24ab8f3e9e43aa894b6072"
+        },
+        {
+          "path": "audit/tests/art-migration-baseline.test.mjs",
+          "lines": 166,
+          "bytes": 11332,
+          "sha256": "6264f6e0080e6ee3308205582c4e74bcc13998c8c3596a54fe87eb2f5643cb6f"
+        },
+        {
+          "path": "audit/tests/art-question-shell.test.mjs",
+          "lines": 288,
+          "bytes": 12231,
+          "sha256": "11e1ae47c5cfda169d8694d9cdc6af623c2187c77ab267848563c5a1509a5799"
+        },
+        {
+          "path": "audit/tests/audit-lane-orchestration.test.mjs",
+          "lines": 477,
+          "bytes": 22985,
+          "sha256": "74b3db5967b41b886e7a6a52a293a00e87028980933957eae8bda87d853ae300"
+        },
+        {
+          "path": "audit/tests/audit-orchestration.test.mjs",
+          "lines": 318,
+          "bytes": 18638,
+          "sha256": "1a9d539018dd343316e1b46c1905ca4cc4d71e3571c35c6762ba4a74867e8486"
+        },
+        {
+          "path": "audit/tests/blast-radius-lookup.test.mjs",
+          "lines": 88,
+          "bytes": 5095,
+          "sha256": "d3c17f6adeac29ebce4246c75ca113ab9ba545475b788471138d75e572616c8d"
+        },
+        {
+          "path": "audit/tests/certification-cadence.test.mjs",
+          "lines": 261,
+          "bytes": 13615,
+          "sha256": "7fa3987237e180d9639f6a4d3af9476ac67b02cc32f40ca9c66f04d19e9f2862"
+        },
+        {
+          "path": "audit/tests/design-token-projection.test.mjs",
+          "lines": 202,
+          "bytes": 9352,
+          "sha256": "b87c90a51c41638ff8e137c87441da6f4e6b8ef450aaef6b120cafa3271eb85b"
+        },
+        {
+          "path": "audit/tests/development-suite-plan.test.mjs",
+          "lines": 179,
+          "bytes": 9015,
+          "sha256": "b5121a18dddaef156aae1e62a7b675d6bed5e277d5f373f4947c731ed7d3d7a9"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "lines": 2257,
+          "bytes": 125706,
+          "sha256": "e54c79efb826ee1ac561203e4cccddf4d6fe0243873b1060e4427744a900a04b"
+        },
+        {
+          "path": "audit/tests/feature-map.test.mjs",
+          "lines": 129,
+          "bytes": 7883,
+          "sha256": "9fb19574cbd42315d1deee0200f0671f11dc5864aed091d4a1e018278c1f553d"
+        },
+        {
+          "path": "audit/tests/finished-work-policy.test.mjs",
+          "lines": 280,
+          "bytes": 14117,
+          "sha256": "b460b98fee89fc0b04041e110fe4257f6d4228d9a55f5b2d2d251b712dc2d55f"
+        },
+        {
+          "path": "audit/tests/gate-integrity-policy.test.mjs",
+          "lines": 196,
+          "bytes": 11310,
+          "sha256": "3360608b5007ca78e8f3c5c5da223016b7fec881b7233cf9ca496b78894515b2"
+        },
+        {
+          "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+          "lines": 1766,
+          "bytes": 84649,
+          "sha256": "380717526b861c46e6d67ab027893390cfc67431906996e86c43073a0407f600"
+        },
+        {
+          "path": "audit/tests/holistic-functional-regressions.test.mjs",
+          "lines": 1191,
+          "bytes": 54128,
+          "sha256": "1810cef1a6b69843cc4b8210810397cbae37546858ea80a2bc305242d18ed362"
+        },
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "lines": 1709,
+          "bytes": 123782,
+          "sha256": "369a5122090aeb27768fa12cdd034e721cca8d4db201a51362a098deca462edd"
+        },
+        {
+          "path": "audit/tests/node-engine.test.mjs",
+          "lines": 4713,
+          "bytes": 218360,
+          "sha256": "ab798e133736d5800b9d0c34f0b553dbd3ce3f2bcc3cb3d987a97675c4109a5c"
+        },
+        {
+          "path": "audit/tests/page-adapter-effects.test.mjs",
+          "lines": 1826,
+          "bytes": 85636,
+          "sha256": "cec6c690f4af78262097cbe872223879b67ed9d69084d316dc975803841abea2"
+        },
+        {
+          "path": "audit/tests/placement-adapter-effects.test.mjs",
+          "lines": 1278,
+          "bytes": 65166,
+          "sha256": "becc1a301a2eef428c5577f1789af503e1a9c052ae283df6a056f010fd0892c3"
+        },
+        {
+          "path": "audit/tests/playwright-deep-ux-census.test.mjs",
+          "lines": 284,
+          "bytes": 17594,
+          "sha256": "e89f5046c9042837782fb5b776f95663a91b9a6b465b958f5710da6845a63d4b"
+        },
+        {
+          "path": "audit/tests/playwright-focused-contract.test.mjs",
+          "lines": 151,
+          "bytes": 7745,
+          "sha256": "a8afc61ce0d677e81c7b92fff1203f145b83cde5db7a9bc71c5869bfa23c0f29"
+        },
+        {
+          "path": "audit/tests/playwright-interaction-fuzz.test.mjs",
+          "lines": 276,
+          "bytes": 12467,
+          "sha256": "79b01ab83bf45199d36b47202ef35ab57c6c30c6c873ac078f126fb28002944a"
+        },
+        {
+          "path": "audit/tests/publication-clearance.test.mjs",
+          "lines": 1048,
+          "bytes": 51894,
+          "sha256": "48a0df0a0eb691b7e594c8881fa3ca6f6276f1897a63f9048f8278df26518f07"
+        },
+        {
+          "path": "audit/tests/pwa-release.test.mjs",
+          "lines": 3049,
+          "bytes": 117214,
+          "sha256": "d22478dad259485019db9de3fc7bc86a59326f4e3387011fc604ac11b299a7d9"
+        },
+        {
+          "path": "audit/tests/qa-tour.test.mjs",
+          "lines": 720,
+          "bytes": 32768,
+          "sha256": "bfec0592168d5400ccdc1c94c921bd97123db65a66a7cc644781437c062f39a4"
+        },
+        {
+          "path": "audit/tests/release-evidence-bundle.test.mjs",
+          "lines": 201,
+          "bytes": 10532,
+          "sha256": "00c9d7b2098cdf007a6372b731937e8ea908f5107e4ed5505b181f2fada805b9"
+        },
+        {
+          "path": "audit/tests/repository-code-map.test.mjs",
+          "lines": 236,
+          "bytes": 15423,
+          "sha256": "7e3101f7d5f427a835afa782d30bc51667ad06bd943bdb57762d0aa54250f78c"
+        },
+        {
+          "path": "audit/tests/strategy-build-oracle.mjs",
+          "lines": 197,
+          "bytes": 8823,
+          "sha256": "d09fc6a6d03c339b2ad79bf888f40478b4acd0b2c4b74f75788f29583a2cf5ef"
+        },
+        {
+          "path": "audit/tests/trusted-https-canary.test.mjs",
+          "lines": 905,
+          "bytes": 46335,
+          "sha256": "2347cfa5c76a28aa382afcb86a02578315d9e757c3f8a9dcc9fe5f4bf84029b2"
+        },
+        {
+          "path": "audit/tests/tutorial-manifest.test.mjs",
+          "lines": 223,
+          "bytes": 12571,
+          "sha256": "533799844b853d35c486d195997e7290db50ab638afb774c952ebdf2943c101c"
+        },
+        {
+          "path": "audit/trusted-https-canary-beta7-v1.json",
+          "lines": 1,
+          "bytes": 9947,
+          "sha256": "d0870c3f8d9d610d0c7afb9ac39b2efc039298860ede2dac071e75299b02d4ed"
+        },
+        {
+          "path": "audit/trusted-https-canary-v1.json",
+          "lines": 1,
+          "bytes": 9947,
+          "sha256": "c4a191889162f496e8e571ba82fae0cba4825bfbce2411ccfefc6fa081835586"
+        },
+        {
+          "path": "audit/validate-art-migration-baseline.mjs",
+          "lines": 19,
+          "bytes": 739,
+          "sha256": "cb500f0cb248a7a17a3441583ec58fab5860948177073d31f8ebd232847c28b7"
+        },
+        {
+          "path": "audit/validate-hosted-windows-observation.mjs",
+          "lines": 16,
+          "bytes": 768,
+          "sha256": "fd6a31787203583f1c05ea4fc30c1b4fe7205ad31cb4418cf36d53780e587606"
+        },
+        {
+          "path": "audit/validate-publication-clearance.mjs",
+          "lines": 105,
+          "bytes": 5367,
+          "sha256": "a44860dcc8fb26071ec1ff24a30784aa296f074b4cbc1dc0839d724ad65555de"
+        },
+        {
+          "path": "audit/validate-trusted-https-canary.mjs",
+          "lines": 22,
+          "bytes": 1133,
+          "sha256": "d6df34236ff5f2acf61b680780cd284ab9623a3fa9807de86e07e1fca548d134"
+        },
+        {
+          "path": "audit/verify-github-gate-enforcement.mjs",
+          "lines": 109,
+          "bytes": 4752,
+          "sha256": "9a37d655531029e11b4a6437652a2b009ff80b83d62fa43da2e96a9d9db1d085"
+        },
+        {
+          "path": "CHANGELOG.md",
+          "lines": 221,
+          "bytes": 13410,
+          "sha256": "6f0a668c385b323976b7c4da6086e187f3f24c32bfee0dd3d8e78f7817ab10f2"
+        },
+        {
+          "path": "CONTRIBUTING.md",
+          "lines": 103,
+          "bytes": 5458,
+          "sha256": "c443307319b4719b3dc69000f42e0fd32c0118646ee09bfcb1b418df7f61a91a"
+        },
+        {
+          "path": "curriculum/math-quest-feature-map-v1.json",
+          "lines": 118,
+          "bytes": 48939,
+          "sha256": "116df55ac2cb93a38c200e0807a6b6ba20e6587a1ffbab5196097c6f092e9630"
+        },
+        {
+          "path": "curriculum/math-quest-manifest-v1.json",
+          "lines": 7430,
+          "bytes": 187467,
+          "sha256": "0873aa394e5ad1df97ac044e2db51f0e605893ccbd4940bfd6b2e740d62daf47"
+        },
+        {
+          "path": "curriculum/math-quest-tutorial-manifest-v1.json",
+          "lines": 2444,
+          "bytes": 73387,
+          "sha256": "dd7428f79bcc901601c13248a4dd87bc0d13e5222590a8bb6dd54922678d4c4b"
+        },
+        {
+          "path": "curriculum/PROVENANCE.md",
+          "lines": 133,
+          "bytes": 7076,
+          "sha256": "708bde71d88445c5236dc9d0658ff7faa37890220fad792f0aeb15a976093a7b"
+        },
+        {
+          "path": "docs/development/build-spec.md",
+          "lines": 482,
+          "bytes": 27694,
+          "sha256": "b09bd01bf7015511111e8f25282231989c5f285ce676da03b52f68bc5404a94c"
+        },
+        {
+          "path": "docs/development/math-quest-free-play-pilot.md",
+          "lines": 145,
+          "bytes": 6041,
+          "sha256": "58f1b09a8f5c99dffb2b370733fb21693755c29905a6452942f3d32a15d8193e"
+        },
+        {
+          "path": "docs/development/post-beta-backlog.md",
+          "lines": 146,
+          "bytes": 7104,
+          "sha256": "57defc61e5c2fd1c99c09dac1bbf624c096dda5efd16512eb3661cf1b0e18dcc"
+        },
+        {
+          "path": "docs/development/pwa-adapter-contract.md",
+          "lines": 328,
+          "bytes": 19179,
+          "sha256": "ac1786554e165673e09907b617520572db18eca715c4fb5f8541532ee93c716d"
+        },
+        {
+          "path": "docs/release/canary-status-2026-07-30.md",
+          "lines": 67,
+          "bytes": 3452,
+          "sha256": "470789499a99c5151537d3cc8537ab146ab3d2a292a3069f15347b0c924a527c"
+        },
+        {
+          "path": "docs/release/checklist.md",
+          "lines": 291,
+          "bytes": 18195,
+          "sha256": "e8586d47ea9224d77afac3db85d39c111ae3bfbe65ab79e12165f6dbf1355f78"
+        },
+        {
+          "path": "docs/release/child-string-approval-candidate-2026-07-30.md",
+          "lines": 259,
+          "bytes": 12137,
+          "sha256": "caa7570391cb49cbba8d22fa116e187cbf0bcbfc1519bacf94a9c61e297eb6b5"
+        },
+        {
+          "path": "docs/release/cross-device-play-report.md",
+          "lines": 170,
+          "bytes": 9835,
+          "sha256": "9c51385efc52693e01e446aeaee1cb11ea7807b3cb564b96476b1d3e7f464a2c"
+        },
+        {
+          "path": "docs/release/host-privacy-qualification-2026-07-30.md",
+          "lines": 99,
+          "bytes": 5181,
+          "sha256": "ad0b024c088f6188bf01f0993f2549cdfbc37c72d185f02f0833656a9ff52c32"
+        },
+        {
+          "path": "docs/release/install-ios-ipados.md",
+          "lines": 78,
+          "bytes": 3648,
+          "sha256": "76e2680f5459a996f27ba5d2f8b2b3fb1cbb3ee7fbc7188efeb7a286630a4eb1"
+        },
+        {
+          "path": "docs/release/ios-ipados-pwa-beta2-plan.md",
+          "lines": 1348,
+          "bytes": 77470,
+          "sha256": "7416bfcfd22b478239eb5fd21b565073e44ed4d60a1cdcde42a05cf94db3305c"
+        },
+        {
+          "path": "docs/release/privacy-review.md",
+          "lines": 208,
+          "bytes": 12076,
+          "sha256": "ab136d34a8052255f3a35c4416b1ba4f86ac94b5dbf6a9e0cf300509d0f3444f"
+        },
+        {
+          "path": "docs/release/public-file-manifest.txt",
+          "lines": 215,
+          "bytes": 7508,
+          "sha256": "b1d8e2e0e1ea5f08503729de71f57f8044e42309505ce03bab00187344706697"
+        },
+        {
+          "path": "docs/release/publication-gates.md",
+          "lines": 420,
+          "bytes": 25823,
+          "sha256": "d8535f26e1b41167e2f01fba9b1fd7c90d13ccc45052b3f2bb3f1b5cfa0fc6b3"
+        },
+        {
+          "path": "docs/release/pwa-beta2-verification.md",
+          "lines": 361,
+          "bytes": 22698,
+          "sha256": "d0db689d96bcc41503018f06858b14bd29f489ba0236341fe4cbbcb3910a2070"
+        },
+        {
+          "path": "docs/release/readiness.md",
+          "lines": 196,
+          "bytes": 11729,
+          "sha256": "e0ae08fde108457018cbe6e251800f5c577942248abe2298855b1f4149bf7270"
+        },
+        {
+          "path": "docs/repository-structure.md",
+          "lines": 111,
+          "bytes": 12145,
+          "sha256": "e8b8d3f113e7fdd0a79480534886960330ad182ab047ace587d9a39b7c2884b8"
+        },
+        {
+          "path": "docs/testing/curriculum-ui-ux-review-2026-07-28.md",
+          "lines": 668,
+          "bytes": 30969,
+          "sha256": "6b1468615ac2f3fc701fa3e37732cde346c5d7ca64696b12eb9e52b9996ab58e"
+        },
+        {
+          "path": "docs/testing/math-quest-free-play-review-2026-07-30.md",
+          "lines": 93,
+          "bytes": 4739,
+          "sha256": "899b7bc794d209b0843a12c101204c2925c68b55711432e0007717ec3e72b059"
+        },
+        {
+          "path": "docs/testing/qa-tour-v1.md",
+          "lines": 86,
+          "bytes": 4262,
+          "sha256": "9e41f2b07497ef8b7273b13cd737f86a8107674b03b6119f841d185d7a74dc0e"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "lines": 942,
+          "bytes": 137342,
+          "sha256": "1c0f432818a12c4bc7b3fbaf5cd2cbaf22d606dc379f2c923ad0a0d9f8a5f7b7"
+        },
+        {
+          "path": "index.html",
+          "lines": 4908,
+          "bytes": 1274131,
+          "sha256": "c56d7455824b6a8c4e5664e6019f2b3565c329260078923880673f6c8a9bda22"
+        },
+        {
+          "path": "licenses/app-icons.md",
+          "lines": 23,
+          "bytes": 1347,
+          "sha256": "f037f8e5704a707cb447ba5778738332ce15110bb2e96ed21fe3f1a285b5f8a1"
+        },
+        {
+          "path": "licenses/ci-toolchain.md",
+          "lines": 101,
+          "bytes": 7319,
+          "sha256": "264a58d8ef2513753a881de1bcc77e581e36eaf1cae1d360678b63a2f4af519b"
+        },
+        {
+          "path": "licenses/component-register-v1.json",
+          "lines": 727,
+          "bytes": 31665,
+          "sha256": "8ab42eb71a7022c2cff2b29e68adce19594ccbbb8fa32b77808ee6df721c5765"
+        },
+        {
+          "path": "licenses/design-tokens.md",
+          "lines": 20,
+          "bytes": 1180,
+          "sha256": "952ddba63185943cec46b7e905eebdbae8cf8c2ff7c63e946cb5fe712875a814"
+        },
+        {
+          "path": "licenses/evidence-paths-v1.json",
+          "lines": 77,
+          "bytes": 3307,
+          "sha256": "4f1e8bd84553ec5c4d8c488d55193254e05b339280e6f12b68cde49add8f5efd"
+        },
+        {
+          "path": "licenses/first-party-paths-v1.txt",
+          "lines": 194,
+          "bytes": 6949,
+          "sha256": "23177169b9ae82058a617f3e62910660c7f7174cc6d600a43596e65fdbbddac1"
+        },
+        {
+          "path": "licenses/Inter-OFL.txt",
+          "lines": 92,
+          "bytes": 4380,
+          "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+        },
+        {
+          "path": "licenses/sound-effects.md",
+          "lines": 57,
+          "bytes": 3055,
+          "sha256": "cb62d2bbc35c71a8168d4c2eb66810b83751aac5315dc001d59b1c5233e2749f"
+        },
+        {
+          "path": "manifest.webmanifest",
+          "lines": 28,
+          "bytes": 647,
+          "sha256": "5ab3554a7bc0356b2b400a70c7a7d4fbca828227b425ab9e7855d824594d03ee"
+        },
+        {
+          "path": "OPEN_SOURCE_POLICY.md",
+          "lines": 128,
+          "bytes": 6276,
+          "sha256": "91d5d7e9d29c83cf9689d57faf558c236fc627ca2161bd75d0813571361b0809"
+        },
+        {
+          "path": "package-lock.json",
+          "lines": 183,
+          "bytes": 5841,
+          "sha256": "c65105248f1ef6328b630b9d152423c8c8ffb9110cb95cdc310538cc4adfccad"
+        },
+        {
+          "path": "package.json",
+          "lines": 15,
+          "bytes": 286,
+          "sha256": "81775ea3166f330794478b2c3cbfc529fe16437db9a47c5f6d4f39c340576f11"
+        },
+        {
+          "path": "playwright.config.mjs",
+          "lines": 71,
+          "bytes": 2002,
+          "sha256": "487da9582ad809633ac8cf4ca1e257c47af071ce80fcc32caf48886542a6e610"
+        },
+        {
+          "path": "playwright.deep-ux.config.mjs",
+          "lines": 51,
+          "bytes": 1592,
+          "sha256": "49a804f4876a24266cf58cdc490964b98f7dbf12825b1bfcc70d4d16d31924e1"
+        },
+        {
+          "path": "playwright.interaction-fuzz.config.mjs",
+          "lines": 54,
+          "bytes": 1663,
+          "sha256": "f1b095f50ee829774e71eb7ad069d77713b0baad04c5730f2c1c3829d783ebe5"
+        },
+        {
+          "path": "PRIVACY.md",
+          "lines": 187,
+          "bytes": 9385,
+          "sha256": "cafc8acbea923517bbd74eecaea2d46b34dea63606b63a544e6b0b64b8deffc6"
+        },
+        {
+          "path": "PUBLICATION_CLEARANCE.md",
+          "lines": 51,
+          "bytes": 2995,
+          "sha256": "ee0553f0e5fddb20b775675ef512a87e76b06ab849ced8e2ea7751dbfd675b71"
+        },
+        {
+          "path": "README.md",
+          "lines": 333,
+          "bytes": 16954,
+          "sha256": "df04c7d2077f94d84db70a93ce4589468310bf8e030d1392e9a8eebd0946e53b"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "lines": 118,
+          "bytes": 3467,
+          "sha256": "e9204c79e36e860d9123abb9496403d66c01d749bdf0a92b72c6b3cea4c104af"
+        },
+        {
+          "path": "research/build-axioms.md",
+          "lines": 82,
+          "bytes": 29725,
+          "sha256": "b66180df6b241ccf74bf262b3c6e2eeadf95bd3113fa4f38f237872deebde304"
+        },
+        {
+          "path": "research/clean-room-curriculum-log.md",
+          "lines": 101,
+          "bytes": 4911,
+          "sha256": "98a89a89a46b3a4d4213e9ddaf132f6a80f38646ef9529e55f687bc11c80e4e0"
+        },
+        {
+          "path": "research/curriculum-benchmark-crosswalk.md",
+          "lines": 138,
+          "bytes": 12794,
+          "sha256": "3ad965a9f9f1b75a49d6a0317c6d5a5e45926fa852477bf6fe7072a082a984c5"
+        },
+        {
+          "path": "research/pedagogy-notes.md",
+          "lines": 161,
+          "bytes": 7603,
+          "sha256": "4763fe84b6275e830b7c5559db48ed4d71e2a141990e2fed8c7bf89b6377de27"
+        },
+        {
+          "path": "research/privacy-cross-device-register.md",
+          "lines": 91,
+          "bytes": 6579,
+          "sha256": "7ef51377edc9ead5c2ea827737e858d683baffa408a19b077b2c2cfe807e574b"
+        },
+        {
+          "path": "research/tiny-polka-dot-mechanics-review.md",
+          "lines": 456,
+          "bytes": 23631,
+          "sha256": "bc3c39b8218aaea39ad89f5cd1f334cc6c5434e68ab77ed6fdf0ef4d81f1a5f9"
+        },
+        {
+          "path": "SECURITY.md",
+          "lines": 18,
+          "bytes": 647,
+          "sha256": "8f7ac08ef27c0596408045c3fa3fb1d2a41831be02ff8ae36081d8be1370d0e1"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "lines": 523,
+          "bytes": 18823,
+          "sha256": "03ebf560c4536dc9b165c1ed44b193bf22c51f5317c16378d1470f281dbf7160"
+        },
+        {
+          "path": "sw.js",
+          "lines": 502,
+          "bytes": 17407,
+          "sha256": "13778bcf183e81296754c447003ee213c87fb666f4ea16b6d30aaa5c08140697"
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "lines": 126,
+          "bytes": 5879,
+          "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae"
+        },
+        {
+          "path": "tools/blast-radius-lookup.mjs",
+          "lines": 366,
+          "bytes": 16813,
+          "sha256": "e8e03c3e327ae5dc17ad8fff3eb85abf335a3ad91243d91ed103fcdfe40224db"
+        },
+        {
+          "path": "tools/build-app-icons.mjs",
+          "lines": 35,
+          "bytes": 1169,
+          "sha256": "e7ff1956092b5a875f68c5196cc219182218a86d4454d56cd68cc7edecc5ca05"
+        },
+        {
+          "path": "tools/build-design-token-projection.mjs",
+          "lines": 48,
+          "bytes": 2164,
+          "sha256": "dbc2ca3da7cae3403f95febb57884ce6b9e9d2eb58509c4f483137fc0b3d374c"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "lines": 201,
+          "bytes": 7194,
+          "sha256": "93d66ec28af533e8612f5e00a19850e7c30efef4b06b099040b1bfb204e184ee"
+        },
+        {
+          "path": "tools/build-tutorial-manifest.mjs",
+          "lines": 63,
+          "bytes": 3255,
+          "sha256": "7da6e62f72e2e91a6fe708a8066c26d8ead9d9ea966cce6242ad7806ce0c9b96"
+        },
+        {
+          "path": "tools/normalize-curriculum-manifest.mjs",
+          "lines": 460,
+          "bytes": 22475,
+          "sha256": "815eb35ff81c6264509e296c9ef6fd5f5b71042c0b11e2bb07b43ee16317e2f4"
+        },
+        {
+          "path": "tools/sync-curriculum-manifest.mjs",
+          "lines": 40,
+          "bytes": 1893,
+          "sha256": "314699bab4115abdb9034cd899b68b27bfbd9e23faccd02cecb97f3c2dc37cd6"
+        },
+        {
+          "path": "tools/sync-public-inventory.mjs",
+          "lines": 115,
+          "bytes": 4938,
+          "sha256": "21e9d8d24a4e3b4c0e7a7a66585d33adb8c0523328bf59a6dad553ec8208182e"
+        },
+        {
+          "path": "tools/sync-repository-code-map.mjs",
+          "lines": 22,
+          "bytes": 1029,
+          "sha256": "bca624300e64594078503d8bab1e26ae453e39f857c44bbf37abce052f74c665"
+        },
+        {
+          "path": "tools/sync-tutorial-manifest.mjs",
+          "lines": 53,
+          "bytes": 2762,
+          "sha256": "b437b7389b0bfe298c0828f52c669a48ea846a3608096950e0722f6e39acdc25"
+        }
+      ]
+    },
+    "currentCheckpoint": {
+      "files": 239,
+      "lines": 108520,
+      "bytes": 6692613,
+      "maxima": {
+        "lines": 8228,
+        "bytes": 1274131
+      },
+      "rows": [
+        {
+          "path": ".github/dependabot.yml",
+          "lines": 8,
+          "bytes": 146,
+          "sha256": "f189d9d143de87be9682943b9c89703ed16bb6f6c5fe2ff886af2d16ea974694"
+        },
+        {
+          "path": ".github/ISSUE_TEMPLATE/bug-report.yml",
+          "lines": 52,
+          "bytes": 1470,
+          "sha256": "f43ba5cd5bf84ac956dd27b75b258eb00bf296f18ec977b2f70eec44531d9813"
+        },
+        {
+          "path": ".github/ISSUE_TEMPLATE/config.yml",
+          "lines": 1,
+          "bytes": 28,
+          "sha256": "1f103c6a9dd07cd13a9a6f17ace6b813f47747eb9cb7e00488cb2073caaf91bb"
+        },
+        {
+          "path": ".github/pull_request_template.md",
+          "lines": 21,
+          "bytes": 945,
+          "sha256": "5e95154389a4f75a73a5c4470331522d840a6dab63ad82f5979027e9bb1fe6fc"
+        },
+        {
+          "path": ".github/workflows/audit.yml",
+          "lines": 367,
+          "bytes": 17777,
+          "sha256": "78f06420aab3cb61f3f7a8813e4cdaea81d5108910c0b0658063ccf8ee1d4f28"
+        },
+        {
+          "path": ".github/workflows/hosted-windows-observation.yml",
+          "lines": 99,
+          "bytes": 4125,
+          "sha256": "137558a77b5f802967d7350c775e776125b134b216bb6f77d6ee0a79e7282ba5"
+        },
+        {
+          "path": ".github/workflows/pages.yml",
+          "lines": 602,
+          "bytes": 26645,
+          "sha256": "72bf135bf061fbe8995cd009368471c3e3d9a7f64ef64e34ad604d5d47fdba59"
+        },
+        {
+          "path": ".github/workflows/trusted-https-canary.yml",
+          "lines": 133,
+          "bytes": 5889,
+          "sha256": "80cac4ccc64abb3dfa015008d8f0ecdc66e271bd2c57e971c6d6e7dca157a750"
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "lines": 24,
+          "bytes": 552,
+          "sha256": "4b651b78b83ac1b7cf81490018d2593106b0cc89ed905bb88eb3c19182b08601"
+        },
+        {
+          "path": "AGENTS.md",
+          "lines": 1022,
+          "bytes": 57898,
+          "sha256": "0d57d18a05e33c7f33bb8c405f25406d985f00eeaf9b7509d1558ae6f64ec829"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.css",
+          "lines": 67,
+          "bytes": 3402,
+          "sha256": "f0509fe6f45602c6852b248698fe80b1b55528f517f3ace8b900f6dcd20e50ee"
+        },
+        {
+          "path": "assets/design/math-quest-design-tokens-v1.json",
+          "lines": 1476,
+          "bytes": 47862,
+          "sha256": "3eab2d38116bb6a58cc18365d81c5ed21165803012414695774acc9879a6f85d"
+        },
+        {
+          "path": "assets/icons/math-quest-icon.svg",
+          "lines": 14,
+          "bytes": 883,
+          "sha256": "2e84ab4fc3b1760cfc4baa6a64cce3d08e66510f9a29cd1dcb0769c2543098e2"
+        },
+        {
+          "path": "assets/sounds/generate-sounds.ps1",
+          "lines": 44,
+          "bytes": 1470,
+          "sha256": "8dcb268a51d0e0d6e2a56f19014cfe7a5c79953b3de258f9943db1d22a624890"
+        },
+        {
+          "path": "audit.html",
+          "lines": 8228,
+          "bytes": 426164,
+          "sha256": "17dd3bcea357041aa37e0930501e46ea101b2c93c44c7aabfd155087a232f133"
+        },
+        {
+          "path": "audit/agent-collaboration-policy-v1.json",
+          "lines": 95,
+          "bytes": 2749,
+          "sha256": "4cc738466234a64080ffd30e00f770b3a3754c81f9fbd6fe36d5569e1eea0ea2"
+        },
+        {
+          "path": "audit/approved-visual-regression.js",
+          "lines": 3319,
+          "bytes": 184273,
+          "sha256": "08f7df9519ee532b33387eb33d0a986c06c96c362100f320f63171d87e5f0fbb"
+        },
+        {
+          "path": "audit/architecture-policy-v1.json",
+          "lines": 79,
+          "bytes": 2498,
+          "sha256": "dc9a272b3d9a331d0152f8dd1f379fab1045cf93c19bbf92d98faefa7b6cfa95"
+        },
+        {
+          "path": "audit/art-asset-register-v1.json",
+          "lines": 48,
+          "bytes": 2314,
+          "sha256": "205eef956c1bc1a754cd04806a555d309379973e3562ac2315cb4a17684539ad"
+        },
+        {
+          "path": "audit/art-design-decision-register-v1.json",
+          "lines": 492,
+          "bytes": 111367,
+          "sha256": "35ee1b4bff254d465929f8374da369e0f90641eace59a406f8db1fd4a116f315"
+        },
+        {
+          "path": "audit/art-migration-baseline-v1.json",
+          "lines": 2083,
+          "bytes": 70501,
+          "sha256": "e23712f49ce42b2cfd87ebe899e2a6e120d186ca529cac21dcc8aaee5eeec198"
+        },
+        {
+          "path": "audit/art-migration-browser-evidence-v1.json",
+          "lines": 475,
+          "bytes": 300373,
+          "sha256": "b1134226011173f7c97556f762e316748f7d9ff24299df7077aaf002799e970b"
+        },
+        {
+          "path": "audit/browser-runner-evidence-v1.json",
+          "lines": 9,
+          "bytes": 307,
+          "sha256": "9a41ddf9d7db12935b37ad5e5bbbba7e71730c9c3cc059381b757c5cbe48660d"
+        },
+        {
+          "path": "audit/capture-function-quality-baseline.mjs",
+          "lines": 148,
+          "bytes": 5466,
+          "sha256": "f33424c4732a66093092f825c8028440a2c7878f717ddd0c45db07e9a89d6398"
+        },
+        {
+          "path": "audit/capture-refactor-baseline.mjs",
+          "lines": 329,
+          "bytes": 14254,
+          "sha256": "205abb79f7bb99a3ba38790ce2df4d27102088786c6c4ea2eb0856a82a062f68"
+        },
+        {
+          "path": "audit/certification-cadence-v1.json",
+          "lines": 77,
+          "bytes": 2525,
+          "sha256": "4278b496653bb0491604d9bc93f2f6b80398ca41565e03cde8bac39b59915f63"
+        },
+        {
+          "path": "audit/compare-audit-execution-modes.mjs",
+          "lines": 23,
+          "bytes": 1234,
+          "sha256": "a27c690e4550a5f1c6eed4d077b4f6fbd9d299ae659fe512205c94d7954c60d9"
+        },
+        {
+          "path": "audit/exhaustive-generator-audit.mjs",
+          "lines": 782,
+          "bytes": 41952,
+          "sha256": "a10b269b26916b31838998c4507921aaf88c14b4dd50eccf741e8e72a40c0545"
+        },
+        {
+          "path": "audit/extract-child-strings.mjs",
+          "lines": 18,
+          "bytes": 881,
+          "sha256": "d76c43321e27702a391579cafb153534385924aa0d01c4c2d74be40b17d86c58"
+        },
+        {
+          "path": "audit/finished-work-policy-v1.json",
+          "lines": 126,
+          "bytes": 5525,
+          "sha256": "f488737322cfcb9bc57781290f60acb9068467bc4853fe1b7df60eb4fbb6783b"
+        },
+        {
+          "path": "audit/fixtures/coverage-calibration.test.mjs",
+          "lines": 28,
+          "bytes": 1410,
+          "sha256": "a21901dc540903dab995645c0c286363bc18f50413c499c45058a3aa80dd0042"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-aggregate.js",
+          "lines": 3,
+          "bytes": 71,
+          "sha256": "4693eb2b704e24b33c73c02f71c6d8abeed3be2f8a6b00a23105d4f2a10f743f"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-full.js",
+          "lines": 1,
+          "bytes": 78,
+          "sha256": "64f6ef96e8eb98c96bab29bea336bc33ba4e774b33217cc5c48febce5603fc4d"
+        },
+        {
+          "path": "audit/fixtures/mq-coverage-calibration-partial.js",
+          "lines": 1,
+          "bytes": 81,
+          "sha256": "9ccf558cabcfad036186fa0685e77b5265af32189ebd666723ba67075cda286f"
+        },
+        {
+          "path": "audit/gate-integrity-policy-v1.json",
+          "lines": 531,
+          "bytes": 34498,
+          "sha256": "ef4ac4ee94767394d81181175b8af5196b3997c7d8a2dea72fa89e6bcf98113c"
+        },
+        {
+          "path": "audit/install-reviewed-ci-dependencies.ps1",
+          "lines": 22,
+          "bytes": 928,
+          "sha256": "d408ab445f65a68437289d970ddb58dbf41d06a988a9c8047cbe70772e9c8de9"
+        },
+        {
+          "path": "audit/install-reviewed-security-tools.ps1",
+          "lines": 55,
+          "bytes": 2469,
+          "sha256": "c49a6c114c312f3ae95bd811ecb7e6d47e15accf43a543642b97e35b097ff76e"
+        },
+        {
+          "path": "audit/lib/architecture-policy.mjs",
+          "lines": 135,
+          "bytes": 6907,
+          "sha256": "15dd34721650399c78d518cf9b45780be9e1d66f5a46b2de857f8760253759ad"
+        },
+        {
+          "path": "audit/lib/art-design-governance.mjs",
+          "lines": 414,
+          "bytes": 31302,
+          "sha256": "f70ce9cdf65179fc767e66096376af550dc12c272e33f62aefd84f195ae2f7eb"
+        },
+        {
+          "path": "audit/lib/art-migration-baseline.mjs",
+          "lines": 565,
+          "bytes": 31095,
+          "sha256": "8efa81536cb33ef25d530d29b80ca9e546a3f38e954bfbb5fed1a4a0a3b4aaac"
+        },
+        {
+          "path": "audit/lib/art-question-shell.mjs",
+          "lines": 130,
+          "bytes": 14013,
+          "sha256": "81f9d8388ebd51431a85bdadd86d21591b4340a08236f3e7a493fc44b6420152"
+        },
+        {
+          "path": "audit/lib/bounded-audit-lanes.mjs",
+          "lines": 684,
+          "bytes": 30044,
+          "sha256": "e7afa528170c1a2098379a738bd06f1768cf8f2c5f2d5e02ae351f1309533035"
+        },
+        {
+          "path": "audit/lib/browser-runner-evidence.mjs",
+          "lines": 123,
+          "bytes": 4764,
+          "sha256": "0a51273c23d89cf162b74ff801d37b90fa733d1be5a3751b91204507152a1f8e"
+        },
+        {
+          "path": "audit/lib/browser-smoke.mjs",
+          "lines": 1024,
+          "bytes": 40702,
+          "sha256": "6404aabd57935a2318bbbd1b3b695ded73b2f964428a7a24810ad4c93094fbea"
+        },
+        {
+          "path": "audit/lib/child-strings.mjs",
+          "lines": 94,
+          "bytes": 4777,
+          "sha256": "c53b46ef5216c64833fceeb00ca286fdd97a2602c124f15b4321f94b087507bc"
+        },
+        {
+          "path": "audit/lib/ci-dependency-policy.mjs",
+          "lines": 393,
+          "bytes": 17896,
+          "sha256": "fa88abc22f15cf49cc3cb7facaede8aa8a34cbb18c32224c93dd1d2b87b2c2b0"
+        },
+        {
+          "path": "audit/lib/curriculum-manifest.mjs",
+          "lines": 406,
+          "bytes": 24192,
+          "sha256": "c11c2bf666f97573f0121de2063528979182a088f405ad7d6ee303d63dd8127c"
+        },
+        {
+          "path": "audit/lib/design-token-projection.mjs",
+          "lines": 329,
+          "bytes": 18419,
+          "sha256": "fc0aa22e474153783e875e8598eb4a0445fec0f11cf6c0b452a001f2c67caed4"
+        },
+        {
+          "path": "audit/lib/development-suite-plan.mjs",
+          "lines": 66,
+          "bytes": 8272,
+          "sha256": "ed515ab688564d1f6f7131453b276a39c5786f00e3f4f1a80cc93b57b25a4c3e"
+        },
+        {
+          "path": "audit/lib/differential-equivalence.mjs",
+          "lines": 108,
+          "bytes": 5268,
+          "sha256": "654db2169c3f18790627ba2ccfeb647af7cf6d102a926d548066d0d336e21578"
+        },
+        {
+          "path": "audit/lib/engine-loader.mjs",
+          "lines": 191,
+          "bytes": 7583,
+          "sha256": "fdabb52a943a959070f89d50d27b5fce83aa865a010bd7a426588e3db504d0f9"
+        },
+        {
+          "path": "audit/lib/feature-map.mjs",
+          "lines": 125,
+          "bytes": 9481,
+          "sha256": "0c609900a8124ea9723fbc0c740571f64a2fa00c7d6c5b6f6d9f36dc4a202219"
+        },
+        {
+          "path": "audit/lib/function-quality-metrics.mjs",
+          "lines": 355,
+          "bytes": 14235,
+          "sha256": "d90653accd37a6f83a0570171e4a929fbacc5059f6ec4fe193077ed3b7c25d04"
+        },
+        {
+          "path": "audit/lib/gate-integrity-policy.mjs",
+          "lines": 177,
+          "bytes": 11009,
+          "sha256": "89121a7fb82e2f27c3574ffa113d888fb7e6e9458c41ebf1cbc9d12dcf0cf311"
+        },
+        {
+          "path": "audit/lib/hosted-windows-observation.mjs",
+          "lines": 81,
+          "bytes": 4938,
+          "sha256": "bd9e8dc5ef8de9926709728187ed333121a5319d862440b2478b3baff1b3c22d"
+        },
+        {
+          "path": "audit/lib/native-coverage.mjs",
+          "lines": 93,
+          "bytes": 4227,
+          "sha256": "d644fef4283ef55fe8c212bd0027c6eb998cf5837db3e98a02ac6d68c323701e"
+        },
+        {
+          "path": "audit/lib/playwright-deep-ux-census.mjs",
+          "lines": 530,
+          "bytes": 26964,
+          "sha256": "211fbdb506fec73253a03857576693fbf589e14be69af42959c05c30bae50762"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "lines": 196,
+          "bytes": 9164,
+          "sha256": "3f43db6a2a5bb8e536eabdd3aadd684b1144b01b2bb15d1e5f0ef96ec92ebed7"
+        },
+        {
+          "path": "audit/lib/playwright-interaction-fuzz.mjs",
+          "lines": 495,
+          "bytes": 24437,
+          "sha256": "e0b95fd20fc6a7363ba51c5e665990054c84c0f0dfb35fe1f824d8729f31a930"
+        },
+        {
+          "path": "audit/lib/publication-clearance.mjs",
+          "lines": 855,
+          "bytes": 45530,
+          "sha256": "7ea16b96a716e8313ef5ef4259d675e71aee80233cbdfc8dbf68d9ba89c59be6"
+        },
+        {
+          "path": "audit/lib/quality-budget-measurements.mjs",
+          "lines": 95,
+          "bytes": 4157,
+          "sha256": "091bd1f3a599d3fcbd53bc9f1e9204b7bbdf2fab722601a7c2d82bd5dd2d0dfb"
+        },
+        {
+          "path": "audit/lib/quality-gate-policy.mjs",
+          "lines": 250,
+          "bytes": 12944,
+          "sha256": "10be6c459548a2028e38de86e60d08f57f7e08c7b92753b3bb453fa5cf0347bf"
+        },
+        {
+          "path": "audit/lib/refactor-baseline.mjs",
+          "lines": 252,
+          "bytes": 10612,
+          "sha256": "f3de8eb90242742f1b4fa67d79c6e080b88e25668fa52737ab45bcd9fd422f62"
+        },
+        {
+          "path": "audit/lib/release-evidence-bundle.mjs",
+          "lines": 175,
+          "bytes": 10058,
+          "sha256": "37d705834fcf2f91ba2d229bf0db6101bfe53fd6d6b0416bfcc2019cb9327c17"
+        },
+        {
+          "path": "audit/lib/release-evidence-successor.mjs",
+          "lines": 333,
+          "bytes": 16873,
+          "sha256": "a8f7b6463f58d75413c4c57dbfd7ea3449df300d22a3d1552cdbdda9e72a41b6"
+        },
+        {
+          "path": "audit/lib/repository-code-map.mjs",
+          "lines": 374,
+          "bytes": 20915,
+          "sha256": "df0fc628c3940a8c6a2a8a7039ebcbe6f34ed7faf29907ecf86d9770d9fc2712"
+        },
+        {
+          "path": "audit/lib/rights-state.mjs",
+          "lines": 67,
+          "bytes": 2421,
+          "sha256": "bad2edfbd2c0f8c10981dbb0f62790a5e125079864e847ed692197b9199d3e07"
+        },
+        {
+          "path": "audit/lib/security-gate-policy.mjs",
+          "lines": 162,
+          "bytes": 6473,
+          "sha256": "aa508be69ff6d09abbc593ddde94bbdbc5706aa8b210dd3a567b84779257a0ad"
+        },
+        {
+          "path": "audit/lib/security-scans.mjs",
+          "lines": 646,
+          "bytes": 27750,
+          "sha256": "237f6eb414b1ec250c649072ce53a1af1c983ea62c147d23d317058aed2d8dd8"
+        },
+        {
+          "path": "audit/lib/test-harness.mjs",
+          "lines": 65,
+          "bytes": 2184,
+          "sha256": "50631cd1777c434297e2d0da91da4658740e683b3add967d15cd07c4099957b2"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-supply-chain.mjs",
+          "lines": 450,
+          "bytes": 28964,
+          "sha256": "cd51c1e988560a86bdf8181988818417cbe6c12ee4b43977e43466c31ca40a12"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary.mjs",
+          "lines": 882,
+          "bytes": 50369,
+          "sha256": "31d3bbd0b0c7a79ed6eaec4bf587cd56c11260b208b6d1430b31a2c5985cbb1d"
+        },
+        {
+          "path": "audit/lib/tutorial-manifest.mjs",
+          "lines": 236,
+          "bytes": 15641,
+          "sha256": "34cb6823974d7d794997f6f01f01b92bca1dc9d5fea21b725daac135c0437273"
+        },
+        {
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "lines": 266,
+          "bytes": 11351,
+          "sha256": "3f9b1290354393cff64fbbc06fc0b7d9c635b203e0ea8a6d0a323cb1bc005910"
+        },
+        {
+          "path": "audit/mutation-runner.mjs",
+          "lines": 223,
+          "bytes": 12151,
+          "sha256": "2147cf146e54bf008243297138193d396843328263efce4f208739a210e36fcf"
+        },
+        {
+          "path": "audit/observe-hosted-windows.ps1",
+          "lines": 119,
+          "bytes": 5245,
+          "sha256": "b85a92b3ef7421a36ee876dbcd938b54d1c771307c73e99e739e012aa731f827"
+        },
+        {
+          "path": "audit/on-change-audit.ps1",
+          "lines": 71,
+          "bytes": 3141,
+          "sha256": "3d81c56c31d088106557fdc14a9e86b57d7f74ef50ab522abbeadafa3b0040d6"
+        },
+        {
+          "path": "audit/playwright/compact-reporter.mjs",
+          "lines": 94,
+          "bytes": 4085,
+          "sha256": "32f0cd84f5993f336207309c3462cb437da220742dfa035719b41e6b3d6b46ec"
+        },
+        {
+          "path": "audit/playwright/critical-journeys.spec.mjs",
+          "lines": 1530,
+          "bytes": 89077,
+          "sha256": "066ecc5ee87eb6d6c54b3e1944f28705be94b421eea84f5336855f6d4d899481"
+        },
+        {
+          "path": "audit/playwright/deep-ux-census.spec.mjs",
+          "lines": 576,
+          "bytes": 36469,
+          "sha256": "261570ab6b10d7dffe621d457ab40519da7e57f938d4f4a2d14829ffed9ea5e9"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "lines": 272,
+          "bytes": 12751,
+          "sha256": "6b451e85e373f0ba1c1adf9894078b1fb843469024f5af9f8b01b09110ba6a7c"
+        },
+        {
+          "path": "audit/playwright/interaction-fuzz.spec.mjs",
+          "lines": 325,
+          "bytes": 13872,
+          "sha256": "7581831b14148c4049e4b784a2a1760f1cc465d84dad3aece41617072d082d5e"
+        },
+        {
+          "path": "audit/public-candidate-guard.mjs",
+          "lines": 1353,
+          "bytes": 81742,
+          "sha256": "bdb7fda6b9984268ab211da1573b2a5e3feec092935f053d4caf433e55474c67"
+        },
+        {
+          "path": "audit/quality-gate-policy-v1.json",
+          "lines": 335,
+          "bytes": 14945,
+          "sha256": "99ce8e88338cdbbddfa614849dca113384a12038728253f00d449fbaaefa8a08"
+        },
+        {
+          "path": "audit/release-evidence-bundle-v1.json",
+          "lines": 98,
+          "bytes": 3749,
+          "sha256": "7e6b7fff93e0ba883d30998e481283a46930fbd767ecc1fdb1a90439987c65e6"
+        },
+        {
+          "path": "audit/repository-code-map-v1.json",
+          "lines": 1637,
+          "bytes": 51142,
+          "sha256": "3d8aba299f6b0c9c04d2f8dcffbf6c9e95ae8308202242270cd7f68f8664a3b3"
+        },
+        {
+          "path": "audit/run-architecture-gate.mjs",
+          "lines": 21,
+          "bytes": 856,
+          "sha256": "e2f2ec57eb0978fbee0898a008e40d2faa165a95b335234d910872b3c769ca1a"
+        },
+        {
+          "path": "audit/run-audit-lane.mjs",
+          "lines": 126,
+          "bytes": 5338,
+          "sha256": "c3a98c49ae103d47136e366576e7d604cabb69f7598ba7e9e744c89d2440e310"
+        },
+        {
+          "path": "audit/run-audit.mjs",
+          "lines": 709,
+          "bytes": 48956,
+          "sha256": "24fe1a35288d74129c8bef94c8c6e5722b0a55112b075dd6f815282c3b5e197d"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "lines": 614,
+          "bytes": 30699,
+          "sha256": "0f4fd36eca6ed83fcb983b3ad0c4e3c837697919a80b882cbffdcc8f59541a48"
+        },
+        {
+          "path": "audit/run-browser-smoke.mjs",
+          "lines": 9,
+          "bytes": 463,
+          "sha256": "29197ed4c4dc00915ebf0a08e4c74b904d55872cafae78d823f7cfafc14850fa"
+        },
+        {
+          "path": "audit/run-bundlewatch-budgets.mjs",
+          "lines": 113,
+          "bytes": 5432,
+          "sha256": "ad400411eff427be3b7b68d6794bfa1a29d7e0b8f2ec98e0063dc4245be46e3f"
+        },
+        {
+          "path": "audit/run-coverage.mjs",
+          "lines": 328,
+          "bytes": 17810,
+          "sha256": "6bdaa9ab2120957d4e4fc22df042296ad299ef227f2ba6a66dd79bc57a51a111"
+        },
+        {
+          "path": "audit/run-differential-equivalence.mjs",
+          "lines": 23,
+          "bytes": 997,
+          "sha256": "c22b61c5ca8b3960a3524d127c780b8d6068d79523793e952292cfd53305f8e9"
+        },
+        {
+          "path": "audit/run-performance-budgets.mjs",
+          "lines": 41,
+          "bytes": 1612,
+          "sha256": "6478e7f49b450dab2bda1145c2170cb4d8ca826dad1fb6edb1d3f11c65273f92"
+        },
+        {
+          "path": "audit/run-playwright-deep-ux-census.mjs",
+          "lines": 251,
+          "bytes": 13172,
+          "sha256": "be82067fe38fca4de853f7112e167af1b14e7273bd4fb393725b75185572d3a5"
+        },
+        {
+          "path": "audit/run-playwright-focused.mjs",
+          "lines": 128,
+          "bytes": 6263,
+          "sha256": "33b411eab002b38fdd0944f43a144bcf144a5368c25ddffefd94c9f421b2db42"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "lines": 170,
+          "bytes": 8055,
+          "sha256": "3d741a908ec06203174d1bf92c2c3476fbe41cad2f9cd4c52e9c5185f70c29a4"
+        },
+        {
+          "path": "audit/run-property-fuzz-stage.mjs",
+          "lines": 72,
+          "bytes": 2633,
+          "sha256": "b7120cd3d3a041faf3d95cea95811dfdde393e5208dfbbf403f373c40c9310f4"
+        },
+        {
+          "path": "audit/run-quality-gates.mjs",
+          "lines": 110,
+          "bytes": 4598,
+          "sha256": "c04dbbd582515e6cf1be0b8972578034dbae08f5dbb6099170959c8b1fcb859a"
+        },
+        {
+          "path": "audit/run-security-dependency-gate.mjs",
+          "lines": 174,
+          "bytes": 8400,
+          "sha256": "2562edebf8bbd887f46b1c45edffad77ab1789b1931c7198e86bbea7b15fa83d"
+        },
+        {
+          "path": "audit/run-trusted-https-canary.mjs",
+          "lines": 1576,
+          "bytes": 85611,
+          "sha256": "0cc6c7ba2f8695432daa0af55d925a6506f3f8dfe8942e92c5281cc5f75496f0"
+        },
+        {
+          "path": "audit/run-trusted-https-canary.ps1",
+          "lines": 171,
+          "bytes": 9371,
+          "sha256": "cc74a0c13e5be1310e23b86885c1cd11934dfad20f034044c487bee7f3571c1c"
+        },
+        {
+          "path": "audit/schemas/architecture-policy-v1.schema.json",
+          "lines": 68,
+          "bytes": 2500,
+          "sha256": "cbaaf97097d191dd5dba2f1fa890e73bb5e413ed38d8d7318689dac486d747c2"
+        },
+        {
+          "path": "audit/schemas/art-asset-register-v1.schema.json",
+          "lines": 213,
+          "bytes": 12075,
+          "sha256": "221d80fff7540cdc2e453822f63ca0fda1af3ae6af24be8b202af6b1f86ffb4f"
+        },
+        {
+          "path": "audit/schemas/art-design-decision-register-v1.schema.json",
+          "lines": 292,
+          "bytes": 16252,
+          "sha256": "8f60888da07fc35f27e261a4aad9cd14cbc64dd7528bbb999b87f227ecd12819"
+        },
+        {
+          "path": "audit/schemas/art-migration-baseline-v1.schema.json",
+          "lines": 296,
+          "bytes": 14398,
+          "sha256": "615c0db6d0842377333919be4e92896723ce0f1fca0f9e6476f67035325bf5f1"
+        },
+        {
+          "path": "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+          "lines": 213,
+          "bytes": 8188,
+          "sha256": "cb01335b86f7a303ca5bc2b3bb680a7ec3178506a470e4c697481acdab9efdff"
+        },
+        {
+          "path": "audit/schemas/blast-radius-result-v2.schema.json",
+          "lines": 216,
+          "bytes": 7610,
+          "sha256": "cb5309e5ea380aa4521d69bb30f89f948b1369d3c0a333ba6ee91722ff5c2f56"
+        },
+        {
+          "path": "audit/schemas/design-tokens-v1.schema.json",
+          "lines": 163,
+          "bytes": 8697,
+          "sha256": "f922aab285fbc748f82d4f058c755ce5a725b54390926627b37881b59b3fce2f"
+        },
+        {
+          "path": "audit/schemas/feature-map-v1.schema.json",
+          "lines": 172,
+          "bytes": 8489,
+          "sha256": "99c5aaf30dfcffb49838e273bd73649e062d419be0faa73bc67b40250112e304"
+        },
+        {
+          "path": "audit/schemas/function-quality-baseline-v1.schema.json",
+          "lines": 196,
+          "bytes": 8403,
+          "sha256": "b4da9cebe435c9ef7dc29b93d2315affc9ec60074272d537ee16dc43c1faed43"
+        },
+        {
+          "path": "audit/schemas/gate-integrity-policy-v1.schema.json",
+          "lines": 310,
+          "bytes": 17565,
+          "sha256": "5c86eb0a7e7a7b1e79edd6b6ed80abd65b2a9da4d82e89878d01fc9cb37e3674"
+        },
+        {
+          "path": "audit/schemas/quality-gate-policy-v1.schema.json",
+          "lines": 258,
+          "bytes": 12230,
+          "sha256": "d3fb8ccc3e6a26acf206ff767d55e479d7092f06f75462b14c4f5b9a89283daa"
+        },
+        {
+          "path": "audit/schemas/refactor-baseline-v2.schema.json",
+          "lines": 565,
+          "bytes": 24810,
+          "sha256": "8df46e44448d07961f069dd352dee97b6ff39fb7803def076884d405aefa68b1"
+        },
+        {
+          "path": "audit/schemas/release-evidence-bundle-v1.schema.json",
+          "lines": 234,
+          "bytes": 13580,
+          "sha256": "e004d7f76ea0a7122f71dc340b8a61d02c5958b5e5df2e3c1a23cc18b784e169"
+        },
+        {
+          "path": "audit/schemas/repository-code-map-v1.schema.json",
+          "lines": 238,
+          "bytes": 9302,
+          "sha256": "6eaf8f869c8c189119aa832c919d524d5d4bb9d2638439fd57d3449f9bdcdd89"
+        },
+        {
+          "path": "audit/schemas/security-gate-policy-v1.schema.json",
+          "lines": 166,
+          "bytes": 6673,
+          "sha256": "f9a3b3b3f508c0b5029ad1bd002787751ef39996d26ac098daae3952017ab10a"
+        },
+        {
+          "path": "audit/schemas/tutorial-manifest-v1.schema.json",
+          "lines": 223,
+          "bytes": 11269,
+          "sha256": "6cc0016854acd198692343e6313927343737a276d3d23d5092e0d75a7c89c69f"
+        },
+        {
+          "path": "audit/security-gate-policy-v1.json",
+          "lines": 113,
+          "bytes": 4887,
+          "sha256": "a8b46b4d65ba7e10e139fcb94526789b0d056afab986b164364f41f5b3e30ee1"
+        },
+        {
+          "path": "audit/security/semgrep-high-confidence-v1.json",
+          "lines": 76,
+          "bytes": 2962,
+          "sha256": "05f5b514fc81cafa374f04163afc50cde7e79e2721eb7f320df58e3ee160dac1"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "lines": 298,
+          "bytes": 11901,
+          "sha256": "adb0f1f035a90617412dea09a373e957d3056276a4ad12a23ce8ee9585e30617"
+        },
+        {
+          "path": "audit/tests/adapter-syntax.test.mjs",
+          "lines": 17,
+          "bytes": 597,
+          "sha256": "6ce1171fe9e9470f6d7bcaa9082fefa1e4f34c4240d4fc151613dc4db74b7870"
+        },
+        {
+          "path": "audit/tests/agent-collaboration-policy.test.mjs",
+          "lines": 179,
+          "bytes": 7639,
+          "sha256": "4e2ffd7d09d955c25148542fe982e952bc26b1451331c52fb7e9fa4ef939e584"
+        },
+        {
+          "path": "audit/tests/architecture-policy.test.mjs",
+          "lines": 21,
+          "bytes": 873,
+          "sha256": "943104363116dfb8bc530b21299bcb2a8b8376593d9a8557eb9b460dfa2eda16"
+        },
+        {
+          "path": "audit/tests/art-design-governance.test.mjs",
+          "lines": 508,
+          "bytes": 30566,
+          "sha256": "aef070efdbc9643cffea43d26b0001111dde7fafbb24ab8f3e9e43aa894b6072"
+        },
+        {
+          "path": "audit/tests/art-migration-baseline.test.mjs",
+          "lines": 166,
+          "bytes": 11332,
+          "sha256": "6264f6e0080e6ee3308205582c4e74bcc13998c8c3596a54fe87eb2f5643cb6f"
+        },
+        {
+          "path": "audit/tests/art-question-shell.test.mjs",
+          "lines": 288,
+          "bytes": 12231,
+          "sha256": "11e1ae47c5cfda169d8694d9cdc6af623c2187c77ab267848563c5a1509a5799"
+        },
+        {
+          "path": "audit/tests/audit-lane-orchestration.test.mjs",
+          "lines": 477,
+          "bytes": 22985,
+          "sha256": "74b3db5967b41b886e7a6a52a293a00e87028980933957eae8bda87d853ae300"
+        },
+        {
+          "path": "audit/tests/audit-orchestration.test.mjs",
+          "lines": 318,
+          "bytes": 18638,
+          "sha256": "1a9d539018dd343316e1b46c1905ca4cc4d71e3571c35c6762ba4a74867e8486"
+        },
+        {
+          "path": "audit/tests/blast-radius-lookup.test.mjs",
+          "lines": 88,
+          "bytes": 5095,
+          "sha256": "d3c17f6adeac29ebce4246c75ca113ab9ba545475b788471138d75e572616c8d"
+        },
+        {
+          "path": "audit/tests/bundlewatch-budgets.test.mjs",
+          "lines": 24,
+          "bytes": 1244,
+          "sha256": "1adfd3bf67aa398d7a765e4edf25201563091cc7d7d515147f099ef79ae3c7f9"
+        },
+        {
+          "path": "audit/tests/certification-cadence.test.mjs",
+          "lines": 261,
+          "bytes": 13615,
+          "sha256": "7fa3987237e180d9639f6a4d3af9476ac67b02cc32f40ca9c66f04d19e9f2862"
+        },
+        {
+          "path": "audit/tests/design-token-projection.test.mjs",
+          "lines": 202,
+          "bytes": 9352,
+          "sha256": "b87c90a51c41638ff8e137c87441da6f4e6b8ef450aaef6b120cafa3271eb85b"
+        },
+        {
+          "path": "audit/tests/development-suite-plan.test.mjs",
+          "lines": 179,
+          "bytes": 9015,
+          "sha256": "b5121a18dddaef156aae1e62a7b675d6bed5e277d5f373f4947c731ed7d3d7a9"
+        },
+        {
+          "path": "audit/tests/differential-equivalence.test.mjs",
+          "lines": 17,
+          "bytes": 862,
+          "sha256": "c1fe0dcd7fd0466ac6853eb027a6f8f1866cd592aec293b6999388c8c5916118"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "lines": 2257,
+          "bytes": 125706,
+          "sha256": "e54c79efb826ee1ac561203e4cccddf4d6fe0243873b1060e4427744a900a04b"
+        },
+        {
+          "path": "audit/tests/feature-map.test.mjs",
+          "lines": 129,
+          "bytes": 7883,
+          "sha256": "9fb19574cbd42315d1deee0200f0671f11dc5864aed091d4a1e018278c1f553d"
+        },
+        {
+          "path": "audit/tests/finished-work-policy.test.mjs",
+          "lines": 280,
+          "bytes": 14117,
+          "sha256": "b460b98fee89fc0b04041e110fe4257f6d4228d9a55f5b2d2d251b712dc2d55f"
+        },
+        {
+          "path": "audit/tests/function-quality-metrics.test.mjs",
+          "lines": 81,
+          "bytes": 3232,
+          "sha256": "8a23472b60391948dca66bfdced47630789f0b1b95e502e369069e530cf7e954"
+        },
+        {
+          "path": "audit/tests/gate-integrity-policy.test.mjs",
+          "lines": 196,
+          "bytes": 11310,
+          "sha256": "3360608b5007ca78e8f3c5c5da223016b7fec881b7233cf9ca496b78894515b2"
+        },
+        {
+          "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+          "lines": 1766,
+          "bytes": 84649,
+          "sha256": "380717526b861c46e6d67ab027893390cfc67431906996e86c43073a0407f600"
+        },
+        {
+          "path": "audit/tests/holistic-functional-regressions.test.mjs",
+          "lines": 1191,
+          "bytes": 54128,
+          "sha256": "1810cef1a6b69843cc4b8210810397cbae37546858ea80a2bc305242d18ed362"
+        },
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "lines": 1709,
+          "bytes": 123782,
+          "sha256": "369a5122090aeb27768fa12cdd034e721cca8d4db201a51362a098deca462edd"
+        },
+        {
+          "path": "audit/tests/node-engine.test.mjs",
+          "lines": 4713,
+          "bytes": 218360,
+          "sha256": "ab798e133736d5800b9d0c34f0b553dbd3ce3f2bcc3cb3d987a97675c4109a5c"
+        },
+        {
+          "path": "audit/tests/page-adapter-effects.test.mjs",
+          "lines": 1826,
+          "bytes": 85636,
+          "sha256": "cec6c690f4af78262097cbe872223879b67ed9d69084d316dc975803841abea2"
+        },
+        {
+          "path": "audit/tests/placement-adapter-effects.test.mjs",
+          "lines": 1278,
+          "bytes": 65166,
+          "sha256": "becc1a301a2eef428c5577f1789af503e1a9c052ae283df6a056f010fd0892c3"
+        },
+        {
+          "path": "audit/tests/playwright-deep-ux-census.test.mjs",
+          "lines": 284,
+          "bytes": 17594,
+          "sha256": "e89f5046c9042837782fb5b776f95663a91b9a6b465b958f5710da6845a63d4b"
+        },
+        {
+          "path": "audit/tests/playwright-focused-contract.test.mjs",
+          "lines": 151,
+          "bytes": 7745,
+          "sha256": "a8afc61ce0d677e81c7b92fff1203f145b83cde5db7a9bc71c5869bfa23c0f29"
+        },
+        {
+          "path": "audit/tests/playwright-interaction-fuzz.test.mjs",
+          "lines": 277,
+          "bytes": 12575,
+          "sha256": "3543568ed996daf6ffae7f193adb8655faaa7f27ec5f9fb044fe57bbeefc409a"
+        },
+        {
+          "path": "audit/tests/property-fuzz-stage.test.mjs",
+          "lines": 7,
+          "bytes": 339,
+          "sha256": "f53f2490106e0ba76cda3cd46c4dfd0069400ad6126f77bb30efe6c165b9dd58"
+        },
+        {
+          "path": "audit/tests/publication-clearance.test.mjs",
+          "lines": 1048,
+          "bytes": 51894,
+          "sha256": "48a0df0a0eb691b7e594c8881fa3ca6f6276f1897a63f9048f8278df26518f07"
+        },
+        {
+          "path": "audit/tests/pwa-release.test.mjs",
+          "lines": 3049,
+          "bytes": 117214,
+          "sha256": "d22478dad259485019db9de3fc7bc86a59326f4e3387011fc604ac11b299a7d9"
+        },
+        {
+          "path": "audit/tests/qa-tour.test.mjs",
+          "lines": 720,
+          "bytes": 32768,
+          "sha256": "bfec0592168d5400ccdc1c94c921bd97123db65a66a7cc644781437c062f39a4"
+        },
+        {
+          "path": "audit/tests/quality-gate-policy.test.mjs",
+          "lines": 63,
+          "bytes": 2840,
+          "sha256": "a7b025a7b2cb1592a0add8bf6c7370fa892a238c02134e4f0e6d32e7377a250f"
+        },
+        {
+          "path": "audit/tests/refactor-baseline.test.mjs",
+          "lines": 211,
+          "bytes": 9666,
+          "sha256": "449fbb28aad34e6af0a405bc20ee2bf6fb557d44e8c8276bd1b2c59c1cae56cd"
+        },
+        {
+          "path": "audit/tests/release-evidence-bundle.test.mjs",
+          "lines": 201,
+          "bytes": 10532,
+          "sha256": "00c9d7b2098cdf007a6372b731937e8ea908f5107e4ed5505b181f2fada805b9"
+        },
+        {
+          "path": "audit/tests/repository-code-map.test.mjs",
+          "lines": 236,
+          "bytes": 15423,
+          "sha256": "7e3101f7d5f427a835afa782d30bc51667ad06bd943bdb57762d0aa54250f78c"
+        },
+        {
+          "path": "audit/tests/security-dependency-gate.test.mjs",
+          "lines": 335,
+          "bytes": 14775,
+          "sha256": "60235047ea3eda39b2efc0f82b6266710732cb03da17d3367ef8eabecb3b9de4"
+        },
+        {
+          "path": "audit/tests/strategy-build-oracle.mjs",
+          "lines": 197,
+          "bytes": 8823,
+          "sha256": "d09fc6a6d03c339b2ad79bf888f40478b4acd0b2c4b74f75788f29583a2cf5ef"
+        },
+        {
+          "path": "audit/tests/trusted-https-canary.test.mjs",
+          "lines": 905,
+          "bytes": 46416,
+          "sha256": "3b021d54c44ac57026c2d9c4da7f54159180bdc781c75e7b8989190639b089da"
+        },
+        {
+          "path": "audit/tests/tutorial-manifest.test.mjs",
+          "lines": 223,
+          "bytes": 12571,
+          "sha256": "533799844b853d35c486d195997e7290db50ab638afb774c952ebdf2943c101c"
+        },
+        {
+          "path": "audit/trusted-https-canary-beta7-v1.json",
+          "lines": 1,
+          "bytes": 9947,
+          "sha256": "d0870c3f8d9d610d0c7afb9ac39b2efc039298860ede2dac071e75299b02d4ed"
+        },
+        {
+          "path": "audit/trusted-https-canary-v1.json",
+          "lines": 1,
+          "bytes": 9947,
+          "sha256": "c4a191889162f496e8e571ba82fae0cba4825bfbce2411ccfefc6fa081835586"
+        },
+        {
+          "path": "audit/validate-art-migration-baseline.mjs",
+          "lines": 19,
+          "bytes": 739,
+          "sha256": "cb500f0cb248a7a17a3441583ec58fab5860948177073d31f8ebd232847c28b7"
+        },
+        {
+          "path": "audit/validate-hosted-windows-observation.mjs",
+          "lines": 16,
+          "bytes": 768,
+          "sha256": "fd6a31787203583f1c05ea4fc30c1b4fe7205ad31cb4418cf36d53780e587606"
+        },
+        {
+          "path": "audit/validate-publication-clearance.mjs",
+          "lines": 105,
+          "bytes": 5367,
+          "sha256": "a44860dcc8fb26071ec1ff24a30784aa296f074b4cbc1dc0839d724ad65555de"
+        },
+        {
+          "path": "audit/validate-trusted-https-canary.mjs",
+          "lines": 22,
+          "bytes": 1133,
+          "sha256": "d6df34236ff5f2acf61b680780cd284ab9623a3fa9807de86e07e1fca548d134"
+        },
+        {
+          "path": "audit/verify-github-gate-enforcement.mjs",
+          "lines": 109,
+          "bytes": 4752,
+          "sha256": "9a37d655531029e11b4a6437652a2b009ff80b83d62fa43da2e96a9d9db1d085"
+        },
+        {
+          "path": "CHANGELOG.md",
+          "lines": 221,
+          "bytes": 13410,
+          "sha256": "6f0a668c385b323976b7c4da6086e187f3f24c32bfee0dd3d8e78f7817ab10f2"
+        },
+        {
+          "path": "CONTRIBUTING.md",
+          "lines": 103,
+          "bytes": 5458,
+          "sha256": "c443307319b4719b3dc69000f42e0fd32c0118646ee09bfcb1b418df7f61a91a"
+        },
+        {
+          "path": "curriculum/math-quest-feature-map-v1.json",
+          "lines": 118,
+          "bytes": 48939,
+          "sha256": "116df55ac2cb93a38c200e0807a6b6ba20e6587a1ffbab5196097c6f092e9630"
+        },
+        {
+          "path": "curriculum/math-quest-manifest-v1.json",
+          "lines": 7430,
+          "bytes": 187467,
+          "sha256": "0873aa394e5ad1df97ac044e2db51f0e605893ccbd4940bfd6b2e740d62daf47"
+        },
+        {
+          "path": "curriculum/math-quest-tutorial-manifest-v1.json",
+          "lines": 2444,
+          "bytes": 73387,
+          "sha256": "dd7428f79bcc901601c13248a4dd87bc0d13e5222590a8bb6dd54922678d4c4b"
+        },
+        {
+          "path": "curriculum/PROVENANCE.md",
+          "lines": 133,
+          "bytes": 7076,
+          "sha256": "708bde71d88445c5236dc9d0658ff7faa37890220fad792f0aeb15a976093a7b"
+        },
+        {
+          "path": "docs/development/build-spec.md",
+          "lines": 482,
+          "bytes": 27694,
+          "sha256": "b09bd01bf7015511111e8f25282231989c5f285ce676da03b52f68bc5404a94c"
+        },
+        {
+          "path": "docs/development/math-quest-free-play-pilot.md",
+          "lines": 145,
+          "bytes": 6041,
+          "sha256": "58f1b09a8f5c99dffb2b370733fb21693755c29905a6452942f3d32a15d8193e"
+        },
+        {
+          "path": "docs/development/post-beta-backlog.md",
+          "lines": 229,
+          "bytes": 12047,
+          "sha256": "9d424773cf3cdbaa01abe75efdc29cd364ccb1b0fa533988489ef4b7d35f7048"
+        },
+        {
+          "path": "docs/development/pwa-adapter-contract.md",
+          "lines": 328,
+          "bytes": 19179,
+          "sha256": "ac1786554e165673e09907b617520572db18eca715c4fb5f8541532ee93c716d"
+        },
+        {
+          "path": "docs/release/canary-status-2026-07-30.md",
+          "lines": 67,
+          "bytes": 3452,
+          "sha256": "470789499a99c5151537d3cc8537ab146ab3d2a292a3069f15347b0c924a527c"
+        },
+        {
+          "path": "docs/release/checklist.md",
+          "lines": 291,
+          "bytes": 18195,
+          "sha256": "e8586d47ea9224d77afac3db85d39c111ae3bfbe65ab79e12165f6dbf1355f78"
+        },
+        {
+          "path": "docs/release/child-string-approval-candidate-2026-07-30.md",
+          "lines": 259,
+          "bytes": 12137,
+          "sha256": "caa7570391cb49cbba8d22fa116e187cbf0bcbfc1519bacf94a9c61e297eb6b5"
+        },
+        {
+          "path": "docs/release/cross-device-play-report.md",
+          "lines": 170,
+          "bytes": 9835,
+          "sha256": "9c51385efc52693e01e446aeaee1cb11ea7807b3cb564b96476b1d3e7f464a2c"
+        },
+        {
+          "path": "docs/release/host-privacy-qualification-2026-07-30.md",
+          "lines": 99,
+          "bytes": 5181,
+          "sha256": "ad0b024c088f6188bf01f0993f2549cdfbc37c72d185f02f0833656a9ff52c32"
+        },
+        {
+          "path": "docs/release/install-ios-ipados.md",
+          "lines": 78,
+          "bytes": 3648,
+          "sha256": "76e2680f5459a996f27ba5d2f8b2b3fb1cbb3ee7fbc7188efeb7a286630a4eb1"
+        },
+        {
+          "path": "docs/release/ios-ipados-pwa-beta2-plan.md",
+          "lines": 1348,
+          "bytes": 77470,
+          "sha256": "7416bfcfd22b478239eb5fd21b565073e44ed4d60a1cdcde42a05cf94db3305c"
+        },
+        {
+          "path": "docs/release/privacy-review.md",
+          "lines": 208,
+          "bytes": 12076,
+          "sha256": "ab136d34a8052255f3a35c4416b1ba4f86ac94b5dbf6a9e0cf300509d0f3444f"
+        },
+        {
+          "path": "docs/release/public-file-manifest.txt",
+          "lines": 258,
+          "bytes": 9122,
+          "sha256": "057edbe05f35aa8a194754bac3e34f9603007dcf59ce1d54ce34004902790e51"
+        },
+        {
+          "path": "docs/release/publication-gates.md",
+          "lines": 420,
+          "bytes": 25823,
+          "sha256": "d8535f26e1b41167e2f01fba9b1fd7c90d13ccc45052b3f2bb3f1b5cfa0fc6b3"
+        },
+        {
+          "path": "docs/release/pwa-beta2-verification.md",
+          "lines": 361,
+          "bytes": 22698,
+          "sha256": "d0db689d96bcc41503018f06858b14bd29f489ba0236341fe4cbbcb3910a2070"
+        },
+        {
+          "path": "docs/release/readiness.md",
+          "lines": 196,
+          "bytes": 11729,
+          "sha256": "e0ae08fde108457018cbe6e251800f5c577942248abe2298855b1f4149bf7270"
+        },
+        {
+          "path": "docs/repository-structure.md",
+          "lines": 116,
+          "bytes": 13860,
+          "sha256": "32a7ab1e94bd2c506c28ee3a2a242762bd104b90a80dca888bc5a984969b54a7"
+        },
+        {
+          "path": "docs/testing/curriculum-ui-ux-review-2026-07-28.md",
+          "lines": 668,
+          "bytes": 30969,
+          "sha256": "6b1468615ac2f3fc701fa3e37732cde346c5d7ca64696b12eb9e52b9996ab58e"
+        },
+        {
+          "path": "docs/testing/math-quest-free-play-review-2026-07-30.md",
+          "lines": 93,
+          "bytes": 4739,
+          "sha256": "899b7bc794d209b0843a12c101204c2925c68b55711432e0007717ec3e72b059"
+        },
+        {
+          "path": "docs/testing/qa-tour-v1.md",
+          "lines": 86,
+          "bytes": 4262,
+          "sha256": "9e41f2b07497ef8b7273b13cd737f86a8107674b03b6119f841d185d7a74dc0e"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "lines": 942,
+          "bytes": 137342,
+          "sha256": "1c0f432818a12c4bc7b3fbaf5cd2cbaf22d606dc379f2c923ad0a0d9f8a5f7b7"
+        },
+        {
+          "path": "eslint.config.mjs",
+          "lines": 93,
+          "bytes": 2774,
+          "sha256": "19116ed8b0e8cae943e5d69bf8e77dfe843d759b2a2acb18631011e61d7a50a1"
+        },
+        {
+          "path": "index.html",
+          "lines": 4908,
+          "bytes": 1274131,
+          "sha256": "c56d7455824b6a8c4e5664e6019f2b3565c329260078923880673f6c8a9bda22"
+        },
+        {
+          "path": "knip.json",
+          "lines": 25,
+          "bytes": 593,
+          "sha256": "5d9e53398df3b6260dea8070ada7eb0cfcfb37a7b35333e9b15666955b3411c1"
+        },
+        {
+          "path": "licenses/app-icons.md",
+          "lines": 23,
+          "bytes": 1347,
+          "sha256": "f037f8e5704a707cb447ba5778738332ce15110bb2e96ed21fe3f1a285b5f8a1"
+        },
+        {
+          "path": "licenses/ci-toolchain.md",
+          "lines": 166,
+          "bytes": 14224,
+          "sha256": "346b1784e5d1d80cb8bd6ea5637709fd822d4ed0c08d1f730d6ec97d4ad3ac99"
+        },
+        {
+          "path": "licenses/component-register-v1.json",
+          "lines": 916,
+          "bytes": 41814,
+          "sha256": "7d02bda8d86d1e6f0560b7eff33e7d373446d1b3d4eda6d7221c8b40027eb720"
+        },
+        {
+          "path": "licenses/design-tokens.md",
+          "lines": 20,
+          "bytes": 1180,
+          "sha256": "952ddba63185943cec46b7e905eebdbae8cf8c2ff7c63e946cb5fe712875a814"
+        },
+        {
+          "path": "licenses/evidence-paths-v1.json",
+          "lines": 77,
+          "bytes": 3369,
+          "sha256": "851f27ef2fdf3e15c538b3a578e84a0feb3a0694b5a4c59cfa6bc8456b3ff7d0"
+        },
+        {
+          "path": "licenses/first-party-paths-v1.txt",
+          "lines": 237,
+          "bytes": 8563,
+          "sha256": "8097fd7dcaf57a50aeef0bb6e52c47328c438f7e83ab7643bef587fd364b2ff8"
+        },
+        {
+          "path": "licenses/Inter-OFL.txt",
+          "lines": 92,
+          "bytes": 4380,
+          "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+        },
+        {
+          "path": "licenses/sound-effects.md",
+          "lines": 57,
+          "bytes": 3055,
+          "sha256": "cb62d2bbc35c71a8168d4c2eb66810b83751aac5315dc001d59b1c5233e2749f"
+        },
+        {
+          "path": "manifest.webmanifest",
+          "lines": 28,
+          "bytes": 647,
+          "sha256": "5ab3554a7bc0356b2b400a70c7a7d4fbca828227b425ab9e7855d824594d03ee"
+        },
+        {
+          "path": "OPEN_SOURCE_POLICY.md",
+          "lines": 140,
+          "bytes": 6640,
+          "sha256": "bf3c17045001ea52829d423942121c0cd93ce2250f4dd0766603a33d2d723397"
+        },
+        {
+          "path": "package-lock.json",
+          "lines": 5252,
+          "bytes": 185424,
+          "sha256": "50c4769bf8b778e79a25b8d21f360bef9c81ae0d7ae3427653fefae75c897ed9"
+        },
+        {
+          "path": "package.json",
+          "lines": 35,
+          "bytes": 888,
+          "sha256": "373d345c292fad0e8536ec88d57e130e742a8ecd0565f236c2ee80d2b5b08f4a"
+        },
+        {
+          "path": "playwright.config.mjs",
+          "lines": 71,
+          "bytes": 2002,
+          "sha256": "487da9582ad809633ac8cf4ca1e257c47af071ce80fcc32caf48886542a6e610"
+        },
+        {
+          "path": "playwright.deep-ux.config.mjs",
+          "lines": 51,
+          "bytes": 1592,
+          "sha256": "49a804f4876a24266cf58cdc490964b98f7dbf12825b1bfcc70d4d16d31924e1"
+        },
+        {
+          "path": "playwright.interaction-fuzz.config.mjs",
+          "lines": 54,
+          "bytes": 1663,
+          "sha256": "f1b095f50ee829774e71eb7ad069d77713b0baad04c5730f2c1c3829d783ebe5"
+        },
+        {
+          "path": "PRIVACY.md",
+          "lines": 187,
+          "bytes": 9385,
+          "sha256": "cafc8acbea923517bbd74eecaea2d46b34dea63606b63a544e6b0b64b8deffc6"
+        },
+        {
+          "path": "PUBLICATION_CLEARANCE.md",
+          "lines": 51,
+          "bytes": 2995,
+          "sha256": "ee0553f0e5fddb20b775675ef512a87e76b06ab849ced8e2ea7751dbfd675b71"
+        },
+        {
+          "path": "README.md",
+          "lines": 333,
+          "bytes": 16954,
+          "sha256": "df04c7d2077f94d84db70a93ce4589468310bf8e030d1392e9a8eebd0946e53b"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "lines": 118,
+          "bytes": 3467,
+          "sha256": "e9204c79e36e860d9123abb9496403d66c01d749bdf0a92b72c6b3cea4c104af"
+        },
+        {
+          "path": "research/build-axioms.md",
+          "lines": 82,
+          "bytes": 29725,
+          "sha256": "b66180df6b241ccf74bf262b3c6e2eeadf95bd3113fa4f38f237872deebde304"
+        },
+        {
+          "path": "research/clean-room-curriculum-log.md",
+          "lines": 101,
+          "bytes": 4911,
+          "sha256": "98a89a89a46b3a4d4213e9ddaf132f6a80f38646ef9529e55f687bc11c80e4e0"
+        },
+        {
+          "path": "research/curriculum-benchmark-crosswalk.md",
+          "lines": 138,
+          "bytes": 12794,
+          "sha256": "3ad965a9f9f1b75a49d6a0317c6d5a5e45926fa852477bf6fe7072a082a984c5"
+        },
+        {
+          "path": "research/pedagogy-notes.md",
+          "lines": 161,
+          "bytes": 7603,
+          "sha256": "4763fe84b6275e830b7c5559db48ed4d71e2a141990e2fed8c7bf89b6377de27"
+        },
+        {
+          "path": "research/privacy-cross-device-register.md",
+          "lines": 91,
+          "bytes": 6579,
+          "sha256": "7ef51377edc9ead5c2ea827737e858d683baffa408a19b077b2c2cfe807e574b"
+        },
+        {
+          "path": "research/tiny-polka-dot-mechanics-review.md",
+          "lines": 456,
+          "bytes": 23631,
+          "sha256": "bc3c39b8218aaea39ad89f5cd1f334cc6c5434e68ab77ed6fdf0ef4d81f1a5f9"
+        },
+        {
+          "path": "SECURITY.md",
+          "lines": 18,
+          "bytes": 647,
+          "sha256": "8f7ac08ef27c0596408045c3fa3fb1d2a41831be02ff8ae36081d8be1370d0e1"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "lines": 523,
+          "bytes": 18823,
+          "sha256": "03ebf560c4536dc9b165c1ed44b193bf22c51f5317c16378d1470f281dbf7160"
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "lines": 38,
+          "bytes": 1391,
+          "sha256": "abe86065d8735e8aef522f3de4daf8154f3997050ea2cd74b07bef6061f79ab9"
+        },
+        {
+          "path": "sw.js",
+          "lines": 502,
+          "bytes": 17407,
+          "sha256": "13778bcf183e81296754c447003ee213c87fb666f4ea16b6d30aaa5c08140697"
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "lines": 126,
+          "bytes": 5879,
+          "sha256": "2046081c48aa62508b1d1d1049f26c27b4c14503c52367939d016bf62871b8ae"
+        },
+        {
+          "path": "tools/blast-radius-lookup.mjs",
+          "lines": 366,
+          "bytes": 16813,
+          "sha256": "e8e03c3e327ae5dc17ad8fff3eb85abf335a3ad91243d91ed103fcdfe40224db"
+        },
+        {
+          "path": "tools/build-app-icons.mjs",
+          "lines": 35,
+          "bytes": 1169,
+          "sha256": "e7ff1956092b5a875f68c5196cc219182218a86d4454d56cd68cc7edecc5ca05"
+        },
+        {
+          "path": "tools/build-design-token-projection.mjs",
+          "lines": 48,
+          "bytes": 2164,
+          "sha256": "dbc2ca3da7cae3403f95febb57884ce6b9e9d2eb58509c4f483137fc0b3d374c"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "lines": 201,
+          "bytes": 7194,
+          "sha256": "93d66ec28af533e8612f5e00a19850e7c30efef4b06b099040b1bfb204e184ee"
+        },
+        {
+          "path": "tools/build-tutorial-manifest.mjs",
+          "lines": 63,
+          "bytes": 3255,
+          "sha256": "7da6e62f72e2e91a6fe708a8066c26d8ead9d9ea966cce6242ad7806ce0c9b96"
+        },
+        {
+          "path": "tools/normalize-curriculum-manifest.mjs",
+          "lines": 460,
+          "bytes": 22475,
+          "sha256": "815eb35ff81c6264509e296c9ef6fd5f5b71042c0b11e2bb07b43ee16317e2f4"
+        },
+        {
+          "path": "tools/sync-curriculum-manifest.mjs",
+          "lines": 40,
+          "bytes": 1893,
+          "sha256": "314699bab4115abdb9034cd899b68b27bfbd9e23faccd02cecb97f3c2dc37cd6"
+        },
+        {
+          "path": "tools/sync-public-inventory.mjs",
+          "lines": 115,
+          "bytes": 4938,
+          "sha256": "21e9d8d24a4e3b4c0e7a7a66585d33adb8c0523328bf59a6dad553ec8208182e"
+        },
+        {
+          "path": "tools/sync-repository-code-map.mjs",
+          "lines": 22,
+          "bytes": 1029,
+          "sha256": "bca624300e64594078503d8bab1e26ae453e39f857c44bbf37abce052f74c665"
+        },
+        {
+          "path": "tools/sync-tutorial-manifest.mjs",
+          "lines": 53,
+          "bytes": 2762,
+          "sha256": "b437b7389b0bfe298c0828f52c669a48ea846a3608096950e0722f6e39acdc25"
+        }
+      ]
+    },
+    "sourceBudgetFindings": [
+      "audit/lib/security-scans.mjs has 646 lines, exceeding the 600-line limit",
+      "audit/public-candidate-guard.mjs increased from 1322 to 1353 lines"
+    ]
+  },
+  "lint": {
+    "eslintErrors": 0,
+    "eslintWarningsByRule": {
+      "max-lines-per-function": 138,
+      "max-statements": 96,
+      "complexity": 201,
+      "max-depth": 110,
+      "no-promise-executor-return": 33,
+      "no-unused-vars": 13,
+      "max-params": 3,
+      "no-unsafe-finally": 4,
+      "no-useless-escape": 10
+    },
+    "markdownlintFindings": 0,
+    "stylelintFindings": 0
+  },
+  "lintSuppressions": {
+    "total": 21,
+    "unexplained": 20,
+    "inline": {
+      "total": 3,
+      "unexplained": 2,
+      "byKind": {
+        "ESLINT": 2,
+        "STYLELINT": 1
+      },
+      "records": [
+        {
+          "path": "audit/tests/refactor-baseline.test.mjs",
+          "line": 62,
+          "kind": "ESLINT",
+          "explained": true
+        },
+        {
+          "path": "audit/tests/refactor-baseline.test.mjs",
+          "line": 64,
+          "kind": "ESLINT",
+          "explained": false
+        },
+        {
+          "path": "audit/tests/refactor-baseline.test.mjs",
+          "line": 69,
+          "kind": "STYLELINT",
+          "explained": false
+        }
+      ]
+    },
+    "configuration": {
+      "total": 18,
+      "unexplained": 18,
+      "byKind": {
+        "CONFIG_DEFAULT_DISABLED": 1,
+        "CONFIG_EXCLUSION": 16,
+        "CONFIG_RULE_DISABLED": 1
+      },
+      "records": [
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_DEFAULT_DISABLED",
+          "selector": "default",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!**/.artifacts/**",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!**/.tmp*/**",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!**/node_modules/**",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!audit/final-build-report.md",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!audit/last-report.md",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!qa/reviews/visual-interaction/agent-1-child-ux.md",
+          "explained": false
+        },
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "!qa/reviews/visual-interaction/agent-1/screen-control-state-inventory.md",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/.artifacts/**",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/.tmp*/**",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/node_modules/**",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "audit-artifacts/**",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "playwright-report/**",
+          "explained": false
+        },
+        {
+          "path": "eslint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "test-results/**",
+          "explained": false
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/.artifacts/**",
+          "explained": false
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/.tmp*/**",
+          "explained": false
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "kind": "CONFIG_EXCLUSION",
+          "selector": "**/node_modules/**",
+          "explained": false
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "kind": "CONFIG_RULE_DISABLED",
+          "selector": "no-descending-specificity",
+          "explained": false
+        }
+      ]
+    }
+  },
+  "coverage": {
+    "scope": "EXACT_SHIPPED_ENGINE_NATIVE_V8_BRANCH_LINE_AND_FUNCTION_COVERAGE",
+    "wholeRepositoryInstrumentationStatus": "NOT_AVAILABLE_AT_R0",
+    "meaningfulMinimumPercent": 80,
+    "status": "FAIL",
+    "provider": "node:test native V8 coverage",
+    "calibrated": true,
+    "branchPct": null,
+    "linePct": null,
+    "functionPct": null,
+    "branchTotal": 0,
+    "branchCovered": 0,
+    "engineSha256": "4affe99b85f513786a462ea7b4544a131872e780352c10f3e46c1ad6b6cd8718",
+    "exactBytes": true,
+    "structuredAuditValid": false,
+    "testProcessStatus": 1,
+    "testProcessTimedOut": true,
+    "testProcessOutputOverflow": false,
+    "testProcessCleanupVerified": true,
+    "structuredAuditIssues": [
+      "native coverage process exceeded 225000 ms",
+      "structured audit could not be read: Error: ENOENT: no such file or directory, open 'D:\\OpenMathGame\\NateGameMath\\audit\\.tmp-engine-coverage-H0zhm2\\instrumented-engine-semantic-v1.json'"
+    ],
+    "calibrationReasons": []
+  },
+  "deadCodeAndDependencies": {
+    "unusedFiles": 0,
+    "unusedDependencies": 0,
+    "unusedExports": 113,
+    "duplicateExportGroups": 2
+  },
+  "workMarkers": {
+    "total": 0,
+    "untracked": 0,
+    "records": []
+  },
+  "shippedSizes": {
+    "measurements": {
+      "stylesheetBytes": 235645,
+      "javascriptBytes": 1057930,
+      "compiledAssetBytes": 932443,
+      "productionPayloadBytes": 2707876,
+      "engineScenarioExecutions": 5040,
+      "engineScenarioWallTimeMs": 4447,
+      "qualityGateWallTimeMs": 280226
+    },
+    "budgets": {
+      "stylesheetMaximumBytes": 235645,
+      "javascriptMaximumBytes": 1057930,
+      "compiledAssetMaximumBytes": 932443,
+      "productionPayloadMaximumBytes": 2707876,
+      "engineScenarioMaximumWallTimeMs": 12000,
+      "qualityGateMaximumWallTimeMs": 120000
+    },
+    "findings": [
+      "qualityGateWallTimeMs 280226 exceeds budget 120000"
+    ]
+  },
+  "architecture": {
+    "schemaVersion": 1,
+    "policyId": "math-quest-static-architecture",
+    "status": "PASS",
+    "legacyImportEdges": 2,
+    "findings": []
+  },
+  "security": {
+    "status": "PASS",
+    "verifiedArtifacts": 2,
+    "semgrepPlannedTargets": 351,
+    "semgrepScannedTargets": 351,
+    "semgrepFindings": 0,
+    "semgrepErrors": 0,
+    "worktreeSecrets": 0,
+    "historySecrets": 0,
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "negativeControlsPassed": true
+  },
+  "dependencyInventory": {
+    "directDevelopmentDependencies": 11,
+    "lockfilePackages": 373
+  },
+  "openFindingCategories": [
+    "complexity",
+    "coverage",
+    "dead-code",
+    "lint",
+    "sizes"
+  ]
+}

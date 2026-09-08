@@ -1,3 +1,4 @@
+import { duplicateValues } from "./manifest-collection-checks.mjs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -8,8 +9,8 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 export const REPOSITORY_CODE_MAP_PATH = "audit/repository-code-map-v1.json";
 export const REPOSITORY_CODE_MAP_SCHEMA_PATH = "audit/schemas/repository-code-map-v1.schema.json";
-export const AI_READER_CONTRACT_ID = "math-quest-ai-first-drift-control";
-export const AI_READER_CONTRACT_VERSION = 1;
+const AI_READER_CONTRACT_ID = "math-quest-ai-first-drift-control";
+const AI_READER_CONTRACT_VERSION = 1;
 export const AI_READER_CONTRACT_REF = Object.freeze({ contractId: AI_READER_CONTRACT_ID, version: AI_READER_CONTRACT_VERSION });
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
@@ -20,25 +21,25 @@ function scrubGitEnvironment(environment = process.env) {
   return Object.fromEntries(Object.entries(environment).filter(([key]) => !/^GIT_/iu.test(key)));
 }
 
-export function trackedRepositoryPaths(root = repositoryRoot) {
-  const output = execFileSync("git", ["-c", `safe.directory=${root.replace(/\\/gu, "/")}`, "ls-files", "-z"], {
+export function hermeticGit(argumentsList, {
+  root = repositoryRoot,
+  encoding = "utf8",
+  maxBuffer = 16 * 1024 * 1024,
+  timeout = 15_000,
+} = {}) {
+  return execFileSync("git", ["--no-replace-objects", "-c", `safe.directory=${root.replace(/\\/gu, "/")}`, ...argumentsList], {
     cwd: root,
-    encoding: "utf8",
-    env: scrubGitEnvironment(),
-    timeout: 15_000,
+    encoding,
+    env: { ...scrubGitEnvironment(), GIT_NO_REPLACE_OBJECTS: "1" },
+    maxBuffer,
+    timeout,
     windowsHide: true,
   });
-  return Object.freeze(output.split("\0").map(normalizePath).filter(Boolean).sort());
 }
 
-function duplicateValues(values) {
-  const seen = new Set();
-  const duplicates = new Set();
-  for (const value of values) {
-    if (seen.has(value)) duplicates.add(value);
-    seen.add(value);
-  }
-  return [...duplicates].sort();
+export function trackedRepositoryPaths(root = repositoryRoot) {
+  const output = hermeticGit(["ls-files", "-z"], { root });
+  return Object.freeze(output.split("\0").map(normalizePath).filter(Boolean).sort());
 }
 
 function schemaIssue(error) {
@@ -92,7 +93,7 @@ export function exactOwnerLiteralProjectionIssues(family, literal, trackedTextEn
   return Object.freeze(issues);
 }
 
-export function aiReaderAuthoritySection(text, contract) {
+function aiReaderAuthoritySection(text, contract) {
   const { startMarker, endMarker } = contract.authority;
   const start = text.indexOf(startMarker);
   const end = text.indexOf(endMarker, start + startMarker.length);
@@ -104,41 +105,35 @@ export function aiReaderAuthoritySha256(text, contract) {
   return createHash("sha256").update(aiReaderAuthoritySection(text, contract), "utf8").digest("hex");
 }
 
-export async function validateRepositoryCodeMap(map, {
-  root = repositoryRoot,
-  trackedPaths = null,
-  schemaPathOrUrl,
-} = {}) {
-  const issues = [...await validateRepositoryCodeMapSchema(map, schemaPathOrUrl)];
-  if (issues.length) return Object.freeze(issues);
-
-  const tracked = Object.freeze([...(trackedPaths || trackedRepositoryPaths(root))].map(normalizePath).filter(Boolean).sort());
-  const trackedSet = new Set(tracked);
-  const coverage = compilePatterns(map.coverageRules, "pattern", "coverage rule", issues);
-  const dataPatterns = compilePatterns(map.dataArtifactPatterns.map((pattern, index) => ({ id: `data-${index}`, pattern })), "pattern", "data-artifact rule", issues);
-
+function validateCodeMapDuplicates(map, issues) {
   for (const duplicate of duplicateValues(map.coverageRules.map((record) => record.id))) issues.push(`coverageRules repeats ${duplicate}.`);
   for (const duplicate of duplicateValues(map.factFamilies.map((record) => record.id))) issues.push(`factFamilies repeats ${duplicate}.`);
   for (const duplicate of duplicateValues(map.factFamilies.flatMap((record) => record.owns))) issues.push(`owned fact ${duplicate} has multiple sole owners.`);
   for (const duplicate of duplicateValues(map.artifactRelations.map((record) => record.id))) issues.push(`artifactRelations repeats ${duplicate}.`);
   for (const duplicate of duplicateValues(map.tombstones.map((record) => record.path))) issues.push(`tombstones repeats ${duplicate}.`);
+}
 
-  if (!sameJson(map.factFamilies, canonicalOrder(map.factFamilies, (record) => record.id))) issues.push("factFamilies must be sorted lexicographically by id.");
-  for (const family of map.factFamilies) {
-    if (!sameJson(family.owns, canonicalOrder(family.owns))) issues.push(`fact family ${family.id} owns must be sorted lexicographically.`);
-    if (!sameJson(family.projections, canonicalOrder(family.projections, (record) => record.path))) issues.push(`fact family ${family.id} projections must be sorted lexicographically by path.`);
-    if (!sameJson(family.validators, canonicalOrder(family.validators))) issues.push(`fact family ${family.id} validators must be sorted lexicographically.`);
-    for (const duplicate of duplicateValues(family.projections.map((record) => record.path))) issues.push(`fact family ${family.id} repeats projection ${duplicate}.`);
-    if (family.copyPolicy === "SECTION_MIRROR" && family.projections.some((projection) => projection.relationship !== "EXACT_MIRROR")) {
-      issues.push(`fact family ${family.id} SECTION_MIRROR projections must use EXACT_MIRROR.`);
-    }
-    if (family.copyPolicy !== "SECTION_MIRROR" && family.projections.some((projection) => projection.relationship === "EXACT_MIRROR")) {
-      issues.push(`fact family ${family.id} may use EXACT_MIRROR only with SECTION_MIRROR.`);
-    }
-    if (family.copyDiscovery !== "NONE" && family.copyPolicy !== "DECLARED_PROJECTIONS_ONLY") {
-      issues.push(`fact family ${family.id} copy discovery requires DECLARED_PROJECTIONS_ONLY.`);
-    }
+function validateFactFamilyCopyPolicy(family, issues) {
+  if (family.copyPolicy === "SECTION_MIRROR" && family.projections.some((projection) => projection.relationship !== "EXACT_MIRROR")) {
+    issues.push(`fact family ${family.id} SECTION_MIRROR projections must use EXACT_MIRROR.`);
   }
+  if (family.copyPolicy !== "SECTION_MIRROR" && family.projections.some((projection) => projection.relationship === "EXACT_MIRROR")) {
+    issues.push(`fact family ${family.id} may use EXACT_MIRROR only with SECTION_MIRROR.`);
+  }
+  if (family.copyDiscovery !== "NONE" && family.copyPolicy !== "DECLARED_PROJECTIONS_ONLY") {
+    issues.push(`fact family ${family.id} copy discovery requires DECLARED_PROJECTIONS_ONLY.`);
+  }
+}
+
+function validateFactFamilyDeclaration(family, issues) {
+  if (!sameJson(family.owns, canonicalOrder(family.owns))) issues.push(`fact family ${family.id} owns must be sorted lexicographically.`);
+  if (!sameJson(family.projections, canonicalOrder(family.projections, (record) => record.path))) issues.push(`fact family ${family.id} projections must be sorted lexicographically by path.`);
+  if (!sameJson(family.validators, canonicalOrder(family.validators))) issues.push(`fact family ${family.id} validators must be sorted lexicographically.`);
+  for (const duplicate of duplicateValues(family.projections.map((record) => record.path))) issues.push(`fact family ${family.id} repeats projection ${duplicate}.`);
+  validateFactFamilyCopyPolicy(family, issues);
+}
+
+function validateTutorialOwnership(map, issues) {
   const tutorialFamily = map.factFamilies.find((family) => family.id === "tutorial.linkage");
   const requiredTutorialFacts = [
     "tutorial.linkage.answer-disclosure-policies",
@@ -164,6 +159,9 @@ export async function validateRepositoryCodeMap(map, {
   for (const requiredRelation of ["feature.tutorial", "tutorial.build-spec", "tutorial.deep-ux"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`tutorial.linkage requires artifact relation ${requiredRelation}.`);
   }
+}
+
+function validateArtOwnership(map, issues) {
   const requiredArtFamilies = new Map([
     ["art-design.asset-acceptance", [
       "art-design.assets.acceptance-state",
@@ -205,6 +203,33 @@ export async function validateRepositoryCodeMap(map, {
   for (const requiredRelation of ["art-assets.decision", "art-assets.feature", "art-assets.rights", "art-assets.schema", "art-assets.tutorial", "art-design.schema", "art-design.test", "art-question-shell.browser-test", "art-question-shell.runtime", "art-question-shell.test", "art-question-zones.browser-test", "art-question-zones.runtime", "art-question-zones.test", "art-token-projection.audit-oracle", "art-token-projection.browser", "art-token-projection.generator", "art-token-projection.runtime", "art-token-projection.schema", "art-token-projection.shell", "art-token-projection.test", "art-token-projection.tokens", "art-tokens.decision", "art-tokens.schema", "feature.art-design", "tutorial.art-design"]) {
     if (!map.artifactRelations.some((relation) => relation.id === requiredRelation)) issues.push(`art-design governance requires artifact relation ${requiredRelation}.`);
   }
+}
+
+function validateMigrationBaselineFamily(artMigrationFamily, requiredArtMigrationFacts, requiredArtMigrationValidators, issues) {
+  if (!artMigrationFamily || artMigrationFamily.owner !== "audit/art-migration-baseline-v1.json") {
+    issues.push("art-design.migration-baseline must have the sole canonical ART-MIG-01 owner.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.owns, requiredArtMigrationFacts)) {
+    issues.push("art-design.migration-baseline must own the complete closed ART-MIG-01 fact set.");
+  }
+  if (!artMigrationFamily || !sameJson(artMigrationFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-baseline must bind the complete ART-MIG-01 validator set.");
+  }
+}
+
+function validateMigrationBrowserFamily(artMigrationBrowserFamily, requiredArtMigrationBrowserFacts, requiredArtMigrationValidators, issues) {
+  if (!artMigrationBrowserFamily || artMigrationBrowserFamily.owner !== "audit/art-migration-browser-evidence-v1.json") {
+    issues.push("art-design.migration-browser-evidence must have the sole canonical retained-browser-evidence owner.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.owns, requiredArtMigrationBrowserFacts)) {
+    issues.push("art-design.migration-browser-evidence must own the complete closed retained-browser-evidence fact set.");
+  }
+  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.validators, requiredArtMigrationValidators)) {
+    issues.push("art-design.migration-browser-evidence must bind the complete ART-MIG-01 validator set.");
+  }
+}
+
+function validateArtMigrationOwnership(map, issues) {
   const artMigrationFamily = map.factFamilies.find((record) => record.id === "art-design.migration-baseline");
   const requiredArtMigrationFacts = [
     "art-design.migration-baseline.browser-evidence-binding",
@@ -229,24 +254,8 @@ export async function validateRepositoryCodeMap(map, {
     "audit/tests/art-migration-baseline.test.mjs",
     "audit/validate-art-migration-baseline.mjs",
   ];
-  if (!artMigrationFamily || artMigrationFamily.owner !== "audit/art-migration-baseline-v1.json") {
-    issues.push("art-design.migration-baseline must have the sole canonical ART-MIG-01 owner.");
-  }
-  if (!artMigrationFamily || !sameJson(artMigrationFamily.owns, requiredArtMigrationFacts)) {
-    issues.push("art-design.migration-baseline must own the complete closed ART-MIG-01 fact set.");
-  }
-  if (!artMigrationFamily || !sameJson(artMigrationFamily.validators, requiredArtMigrationValidators)) {
-    issues.push("art-design.migration-baseline must bind the complete ART-MIG-01 validator set.");
-  }
-  if (!artMigrationBrowserFamily || artMigrationBrowserFamily.owner !== "audit/art-migration-browser-evidence-v1.json") {
-    issues.push("art-design.migration-browser-evidence must have the sole canonical retained-browser-evidence owner.");
-  }
-  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.owns, requiredArtMigrationBrowserFacts)) {
-    issues.push("art-design.migration-browser-evidence must own the complete closed retained-browser-evidence fact set.");
-  }
-  if (!artMigrationBrowserFamily || !sameJson(artMigrationBrowserFamily.validators, requiredArtMigrationValidators)) {
-    issues.push("art-design.migration-browser-evidence must bind the complete ART-MIG-01 validator set.");
-  }
+  validateMigrationBaselineFamily(artMigrationFamily, requiredArtMigrationFacts, requiredArtMigrationValidators, issues);
+  validateMigrationBrowserFamily(artMigrationBrowserFamily, requiredArtMigrationBrowserFacts, requiredArtMigrationValidators, issues);
   for (const requiredRelation of [
     "art-migration.browser-contract",
     "art-migration.browser-evidence-record",
@@ -261,10 +270,15 @@ export async function validateRepositoryCodeMap(map, {
       issues.push(`art-design.migration-baseline requires artifact relation ${requiredRelation}.`);
     }
   }
+}
+
+function validateCodeMapOrdering(map, issues) {
   if (!sameJson(map.artifactRelations, canonicalOrder(map.artifactRelations, (record) => record.id))) issues.push("artifactRelations must be sorted lexicographically by id.");
   if (!sameJson(map.dataArtifactPatterns, canonicalOrder(map.dataArtifactPatterns))) issues.push("dataArtifactPatterns must be sorted lexicographically.");
   if (!sameJson(map.tombstones, canonicalOrder(map.tombstones, (record) => record.path))) issues.push("tombstones must be sorted lexicographically by path.");
+}
 
+async function validateCodeMapAuthority(map, root, issues) {
   try {
     const authorityText = await readFile(path.join(root, map.aiReaderContract.authority.path), "utf8");
     if (aiReaderAuthoritySha256(authorityText, map.aiReaderContract) !== map.aiReaderContract.authority.sha256) {
@@ -273,61 +287,77 @@ export async function validateRepositoryCodeMap(map, {
   } catch (error) {
     issues.push(`aiReaderContract authority is unreadable or malformed: ${error.message}`);
   }
+}
 
+function validateTrackedCoverage(tracked, coverage, issues) {
   for (const file of tracked) {
     const matches = coverage.filter(({ expression }) => expression.test(file)).map(({ record }) => record.id);
     if (matches.length === 0) issues.push(`${file}: tracked file has no code-map coverage rule.`);
     if (matches.length > 1) issues.push(`${file}: tracked file matches multiple code-map coverage rules: ${matches.join(", ")}.`);
   }
+}
 
-  const governedPaths = new Set();
+function trackedPathValidator(root, trackedSet, issues) {
   const assertTrackedPath = (relativePath, context) => {
     const normalized = normalizePath(relativePath);
     if (!trackedSet.has(normalized)) issues.push(`${context} references untracked or missing path ${normalized}.`);
     if (!pathExists(root, normalized)) issues.push(`${context} references path absent on disk ${normalized}.`);
     return normalized;
   };
+  return assertTrackedPath;
+}
 
-  for (const family of map.factFamilies) {
-    governedPaths.add(assertTrackedPath(family.owner, `fact family ${family.id} owner`));
-    for (const projection of family.projections) {
-      const projectionPath = assertTrackedPath(projection.path, `fact family ${family.id} projection`);
-      governedPaths.add(projectionPath);
-      const role = coverage.find(({ expression }) => expression.test(projectionPath))?.record.role;
-      const allowedRoles = {
-        EXACT_MIRROR: null,
-        RUNTIME_EMBED: new Set(["runtime"]),
-        OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool", "toolchain"]),
-        VALIDATION_EXPECTATION: new Set(["audit", "runtime", "test"]),
-        GENERATED_METADATA: new Set(["runtime"]),
-        STATE_DEPENDENT_DOCUMENTED_REFERENCE: new Set(["documentation", "governance", "research"]),
-      }[projection.relationship];
-      if (allowedRoles && !allowedRoles.has(role)) {
-        issues.push(`fact family ${family.id} projection ${projectionPath} relationship ${projection.relationship} is incompatible with role ${role || "unclassified"}.`);
-      }
-    }
-    for (const validator of family.validators) assertTrackedPath(validator, `fact family ${family.id} validator`);
+function validateProjectionPath(family, projection, { assertTrackedPath, governedPaths, coverage }, issues) {
+  const projectionPath = assertTrackedPath(projection.path, `fact family ${family.id} projection`);
+  governedPaths.add(projectionPath);
+  const role = coverage.find(({ expression }) => expression.test(projectionPath))?.record.role;
+  const allowedRoles = {
+    EXACT_MIRROR: null,
+    RUNTIME_EMBED: new Set(["runtime"]),
+    OPERATIONAL_CONFIG: new Set(["audit", "governance", "launcher", "tool", "toolchain"]),
+    VALIDATION_EXPECTATION: new Set(["audit", "runtime", "test"]),
+    GENERATED_METADATA: new Set(["runtime"]),
+    STATE_DEPENDENT_DOCUMENTED_REFERENCE: new Set(["documentation", "governance", "research"]),
+  }[projection.relationship];
+  if (allowedRoles && !allowedRoles.has(role)) {
+    issues.push(`fact family ${family.id} projection ${projectionPath} relationship ${projection.relationship} is incompatible with role ${role || "unclassified"}.`);
+  }
+}
 
-    if (family.copyDiscovery === "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT") {
-      try {
-        const literal = (await readFile(path.join(root, ...normalizePath(family.owner).split("/")), "utf8")).trim();
-        if (!literal) {
-          issues.push(`fact family ${family.id} copy-discovery owner text must not be blank.`);
-        } else {
-          const trackedTextEntries = [];
-          for (const file of tracked) {
-            if (file === normalizePath(family.owner)) continue;
-            const bytes = await readFile(path.join(root, ...file.split("/")));
-            if (!bytes.includes(0)) trackedTextEntries.push({ path: file, text: bytes.toString("utf8") });
-          }
-          issues.push(...exactOwnerLiteralProjectionIssues(family, literal, trackedTextEntries));
-        }
-      } catch (error) {
-        issues.push(`fact family ${family.id} copy discovery failed: ${error.message}`);
+function validateFamilyReferences(family, context, issues) {
+  const { assertTrackedPath, governedPaths } = context;
+  governedPaths.add(assertTrackedPath(family.owner, `fact family ${family.id} owner`));
+  for (const projection of family.projections) validateProjectionPath(family, projection, context, issues);
+  for (const validator of family.validators) assertTrackedPath(validator, `fact family ${family.id} validator`);
+}
+
+async function trackedTextProjections(root, tracked, owner) {
+  const trackedTextEntries = [];
+  for (const file of tracked) {
+    if (file === normalizePath(owner)) continue;
+    const bytes = await readFile(path.join(root, ...file.split("/")));
+    if (!bytes.includes(0)) trackedTextEntries.push({ path: file, text: bytes.toString("utf8") });
+  }
+  return trackedTextEntries;
+}
+
+async function validateFamilyCopyDiscovery(family, { root, tracked }, issues) {
+  if (family.copyDiscovery === "OWNER_UTF8_TRIMMED_LITERAL_IN_TRACKED_TEXT") {
+    try {
+      const literal = (await readFile(path.join(root, ...normalizePath(family.owner).split("/")), "utf8")).trim();
+      if (!literal) {
+        issues.push(`fact family ${family.id} copy-discovery owner text must not be blank.`);
+      } else {
+        const trackedTextEntries = await trackedTextProjections(root, tracked, family.owner);
+        issues.push(...exactOwnerLiteralProjectionIssues(family, literal, trackedTextEntries));
       }
+    } catch (error) {
+      issues.push(`fact family ${family.id} copy discovery failed: ${error.message}`);
     }
   }
+}
 
+function validateRemainingGovernedPaths(map, { root, tracked, trackedSet, dataPatterns, governedPaths, assertTrackedPath }, issues) {
   for (const relation of map.artifactRelations) {
     assertTrackedPath(relation.source, `artifact relation ${relation.id} source`);
     assertTrackedPath(relation.target, `artifact relation ${relation.id} target`);
@@ -343,7 +373,41 @@ export async function validateRepositoryCodeMap(map, {
     if (trackedSet.has(tombstone.path) || pathExists(root, tombstone.path)) issues.push(`${tombstone.path}: tombstoned path must not exist or be tracked.`);
     assertTrackedPath(tombstone.ownerRecord, `tombstone ${tombstone.path} ownerRecord`);
   }
+}
 
+function codeMapPathInventory(map, root, trackedPaths, issues) {
+  const tracked = Object.freeze([...(trackedPaths || trackedRepositoryPaths(root))].map(normalizePath).filter(Boolean).sort());
+  const trackedSet = new Set(tracked);
+  const coverage = compilePatterns(map.coverageRules, "pattern", "coverage rule", issues);
+  const dataPatterns = compilePatterns(map.dataArtifactPatterns.map((pattern, index) => ({ id: `data-${index}`, pattern })), "pattern", "data-artifact rule", issues);
+  return { tracked, trackedSet, coverage, dataPatterns };
+}
+
+export async function validateRepositoryCodeMap(map, {
+  root = repositoryRoot,
+  trackedPaths = null,
+  schemaPathOrUrl,
+} = {}) {
+  const issues = [...await validateRepositoryCodeMapSchema(map, schemaPathOrUrl)];
+  if (issues.length) return Object.freeze(issues);
+  const { tracked, trackedSet, coverage, dataPatterns } = codeMapPathInventory(map, root, trackedPaths, issues);
+  validateCodeMapDuplicates(map, issues);
+  if (!sameJson(map.factFamilies, canonicalOrder(map.factFamilies, (record) => record.id))) issues.push("factFamilies must be sorted lexicographically by id.");
+  for (const family of map.factFamilies) validateFactFamilyDeclaration(family, issues);
+  validateTutorialOwnership(map, issues);
+  validateArtOwnership(map, issues);
+  validateArtMigrationOwnership(map, issues);
+  validateCodeMapOrdering(map, issues);
+  await validateCodeMapAuthority(map, root, issues);
+  validateTrackedCoverage(tracked, coverage, issues);
+  const governedPaths = new Set();
+  const assertTrackedPath = trackedPathValidator(root, trackedSet, issues);
+  const context = { root, tracked, trackedSet, coverage, dataPatterns, governedPaths, assertTrackedPath };
+  for (const family of map.factFamilies) {
+    validateFamilyReferences(family, context, issues);
+    await validateFamilyCopyDiscovery(family, context, issues);
+  }
+  validateRemainingGovernedPaths(map, context, issues);
   return Object.freeze(issues);
 }
 

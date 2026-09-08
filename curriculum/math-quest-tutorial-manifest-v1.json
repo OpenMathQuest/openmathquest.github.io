@@ -70,7 +70,7 @@
   },
   "artDesignBinding": {
     "path": "audit/art-design-decision-register-v1.json",
-    "sha256": "f0092420a3cfbe9564f16161523cf62b34680f0144d0a1f8ee6dc7eaf15ec70b"
+    "sha256": "57f3ba9df84ffe9aa89297b4cc85fa8df97f4f198ff233a8ceddbe6772d32c83"
   },
   "differentExample": {
     "salt": "math-quest-different-example-v2",

@@ -1,6 +1,6 @@
 {
   "registerId": "math-quest-art-design-decisions",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -467,6 +467,24 @@
         "rationale": "The required Beta 8 Deep UX Census found that the MQ-122 isometric-prism dimension label rendered at 14 CSS pixels, below the unchanged 16-pixel question-text floor, on phone portrait, phone landscape, and tablet portrait. The owner explicitly approved the corrected pixels after reviewing exact matched before-and-after renders of the same deterministic question, sample, tier, representation, theme, state, mode, and affected viewports. Approval is bound to the shown 16-pixel label bytes and does not authorize later visual changes or any census relaxation.",
         "falsePassPrevented": "AN_AUTOMATED_TEXT_FLOOR_PASS_OR_DIRECTIONAL_APPROVAL_IMPERSONATES_EXACT_PIXEL_BOUND_OWNER_ACCEPTANCE_OF_THE_MQ_122_CORRECTION",
         "requiredProofs": ["ACCESSIBILITY", "HUMAN_LEGIBILITY", "MATHEMATICAL_NON_INTERFERENCE", "PLAYWRIGHT", "RESPONSIVE", "VISUAL_QA"],
+        "supersedes": []
+      },
+      {
+        "id": "ART-DEC-013",
+        "order": 13,
+        "migrationId": "ART-MIG-04",
+        "baseRevision": "2078625b407d5189f579e94e716c86dce86ae90f",
+        "status": "ACTIVE",
+        "scopeId": "REFACTOR_AXE_TEXT_CONTRAST_CORRECTION",
+        "decisionId": "OWNER_ACCEPTED_SHOWN_DARKER_QUESTION_AND_SESSION_TEXT",
+        "affectedSourceDecisionIds": ["ART-SRC-013", "ART-SRC-034", "ART-SRC-048"],
+        "affectedDesignRuleIds": ["ART-R-013", "ART-R-034", "ART-R-048"],
+        "adopted": ["AFTER_SESSION_GRID_SHA256_26F8D17C1C096ACAF2A1364C44EF5B10BBDA3F4406584AD9CDB94142A28A69B5", "BEFORE_SESSION_GRID_SHA256_EA526B2C06C49D992AEFC01A84F176C6458276860181A54B834508544FF8531A", "EXISTING_PRIMARY_INK_18354A_REPLACES_MUTED_5B7080_WITHIN_QUESTION_AND_SESSION_CARD", "OWNER_APPROVED_SHOWN_TEXT_REVISION_2026_09_04", "ROUTE_INDEX_PREVIEW_SESSION_CORRECT_FEEDBACK", "VIEWPORT_DESKTOP_1366X768"],
+        "rejected": ["APPROVAL_FOR_LATER_PIXEL_CHANGES", "BARE_APPROVED_STATE", "FONT_FAMILY_OR_FONT_SIZE_CHANGE", "LAYOUT_OR_WORDING_CHANGE", "WCAG_CONTRAST_THRESHOLD_REDUCTION"],
+        "constraints": ["APPROVAL_BINDS_EXACT_BEFORE_AND_AFTER_RENDER_HASHES", "APPROVAL_SCOPE_IS_EXISTING_INK_FOR_MUTED_QUESTION_AND_SESSION_TEXT", "NO_IMPLIED_APPROVAL_FOR_OTHER_ART", "NO_PUSH_WITHOUT_CURRENT_GATES", "QUESTION_AND_SIDE_CARD_MUTED_PROPERTY_REFERENCES_EXISTING_INK", "TYPEFACE_SIZE_LAYOUT_AND_CONTENT_UNCHANGED"],
+        "rationale": "The owner explicitly accepted the shown text revision after the matching before-and-after session-grid screenshots were delivered using the prior image-path format. This records the narrow darker-text correction: the question and session-card muted text now uses the existing primary ink. The font family, font size, layout, and wording remain unchanged. Automated WCAG findings motivated the correction but did not substitute for the owner's visual decision.",
+        "falsePassPrevented": "AN_AUTOMATED_CONTRAST_PASS_IMPERSONATES_OWNER_ACCEPTANCE_OF_UNSHOWN_TEXT_OR_OTHER_ART_CHANGES",
+        "requiredProofs": ["ACCESSIBILITY", "PLAYWRIGHT", "VISUAL_QA"],
         "supersedes": []
       }
     ]

@@ -1,3 +1,6 @@
+import { assertBrowserLifecycleContracts } from "./browser-lifecycle-contract.mjs";
+import { createCssFixture, fixture } from "./css-fixtures.mjs";
+import { createHtmlSourceExtractor, createSourceExtractor } from "./source-extraction.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -5,111 +8,27 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { extractEngine, evaluateEngine } from "../lib/engine-loader.mjs";
+import { descriptorTruth as approvedDescriptorTruth } from "../visual-model-oracle.mjs";
+import { loadLocalBrowserModule } from "./browser-module-fixtures.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const indexPath = path.join(root, "index.html");
 const page = readFileSync(indexPath, "utf8");
-const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
+const scripts = [...page.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
   .map((match) => match[1]);
 assert.equal(scripts.length, 2, "the shipped page must retain its engine and adapter scripts");
 const adapter = scripts[1];
 const auditPage = readFileSync(path.join(root, "audit.html"), "utf8");
 const approvedVisualSource = readFileSync(path.join(root, "audit", "approved-visual-regression.js"), "utf8");
+const approvedVisualModule = await loadLocalBrowserModule(approvedVisualSource, path.join(root, "audit", "approved-visual-regression.js"));
 const extracted = await extractEngine(indexPath);
 const E = evaluateEngine(extracted.source);
 
-function matchingDelimiter(source, openIndex, open, close) {
-  assert.equal(source[openIndex], open);
-  const modes = [{ type: "code", templateExpression: false, braceDepth: 0 }];
-  let depth = 0;
-  let quote = null;
-  let lineComment = false;
-  let blockComment = false;
 
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    const mode = modes.at(-1);
 
-    if (mode.type === "template") {
-      if (character === "\\") {
-        index += 1;
-      } else if (character === "`") {
-        modes.pop();
-      } else if (character === "$" && next === "{") {
-        if (open === "{") depth += 1;
-        modes.push({ type: "code", templateExpression: true, braceDepth: 1 });
-        index += 1;
-      }
-      continue;
-    }
-    if (lineComment) {
-      if (character === "\n") lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (character === "*" && next === "/") {
-        blockComment = false;
-        index += 1;
-      }
-      continue;
-    }
-    if (quote) {
-      if (character === "\\") {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-    if (character === "/" && next === "/") {
-      lineComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "/" && next === "*") {
-      blockComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "'" || character === '"') {
-      quote = character;
-      continue;
-    }
-    if (character === "`") {
-      modes.push({ type: "template" });
-      continue;
-    }
-
-    if (character === open) {
-      depth += 1;
-      if (mode.templateExpression && open === "{") mode.braceDepth += 1;
-    }
-    if (character === close) {
-      depth -= 1;
-      if (mode.templateExpression && close === "}") {
-        mode.braceDepth -= 1;
-        if (mode.braceDepth === 0) modes.pop();
-      }
-      if (depth === 0) return index;
-    }
-  }
-  throw new Error(`unclosed ${open}${close} delimiter`);
-}
-
-function extractFunctionFrom(source, name) {
-  const expression = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu");
-  const matches = [...source.matchAll(expression)];
-  assert.equal(matches.length, 1, `${name} must have one shipped declaration`);
-  const start = matches[0].index;
-  const parametersStart = source.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(source, parametersStart, "(", ")");
-  const bodyStart = source.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(source, bodyStart, "{", "}");
-  return source.slice(start, bodyEnd + 1);
-}
-
-const extractFunction = (name) => extractFunctionFrom(adapter, name);
+const extraction = createSourceExtractor(adapter);
+const auditExtraction = createHtmlSourceExtractor(auditPage);
+const extractFunction = (name) => extraction.functionDeclaration(name);
 
 function evaluateHarness({ prelude = "", functions = [], body = "", exposed, context = {} }) {
   const source = `(()=>{
@@ -163,156 +82,100 @@ const styleSource = [...page.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi
   .map((match) => match[1])
   .join("\n");
 
-function cssRules(source) {
-  const rows = [];
-  const leafRule = /([^{}]+)\{([^{}]*)\}/gu;
-  let order = 0;
-  for (const match of source.matchAll(leafRule)) {
-    const selectorText = match[1].trim();
-    if (!selectorText || selectorText.startsWith("@")) continue;
-    const declarations = [];
-    for (const part of match[2].split(";")) {
-      const colon = part.indexOf(":");
-      if (colon < 1) continue;
-      const property = part.slice(0, colon).trim().toLowerCase();
-      let value = part.slice(colon + 1).trim();
-      const important = /\s*!important\s*$/iu.test(value);
-      value = value.replace(/\s*!important\s*$/iu, "").trim();
-      declarations.push({ property, value, important });
-    }
-    for (const selector of selectorText.split(",")) {
-      rows.push({ selector: selector.trim(), declarations, order });
-    }
-    order += 1;
-  }
-  return rows;
-}
-
-const shippedCssRules = cssRules(styleSource);
-
-function fixture(tag, { classes = [], attributes = {}, parent = null } = {}) {
-  return {
-    tag: String(tag).toLowerCase(),
-    classes: new Set(classes),
-    attributes: new Map(Object.entries(attributes).map(([key, value]) => [
-      key.toLowerCase(),
-      String(value),
-    ])),
-    parent,
-  };
-}
-
-function selectorParts(selector) {
-  if (/[:+~]/u.test(selector)) return null;
-  const tokens = selector.replace(/>/gu, " > ").trim().split(/\s+/u).filter(Boolean);
-  const compounds = [];
-  const combinators = [];
-  let pending = null;
-  for (const token of tokens) {
-    if (token === ">") {
-      pending = ">";
-      continue;
-    }
-    if (compounds.length) combinators.push(pending || " ");
-    compounds.push(token);
-    pending = null;
-  }
-  return pending || !compounds.length ? null : { compounds, combinators };
-}
-
-function compoundMatches(element, compound) {
-  const attributes = [...compound.matchAll(/\[([^\]]+)\]/gu)];
-  for (const match of attributes) {
-    const expression = match[1].trim();
-    const equality = expression.match(/^([\w-]+)\s*=\s*["']?([^"']+)["']?$/u);
-    if (equality) {
-      if (element.attributes.get(equality[1].toLowerCase()) !== equality[2]) return false;
-    } else if (!/^[\w-]+$/u.test(expression)
-      || !element.attributes.has(expression.toLowerCase())) {
-      return false;
-    }
-  }
-  for (const match of compound.matchAll(/#([\w-]+)/gu)) {
-    if (element.attributes.get("id") !== match[1]) return false;
-  }
-  for (const match of compound.matchAll(/\.([\w-]+)/gu)) {
-    if (!element.classes.has(match[1])) return false;
-  }
-  const residual = compound
-    .replace(/\[[^\]]+\]/gu, "")
-    .replace(/#[\w-]+/gu, "")
-    .replace(/\.[\w-]+/gu, "")
-    .replace(/\*/gu, "")
-    .trim();
-  return !residual || residual.toLowerCase() === element.tag;
-}
-
-function selectorMatches(element, selector) {
-  const parsed = selectorParts(selector);
-  if (!parsed) return false;
-  const { compounds, combinators } = parsed;
-  function visit(candidate, index) {
-    if (!candidate || !compoundMatches(candidate, compounds[index])) return false;
-    if (index === 0) return true;
-    if (combinators[index - 1] === ">") return visit(candidate.parent, index - 1);
-    for (let ancestor = candidate.parent; ancestor; ancestor = ancestor.parent) {
-      if (visit(ancestor, index - 1)) return true;
-    }
-    return false;
-  }
-  return visit(element, compounds.length - 1);
-}
-
-function specificity(selector) {
-  const idCount = (selector.match(/#[\w-]+/gu) || []).length;
-  const classCount = (selector.match(/\.[\w-]+|\[[^\]]+\]/gu) || []).length;
-  const parsed = selectorParts(selector);
-  const elementCount = parsed
-    ? parsed.compounds.filter((compound) => {
-      const residual = compound
-        .replace(/\[[^\]]+\]/gu, "")
-        .replace(/#[\w-]+/gu, "")
-        .replace(/\.[\w-]+/gu, "")
-        .replace(/\*/gu, "")
-        .trim();
-      return Boolean(residual);
-    }).length
-    : 0;
-  return [idCount, classCount, elementCount];
-}
-
-function compareSpecificity(left, right) {
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return left[index] - right[index];
-  }
-  return 0;
-}
-
-function computedDeclaration(element, property) {
-  let winner = null;
-  for (const rule of shippedCssRules) {
-    if (!selectorMatches(element, rule.selector)) continue;
-    const weight = specificity(rule.selector);
-    for (const declaration of rule.declarations) {
-      if (declaration.property !== property) continue;
-      const candidate = { ...declaration, specificity: weight, order: rule.order, selector: rule.selector };
-      if (!winner
-        || Number(candidate.important) > Number(winner.important)
-        || (candidate.important === winner.important
-          && (compareSpecificity(candidate.specificity, winner.specificity) > 0
-            || (compareSpecificity(candidate.specificity, winner.specificity) === 0
-              && candidate.order >= winner.order)))) {
-        winner = candidate;
-      }
-    }
-  }
-  return winner;
-}
+const computedDeclaration = createCssFixture(styleSource);
 
 function openingTagById(html, id) {
   const match = String(html).match(new RegExp(`<[^>]+\\bid="${id}"[^>]*>`, "u"));
   assert.ok(match, `expected an opening tag with id=${id}`);
   return match[0];
+}
+
+const expectedTokenByValue = new Map([
+  ["5¢", "single-dot"],
+  ["10¢", "double-stripe"],
+  ["25¢", "triangle-dots"],
+  ["$1", "cross-bars"],
+  ["$2", "ring-diamond"],
+]);
+const expectedTaskByValue = new Map([
+  ["5¢", "match-practice-token-5-cents"],
+  ["10¢", "match-practice-token-10-cents"],
+  ["25¢", "match-practice-token-25-cents"],
+  ["$1", "match-practice-token-1-dollar"],
+  ["$2", "match-practice-token-2-dollars"],
+]);
+const fixedVisualOracle = [
+  { tokenId: "single-dot", value: "5\u00a2" },
+  { tokenId: "double-stripe", value: "10\u00a2" },
+  { tokenId: "triangle-dots", value: "25\u00a2" },
+  { tokenId: "cross-bars", value: "$1" },
+  { tokenId: "ring-diamond", value: "$2" },
+];
+
+function loadApprovedVisualContract() {
+  return approvedVisualModule.approvedVisualRegression;
+}
+
+function practiceTokenQuestion() {
+  return makeQuestion("MQ-048", {
+    ordinal: 0,
+    tier: "EASY",
+    scaffolded: false,
+    coldTest: false,
+  });
+}
+
+function createActivationHarness() {
+  return evaluateHarness({
+    prelude: `
+      let state,ui;
+      const effects={saved:0,rendered:0,served:0,spoken:[]};
+      const now=()=>1000;
+      function markServed(){effects.served+=1;}
+      function save(){effects.saved+=1;return true;}
+      function render(){effects.rendered+=1;}
+      function focusColdStartTarget(){}
+      function questionSpeechText(){return "question speech";}
+      function practiceTokenGuideSpeech(){return "practice token guide speech";}
+      function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
+      function configure(question,{acquisition="UNSEEN",evidence=[],screen="session"}={}){
+        state={skills:{[question.skillId]:{acquisition,evidence:[...evidence]}}};
+        ui={screen,question:null,choiceCandidates:[],selected:null,entry:"",fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],responseState:{},modelTouched:false,hintUsed:false,selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null,isReteach:false,capstoneSubmitted:false,promptFinishedAt:0,replayMs:0,manipulationMs:0,manipulationStartedAt:0,idleStart:0,maxIdleMs:0,phase:"question"};
+        effects.saved=0;effects.rendered=0;effects.served=0;effects.spoken=[];
+      }
+      function snapshot(){return {phase:ui.phase,question:ui.question,modelTouched:ui.modelTouched,acquisition:state.skills[ui.question.skillId].acquisition,effects:{saved:effects.saved,rendered:effects.rendered,served:effects.served,spoken:[...effects.spoken]}};}
+    `,
+    functions: ["activateQuestion"],
+    exposed: "activateQuestion,configure,snapshot",
+    context: { E },
+  });
+}
+
+function assertPracticeTokenDescriptor(question) {
+  const item = question.modelDescriptor.values.items[0];
+  assert.equal(question.taskType, expectedTaskByValue.get(question.answer.value));
+  assert.equal(question.semanticPromptStringId, "question.coinValue");
+  assert.equal(question.prompt, "Which Canadian money value does this practice token stand for?");
+  assert.equal(question.modelDescriptor.values.kind, "practiceMoney");
+  assert.equal(question.modelDescriptor.values.data.tokenSetVersion, "practice-coins-v1");
+  assert.equal(Object.hasOwn(question.modelDescriptor.values.data, "mode"), false,
+    "the sanitized shipped descriptor must not depend on an obsolete presentation-mode field");
+  assert.equal(item.kind, "practiceCoin");
+  assert.equal(item.tokenId, expectedTokenByValue.get(question.answer.value));
+  assert.equal(item.tokenId, question.params.tokenId);
+  assert.equal(item.label, question.params.tokenName);
+  assert.equal(Object.hasOwn(item, "cents"), false);
+  assert.equal(Object.hasOwn(item, "value"), false);
+  assert.doesNotMatch(item.label, /[0-9¢$]/u);
+}
+
+function assertPracticeTokenChoices(question) {
+  assert.equal(question.answer.kind, "text");
+  assert.equal(question.options.length, 5);
+  assert.equal(question.options.some((option) => option.value === question.answer.value), true);
+  assert.equal(new Set(question.options.map((option) => option.value)).size, question.options.length);
+  assert.deepEqual(new Set(question.options.map((option) => option.value)), new Set(expectedTokenByValue.keys()));
+  assert.equal(question.options.every((option) => /^(?:\d+¢|\$\d+)$/u.test(option.label)), true);
 }
 
 test("QA-007: ordinary questions open directly and MQ-048 uses answer-free original practice tokens", () => {
@@ -322,80 +185,42 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
   assert.equal([...skill.phases].join(","), "P");
   assert.equal(skill.representation, "pictures-and-symbols");
 
-  const expectedTokenByValue = new Map([
-    ["5¢", "single-dot"],
-    ["10¢", "double-stripe"],
-    ["25¢", "triangle-dots"],
-    ["$1", "cross-bars"],
-    ["$2", "ring-diamond"],
-  ]);
-  const expectedTaskByValue = new Map([
-    ["5¢", "match-practice-token-5-cents"],
-    ["10¢", "match-practice-token-10-cents"],
-    ["25¢", "match-practice-token-25-cents"],
-    ["$1", "match-practice-token-1-dollar"],
-    ["$2", "match-practice-token-2-dollars"],
-  ]);
   const seenValues = new Set();
   const seenTaskTypes = new Set();
   for (const tier of ["EASY", "HARD/TARGET"]) {
     for (let ordinal = 0; ordinal < 32; ordinal += 1) {
-        const question = makeQuestion("MQ-048", { ordinal, tier, representation: "PICTORIAL" });
-        const item = question.modelDescriptor.values.items[0];
-        assert.equal(question.taskType, expectedTaskByValue.get(question.answer.value));
-        assert.equal(question.semanticPromptStringId, "question.coinValue");
-        assert.equal(question.prompt, "Which Canadian money value does this practice token stand for?");
-        assert.equal(question.modelDescriptor.values.kind, "practiceMoney");
-        assert.equal(question.modelDescriptor.values.data.tokenSetVersion, "practice-coins-v1");
-        assert.equal(Object.hasOwn(question.modelDescriptor.values.data, "mode"), false,
-          "the sanitized shipped descriptor must not depend on an obsolete presentation-mode field");
-        assert.equal(item.kind, "practiceCoin");
-        assert.equal(item.tokenId, expectedTokenByValue.get(question.answer.value));
-        assert.equal(item.tokenId, question.params.tokenId);
-        assert.equal(item.label, question.params.tokenName);
-        assert.equal(Object.hasOwn(item, "cents"), false);
-        assert.equal(Object.hasOwn(item, "value"), false);
-        assert.doesNotMatch(item.label, /[0-9¢$]/u);
-        assert.equal(question.answer.kind, "text");
-        assert.equal(question.options.length, 5);
-        assert.equal(question.options.some((option) => option.value === question.answer.value), true);
-        assert.equal(new Set(question.options.map((option) => option.value)).size, question.options.length);
-        assert.deepEqual(new Set(question.options.map((option) => option.value)), new Set(expectedTokenByValue.keys()));
-        assert.equal(question.options.every((option) => /^(?:\d+¢|\$\d+)$/u.test(option.label)), true);
-        seenValues.add(question.answer.value);
-        seenTaskTypes.add(question.taskType);
+      const question = makeQuestion("MQ-048", { ordinal, tier, representation: "PICTORIAL" });
+      assertPracticeTokenDescriptor(question);
+      assertPracticeTokenChoices(question);
+      seenValues.add(question.answer.value);
+      seenTaskTypes.add(question.taskType);
     }
   }
   assert.deepEqual(seenValues, new Set(expectedTokenByValue.keys()));
   assert.deepEqual(seenTaskTypes, new Set(expectedTaskByValue.values()));
+});
 
-  const practiceMoneyOracle = approvedVisualSource.match(
-    /if \(kind === "practiceMoney"\) \{([\s\S]*?)\n\s*\} else if \(\/money\/iu\.test\(kind\)\)/u,
-  )?.[1];
-  assert.ok(practiceMoneyOracle, "the approved visual oracle must retain its practice-money branch");
-  assert.match(practiceMoneyOracle, /data\.tokenSetVersion === "practice-coins-v1"/u);
-  assert.match(practiceMoneyOracle, /item\?\.kind === "practiceCoin"/u);
-  assert.match(practiceMoneyOracle, /candidates\.length === 5/u);
-  assert.doesNotMatch(practiceMoneyOracle, /data\.mode/u,
+test("QA-007: practice-token visual oracles retain all five independent mappings", () => {
+  const descriptorTruth = approvedDescriptorTruth;
+  const question = practiceTokenQuestion();
+  assert.equal(descriptorTruth(question).pass, true,
+    "practice tokens without cents fields must reach their specific oracle before the generic money check");
+  for (const [label, change] of [
+    ["token set version", (values) => { values.data.tokenSetVersion = "unknown-version"; }],
+    ["practice coin kind", (values) => { values.items[0].kind = "coin"; }],
+    ["five candidates", (values) => { values.candidates.pop(); }],
+  ]) {
+    const altered = structuredClone(question);
+    change(altered.modelDescriptor.values);
+    assert.equal(descriptorTruth(altered).pass, false, `the visual oracle must enforce ${label}`);
+  }
+  const withMode = structuredClone(question);
+  withMode.modelDescriptor.values.data.mode = "irrelevant-presentation-hint";
+  assert.equal(descriptorTruth(withMode).pass, true,
     "the oracle must validate governed token semantics rather than a stripped UI hint");
-  assert.ok(
-    approvedVisualSource.indexOf('if (kind === "practiceMoney")')
-      < approvedVisualSource.indexOf('else if (/money/iu.test(kind))'),
-    "the specific practice-token oracle must run before the generic cents-bearing money branch",
-  );
 
-  const visualContext = { window: {} };
-  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
-    .runInNewContext(visualContext);
-  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
+  const visualContract = loadApprovedVisualContract();
   assert.equal(typeof visualContract?.semanticVisualObligationKey, "function");
-  const fixedVisualOracle = [
-    { tokenId: "single-dot", value: "5\u00a2" },
-    { tokenId: "double-stripe", value: "10\u00a2" },
-    { tokenId: "triangle-dots", value: "25\u00a2" },
-    { tokenId: "cross-bars", value: "$1" },
-    { tokenId: "ring-diamond", value: "$2" },
-  ];
   assert.deepEqual(
     Object.values(E.PRACTICE_COIN_TOKENS)
       .sort((left, right) => left.cents - right.cents)
@@ -410,6 +235,10 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
     fixedVisualOracle,
     "the visual matrix must retain the independent exact five-token/value oracle",
   );
+});
+
+test("QA-007: every token retains its source or distinct tutorial identity in all governed viewports", () => {
+  const visualContract = loadApprovedVisualContract();
   const tokenStateContract = visualContract.practiceTokenStateTokenContract;
   assert.equal(typeof tokenStateContract, "function");
   assert.equal(tokenStateContract("ordinary", "single-dot", ["single-dot"], []), true);
@@ -465,7 +294,9 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
   assert.equal(visualObligations.length, 75);
   assert.deepEqual(visualObligations, expectedVisualObligations,
     "the governed visual contract must require every token in every viewport and child state");
+});
 
+test("QA-007: token rendering exposes original marks without disclosing values", () => {
   const practiceTokenSetSource = adapter.match(/const PRACTICE_COIN_TOKEN_IDS=new Set\([^;]+\);/u)?.[0];
   assert.ok(practiceTokenSetSource, "the adapter must expose its exact practice-token renderer allowlist to the effect harness");
   const { visualItemHtml: renderPracticeToken } = evaluateHarness({
@@ -487,36 +318,11 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
     assert.doesNotMatch(html, /(?:5¢|10¢|25¢|\$1|\$2)/u);
   }
   assert.equal(renderPracticeToken({ kind: "practiceCoin", tokenId: "unknown", label: "practice token" }), "");
+});
 
-  const firstTokenQuestion = makeQuestion("MQ-048", {
-    ordinal: 0,
-    tier: "EASY",
-    scaffolded: false,
-    coldTest: false,
-  });
-  const activationHarness = evaluateHarness({
-    prelude: `
-      let state,ui;
-      const effects={saved:0,rendered:0,served:0,spoken:[]};
-      const now=()=>1000;
-      function markServed(){effects.served+=1;}
-      function save(){effects.saved+=1;return true;}
-      function render(){effects.rendered+=1;}
-      function focusColdStartTarget(){}
-      function questionSpeechText(){return "question speech";}
-      function practiceTokenGuideSpeech(){return "practice token guide speech";}
-      function speak(text,callback){effects.spoken.push(String(text));if(callback)callback();}
-      function configure(question,{acquisition="UNSEEN",evidence=[],screen="session"}={}){
-        state={skills:{[question.skillId]:{acquisition,evidence:[...evidence]}}};
-        ui={screen,question:null,choiceCandidates:[],selected:null,entry:"",fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],responseState:{},modelTouched:false,hintUsed:false,selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null,isReteach:false,capstoneSubmitted:false,promptFinishedAt:0,replayMs:0,manipulationMs:0,manipulationStartedAt:0,idleStart:0,maxIdleMs:0,phase:"question"};
-        effects.saved=0;effects.rendered=0;effects.served=0;effects.spoken=[];
-      }
-      function snapshot(){return {phase:ui.phase,question:ui.question,modelTouched:ui.modelTouched,acquisition:state.skills[ui.question.skillId].acquisition,effects:{saved:effects.saved,rendered:effects.rendered,served:effects.served,spoken:[...effects.spoken]}};}
-    `,
-    functions: ["activateQuestion"],
-    exposed: "activateQuestion,configure,snapshot",
-    context: { E },
-  });
+test("QA-007: only unseen ordinary practice tokens show the one-time guide", () => {
+  const firstTokenQuestion = practiceTokenQuestion();
+  const activationHarness = createActivationHarness();
   activationHarness.configure(firstTokenQuestion);
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
   const unseenActivation = activationHarness.snapshot();
@@ -539,6 +345,11 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 });
   assert.equal(activationHarness.snapshot().phase, "question",
     "the guide must not repeat after a real MQ-048 attempt has been recorded");
+});
+
+test("QA-007: preview, capstone, and reteach bypass the ordinary first-use guide", () => {
+  const firstTokenQuestion = practiceTokenQuestion();
+  const activationHarness = createActivationHarness();
   const previewQuestion = makeQuestion("MQ-048", { ordinal: 0, tier: "EASY", preview: true, coldTest: false });
   activationHarness.configure(previewQuestion);
   activationHarness.activateQuestion(previewQuestion, { ordinal: 0 });
@@ -551,7 +362,10 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
   activationHarness.configure(firstTokenQuestion);
   activationHarness.activateQuestion(firstTokenQuestion, { ordinal: 0 }, { reteach: true });
   assert.equal(activationHarness.snapshot().phase, "reteach");
+});
 
+test("QA-007: concrete questions open directly without removed physical acknowledgements", () => {
+  const activationHarness = createActivationHarness();
   for (const concreteSkill of E.SKILLS.filter((candidate) => candidate.phases.includes("C"))) {
     const question = makeQuestion(concreteSkill.skillId, {
       ordinal: 0,
@@ -568,6 +382,19 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
       `${concreteSkill.skillId} must open directly without a grown-up acknowledgement gate`,
     );
   }
+  for (const removedMarker of [
+    "physicalTaskHtml",
+    'data-action="physical-done"',
+    "instruction.physical",
+    "ui.physicalDone",
+    "We made it",
+  ]) {
+    assert.equal(adapter.includes(removedMarker), false, `${removedMarker} must not remain in the shipped adapter`);
+  }
+});
+
+test("QA-007: the one-time legend teaches every mapping without changing mastery evidence", () => {
+  const firstTokenQuestion = practiceTokenQuestion();
   const guideHarness = evaluateHarness({
     prelude: `
       function s(id){return id==="ritual.open"?"Let’s look together":id==="ui.ready"?"Ready":id;}
@@ -592,16 +419,6 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
     "the legend must remain answer-free and separate from the assessed question");
   assert.match(guideHarness.practiceTokenGuideSpeech(firstTokenQuestion), /practice token/iu);
 
-  for (const removedMarker of [
-    "physicalTaskHtml",
-    'data-action="physical-done"',
-    "instruction.physical",
-    "ui.physicalDone",
-    "We made it",
-  ]) {
-    assert.equal(adapter.includes(removedMarker), false, `${removedMarker} must not remain in the shipped adapter`);
-  }
-
   const guidedAttempt = E.submitAnswer(firstTokenQuestion, { optionId: firstTokenQuestion.options[firstTokenQuestion.correctIndex].optionId }, {
     promptFinishedAt: 100,
     submittedAt: 3100,
@@ -618,10 +435,7 @@ test("QA-007: ordinary questions open directly and MQ-048 uses answer-free origi
 });
 
 test("QA-033: the browser placement oracle submits valid complete responses for every adaptive boundary", () => {
-  const visualContext = { window: {} };
-  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
-    .runInNewContext(visualContext);
-  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
+  const visualContract = loadApprovedVisualContract();
   const state = E.createInitialState(21_000);
   const traversal = visualContract.placementCases(E, state);
   assert.equal(traversal.rows.length, E.CONSTANTS.LEVEL_MAX - E.CONSTANTS.LEVEL_MIN + 1);
@@ -956,6 +770,36 @@ test("QA-018: negative contexts preserve plausible units while score retains the
   assert.equal(sawLargeScore, true, "score examples must not be compressed to the elevation range");
 });
 
+function* worldQuestionOptions(theme) {
+  for (const tier of ["EASY", "HARD/TARGET"]) {
+    for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
+      for (let ordinal = 0; ordinal < 6; ordinal += 1) {
+        for (const capstone of [false, true]) yield { theme, tier, representation, ordinal, capstone };
+      }
+    }
+  }
+}
+
+function assertWorldVocabulary(question, theme, expected) {
+  assert.equal(question.semanticPromptStringId, "question.pairObjects");
+  for (const key of [
+    "situationId",
+    "leftItem",
+    "rightItem",
+    "leftVisual",
+    "rightVisual",
+  ]) {
+    assert.equal(question.params[key], expected[key], `${theme} ${key} drifted`);
+  }
+  assert.match(question.prompt, new RegExp(`\\b${expected.leftItem}\\b`, "iu"));
+  assert.match(question.prompt, new RegExp(`\\b${expected.rightItem}\\b`, "iu"));
+  const [left, right] = question.modelDescriptor.values.items;
+  assert.equal(left.objectKind, expected.leftVisual);
+  assert.equal(right.objectKind, expected.rightVisual);
+  assert.equal(question.modelDescriptor.values.data.situationId, expected.situationId);
+  assert.deepEqual(Array.from(E.questionContractErrors(question)), []);
+}
+
 test("QA-019: each world generates only its accepted early one-to-one object vocabulary", () => {
   const worlds = {
     ocean: {
@@ -982,37 +826,8 @@ test("QA-019: each world generates only its accepted early one-to-one object voc
   };
 
   for (const [theme, expected] of Object.entries(worlds)) {
-    for (const tier of ["EASY", "HARD/TARGET"]) {
-      for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
-        for (let ordinal = 0; ordinal < 6; ordinal += 1) {
-          for (const capstone of [false, true]) {
-            const question = makeQuestion("MQ-001", {
-              theme,
-              tier,
-              representation,
-              ordinal,
-              capstone,
-            });
-            assert.equal(question.semanticPromptStringId, "question.pairObjects");
-            for (const key of [
-              "situationId",
-              "leftItem",
-              "rightItem",
-              "leftVisual",
-              "rightVisual",
-            ]) {
-              assert.equal(question.params[key], expected[key], `${theme} ${key} drifted`);
-            }
-            assert.match(question.prompt, new RegExp(`\\b${expected.leftItem}\\b`, "iu"));
-            assert.match(question.prompt, new RegExp(`\\b${expected.rightItem}\\b`, "iu"));
-            const [left, right] = question.modelDescriptor.values.items;
-            assert.equal(left.objectKind, expected.leftVisual);
-            assert.equal(right.objectKind, expected.rightVisual);
-            assert.equal(question.modelDescriptor.values.data.situationId, expected.situationId);
-            assert.deepEqual(Array.from(E.questionContractErrors(question)), []);
-          }
-        }
-      }
+    for (const options of worldQuestionOptions(theme)) {
+      assertWorldVocabulary(makeQuestion("MQ-001", options), theme, expected);
     }
   }
 });
@@ -1061,6 +876,68 @@ test("QA-020: the empty name-gate alert is hidden and becomes visible only with 
   assert.match(errorHtml, /value="A&amp;B"/u);
 });
 
+const unitFamilies = new Map([
+  ["centimetres", "length"],
+  ["metres", "length"],
+  ["grams", "mass"],
+  ["kilograms", "mass"],
+  ["millilitres", "capacity"],
+  ["litres", "capacity"],
+]);
+const situationByFamily = {
+  length: "ruler-bench",
+  mass: "mass-scale",
+  capacity: "capacity-scale",
+};
+const objectByUnit = {
+  centimetres: "pencil",
+  metres: "door",
+  grams: "apple",
+  kilograms: "child",
+  millilitres: "cup",
+  litres: "bucket",
+};
+
+function assertMetricScaleLabels(html, { family, maximum, target }) {
+  assert.match(html, new RegExp(`data-instrument-family="${family}"`, "u"));
+  assert.match(html, new RegExp(`data-scale-maximum="${maximum}"`, "u"));
+  assert.match(html, /id="metric-scale-choices">Choices</u);
+  assert.doesNotMatch(html, /overflow-x|scroll/iu);
+  assert.match(html, /role="img"[^>]*aria-label="[^"]*unlabelled tick/iu);
+  assert.doesNotMatch(
+    html,
+    new RegExp(`aria-label="[^"]*(?:mark|reaches|points to) ${target}(?:\\D|$)`, "iu"),
+    "the accessible equivalent may expose countable intervals but must not state the assessed mark",
+  );
+}
+
+function assertMetricScaleTicks(html, { maximum, target, tier }) {
+  const buttons = [...html.matchAll(
+    /<button[^>]*data-response-action="scale-mark"[^>]*data-value="(\d+)"[^>]*>(\d+)<\/button>/gu,
+  )];
+  assert.equal(buttons.length, maximum + 1);
+  assert.deepEqual(
+    buttons.map((match) => Number(match[1])),
+    Array.from({ length: maximum + 1 }, (_, value) => value),
+  );
+  assert.ok(buttons.every((match) => match[1] === match[2]));
+
+  const targetPercent = (target / maximum * 100).toFixed(6);
+  assert.match(html, new RegExp(`--measure-end:${targetPercent}%`, "u"));
+  assert.match(
+    html,
+    new RegExp(`data-value="${target}"[^>]*--mark-position:${targetPercent}%`, "u"),
+    "the depicted endpoint must share the target tick's exact coordinate",
+  );
+
+  const visibleLabels = (html.match(/<b>\d+<\/b>/gu) || []).length;
+  if (tier === "EASY") {
+    assert.equal(visibleLabels, maximum + 1, "easy scales label every whole mark");
+  } else {
+    assert.ok(visibleLabels >= 3 && visibleLabels < maximum + 1);
+  }
+}
+
 test("QA-021: metric readings use unit-correct instruments and wrapped reachable choices", () => {
   const harness = evaluateHarness({
     prelude: `
@@ -1070,16 +947,7 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
     functions: ["unlabelledTickRunDescription", "metricScaleConstructionHtml"],
     exposed: "metricScaleConstructionHtml",
   });
-  const families = new Map([
-    ["centimetres", "length"],
-    ["metres", "length"],
-    ["grams", "mass"],
-    ["kilograms", "mass"],
-    ["millilitres", "capacity"],
-    ["litres", "capacity"],
-  ]);
-
-  for (const [unit, family] of families) {
+  for (const [unit, family] of unitFamilies) {
     for (const tier of ["EASY", "HARD/TARGET"]) {
       const target = tier === "EASY" ? 7 : 15;
       const maximum = tier === "EASY" ? 10 : 20;
@@ -1093,44 +961,14 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
         "play",
         { responseState: { value: "" } },
       ));
-      assert.match(html, new RegExp(`data-instrument-family="${family}"`, "u"));
-      assert.match(html, new RegExp(`data-scale-maximum="${maximum}"`, "u"));
-      assert.match(html, /id="metric-scale-choices">Choices</u);
-      assert.doesNotMatch(html, /overflow-x|scroll/iu);
-      assert.match(html, /role="img"[^>]*aria-label="[^"]*unlabelled tick/iu);
-      assert.doesNotMatch(
-        html,
-        new RegExp(`aria-label="[^"]*(?:mark|reaches|points to) ${target}(?:\\D|$)`, "iu"),
-        "the accessible equivalent may expose countable intervals but must not state the assessed mark",
-      );
-
-      const buttons = [...html.matchAll(
-        /<button[^>]*data-response-action="scale-mark"[^>]*data-value="(\d+)"[^>]*>(\d+)<\/button>/gu,
-      )];
-      assert.equal(buttons.length, maximum + 1);
-      assert.deepEqual(
-        buttons.map((match) => Number(match[1])),
-        Array.from({ length: maximum + 1 }, (_, value) => value),
-      );
-      assert.ok(buttons.every((match) => match[1] === match[2]));
-
-      const targetPercent = (target / maximum * 100).toFixed(6);
-      assert.match(html, new RegExp(`--measure-end:${targetPercent}%`, "u"));
-      assert.match(
-        html,
-        new RegExp(`data-value="${target}"[^>]*--mark-position:${targetPercent}%`, "u"),
-        "the depicted endpoint must share the target tick's exact coordinate",
-      );
-
-      const visibleLabels = (html.match(/<b>\d+<\/b>/gu) || []).length;
-      if (tier === "EASY") {
-        assert.equal(visibleLabels, maximum + 1, "easy scales label every whole mark");
-      } else {
-        assert.ok(visibleLabels >= 3 && visibleLabels < maximum + 1);
-      }
+      assertMetricScaleLabels(html, { family, maximum, target });
+      assertMetricScaleTicks(html, { maximum, target, tier });
     }
   }
 
+});
+
+test("QA-021: browser metric labels reject answer disclosure", () => {
   const metricBrowserPredicate = auditPage.match(
     /const instrumentLabel = normalized\(instrument\?\.getAttribute\("aria-label"\) \|\| ""\);[\s\S]*?const alignmentDelta/u,
   )?.[0];
@@ -1146,6 +984,9 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
   assert.doesNotMatch(metricBrowserPredicate, /const instrumentAccessible = new RegExp/u,
     "the obsolete answer-leaking mark oracle must not return");
 
+});
+
+test("QA-021: metric grading, target sizes, and prompt meaning remain exact", () => {
   const lengthQuestion = {
     answer: { kind: "integer", value: 8 },
     params: { unit: "centimetres" },
@@ -1167,33 +1008,80 @@ test("QA-021: metric readings use unit-correct instruments and wrapped reachable
   assert.doesNotMatch(generated.prompt, /\bcount\b.*\bmarks?\b/iu);
 });
 
+const primitiveStrings = (value) => {
+  if (Array.isArray(value)) return value.flatMap(primitiveStrings);
+  if (value && typeof value === "object") return Object.values(value).flatMap(primitiveStrings);
+  return typeof value === "string" ? [value] : [];
+};
+
+function assertMetricQuestionSemantics(easy, reading) {
+  const family = unitFamilies.get(easy.answer.value);
+  const item = easy.modelDescriptor.values.items[0];
+  const data = easy.modelDescriptor.values.data;
+
+  assert.equal(easy.semanticPromptStringId, "question.metricUnitChoice");
+  assert.match(easy.prompt, new RegExp(`measure the ${family} of this ${objectByUnit[easy.answer.value]}`, "i"));
+  assert.equal(reading.semanticPromptStringId, "question.metricRead");
+  assert.equal(reading.params.unit, easy.answer.value);
+  assert.equal(easy.params.object, objectByUnit[easy.answer.value]);
+  assert.equal(easy.params.measureKind, family);
+  assert.equal(easy.params.situationId, situationByFamily[family]);
+  assert.equal(item.kind, "metricObject");
+  assert.equal(item.objectKind, easy.params.object);
+  assert.equal(item.measureKind, family);
+  assert.equal(item.showFamilyCue, true);
+  assert.equal(item.unit, undefined);
+  assert.equal(data.suitableUnit, undefined);
+  assert.ok(
+    !primitiveStrings({ items: easy.modelDescriptor.values.items, data })
+      .includes(easy.answer.value),
+    "the exact answer must not move to another unanswered item/data field",
+  );
+}
+
+function assertMetricQuestionChoices(easy, hard) {
+  assert.equal(easy.options.length, 2);
+  assert.equal(hard.options.length, 4);
+  assert.equal(hard.modelDescriptor.values.items[0].showFamilyCue, false);
+  assert.ok(hard.options.some((option) => (
+    option.value !== hard.answer.value
+    && unitFamilies.get(option.value) === unitFamilies.get(hard.answer.value)
+  )), "Hard choices must include the same-family unit distractor");
+  assert.equal(
+    easy.options.filter((option) => E.gradeAnswer(easy, option.value).correct).length,
+    1,
+  );
+  assert.equal(
+    hard.options.filter((option) => E.gradeAnswer(hard, option.value).correct).length,
+    1,
+  );
+}
+
+function assertMetricQuestionEvidence(easy, hard) {
+  const telemetry = {
+    promptFinishedAt: 1_000,
+    submittedAt: 8_000,
+    manipulationMs: 0,
+    replayMs: 0,
+    idleMs: 0,
+  };
+  assert.equal(E.submitAnswer(
+    easy,
+    { optionId: easy.options[easy.correctIndex].optionId },
+    telemetry,
+  ).evidenceClass, "GUESS_PRONE_SELECTION");
+  assert.equal(E.submitAnswer(
+    hard,
+    { optionId: hard.options[hard.correctIndex].optionId },
+    telemetry,
+  ).evidenceClass, "GUESS_PRONE_SELECTION");
+
+  const teaching = E.makeTeachingSupport(easy);
+  assert.equal(teaching.values.items[0].unit, easy.answer.value);
+  assert.equal(teaching.values.data.suitableUnit, easy.answer.value);
+}
+
 test("QA-022: metric-unit choices are pictorial, answer-free, tiered, and evidentiary", () => {
-  const primitiveStrings = (value) => {
-    if (Array.isArray(value)) return value.flatMap(primitiveStrings);
-    if (value && typeof value === "object") return Object.values(value).flatMap(primitiveStrings);
-    return typeof value === "string" ? [value] : [];
-  };
-  const unitFamilies = new Map([
-    ["centimetres", "length"],
-    ["metres", "length"],
-    ["grams", "mass"],
-    ["kilograms", "mass"],
-    ["millilitres", "capacity"],
-    ["litres", "capacity"],
-  ]);
-  const situationByFamily = {
-    length: "ruler-bench",
-    mass: "mass-scale",
-    capacity: "capacity-scale",
-  };
-  const objectByUnit = {
-    centimetres: "pencil",
-    metres: "door",
-    grams: "apple",
-    kilograms: "child",
-    millilitres: "cup",
-    litres: "bucket",
-  };
   const unitsBySeed = [];
 
   for (const seed of [7, 29]) {
@@ -1203,65 +1091,9 @@ test("QA-022: metric-unit choices are pictorial, answer-free, tiered, and eviden
       const easy = makeQuestion("MQ-069", { seed, ordinal, tier: "EASY" });
       const hard = makeQuestion("MQ-069", { seed, ordinal, tier: "HARD/TARGET" });
       const reading = makeQuestion("MQ-069", { seed, ordinal: ordinal + 1, tier: "EASY" });
-      const family = unitFamilies.get(easy.answer.value);
-      const item = easy.modelDescriptor.values.items[0];
-      const data = easy.modelDescriptor.values.data;
-
-      assert.equal(easy.semanticPromptStringId, "question.metricUnitChoice");
-      assert.match(easy.prompt, new RegExp(`measure the ${family} of this ${objectByUnit[easy.answer.value]}`, "i"));
-      assert.equal(reading.semanticPromptStringId, "question.metricRead");
-      assert.equal(reading.params.unit, easy.answer.value);
-      assert.equal(easy.params.object, objectByUnit[easy.answer.value]);
-      assert.equal(easy.params.measureKind, family);
-      assert.equal(easy.params.situationId, situationByFamily[family]);
-      assert.equal(item.kind, "metricObject");
-      assert.equal(item.objectKind, easy.params.object);
-      assert.equal(item.measureKind, family);
-      assert.equal(item.showFamilyCue, true);
-      assert.equal(item.unit, undefined);
-      assert.equal(data.suitableUnit, undefined);
-      assert.ok(
-        !primitiveStrings({ items: easy.modelDescriptor.values.items, data })
-          .includes(easy.answer.value),
-        "the exact answer must not move to another unanswered item/data field",
-      );
-      assert.equal(easy.options.length, 2);
-      assert.equal(hard.options.length, 4);
-      assert.equal(hard.modelDescriptor.values.items[0].showFamilyCue, false);
-      assert.ok(hard.options.some((option) => (
-        option.value !== hard.answer.value
-        && unitFamilies.get(option.value) === unitFamilies.get(hard.answer.value)
-      )), "Hard choices must include the same-family unit distractor");
-      assert.equal(
-        easy.options.filter((option) => E.gradeAnswer(easy, option.value).correct).length,
-        1,
-      );
-      assert.equal(
-        hard.options.filter((option) => E.gradeAnswer(hard, option.value).correct).length,
-        1,
-      );
-
-      const telemetry = {
-        promptFinishedAt: 1_000,
-        submittedAt: 8_000,
-        manipulationMs: 0,
-        replayMs: 0,
-        idleMs: 0,
-      };
-      assert.equal(E.submitAnswer(
-        easy,
-        { optionId: easy.options[easy.correctIndex].optionId },
-        telemetry,
-      ).evidenceClass, "GUESS_PRONE_SELECTION");
-      assert.equal(E.submitAnswer(
-        hard,
-        { optionId: hard.options[hard.correctIndex].optionId },
-        telemetry,
-      ).evidenceClass, "GUESS_PRONE_SELECTION");
-
-      const teaching = E.makeTeachingSupport(easy);
-      assert.equal(teaching.values.items[0].unit, easy.answer.value);
-      assert.equal(teaching.values.data.suitableUnit, easy.answer.value);
+      assertMetricQuestionSemantics(easy, reading);
+      assertMetricQuestionChoices(easy, hard);
+      assertMetricQuestionEvidence(easy, hard);
       cycle.push(easy.answer.value);
     }
     assert.deepEqual(new Set(cycle), new Set(unitFamilies.keys()));
@@ -1270,6 +1102,9 @@ test("QA-022: metric-unit choices are pictorial, answer-free, tiered, and eviden
 
   assert.notDeepEqual(unitsBySeed[0], unitsBySeed[1], "different seeds must shift unit order");
 
+});
+
+test("QA-022: metric reading ranges follow their difficulty tier", () => {
   const easyReads = Array.from({ length: 12 }, (_, index) => (
     makeQuestion("MQ-069", { seed: 71, ordinal: index * 2 + 1, tier: "EASY" })
   ));
@@ -1284,6 +1119,9 @@ test("QA-022: metric-unit choices are pictorial, answer-free, tiered, and eviden
   )));
   assert.ok(hardReads.some((question) => Number(question.answer.value) > 10));
 
+});
+
+test("QA-022: metric objects are distinct and reveal units only during teaching", () => {
   const harness = evaluateHarness({
     prelude: `
       function escape(value){return String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));}
@@ -1431,89 +1269,10 @@ test("QA-035: MQ-031 numeral support is audited through its shipped number-pad c
 });
 
 test("QA-036: placement and feedback browser fixtures protect the current lifecycle and announcement contracts", () => {
-  const visualContext = { window: {} };
-  new vm.Script(approvedVisualSource, { filename: "approved-visual-regression.js" })
-    .runInNewContext(visualContext);
-  const visualContract = visualContext.window.MathQuestApprovedVisualRegression;
-  const originalState = E.createInitialState(31_000);
-  const traversal = visualContract.placementCases(E, originalState);
-  const denseWitness = traversal.methods.find((row) => row.inputMethod === "SHARE_DEAL");
-  assert.ok(denseWitness, "the adaptive traversal must retain a real SHARE_DEAL witness");
-
-  const begun = E.beginPlacementRun({
-    state: originalState,
-    playDay: originalState.maxSeenPlayDay,
-    theme: "ocean",
-  });
-  assert.notEqual(begun.state.placement.runNonce, denseWitness.run.nonce,
-    "the real Start action must advance the private run identity");
-  assert.equal(E.validatePlacementRun(denseWitness.run, begun.state).valid, false,
-    "a pre-Start traversal fixture must be rejected as stale after Start commits a new nonce");
-
-  let compatibleRun = E.createPlacementRun({
-    state: begun.state,
-    playDay: denseWitness.run.playDay,
-    seed: denseWitness.run.seed,
-    theme: denseWitness.run.theme,
-  });
-  for (const prior of denseWitness.run.answers) {
-    const question = E.placementCurrentQuestion(compatibleRun);
-    compatibleRun = prior.responseKind === "correct"
-      ? E.submitPlacementAnswer(compatibleRun, visualContract.correctAnswer(E, question)).run
-      : E.submitPlacementNotSure(compatibleRun).run;
-  }
-  assert.equal(E.validatePlacementRun(compatibleRun, begun.state).valid, true);
-  assert.equal(
-    E.placementVisibleTaskSignature(E.placementCurrentQuestion(compatibleRun)),
-    E.placementVisibleTaskSignature(denseWitness.question),
-    "replaying the same deterministic decisions on the committed identity must reach the same visible task",
-  );
-
-  const placementAudit = auditPage.match(
-    /const denseWitness = traversal\.methodCases\.find\([\s\S]*?const placementFeedbackRows = \[\];/u,
-  )?.[0];
-  assert.ok(placementAudit, "the browser audit must retain its dense placement lifecycle fixture");
-  assert.match(placementAudit, /denseRun = engine\.createPlacementRun\(\{[\s\S]*?state: startedState/u);
-  assert.match(placementAudit, /engine\.validatePlacementRun\(denseRun, startedState\)/u);
-  assert.match(placementAudit, /engine\.placementVisibleTaskSignature\(denseQuestion\)[\s\S]*?engine\.placementVisibleTaskSignature\(denseWitness\.question\)/u);
-  const placementLifecycleAudit = auditPage.match(
-    /const denseWitness = traversal\.methodCases\.find\([\s\S]*?const placementSelectionCase =/u,
-  )?.[0];
-  assert.ok(placementLifecycleAudit);
-  assert.match(placementLifecycleAudit, /dispatchEvent\(new placementScenario\.win\.Event\("pagehide"\)\)[\s\S]*?localStorage\.setItem\(TEST_PLACEMENT_DRAFT_KEY, incorrectDraftBytes\)/u,
-    "the outgoing writer must release before the audit restores shared draft bytes");
-  assert.match(placementLifecycleAudit, /controllerSignalStayedAtQuestion/u,
-    "the controller-change fixture must prove the active question first and then navigate only at Pause");
-
-  const feedbackAudit = auditPage.match(
-    /const feedbackRows = \[\];[\s\S]*?add\("BR-26"/u,
-  )?.[0];
-  assert.ok(feedbackAudit, "the browser audit must retain the exact feedback matrix");
-  assert.match(feedbackAudit, /feedback\?\.dataset\.feedbackAnnouncement === "focus"/u);
-  assert.match(feedbackAudit, /liveText === ""/u,
-    "the focused outcome must not be duplicated through the global live region");
-  assert.match(feedbackAudit, /attemptTruthMatches = attemptTruth === correct/u);
-  assert.doesNotMatch(feedbackAudit, /liveText\.startsWith\(expectedStatus\)/u,
-    "the obsolete duplicate-live-announcement oracle must not return");
-
-  const writerIsolationAudit = auditPage.match(
-    /function scenarioFailClosedState\(frame\)[\s\S]*?async function waitForScenarioNavigation/u,
-  )?.[0];
-  assert.ok(writerIsolationAudit,
-    "the browser audit must retain its synthetic-frame writer-isolation boundary");
-  assert.match(writerIsolationAudit, /typeof locks\.query !== "function"/u);
-  assert.match(writerIsolationAudit, /consecutiveIdleObservations >= 2/u,
-    "the handoff must observe an empty held/pending lock set across two task turns");
-  assert.match(writerIsolationAudit, /await requireAuditWriterIdle\(\)/u);
-  assert.match(writerIsolationAudit, /entered unexpected \$\{failClosedState\}/u,
-    "ordinary fixtures must reject progress-protection and save-recovery screens explicitly");
-  assert.match(auditPage, /allowFailClosedScreen: true/u,
-    "only the deliberate BR-20 fail-closed fixtures may opt into those screens");
-  assert.match(auditPage, /waitUntil\([\s\S]*?\}, 350, 20\);[\s\S]*?did not reach expected skill/u,
-    "the existing seven-second BR-21 bound must remain intact rather than becoming a retry mask");
+  assertBrowserLifecycleContracts(E, loadApprovedVisualContract(), auditPage);
 });
 
-test("QA-037: exact short-viewport packing keeps governed text and target floors intact", async () => {
+test("QA-037: exact short-viewport packing keeps governed text and target floors intact", () => {
   assert.match(styleSource, /\.playground-panel\{height:calc\(100dvh - 116px\);min-height:0/u);
   assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/u);
   assert.match(styleSource, /data-skill-id="MQ-048"\] \.choices\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/u);
@@ -1531,6 +1290,9 @@ test("QA-037: exact short-viewport packing keeps governed text and target floors
   assert.match(styleSource, /placement-panel\[data-skill-id="MQ-118"\]\{min-height:0;/u,
     "the MQ-118 placement witness must not inherit the viewport-sized panel minimum that creates artificial overflow");
   assert.match(styleSource, /placement-panel\[data-skill-id="MQ-118"\] \.proportional-track\{min-height:52px\}/u);
+});
+
+test("QA-037: screen-native audit fixtures retain canonical state and exact viewport witnesses", () => {
   const screenActivityAudit = auditPage.match(
     /const activitySpecs = Object\.freeze\(\[[\s\S]*?add\("BR-21"/u,
   )?.[0];
@@ -1566,7 +1328,9 @@ test("QA-037: exact short-viewport packing keeps governed text and target floors
     "the rendered mark count must remain bound to the independently graded answer");
   assert.match(screenActivityAudit, /countedMarks\.children\.length === countedMagnitude/u,
     "every nonzero count-group witness must render exactly one visible mark per counted object");
+});
 
+test("QA-037: the real pair-link driver completes the comparison relation before Confirm", async () => {
   const pairLinkActions = [];
   let confirmClicks = 0;
   const answerStructured = new vm.Script(`(()=>{
@@ -1575,8 +1339,8 @@ test("QA-037: exact short-viewport packing keeps governed text and target floors
     const activateResponse = async (_scenario, selector, keyboard) => {
       pairLinkActions.push({ selector, keyboard });
     };
-    ${extractFunctionFrom(auditPage, "pairLinkAuditRelation")}
-    ${extractFunctionFrom(auditPage, "answerStructured")}
+    ${auditExtraction.functionDeclaration("pairLinkAuditRelation")}
+    ${auditExtraction.functionDeclaration("answerStructured")}
     return answerStructured;
   })()`, { filename: "pair-link-browser-driver-effect.js" }).runInNewContext({
     pairLinkActions,

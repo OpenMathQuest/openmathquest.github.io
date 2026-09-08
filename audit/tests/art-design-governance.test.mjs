@@ -28,6 +28,8 @@ const LICENCE_SHA = "4".repeat(64);
 const EVIDENCE_SHA = "5".repeat(64);
 const CONSTRUCTION_EVIDENCE_SUFFIXES = Object.freeze(["input", "output", "constraints", "review", "authorization"]);
 const evidenceRef = (evidencePath) => ({ path: evidencePath, sha256: EVIDENCE_SHA });
+
+
 const EVIDENCE_PATHS = Object.freeze([
   ...decisions.constructionWorkflow.steps.flatMap((step) => CONSTRUCTION_EVIDENCE_SUFFIXES
     .map((suffix) => `audit/art-evidence/${step.id}-${suffix}.json`)),
@@ -188,7 +190,7 @@ test("art-design governance is schema-closed, cross-bound, ordered, and source-s
   assert.ok(beta8LayoutDecision.adopted.includes("OWNER_APPROVED_BETA_8_CANDIDATE_2026_08_26"));
   assert.ok(beta8LayoutDecision.constraints.includes("NO_HORIZONTAL_OR_NESTED_QUESTION_SCROLL"));
   assert.ok(beta8LayoutDecision.constraints.includes("MINIMUM_INTERACTIVE_TARGET_44_CSS_PX"));
-  const mq122CorrectionDecision = result.decisions.implementationDecisionLog.entries.at(-1);
+  const mq122CorrectionDecision = result.decisions.implementationDecisionLog.entries[11];
   assert.deepEqual({
     id: mq122CorrectionDecision.id,
     order: mq122CorrectionDecision.order,
@@ -234,17 +236,10 @@ test("construction workflow is complete, tiered, ordered, and applies to human o
   assert.deepEqual(decisions.migrationSequence.map((record) => record.order), Array.from({ length: 16 }, (_, index) => index + 1));
 });
 
-test("art implementation decisions are durable, ordered, cross-linked, and superseded explicitly", async () => {
+function assertQuestionShellDecisionHistory() {
   const entry = decisions.implementationDecisionLog.entries[0];
   const correction = decisions.implementationDecisionLog.entries[1];
   const approval = decisions.implementationDecisionLog.entries[2];
-  const zones = decisions.implementationDecisionLog.entries[3];
-  const zoneApproval = decisions.implementationDecisionLog.entries[4];
-  const earlyCounting = decisions.implementationDecisionLog.entries[5];
-  const earlyCountingApproval = decisions.implementationDecisionLog.entries[6];
-  const correctedEarlyCountingApproval = decisions.implementationDecisionLog.entries[7];
-  const earlyFrame = decisions.implementationDecisionLog.entries[8];
-  const earlyFrameApproval = decisions.implementationDecisionLog.entries[9];
   assert.equal(entry.id, "ART-DEC-001");
   assert.equal(entry.baseRevision, "f3a0c39b939d860c7531355489bddc1a0b4f3db9");
   assert.deepEqual(entry.affectedDesignRuleIds, ["ART-R-008", "ART-R-021"]);
@@ -253,6 +248,11 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.deepEqual(correction.affectedDesignRuleIds, ["ART-R-021"]);
   assert.equal(approval.decisionId, "OWNER_ACCEPTED_EXACT_ART_MIG_04_RENDERED_HANDOFF");
   assert.equal(approval.baseRevision, "0836f6f68abe648675fa02b091155801bceec2e6");
+}
+
+function assertQuestionZoneDecisionHistory() {
+  const zones = decisions.implementationDecisionLog.entries[3];
+  const zoneApproval = decisions.implementationDecisionLog.entries[4];
   assert.equal(zones.migrationId, "ART-MIG-05");
   assert.deepEqual(zones.affectedDesignRuleIds, ["ART-R-010", "ART-R-048"]);
   assert.equal(zoneApproval.id, "ART-DEC-005");
@@ -261,6 +261,12 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.ok(zoneApproval.adopted.includes("COMPARISON_SET_SHA256_CA16B30B5BA5F75E331391C7B7DB8A3F638C20CB5F19C64BA9E945A31ACDBAD2"));
   assert.ok(zoneApproval.adopted.includes("AFTER_RETEACH_PHONE_SHA256_0A254D29620EC1BBBC51391E26890DD417CC71D7BCC99EB367616BD636E49743"));
   assert.ok(zoneApproval.constraints.includes("ART_MIG_06_REQUIRES_NEW_HANDOFF"));
+}
+
+function assertEarlyCountingDecisionHistory() {
+  const earlyCounting = decisions.implementationDecisionLog.entries[5];
+  const earlyCountingApproval = decisions.implementationDecisionLog.entries[6];
+  const correctedEarlyCountingApproval = decisions.implementationDecisionLog.entries[7];
   assert.equal(earlyCounting.id, "ART-DEC-006");
   assert.equal(earlyCounting.decisionId, "APPLY_CONSERVATORY_MATERIAL_AND_REDUNDANT_RESPONSE_CUES_TO_DATA_OWNED_COUNTING");
   assert.deepEqual(earlyCounting.affectedDesignRuleIds, ["ART-R-008", "ART-R-009", "ART-R-029", "ART-R-034", "ART-R-046", "ART-R-048"]);
@@ -281,6 +287,11 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.ok(correctedEarlyCountingApproval.adopted.includes("CORRECTION_COMPARISON_EVIDENCE_SHA256_18F9562FD3814EA0A47D6063B3BD20D893A50F8944587BD3A5A2093A1B336CCF"));
   assert.ok(correctedEarlyCountingApproval.adopted.includes("INITIAL_IMAGES_BYTE_IDENTICAL_6_OF_6"));
   assert.ok(correctedEarlyCountingApproval.constraints.includes("ORIGINAL_PLATFORM_GLYPH_APPROVAL_SUPERSEDED"));
+}
+
+function assertEarlyFrameDecisionHistory() {
+  const earlyFrame = decisions.implementationDecisionLog.entries[8];
+  const earlyFrameApproval = decisions.implementationDecisionLog.entries[9];
   assert.equal(earlyFrame.id, "ART-DEC-009");
   assert.equal(earlyFrame.decisionId, "APPLY_CONSERVATORY_TEN_FRAME_TRAYS_WITH_EXACT_FIVE_AND_FIVE_AND_REDUNDANT_FILLED_CUES");
   assert.equal(earlyFrame.baseRevision, "741ec0050e38c0793a3515508025a6a3d13ee8c3");
@@ -299,6 +310,13 @@ test("art implementation decisions are durable, ordered, cross-linked, and super
   assert.ok(earlyFrameApproval.constraints.includes("INTEGRATED_RESPONSE_CROPS_BYTE_IDENTICAL_12_OF_12"));
   assert.ok(earlyFrameApproval.constraints.includes("INTEGRATED_RENDER_MUST_REPRODUCE_ALL_APPROVED_RESPONSE_BYTES"));
   assert.ok(earlyFrameApproval.rejected.includes("APPROVAL_FOR_PICTURE_CHOICE_STATIC_FRAMES"));
+}
+
+test("art implementation decisions are durable, ordered, cross-linked, and superseded explicitly", async () => {
+  assertQuestionShellDecisionHistory();
+  assertQuestionZoneDecisionHistory();
+  assertEarlyCountingDecisionHistory();
+  assertEarlyFrameDecisionHistory();
 
   const unknownRule = clone(decisions);
   unknownRule.implementationDecisionLog.entries[0].affectedDesignRuleIds = ["ART-R-999"];
@@ -505,4 +523,17 @@ test("asset records bind live features, tutorial identities, and exact workflow 
   assert.match(issues, /unknown feature/u);
   assert.match(issues, /unknown tutorial identity/u);
   assert.match(issues, /every mandatory stage/u);
+});
+
+test("the approved axe contrast correction binds shown pixels and keeps the existing text geometry", async () => {
+  const decision = decisions.implementationDecisionLog.entries.find((entry) => entry.id === "ART-DEC-013");
+  assert.equal(decision.decisionId, "OWNER_ACCEPTED_SHOWN_DARKER_QUESTION_AND_SESSION_TEXT");
+  assert.ok(decision.adopted.includes("AFTER_SESSION_GRID_SHA256_26F8D17C1C096ACAF2A1364C44EF5B10BBDA3F4406584AD9CDB94142A28A69B5"));
+  assert.ok(decision.adopted.includes("BEFORE_SESSION_GRID_SHA256_EA526B2C06C49D992AEFC01A84F176C6458276860181A54B834508544FF8531A"));
+  assert.ok(decision.constraints.includes("TYPEFACE_SIZE_LAYOUT_AND_CONTENT_UNCHANGED"));
+  assert.ok(contrastRatio("#18354a", "#e4f0e9") >= 4.5);
+  assert.ok(contrastRatio("#5b7080", "#e4f0e9") < 4.5);
+  const source = await readFile(new URL("../../index.html", import.meta.url), "utf8");
+  assert.match(source, /\.question\{--muted:var\(--ink\);/u);
+  assert.match(source, /\.side-card\{--muted:var\(--ink\);/u);
 });

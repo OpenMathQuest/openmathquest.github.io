@@ -1,0 +1,24 @@
+{
+  "globs": [
+    "**/*.md",
+    "!**/node_modules/**",
+    "!**/.artifacts/**",
+    "!**/.tmp*/**",
+    "!audit/final-build-report.md",
+    "!audit/last-report.md",
+    "!qa/reviews/visual-interaction/agent-1-child-ux.md",
+    "!qa/reviews/visual-interaction/agent-1/screen-control-state-inventory.md"
+  ],
+  "config": {
+    "default": false,
+    "MD001": true,
+    "MD003": { "style": "atx" },
+    "MD009": true,
+    "MD012": true,
+    "MD025": true,
+    "MD031": true,
+    "MD040": true,
+    "MD046": { "style": "fenced" },
+    "MD047": true
+  }
+}

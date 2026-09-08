@@ -40,6 +40,8 @@ const CLOSED_KEYS = Object.freeze({
   assessment: Object.freeze(["version", "masteryPolicy", "requiredTaskTypes"]),
 });
 
+const REQUIRED_SOURCE_KEYS = Object.freeze(CLOSED_KEYS.source.filter((key) => key !== "sha256"));
+
 function plainObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -107,122 +109,165 @@ export function manifestArtifact(manifest) {
   });
 }
 
-export function validateManifest(manifest) {
-  const issues = [];
-  const add = (message) => issues.push(message);
-
-  if (!plainObject(manifest)) return Object.freeze(["Manifest root must be an object."]);
+function validateManifestIdentity(manifest, issues) {
   closedObject(manifest, CLOSED_KEYS.root, CLOSED_KEYS.root, "Manifest root", issues);
-  if (manifest.manifestId !== "math-quest-curriculum") add("manifestId must be math-quest-curriculum.");
-  if (!/^1\.\d+\.\d+$/u.test(String(manifest.version ?? ""))) add("version must be a 1.x semantic version.");
-  if (manifest.schemaVersion !== 1) add("schemaVersion must be 1.");
-  if (manifest.locale !== "en-CA") add("locale must be en-CA.");
+  if (manifest.manifestId !== "math-quest-curriculum") issues.push("manifestId must be math-quest-curriculum.");
+  if (!/^1\.\d+\.\d+$/u.test(String(manifest.version ?? ""))) issues.push("version must be a 1.x semantic version.");
+  if (manifest.schemaVersion !== 1) issues.push("schemaVersion must be 1.");
+  if (manifest.locale !== "en-CA") issues.push("locale must be en-CA.");
+}
+
+function validateManifestLocalization(manifest, issues) {
   closedObject(manifest.localization, CLOSED_KEYS.localization, CLOSED_KEYS.localization, "localization", issues);
   if (plainObject(manifest.localization)) {
     for (const key of CLOSED_KEYS.localization) {
-      if (!nonEmptyString(manifest.localization[key])) add(`localization.${key} must be a non-empty string.`);
+      if (!nonEmptyString(manifest.localization[key])) issues.push(`localization.${key} must be a non-empty string.`);
     }
   }
+}
+
+function validateManifestLicence(manifest, issues) {
   closedObject(manifest.licence, CLOSED_KEYS.licence, CLOSED_KEYS.licence, "licence", issues);
   if (plainObject(manifest.licence)) {
-    if (!nonEmptyString(manifest.licence.spdx)) add("licence.spdx is required.");
-    if (!nonEmptyString(manifest.licence.scope)) add("licence.scope is required.");
-    if (!nonEmptyString(manifest.licence.originalManifest)) add("licence.originalManifest is required.");
+    if (!nonEmptyString(manifest.licence.spdx)) issues.push("licence.spdx is required.");
+    if (!nonEmptyString(manifest.licence.scope)) issues.push("licence.scope is required.");
+    if (!nonEmptyString(manifest.licence.originalManifest)) issues.push("licence.originalManifest is required.");
     if (!Array.isArray(manifest.licence.benchmarkAdaptationNotices) || manifest.licence.benchmarkAdaptationNotices.some((item) => !nonEmptyString(item))) {
-      add("licence.benchmarkAdaptationNotices must be a string array.");
+      issues.push("licence.benchmarkAdaptationNotices must be a string array.");
     }
-    if (typeof manifest.licence.thirdPartyMarksExcluded !== "boolean") add("licence.thirdPartyMarksExcluded must be boolean.");
+    if (typeof manifest.licence.thirdPartyMarksExcluded !== "boolean") issues.push("licence.thirdPartyMarksExcluded must be boolean.");
   }
+}
+
+function validateManifestAuthorship(manifest, issues) {
   closedObject(manifest.authorshipMethod, CLOSED_KEYS.authorshipMethod, CLOSED_KEYS.authorshipMethod, "authorshipMethod", issues);
   if (plainObject(manifest.authorshipMethod)) {
     for (const key of CLOSED_KEYS.authorshipMethod.filter((key) => key !== "excludedInputs")) {
-      if (!nonEmptyString(manifest.authorshipMethod[key])) add(`authorshipMethod.${key} must be a non-empty string.`);
+      if (!nonEmptyString(manifest.authorshipMethod[key])) issues.push(`authorshipMethod.${key} must be a non-empty string.`);
     }
     if (!Array.isArray(manifest.authorshipMethod.excludedInputs) || !manifest.authorshipMethod.excludedInputs.length || manifest.authorshipMethod.excludedInputs.some((item) => !nonEmptyString(item))) {
-      add("authorshipMethod.excludedInputs must be a non-empty string array.");
+      issues.push("authorshipMethod.excludedInputs must be a non-empty string array.");
     }
   }
+}
+
+function validateManifestLocalizationReview(manifest, issues) {
   closedObject(manifest.localizationReview, CLOSED_KEYS.localizationReview, CLOSED_KEYS.localizationReview, "localizationReview", issues);
   if (plainObject(manifest.localizationReview)) {
     if (!nonEmptyString(manifest.localizationReview.status) || typeof manifest.localizationReview.normativeBenchmark !== "boolean" || !nonEmptyString(manifest.localizationReview.rule)) {
-      add("localizationReview status, normativeBenchmark, and rule are invalid.");
+      issues.push("localizationReview status, normativeBenchmark, and rule are invalid.");
     }
-    if (!plainObject(manifest.localizationReview.bandSources)) add("localizationReview.bandSources must be an object.");
+    if (!plainObject(manifest.localizationReview.bandSources)) issues.push("localizationReview.bandSources must be an object.");
     if (!Array.isArray(manifest.localizationReview.contextSources) || manifest.localizationReview.contextSources.some((item) => !nonEmptyString(item))) {
-      add("localizationReview.contextSources must be a string array.");
+      issues.push("localizationReview.contextSources must be a string array.");
     }
   }
+}
+
+function validateManifestPhaseLegend(manifest, issues) {
   closedObject(manifest.phaseLegend, CLOSED_KEYS.phaseLegend, CLOSED_KEYS.phaseLegend, "phaseLegend", issues);
   if (plainObject(manifest.phaseLegend) && CLOSED_KEYS.phaseLegend.some((key) => !nonEmptyString(manifest.phaseLegend[key]))) {
-    add("phaseLegend values must be non-empty strings.");
+    issues.push("phaseLegend values must be non-empty strings.");
   }
+}
+
+function validateConstraintConvention(policy, key, issues) {
+  closedObject(policy, CLOSED_KEYS.constraintConvention, CLOSED_KEYS.constraintConvention, `constraintConventions.${key}`, issues);
+  if (plainObject(policy) && (
+    !Array.isArray(policy.keys)
+    || !policy.keys.length
+    || policy.keys.some((item) => !nonEmptyString(item))
+    || !Array.isArray(policy.valueTypes)
+    || !policy.valueTypes.length
+    || policy.valueTypes.some((item) => !nonEmptyString(item))
+  )) issues.push(`constraintConventions.${key} must declare non-empty keys and valueTypes string arrays.`);
+}
+
+function validateManifestConstraintConventions(manifest, issues) {
   closedObject(manifest.constraintConventions, CLOSED_KEYS.constraintConventions, CLOSED_KEYS.constraintConventions, "constraintConventions", issues);
   if (plainObject(manifest.constraintConventions)) {
-    if (!nonEmptyString(manifest.constraintConventions.rule)) add("constraintConventions.rule must be a non-empty string.");
+    if (!nonEmptyString(manifest.constraintConventions.rule)) issues.push("constraintConventions.rule must be a non-empty string.");
     for (const key of CLOSED_KEYS.constraintConventions.filter((item) => item !== "rule")) {
-      const policy = manifest.constraintConventions[key];
-      closedObject(policy, CLOSED_KEYS.constraintConvention, CLOSED_KEYS.constraintConvention, `constraintConventions.${key}`, issues);
-      if (plainObject(policy) && (
-        !Array.isArray(policy.keys)
-        || !policy.keys.length
-        || policy.keys.some((item) => !nonEmptyString(item))
-        || !Array.isArray(policy.valueTypes)
-        || !policy.valueTypes.length
-        || policy.valueTypes.some((item) => !nonEmptyString(item))
-      )) add(`constraintConventions.${key} must declare non-empty keys and valueTypes string arrays.`);
+      validateConstraintConvention(manifest.constraintConventions[key], key, issues);
     }
   }
-  if (!Array.isArray(manifest.bands) || !manifest.bands.length) add("bands must be a non-empty array.");
-  if (!Array.isArray(manifest.levels) || !manifest.levels.length) add("levels must be a non-empty array.");
-  if (!Array.isArray(manifest.skills) || !manifest.skills.length) add("skills must be a non-empty array.");
-  if (!Array.isArray(manifest.sources) || !manifest.sources.length) add("sources must be a non-empty array.");
-  if (!Array.isArray(manifest.designRationales) || !manifest.designRationales.length) add("designRationales must be a non-empty array.");
-  if (!Array.isArray(manifest.benchmarkIndex) || !manifest.benchmarkIndex.length) add("benchmarkIndex must be a non-empty array.");
-  if (issues.length) return Object.freeze(issues);
+}
 
+function validateManifestCollections(manifest, issues) {
+  for (const key of ["bands", "levels", "skills", "sources", "designRationales", "benchmarkIndex"]) {
+    if (!Array.isArray(manifest[key]) || !manifest[key].length) issues.push(`${key} must be a non-empty array.`);
+  }
+}
+
+function validateManifestCounts(manifest, issues) {
   closedObject(manifest.counts, CLOSED_KEYS.counts, CLOSED_KEYS.counts, "counts", issues);
   for (const [key, expected] of Object.entries(EXPECTED_COUNTS)) {
-    if (manifest.counts?.[key] !== expected) add(`counts.${key} must be ${expected}.`);
+    if (manifest.counts?.[key] !== expected) issues.push(`counts.${key} must be ${expected}.`);
   }
-  if (manifest.bands.length !== EXPECTED_COUNTS.bands) add(`Manifest must contain exactly ${EXPECTED_COUNTS.bands} bands.`);
-  if (manifest.levels.length !== EXPECTED_COUNTS.levels) add(`Manifest must contain exactly ${EXPECTED_COUNTS.levels} levels.`);
-  if (manifest.skills.length !== EXPECTED_COUNTS.skills) add(`Manifest must contain exactly ${EXPECTED_COUNTS.skills} skills.`);
+  if (manifest.bands.length !== EXPECTED_COUNTS.bands) issues.push(`Manifest must contain exactly ${EXPECTED_COUNTS.bands} bands.`);
+  if (manifest.levels.length !== EXPECTED_COUNTS.levels) issues.push(`Manifest must contain exactly ${EXPECTED_COUNTS.levels} levels.`);
+  if (manifest.skills.length !== EXPECTED_COUNTS.skills) issues.push(`Manifest must contain exactly ${EXPECTED_COUNTS.skills} skills.`);
+}
 
+function manifestEnumSets(manifest, issues) {
   const allowedStrands = stringEnum(manifest.strandEnum, "strandEnum", issues);
   const allowedProfiles = stringEnum(manifest.generatorProfileEnum, "generatorProfileEnum", issues);
   const allowedRepresentations = stringEnum(manifest.representationEnum, "representationEnum", issues);
   const allowedFamilies = stringEnum(manifest.familyEnum, "familyEnum", issues);
-  if (allowedStrands.size !== 6) add("strandEnum must contain exactly six strands.");
+  if (allowedStrands.size !== 6) issues.push("strandEnum must contain exactly six strands.");
+  return { allowedStrands, allowedProfiles, allowedRepresentations, allowedFamilies };
+}
+
+function validateRationaleIds(manifest, issues) {
   const rationaleIds = new Set(manifest.designRationales.map((item) => item?.id));
   if (!Array.isArray(manifest.designRationales) || !manifest.designRationales.length || rationaleIds.has(undefined)) {
-    add("designRationales must contain identified rationale records.");
+    issues.push("designRationales must contain identified rationale records.");
   }
-  if (rationaleIds.size !== (manifest.designRationales ?? []).length) add("designRationales must not repeat ids.");
+  if (rationaleIds.size !== (manifest.designRationales ?? []).length) issues.push("designRationales must not repeat ids.");
+  return rationaleIds;
+}
+
+function validateTaskTypePolicy(manifest, issues) {
   closedObject(manifest.taskTypePolicy, CLOSED_KEYS.taskTypePolicy, CLOSED_KEYS.taskTypePolicy, "taskTypePolicy", issues);
   if (!plainObject(manifest.taskTypePolicy) || manifest.taskTypePolicy.version !== 1 || typeof manifest.taskTypePolicy.rule !== "string" || !manifest.taskTypePolicy.rule.trim()) {
-    add("taskTypePolicy must be a documented version-1 policy.");
+    issues.push("taskTypePolicy must be a documented version-1 policy.");
   }
+}
 
+function validateConstraintSchemaDefinition(schema, constraintKeyTypes, issues) {
+  closedObject(schema, CLOSED_KEYS.constraintSchema, CLOSED_KEYS.constraintSchema, "constraintSchema", issues);
+  if (!plainObject(schema) || schema.version !== 1 || schema.closed !== true || !plainObject(constraintKeyTypes)) {
+    issues.push("constraintSchema must be a closed version-1 keyTypes registry.");
+  }
+}
+
+function validateConstraintTypeDeclaration(key, types, issues) {
+  if (!/^[a-z][A-Za-z0-9]*$/u.test(key)) issues.push(`constraintSchema contains invalid key ${key}.`);
+  if (!Array.isArray(types) || !types.length || types.some((type) => typeof type !== "string" || !type)) issues.push(`constraintSchema.${key} must list allowed value types.`);
+}
+
+function manifestConstraintRegistry(manifest, issues) {
   const constraintKeyTypes = manifest.constraintSchema?.keyTypes;
-  closedObject(manifest.constraintSchema, CLOSED_KEYS.constraintSchema, CLOSED_KEYS.constraintSchema, "constraintSchema", issues);
-  if (!plainObject(manifest.constraintSchema) || manifest.constraintSchema.version !== 1 || manifest.constraintSchema.closed !== true || !plainObject(constraintKeyTypes)) {
-    add("constraintSchema must be a closed version-1 keyTypes registry.");
-  }
+  validateConstraintSchemaDefinition(manifest.constraintSchema, constraintKeyTypes, issues);
   const registeredConstraintKeys = new Set(Object.keys(constraintKeyTypes ?? {}));
-  for (const [key, types] of Object.entries(constraintKeyTypes ?? {})) {
-    if (!/^[a-z][A-Za-z0-9]*$/u.test(key)) add(`constraintSchema contains invalid key ${key}.`);
-    if (!Array.isArray(types) || !types.length || types.some((type) => typeof type !== "string" || !type)) add(`constraintSchema.${key} must list allowed value types.`);
-  }
+  for (const [key, types] of Object.entries(constraintKeyTypes ?? {})) validateConstraintTypeDeclaration(key, types, issues);
+  return { constraintKeyTypes, registeredConstraintKeys };
+}
 
+function validateManifestBands(manifest, issues) {
   const bandIds = new Set();
   for (const [index, band] of manifest.bands.entries()) {
     closedObject(band, CLOSED_KEYS.band, CLOSED_KEYS.band, `Band ${index + 1}`, issues);
-    if (!plainObject(band) || !/^[A-Z][A-Z0-9_]*$/u.test(String(band.id ?? ""))) add(`Band ${index + 1} has an invalid id.`);
-    else if (bandIds.has(band.id)) add(`Duplicate band id ${band.id}.`);
+    if (!plainObject(band) || !/^[A-Z][A-Z0-9_]*$/u.test(String(band.id ?? ""))) issues.push(`Band ${index + 1} has an invalid id.`);
+    else if (bandIds.has(band.id)) issues.push(`Duplicate band id ${band.id}.`);
     else bandIds.add(band.id);
-    if (typeof band.title !== "string" || !band.title.trim()) add(`Band ${band.id ?? index + 1} needs a title.`);
-    if (typeof band.purpose !== "string" || !band.purpose.trim()) add(`Band ${band.id ?? index + 1} needs a purpose.`);
+    if (!nonEmptyString(band.title)) issues.push(`Band ${band.id ?? index + 1} needs a title.`);
+    if (!nonEmptyString(band.purpose)) issues.push(`Band ${band.id ?? index + 1} needs a purpose.`);
   }
+  return bandIds;
+}
+
+function validateBandSourceDeclarations(manifest, bandIds, issues) {
   if (plainObject(manifest.localizationReview?.bandSources)) {
     const declaredBandIds = [...bandIds];
     closedObject(
@@ -234,166 +279,281 @@ export function validateManifest(manifest) {
     );
     for (const [bandId, sourceIds] of Object.entries(manifest.localizationReview.bandSources)) {
       if (!Array.isArray(sourceIds) || sourceIds.some((item) => !nonEmptyString(item))) {
-        add(`localizationReview.bandSources.${bandId} must be a string array.`);
+        issues.push(`localizationReview.bandSources.${bandId} must be a string array.`);
       }
     }
   }
+}
 
+function validateLevelIdentity(level, index, context, issues) {
+  const { bandIds, levelNumbers } = context;
+  const expected = index + 1;
+  closedObject(level, CLOSED_KEYS.level, CLOSED_KEYS.level, `Level ${expected}`, issues);
+  if (!plainObject(level) || level.number !== expected) issues.push(`Level at index ${index} must have number ${expected}.`);
+  else levelNumbers.add(level.number);
+  if (level?.id !== `L${String(expected).padStart(2, "0")}`) issues.push(`Level ${expected} must use id L${String(expected).padStart(2, "0")}.`);
+  if (!bandIds.has(level?.band)) issues.push(`Level ${expected} references unknown band ${level?.band}.`);
+}
+
+function validateLevelDescription(level, index, issues) {
+  const expected = index + 1;
+  if (!nonEmptyString(level?.title)) issues.push(`Level ${expected} needs a title.`);
+  if (!nonEmptyString(level?.purpose)) issues.push(`Level ${expected} needs a purpose.`);
+}
+
+function validateLevelSkillRange(level, index, issues) {
+  const expected = index + 1;
+  const expectedFirst = `MQ-${String(index * EXPECTED_COUNTS.skillsPerLevel + 1).padStart(3, "0")}`;
+  const expectedLast = `MQ-${String((index + 1) * EXPECTED_COUNTS.skillsPerLevel).padStart(3, "0")}`;
+  if (!Array.isArray(level?.skillRange) || level.skillRange.length !== 2 || level.skillRange[0] !== expectedFirst || level.skillRange[1] !== expectedLast) {
+    issues.push(`Level ${expected} skillRange must be ${expectedFirst} through ${expectedLast}.`);
+  }
+}
+
+function validateManifestLevels(manifest, bandIds, issues) {
   const levelNumbers = new Set();
+  const context = { bandIds, levelNumbers };
   for (const [index, level] of manifest.levels.entries()) {
-    const expected = index + 1;
-    closedObject(level, CLOSED_KEYS.level, CLOSED_KEYS.level, `Level ${expected}`, issues);
-    if (!plainObject(level) || level.number !== expected) add(`Level at index ${index} must have number ${expected}.`);
-    else levelNumbers.add(level.number);
-    if (level?.id !== `L${String(expected).padStart(2, "0")}`) add(`Level ${expected} must use id L${String(expected).padStart(2, "0")}.`);
-    if (!bandIds.has(level?.band)) add(`Level ${expected} references unknown band ${level?.band}.`);
-    if (typeof level?.title !== "string" || !level.title.trim()) add(`Level ${expected} needs a title.`);
-    if (typeof level?.purpose !== "string" || !level.purpose.trim()) add(`Level ${expected} needs a purpose.`);
-    const expectedFirst = `MQ-${String(index * EXPECTED_COUNTS.skillsPerLevel + 1).padStart(3, "0")}`;
-    const expectedLast = `MQ-${String((index + 1) * EXPECTED_COUNTS.skillsPerLevel).padStart(3, "0")}`;
-    if (!Array.isArray(level?.skillRange) || level.skillRange.length !== 2 || level.skillRange[0] !== expectedFirst || level.skillRange[1] !== expectedLast) {
-      add(`Level ${expected} skillRange must be ${expectedFirst} through ${expectedLast}.`);
+    validateLevelIdentity(level, index, context, issues);
+    validateLevelDescription(level, index, issues);
+    validateLevelSkillRange(level, index, issues);
+  }
+  return levelNumbers;
+}
+
+function validateSkillIdentity(skill, index, skillsById, issues) {
+  const expectedId = `MQ-${String(index + 1).padStart(3, "0")}`;
+  closedObject(skill, CLOSED_KEYS.skill, CLOSED_KEYS.skill, skill.id || `Skill ${index + 1}`, issues);
+  if (skill.id !== expectedId) issues.push(`Skill at index ${index} must use sequential id ${expectedId}.`);
+  if (skillsById.has(skill.id)) issues.push(`Duplicate skill id ${skill.id}.`);
+  else skillsById.set(skill.id, { skill, index });
+}
+
+function validateSkillPlacement(skill, context, issues) {
+  const { manifest, levelNumbers, bandIds, allowedStrands } = context;
+  if (!levelNumbers.has(skill.level)) issues.push(`${skill.id} references unknown level ${skill.level}.`);
+  if (!bandIds.has(skill.band)) issues.push(`${skill.id} references unknown band ${skill.band}.`);
+  const owningLevel = manifest.levels[Number(skill.level) - 1];
+  if (owningLevel && owningLevel.band !== skill.band) issues.push(`${skill.id} band does not match its level.`);
+  if (!allowedStrands.has(skill.strand)) issues.push(`${skill.id} has an invalid strand.`);
+  if (!nonEmptyString(skill.title)) issues.push(`${skill.id} needs a title.`);
+  if (!nonEmptyString(skill.objective)) issues.push(`${skill.id} needs an objective.`);
+}
+
+function validateSkillPhases(skill, issues) {
+  if (!Array.isArray(skill.phases) || !skill.phases.length || skill.phases.some((phase) => !ALLOWED_PHASES.includes(phase))) {
+    issues.push(`${skill.id} has invalid phases.`);
+  } else {
+    const phaseIndexes = skill.phases.map((phase) => ALLOWED_PHASES.indexOf(phase));
+    if (new Set(skill.phases).size !== skill.phases.length || phaseIndexes.some((phaseIndex, phasePosition) => phasePosition > 0 && phaseIndex <= phaseIndexes[phasePosition - 1])) {
+      issues.push(`${skill.id} phases must be unique and ordered C, P, A.`);
     }
   }
+}
 
-  const skillsById = new Map();
-  const levelGateways = new Map(manifest.levels.map((level) => [level.number, 0]));
-  const skillsPerLevel = new Map(manifest.levels.map((level) => [level.number, []]));
-  const usedConstraintKeys = new Set();
-  for (const [index, skill] of manifest.skills.entries()) {
-    const expectedId = `MQ-${String(index + 1).padStart(3, "0")}`;
-    if (!plainObject(skill)) {
-      add(`Skill at index ${index} must be an object.`);
-      continue;
-    }
-    closedObject(skill, CLOSED_KEYS.skill, CLOSED_KEYS.skill, skill.id || `Skill ${index + 1}`, issues);
-    if (skill.id !== expectedId) add(`Skill at index ${index} must use sequential id ${expectedId}.`);
-    if (skillsById.has(skill.id)) add(`Duplicate skill id ${skill.id}.`);
-    else skillsById.set(skill.id, { skill, index });
-    if (!levelNumbers.has(skill.level)) add(`${skill.id} references unknown level ${skill.level}.`);
-    if (!bandIds.has(skill.band)) add(`${skill.id} references unknown band ${skill.band}.`);
-    const owningLevel = manifest.levels[Number(skill.level) - 1];
-    if (owningLevel && owningLevel.band !== skill.band) add(`${skill.id} band does not match its level.`);
-    if (!allowedStrands.has(skill.strand)) add(`${skill.id} has an invalid strand.`);
-    if (typeof skill.title !== "string" || !skill.title.trim()) add(`${skill.id} needs a title.`);
-    if (typeof skill.objective !== "string" || !skill.objective.trim()) add(`${skill.id} needs an objective.`);
-    if (!ALLOWED_ROLES.includes(skill.masteryRole)) add(`${skill.id} has invalid masteryRole ${skill.masteryRole}.`);
-    else if (skill.masteryRole === "GATEWAY") levelGateways.set(skill.level, (levelGateways.get(skill.level) ?? 0) + 1);
-    if (!Array.isArray(skill.prerequisites)) add(`${skill.id} prerequisites must be an array.`);
-    if (!Array.isArray(skill.phases) || !skill.phases.length || skill.phases.some((phase) => !ALLOWED_PHASES.includes(phase))) {
-      add(`${skill.id} has invalid phases.`);
-    } else {
-      const phaseIndexes = skill.phases.map((phase) => ALLOWED_PHASES.indexOf(phase));
-      if (new Set(skill.phases).size !== skill.phases.length || phaseIndexes.some((phaseIndex, phasePosition) => phasePosition > 0 && phaseIndex <= phaseIndexes[phasePosition - 1])) {
-        add(`${skill.id} phases must be unique and ordered C, P, A.`);
+function validateSkillLearningModes(skill, context, issues) {
+  const { levelGateways, allowedRepresentations, allowedFamilies, allowedProfiles } = context;
+  if (!ALLOWED_ROLES.includes(skill.masteryRole)) issues.push(`${skill.id} has invalid masteryRole ${skill.masteryRole}.`);
+  else if (skill.masteryRole === "GATEWAY") levelGateways.set(skill.level, (levelGateways.get(skill.level) ?? 0) + 1);
+  if (!Array.isArray(skill.prerequisites)) issues.push(`${skill.id} prerequisites must be an array.`);
+  validateSkillPhases(skill, issues);
+  if (!allowedRepresentations.has(skill.representation)) issues.push(`${skill.id} has an invalid representation.`);
+  if (!allowedFamilies.has(skill.family)) issues.push(`${skill.id} has invalid family ${skill.family}.`);
+  if (!allowedProfiles.has(skill.generatorProfile)) issues.push(`${skill.id} has invalid generatorProfile.`);
+}
+
+function validateSkillConstraints(skill, context, issues) {
+  const { usedConstraintKeys, registeredConstraintKeys, constraintKeyTypes } = context;
+  if (!plainObject(skill.constraints)) issues.push(`${skill.id} constraints must be an object.`);
+  else {
+    for (const [key, value] of Object.entries(skill.constraints)) {
+      usedConstraintKeys.add(key);
+      if (!registeredConstraintKeys.has(key)) {
+        issues.push(`${skill.id} uses unregistered constraint ${key}.`);
+        continue;
       }
+      const actualType = constraintType(value);
+      if (!constraintKeyTypes[key].includes(actualType)) issues.push(`${skill.id} constraint ${key} has type ${actualType}, expected ${constraintKeyTypes[key].join(" or ")}.`);
     }
-    if (!allowedRepresentations.has(skill.representation)) add(`${skill.id} has an invalid representation.`);
-    if (!allowedFamilies.has(skill.family)) add(`${skill.id} has invalid family ${skill.family}.`);
-    if (!allowedProfiles.has(skill.generatorProfile)) add(`${skill.id} has invalid generatorProfile.`);
-    if (!plainObject(skill.constraints)) add(`${skill.id} constraints must be an object.`);
-    else {
-      for (const [key, value] of Object.entries(skill.constraints)) {
-        usedConstraintKeys.add(key);
-        if (!registeredConstraintKeys.has(key)) {
-          add(`${skill.id} uses unregistered constraint ${key}.`);
-          continue;
-        }
-        const actualType = constraintType(value);
-        if (!constraintKeyTypes[key].includes(actualType)) add(`${skill.id} constraint ${key} has type ${actualType}, expected ${constraintKeyTypes[key].join(" or ")}.`);
-      }
-    }
-    if (!rationaleIds.has(skill.rationaleId)) add(`${skill.id} references unknown rationale ${skill.rationaleId}.`);
-    if (!Array.isArray(skill.benchmarkIds) || !skill.benchmarkIds.length) add(`${skill.id} needs benchmarkIds.`);
-    const taskTypes = skill.constraints?.taskTypes;
-    if (!Array.isArray(taskTypes) || !taskTypes.length || taskTypes.some((taskType) => !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(String(taskType)))) {
-      add(`${skill.id} must declare one or more valid constraints.taskTypes.`);
-    } else if (new Set(taskTypes).size !== taskTypes.length) {
-      add(`${skill.id} repeats a constraints.taskTypes value.`);
-    }
-    const requiredTaskTypes = skill.assessment?.requiredTaskTypes;
-    closedObject(skill.assessment, CLOSED_KEYS.assessment, CLOSED_KEYS.assessment, `${skill.id}.assessment`, issues);
-    if (!plainObject(skill.assessment) || skill.assessment.version !== 1 || skill.assessment.masteryPolicy !== "one-clean-evidentiary-witness-per-task-type") {
-      add(`${skill.id} needs the version-1 task-type mastery policy.`);
-    } else if (!Array.isArray(requiredTaskTypes) || canonicalizeJson(requiredTaskTypes) !== canonicalizeJson(taskTypes)) {
-      add(`${skill.id} assessment.requiredTaskTypes must exactly match constraints.taskTypes.`);
-    }
-    skillsPerLevel.get(skill.level)?.push(skill);
   }
+}
 
+function validateSkillTaskTypes(skill, issues) {
+  const taskTypes = skill.constraints?.taskTypes;
+  if (!Array.isArray(taskTypes) || !taskTypes.length || taskTypes.some((taskType) => !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(String(taskType)))) {
+    issues.push(`${skill.id} must declare one or more valid constraints.taskTypes.`);
+  } else if (new Set(taskTypes).size !== taskTypes.length) {
+    issues.push(`${skill.id} repeats a constraints.taskTypes value.`);
+  }
+  return taskTypes;
+}
+
+function validateSkillAssessment(skill, taskTypes, issues) {
+  const requiredTaskTypes = skill.assessment?.requiredTaskTypes;
+  closedObject(skill.assessment, CLOSED_KEYS.assessment, CLOSED_KEYS.assessment, `${skill.id}.assessment`, issues);
+  if (!plainObject(skill.assessment) || skill.assessment.version !== 1 || skill.assessment.masteryPolicy !== "one-clean-evidentiary-witness-per-task-type") {
+    issues.push(`${skill.id} needs the version-1 task-type mastery policy.`);
+  } else if (!Array.isArray(requiredTaskTypes) || canonicalizeJson(requiredTaskTypes) !== canonicalizeJson(taskTypes)) {
+    issues.push(`${skill.id} assessment.requiredTaskTypes must exactly match constraints.taskTypes.`);
+  }
+}
+
+function validateSkillEvidenceContract(skill, rationaleIds, issues) {
+  if (!rationaleIds.has(skill.rationaleId)) issues.push(`${skill.id} references unknown rationale ${skill.rationaleId}.`);
+  if (!Array.isArray(skill.benchmarkIds) || !skill.benchmarkIds.length) issues.push(`${skill.id} needs benchmarkIds.`);
+  const taskTypes = validateSkillTaskTypes(skill, issues);
+  validateSkillAssessment(skill, taskTypes, issues);
+}
+
+function validateManifestSkill(skill, index, context, issues) {
+  if (!plainObject(skill)) {
+    issues.push(`Skill at index ${index} must be an object.`);
+    return;
+  }
+  validateSkillIdentity(skill, index, context.skillsById, issues);
+  validateSkillPlacement(skill, context, issues);
+  validateSkillLearningModes(skill, context, issues);
+  validateSkillConstraints(skill, context, issues);
+  validateSkillEvidenceContract(skill, context.rationaleIds, issues);
+  context.skillsPerLevel.get(skill.level)?.push(skill);
+}
+
+function validateSkillPrerequisites(skillsById, issues) {
   for (const [id, record] of skillsById) {
     const prerequisites = record.skill.prerequisites;
     if (!Array.isArray(prerequisites)) continue;
-    if (new Set(prerequisites).size !== prerequisites.length) add(`${id} repeats a prerequisite.`);
+    if (new Set(prerequisites).size !== prerequisites.length) issues.push(`${id} repeats a prerequisite.`);
     for (const prerequisiteId of prerequisites) {
       const prerequisite = skillsById.get(prerequisiteId);
-      if (!prerequisite) add(`${id} references unknown prerequisite ${prerequisiteId}.`);
-      else if (prerequisite.index >= record.index) add(`${id} prerequisite ${prerequisiteId} must appear earlier in the manifest.`);
+      if (!prerequisite) issues.push(`${id} references unknown prerequisite ${prerequisiteId}.`);
+      else if (prerequisite.index >= record.index) issues.push(`${id} prerequisite ${prerequisiteId} must appear earlier in the manifest.`);
     }
   }
+}
 
+function validateSkillCoverage(context, issues) {
+  const { levelGateways, skillsPerLevel, registeredConstraintKeys, usedConstraintKeys } = context;
   for (const [level, count] of levelGateways) {
-    if (count < 1) add(`Level ${level} has no gateway skill.`);
+    if (count < 1) issues.push(`Level ${level} has no gateway skill.`);
   }
   for (const [level, rows] of skillsPerLevel) {
-    if (rows.length !== EXPECTED_COUNTS.skillsPerLevel) add(`Level ${level} must contain exactly ${EXPECTED_COUNTS.skillsPerLevel} skills.`);
+    if (rows.length !== EXPECTED_COUNTS.skillsPerLevel) issues.push(`Level ${level} must contain exactly ${EXPECTED_COUNTS.skillsPerLevel} skills.`);
   }
   for (const key of registeredConstraintKeys) {
-    if (!usedConstraintKeys.has(key)) add(`constraintSchema registers unused key ${key}.`);
+    if (!usedConstraintKeys.has(key)) issues.push(`constraintSchema registers unused key ${key}.`);
   }
+}
 
+function validateRationaleRecords(manifest, issues) {
   for (const [index, rationale] of manifest.designRationales.entries()) {
     closedObject(rationale, CLOSED_KEYS.rationale, CLOSED_KEYS.rationale, `designRationales[${index}]`, issues);
     if (!plainObject(rationale) || !nonEmptyString(rationale.id) || !nonEmptyString(rationale.claim)) {
-      add(`designRationales[${index}] must contain non-empty id and claim strings.`);
+      issues.push(`designRationales[${index}] must contain non-empty id and claim strings.`);
     }
   }
+}
 
+function validateManifestSources(manifest, issues) {
   const sourceIds = new Set();
   for (const [index, source] of manifest.sources.entries()) {
     closedObject(
       source,
       CLOSED_KEYS.source,
-      CLOSED_KEYS.source.filter((key) => key !== "sha256"),
+      REQUIRED_SOURCE_KEYS,
       `sources[${index}]`,
       issues,
     );
     if (!plainObject(source)) continue;
-    for (const key of CLOSED_KEYS.source.filter((item) => item !== "sha256")) {
-      if (!nonEmptyString(source[key])) add(`sources[${index}].${key} must be a non-empty string.`);
+    for (const key of REQUIRED_SOURCE_KEYS) {
+      if (!nonEmptyString(source[key])) issues.push(`sources[${index}].${key} must be a non-empty string.`);
     }
     if (source.sha256 !== undefined && !/^[a-f0-9]{64}$/u.test(source.sha256)) {
-      add(`sources[${index}].sha256 must be a lowercase SHA-256 digest.`);
+      issues.push(`sources[${index}].sha256 must be a lowercase SHA-256 digest.`);
     }
-    if (sourceIds.has(source.id)) add(`Duplicate source id ${source.id}.`);
+    if (sourceIds.has(source.id)) issues.push(`Duplicate source id ${source.id}.`);
     sourceIds.add(source.id);
   }
+  return sourceIds;
+}
+
+function validateLocalizationSourceReferences(manifest, sourceIds, issues) {
   for (const [bandId, referenced] of Object.entries(manifest.localizationReview.bandSources)) {
     for (const sourceId of referenced) {
-      if (!sourceIds.has(sourceId)) add(`localizationReview.bandSources.${bandId} references unknown source ${sourceId}.`);
+      if (!sourceIds.has(sourceId)) issues.push(`localizationReview.bandSources.${bandId} references unknown source ${sourceId}.`);
     }
   }
   for (const sourceId of manifest.localizationReview.contextSources) {
-    if (!sourceIds.has(sourceId)) add(`localizationReview.contextSources references unknown source ${sourceId}.`);
+    if (!sourceIds.has(sourceId)) issues.push(`localizationReview.contextSources references unknown source ${sourceId}.`);
   }
+}
+
+function validateManifestBenchmarks(manifest, sourceIds, issues) {
   const benchmarkIds = new Set();
   for (const [index, benchmark] of manifest.benchmarkIndex.entries()) {
     closedObject(benchmark, CLOSED_KEYS.benchmark, CLOSED_KEYS.benchmark, `benchmarkIndex[${index}]`, issues);
     if (!plainObject(benchmark) || typeof benchmark.id !== "string" || !benchmark.id) {
-      add("benchmarkIndex contains an invalid entry.");
+      issues.push("benchmarkIndex contains an invalid entry.");
       continue;
     }
-    if (benchmarkIds.has(benchmark.id)) add(`Duplicate benchmark id ${benchmark.id}.`);
+    if (benchmarkIds.has(benchmark.id)) issues.push(`Duplicate benchmark id ${benchmark.id}.`);
     benchmarkIds.add(benchmark.id);
-    if (!sourceIds.has(benchmark.sourceId)) add(`Benchmark ${benchmark.id} references unknown source ${benchmark.sourceId}.`);
+    if (!sourceIds.has(benchmark.sourceId)) issues.push(`Benchmark ${benchmark.id} references unknown source ${benchmark.sourceId}.`);
   }
+  return benchmarkIds;
+}
+
+function validateSkillBenchmarkReferences(manifest, benchmarkIds, issues) {
   for (const skill of manifest.skills) {
     if (!plainObject(skill)) continue;
     for (const benchmarkId of skill.benchmarkIds ?? []) {
-      if (!benchmarkIds.has(benchmarkId)) add(`${skill.id} references unknown benchmark ${benchmarkId}.`);
+      if (!benchmarkIds.has(benchmarkId)) issues.push(`${skill.id} references unknown benchmark ${benchmarkId}.`);
     }
   }
+}
 
+function manifestValidationContext(manifest, issues) {
+  validateManifestCounts(manifest, issues);
+  const enums = manifestEnumSets(manifest, issues);
+  const rationaleIds = validateRationaleIds(manifest, issues);
+  validateTaskTypePolicy(manifest, issues);
+  const constraints = manifestConstraintRegistry(manifest, issues);
+  const bandIds = validateManifestBands(manifest, issues);
+  validateBandSourceDeclarations(manifest, bandIds, issues);
+  const levelNumbers = validateManifestLevels(manifest, bandIds, issues);
+  return {
+    manifest, ...enums, rationaleIds, ...constraints, bandIds, levelNumbers,
+    skillsById: new Map(),
+    levelGateways: new Map(manifest.levels.map((level) => [level.number, 0])),
+    skillsPerLevel: new Map(manifest.levels.map((level) => [level.number, []])),
+    usedConstraintKeys: new Set(),
+  };
+}
+
+function validateManifestSemantics(manifest, issues) {
+  const context = manifestValidationContext(manifest, issues);
+  for (const [index, skill] of manifest.skills.entries()) validateManifestSkill(skill, index, context, issues);
+  validateSkillPrerequisites(context.skillsById, issues);
+  validateSkillCoverage(context, issues);
+  validateRationaleRecords(manifest, issues);
+  const sourceIds = validateManifestSources(manifest, issues);
+  validateLocalizationSourceReferences(manifest, sourceIds, issues);
+  const benchmarkIds = validateManifestBenchmarks(manifest, sourceIds, issues);
+  validateSkillBenchmarkReferences(manifest, benchmarkIds, issues);
+}
+
+export function validateManifest(manifest) {
+  const issues = [];
+  if (!plainObject(manifest)) return Object.freeze(["Manifest root must be an object."]);
+  validateManifestIdentity(manifest, issues);
+  validateManifestLocalization(manifest, issues);
+  validateManifestLicence(manifest, issues);
+  validateManifestAuthorship(manifest, issues);
+  validateManifestLocalizationReview(manifest, issues);
+  validateManifestPhaseLegend(manifest, issues);
+  validateManifestConstraintConventions(manifest, issues);
+  validateManifestCollections(manifest, issues);
+  if (issues.length) return Object.freeze(issues);
+  validateManifestSemantics(manifest, issues);
   return Object.freeze(issues);
 }
 

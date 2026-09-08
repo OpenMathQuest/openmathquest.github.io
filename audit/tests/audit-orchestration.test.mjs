@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import "./operation-cleanup.test.mjs";
+import "./exhaustive-response-fixtures.test.mjs";
+import "./exhaustive-generator-contract.test.mjs";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -141,7 +144,7 @@ test("browser shard execution obeys the mode-aware resource budget and preserves
   const runOne = async (shard) => {
     active += 1;
     observed = Math.max(observed, active);
-    await new Promise((resolve) => setTimeout(resolve, shard === "core" ? 5 : 1));
+    await new Promise((resolve) => { setTimeout(resolve, shard === "core" ? 5 : 1); });
     active -= 1;
     return shard;
   };
@@ -237,16 +240,15 @@ test("[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing
   }
 });
 
-test("release orchestration eliminates exact duplicates and uses instrumented canonical evidence", async () => {
-  const [workflow, wrapper, runner, coverage, nodeEngine, auditPage] = await Promise.all([
-    read(".github/workflows/audit.yml"), read("audit/run-audit.ps1"), read("audit/run-audit.mjs"),
-    read("audit/run-coverage.mjs"), read("audit/tests/node-engine.test.mjs"), read("audit.html"),
-  ]);
+function assertReleaseWorkflowOrchestration(workflow, wrapper) {
   const fullJob = workflow.split(/^  full-audit:\s*$/mu)[1] || "";
   assert.doesNotMatch(fullJob, /run: node audit\/public-candidate-guard\.mjs/u);
   assert.doesNotMatch(fullJob, /node --test audit\/tests\/publication-clearance\.test\.mjs/u);
   assert.doesNotMatch(fullJob, /node --test audit\/tests\/pwa-release\.test\.mjs/u);
   assert.equal((wrapper.match(/Invoke-PublicCandidateGuard -ValidatedNode/gu) || []).length, 1);
+}
+
+function assertAuditRunnerEvidence(runner, coverage, nodeEngine, auditPage) {
   const runAuditBody = runner.split(/export async function runAudit/u)[1] || "";
   assert.doesNotMatch(runAuditBody, /runEngineSuite|runManifestSemanticAudit/u);
   assert.match(runAuditBody, /structuredAuditValid/iu);
@@ -254,7 +256,7 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.match(runAuditBody, /const playwright = laneExecution\.results\.playwright/u);
   assert.match(runAuditBody, /playwright\.status === "PASS"/u);
   assert.match(runner, /playwrightAssertions: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS\.length/u);
-  assert.match(runner, /actual\.playwrightAssertions/u);
+  assert.match(runner, /playwrightAssertions:\s*playwright\.results\.length/u);
   assert.match(runner, /AI_READER_CONTRACT_REF/u);
   assert.match(runner, /schemaVersion: 2, reportType: "MATH_QUEST_CERTIFICATION", aiReaderContractRef: AI_READER_CONTRACT_REF/u);
   assert.match(runner, /aiReaderContractRef: report\.aiReaderContractRef/u);
@@ -263,7 +265,24 @@ test("release orchestration eliminates exact duplicates and uses instrumented ca
   assert.match(nodeEngine, /MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1/u);
   assert.match(auditPage, /AUDIT_SHARD !== "visual"/u);
   assert.match(auditPage, /AUDIT_SHARD !== "core"/u);
+}
+
+function assertDevelopmentLoopWiring(workflow) {
   assert.equal((workflow.match(/\.\\audit\\install-reviewed-ci-dependencies\.ps1/gu) || []).length, 4);
+  const developmentJob = workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "";
+  assert.match(developmentJob, /install-reviewed-security-tools\.ps1/u);
+  assert.match(developmentJob, /node \.\\audit\\run-ai-change-loop\.mjs --progress/u);
+  assert.doesNotMatch(developmentJob, /run-audit\.ps1[^\n]*-DevelopmentOnly/u);
+}
+
+test("release orchestration eliminates exact duplicates and uses instrumented canonical evidence", async () => {
+  const [workflow, wrapper, runner, coverage, nodeEngine, auditPage] = await Promise.all([
+    read(".github/workflows/audit.yml"), read("audit/run-audit.ps1"), read("audit/run-audit.mjs"),
+    read("audit/run-coverage.mjs"), read("audit/tests/node-engine.test.mjs"), read("audit.html"),
+  ]);
+  assertReleaseWorkflowOrchestration(workflow, wrapper);
+  assertAuditRunnerEvidence(runner, coverage, nodeEngine, auditPage);
+  assertDevelopmentLoopWiring(workflow);
 });
 
 test("[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence", () => {
@@ -306,13 +325,14 @@ test("hosted parallelism is bounded while local execution remains sequential", a
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, PLAYWRIGHT_FOCUSED_WORKERS);
 });
 
-test("watcher omits an empty changed-path parameter and preserves rename sources", async () => {
+test("watcher preserves local rename sources while CI runs the complete ordered loop", async () => {
   const watcher = await read("audit/on-change-audit.ps1");
   assert.match(watcher, /if \(\$ChangedPaths\.Count -gt 0\)[\s\S]*\$arguments \+= '-ChangedPath'/u);
   assert.doesNotMatch(watcher, /-DevelopmentOnly -ChangedPath \$ChangedPaths/u);
   assert.match(watcher, /\$change\.OldName/u);
   assert.match(watcher, /__rename_unknown__/u);
   const workflow = await read(".github/workflows/audit.yml");
-  assert.match(workflow, /--name-status --diff-filter=R/u);
-  assert.match(workflow, /\$changedPaths \+= '__rename_unknown__'/u);
+  const developmentJob = workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "";
+  assert.doesNotMatch(developmentJob, /git diff --name-status/u);
+  assert.match(developmentJob, /run-ai-change-loop\.mjs/u);
 });

@@ -31,7 +31,7 @@ const FAMILIES = Object.freeze([
   },
   {
     family: "skill demotion", testId: "BEH-08",
-    replacements: [[/(if\s*\(\s*attempt\.scheduledReview\s*&&\s*rec\.acquisition\s*===\s*["']SOLID["']\s*\)\s*\{\s*rec\.acquisition\s*=\s*["'])PRACTISING(["'])/u, "$1SOLID$2"], [/(\bDEMOTION_ON_INCORRECT_REVIEW\s*:\s*)true\b/u, "$1false"], [/(type\s*:\s*["'])SKILL_DEMOTED(["'])/u, "$1SKILL_DEMOTED_MUTANT$2"]],
+    replacements: [[/(function solidReviewFailure\(x\)\{[^\r\n]*?type\s*:\s*["'])SKILL_DEMOTED(["'])/u, "$1SKILL_DEMOTED_MUTANT$2"], [/(if\s*\(\s*attempt\.scheduledReview\s*&&\s*rec\.acquisition\s*===\s*["']SOLID["']\s*\)\s*\{\s*rec\.acquisition\s*=\s*["'])PRACTISING(["'])/u, "$1SOLID$2"], [/(\bDEMOTION_ON_INCORRECT_REVIEW\s*:\s*)true\b/u, "$1false"], [/(type\s*:\s*["'])SKILL_DEMOTED(["'])/u, "$1SKILL_DEMOTED_MUTANT$2"]],
   },
   {
     family: "fraction equivalence and canonical form", testId: "BND-07",
@@ -135,82 +135,101 @@ function taskTypeMasteryOutcome(engine) {
   };
 }
 
+function taskTypeMutationReason(baselineProtected, mutantExposed, changed) {
+  if (baselineProtected && mutantExposed) return "Mutant killed: repeated evidence for one task type cannot satisfy a multi-task-type mastery contract.";
+  if (!changed) return "No task-type mastery mutation point matched the shipped engine.";
+  if (!baselineProtected) return "The baseline did not enforce coverage of every required task type.";
+  return "The task-type mastery mutant survived.";
+}
+
+function taskTypeMutationCase(family, source) {
+  const baselineTaskType = taskTypeMasteryOutcome(evaluateEngine(source));
+  const taskTypeMutant = seed(source, family.taskTypeReplacements);
+  let taskTypeTarget = null;
+  if (taskTypeMutant.changed) taskTypeTarget = taskTypeMasteryOutcome(evaluateEngine(taskTypeMutant.source));
+  const baselineProtected = baselineTaskType.ok && baselineTaskType.acquisition !== "SOLID";
+  const mutantExposed = taskTypeTarget?.ok && taskTypeTarget.acquisition === "SOLID";
+  return {
+    id: "TASK-TYPE-MASTERY",
+    mutation: taskTypeMutant.pattern,
+    status: baselineProtected && mutantExposed ? "PASS" : "FAIL",
+    reason: taskTypeMutationReason(baselineProtected, mutantExposed, taskTypeMutant.changed),
+    baseline: baselineTaskType,
+    target: taskTypeTarget,
+  };
+}
+
+function representativeMutationCase(family, mutant, target) {
+  const killed = target && target.status === "FAIL";
+  return {
+    id: family.testId,
+    mutation: mutant.pattern,
+    status: killed ? "PASS" : "FAIL",
+    reason: killed ? "Mutant killed by its effect-sensitive assertion." : "Mutant survived or the target was skipped.",
+    target: target ?? null,
+  };
+}
+
+async function representativeMutationTarget(family, mutant, tempRoot, selected) {
+  const mutantPath = path.join(tempRoot, `${family.testId}.html`);
+  await writeFile(mutantPath, `<!-- ENGINE-START -->\n${mutant.source}\n<!-- ENGINE-END -->\n`, "utf8");
+  const result = await runEngineSuite({ root, indexPath: mutantPath, only: selected, engineFilename: path.join(tempRoot, `${family.testId}.engine.js`) });
+  return result.harness.results.find((item) => item.id === family.testId);
+}
+
+function mutationFamilyResult(family, mutant, cases, target) {
+  const familyPassed = cases.every((item) => item.status === "PASS");
+  return {
+    family: family.family, testId: family.testId, mutation: mutant.pattern, cases,
+    status: familyPassed ? "PASS" : "FAIL",
+    reason: familyPassed ? `All ${cases.length} effect-sensitive mutant cases were killed.` : `${cases.filter((item) => item.status !== "PASS").length}/${cases.length} mutant cases survived or could not run.`,
+    target: target ?? null,
+  };
+}
+
+async function runMutationFamily(family, extracted, tempRoot, indexPath) {
+  const selected = new Set([family.testId]);
+  const baseline = await runEngineSuite({ root, indexPath, only: selected });
+  const baseResult = baseline.harness.results.find((item) => item.id === family.testId);
+  if (!baseResult || baseResult.status !== "PASS") {
+    return { ...family, status: "FAIL", reason: "The protecting baseline test did not pass.", baseline: baseResult ?? null };
+  }
+  const mutant = seed(extracted.source, family.replacements);
+  if (!mutant.changed) {
+    return { ...family, status: "FAIL", reason: "No representative mutation point matched the shipped engine." };
+  }
+  const target = await representativeMutationTarget(family, mutant, tempRoot, selected);
+  const cases = [representativeMutationCase(family, mutant, target)];
+  if (family.taskTypeReplacements) cases.push(taskTypeMutationCase(family, extracted.source));
+  return mutationFamilyResult(family, mutant, cases, target);
+}
+
+function finalizeMutationReport(report) {
+  const everyFamilyKilled = report.families.length === REPRESENTATIVE_MUTATION_FAMILY_COUNT
+    && report.families.every((item) => item.status === "PASS");
+  const semanticMutantsKilled = ["strategy method independence", "strategy result independence"]
+    .every((name) => report.families.find((item) => item.family === name)?.status === "PASS");
+  report.negativeControls = Object.freeze({
+    [MUTATION_NEGATIVE_CONTROL_IDS[0]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[0]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+    [MUTATION_NEGATIVE_CONTROL_IDS[1]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[1]], status: everyFamilyKilled ? "PASS" : "FAIL" },
+    [MUTATION_NEGATIVE_CONTROL_IDS[2]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[2]], status: semanticMutantsKilled ? "PASS" : "FAIL" },
+  });
+  report.status = everyFamilyKilled
+    && Object.entries(report.negativeControls).every(([id, control]) => (
+      control.passEvidence === MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[id]
+      && control.status === "PASS"
+    )) ? "PASS" : "FAIL";
+
+  return report;
+}
+
 export async function runMutations({ indexPath = path.join(root, "index.html") } = {}) {
   const extracted = await extractEngine(indexPath);
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "math-quest-mutants-"));
   const report = { status: "FAIL", engineSha256: extracted.sha256, families: [], negativeControls: {} };
   try {
-    for (const family of FAMILIES) {
-      const selected = new Set([family.testId]);
-      const baseline = await runEngineSuite({ root, indexPath, only: selected });
-      const baseResult = baseline.harness.results.find((item) => item.id === family.testId);
-      if (!baseResult || baseResult.status !== "PASS") {
-        report.families.push({ ...family, status: "FAIL", reason: "The protecting baseline test did not pass.", baseline: baseResult ?? null });
-        continue;
-      }
-      const mutant = seed(extracted.source, family.replacements);
-      if (!mutant.changed) {
-        report.families.push({ ...family, status: "FAIL", reason: "No representative mutation point matched the shipped engine." });
-        continue;
-      }
-      const mutantPath = path.join(tempRoot, `${family.testId}.html`);
-      await writeFile(mutantPath, `<!-- ENGINE-START -->\n${mutant.source}\n<!-- ENGINE-END -->\n`, "utf8");
-      const result = await runEngineSuite({ root, indexPath: mutantPath, only: selected, engineFilename: path.join(tempRoot, `${family.testId}.engine.js`) });
-      const target = result.harness.results.find((item) => item.id === family.testId);
-      const cases = [{
-        id: family.testId,
-        mutation: mutant.pattern,
-        status: target && target.status === "FAIL" ? "PASS" : "FAIL",
-        reason: target && target.status === "FAIL" ? "Mutant killed by its effect-sensitive assertion." : "Mutant survived or the target was skipped.",
-        target: target ?? null,
-      }];
-
-      if (family.taskTypeReplacements) {
-        const baselineTaskType = taskTypeMasteryOutcome(evaluateEngine(extracted.source));
-        const taskTypeMutant = seed(extracted.source, family.taskTypeReplacements);
-        let taskTypeTarget = null;
-        if (taskTypeMutant.changed) taskTypeTarget = taskTypeMasteryOutcome(evaluateEngine(taskTypeMutant.source));
-        const baselineProtected = baselineTaskType.ok && baselineTaskType.acquisition !== "SOLID";
-        const mutantExposed = taskTypeTarget?.ok && taskTypeTarget.acquisition === "SOLID";
-        cases.push({
-          id: "TASK-TYPE-MASTERY",
-          mutation: taskTypeMutant.pattern,
-          status: baselineProtected && mutantExposed ? "PASS" : "FAIL",
-          reason: baselineProtected && mutantExposed
-            ? "Mutant killed: repeated evidence for one task type cannot satisfy a multi-task-type mastery contract."
-            : !taskTypeMutant.changed
-              ? "No task-type mastery mutation point matched the shipped engine."
-              : !baselineProtected
-                ? "The baseline did not enforce coverage of every required task type."
-                : "The task-type mastery mutant survived.",
-          baseline: baselineTaskType,
-          target: taskTypeTarget,
-        });
-      }
-
-      const familyPassed = cases.every((item) => item.status === "PASS");
-      report.families.push({
-        family: family.family, testId: family.testId, mutation: mutant.pattern, cases,
-        status: familyPassed ? "PASS" : "FAIL",
-        reason: familyPassed ? `All ${cases.length} effect-sensitive mutant cases were killed.` : `${cases.filter((item) => item.status !== "PASS").length}/${cases.length} mutant cases survived or could not run.`,
-        target: target ?? null,
-      });
-    }
-    const everyFamilyKilled = report.families.length === REPRESENTATIVE_MUTATION_FAMILY_COUNT
-      && report.families.every((item) => item.status === "PASS");
-    const semanticMutantsKilled = ["strategy method independence", "strategy result independence"]
-      .every((name) => report.families.find((item) => item.family === name)?.status === "PASS");
-    report.negativeControls = Object.freeze({
-      [MUTATION_NEGATIVE_CONTROL_IDS[0]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[0]], status: everyFamilyKilled ? "PASS" : "FAIL" },
-      [MUTATION_NEGATIVE_CONTROL_IDS[1]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[1]], status: everyFamilyKilled ? "PASS" : "FAIL" },
-      [MUTATION_NEGATIVE_CONTROL_IDS[2]]: { passEvidence: MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[MUTATION_NEGATIVE_CONTROL_IDS[2]], status: semanticMutantsKilled ? "PASS" : "FAIL" },
-    });
-    report.status = everyFamilyKilled
-      && Object.entries(report.negativeControls).every(([id, control]) => (
-        control.passEvidence === MUTATION_NEGATIVE_CONTROL_PASS_EVIDENCE[id]
-        && control.status === "PASS"
-      )) ? "PASS" : "FAIL";
-    return report;
+    for (const family of FAMILIES) report.families.push(await runMutationFamily(family, extracted, tempRoot, indexPath));
+    return finalizeMutationReport(report);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

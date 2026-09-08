@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.13.0",
+  "version": "1.49.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -120,7 +120,7 @@
     },
     {
       "id": "root-toolchain",
-      "pattern": "^(?:package(?:-lock)?\\.json|playwright(?:\\.(?:deep-ux|interaction-fuzz))?\\.config\\.mjs)$",
+      "pattern": "^(?:\\.markdownlint-cli2\\.jsonc|eslint\\.config\\.mjs|knip\\.json|package(?:-lock)?\\.json|playwright(?:\\.(?:deep-ux|interaction-fuzz))?\\.config\\.mjs|stylelint\\.config\\.mjs)$",
       "role": "toolchain",
       "releaseImpact": "DEVELOPMENT_ONLY"
     },
@@ -158,6 +158,12 @@
       "id": "audit-playwright",
       "pattern": "^audit/playwright/",
       "role": "test",
+      "releaseImpact": "CERTIFICATION"
+    },
+    {
+      "id": "audit-security",
+      "pattern": "^audit/security/",
+      "role": "audit",
       "releaseImpact": "CERTIFICATION"
     },
     {
@@ -222,6 +228,30 @@
     }
   ],
   "factFamilies": [
+    {
+      "id": "architecture.gates",
+      "owner": "audit/architecture-policy-v1.json",
+      "owns": [
+        "architecture.gates.import-edge-ratchets",
+        "architecture.gates.source-contracts",
+        "architecture.gates.zone-boundaries"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/architecture-policy.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-architecture-gate.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/architecture-policy.test.mjs"
+      ]
+    },
     {
       "id": "art-design.asset-acceptance",
       "owner": "audit/art-asset-register-v1.json",
@@ -346,6 +376,14 @@
           "relationship": "DOCUMENTED_REFERENCE"
         },
         {
+          "path": "audit/lib/tutorial-metadata-transition.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/quality-gate-policy-v1.json",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
           "path": "curriculum/math-quest-feature-map-v1.json",
           "relationship": "DOCUMENTED_REFERENCE"
         },
@@ -386,6 +424,134 @@
       ]
     },
     {
+      "id": "certification.audit-evidence-comparison",
+      "owner": "audit/lib/audit-evidence-comparison.mjs",
+      "owns": [
+        "certification.audit-evidence-comparison.canonical-evidence-comparison",
+        "certification.audit-evidence-comparison.volatile-field-projection"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/bounded-audit-lanes.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-lane-orchestration.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.audit-lane-contract",
+      "owner": "audit/lib/audit-lane-contract.mjs",
+      "owns": [
+        "certification.audit-lane-contract.candidate-stability-validation",
+        "certification.audit-lane-contract.envelope-validation",
+        "certification.audit-lane-contract.failure-normalization",
+        "certification.audit-lane-contract.nested-limit-validation"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/audit-evidence-comparison.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/audit-process-supervisor.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/bounded-audit-lanes.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-lane-orchestration.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.audit-markdown-report",
+      "owner": "audit/lib/audit-markdown-report.mjs",
+      "owns": [
+        "certification.audit-markdown-report.markdown-presentation"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/run-audit.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-orchestration.test.mjs",
+        "audit/tests/publication-clearance.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.audit-process-supervisor",
+      "owner": "audit/lib/audit-process-supervisor.mjs",
+      "owns": [
+        "certification.audit-process-supervisor.output-limit-accounting",
+        "certification.audit-process-supervisor.process-outcome-observation",
+        "certification.audit-process-supervisor.process-tree-cleanup"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/bounded-audit-lanes.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-lane-orchestration.test.mjs",
+        "audit/tests/audit-orchestration.test.mjs"
+      ]
+    },
+    {
+      "id": "certification.audit-publication-report",
+      "owner": "audit/lib/audit-publication-report.mjs",
+      "owns": [
+        "certification.audit-publication-report.candidate-binding-composition",
+        "certification.audit-publication-report.clearance-report-projection"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/run-audit.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
+      ]
+    },
+    {
       "id": "certification.cadence",
       "owner": "audit/certification-cadence-v1.json",
       "owns": [
@@ -414,7 +580,12 @@
       ],
       "copyPolicy": "REFERENCES_ONLY",
       "copyDiscovery": "NONE",
-      "projections": [],
+      "projections": [
+        {
+          "path": "audit/lib/audit-markdown-report.mjs",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
       "validators": [
         "audit/tests/audit-lane-orchestration.test.mjs",
         "audit/tests/audit-orchestration.test.mjs"
@@ -540,6 +711,18 @@
           "relationship": "DOCUMENTED_REFERENCE"
         },
         {
+          "path": "audit/lib/audit-evidence-comparison.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/audit-lane-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-ai-change-loop.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
           "path": "audit/run-audit.mjs",
           "relationship": "OPERATIONAL_CONFIG"
         },
@@ -549,6 +732,7 @@
         }
       ],
       "validators": [
+        "audit/tests/ai-change-loop.test.mjs",
         "audit/tests/audit-lane-orchestration.test.mjs",
         "audit/tests/gate-integrity-policy.test.mjs"
       ]
@@ -587,15 +771,23 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
-          "path": "audit/lib/publication-clearance.mjs",
+          "path": "audit/lib/publication-clearance-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-evidence.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-runner-platform.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
           "path": "audit/lib/trusted-https-canary-supply-chain.mjs",
-          "relationship": "VALIDATION_EXPECTATION"
-        },
-        {
-          "path": "audit/lib/trusted-https-canary.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
@@ -619,6 +811,14 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
+          "path": "audit/tests/browser-readiness-contract.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/canary-evidence-fixture.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "audit/tests/certification-cadence.test.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
@@ -636,6 +836,10 @@
         },
         {
           "path": "audit/tests/pwa-release.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/pwa-status.test.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
@@ -721,6 +925,303 @@
       ]
     },
     {
+      "id": "quality.function-baseline",
+      "owner": "audit/function-quality-baseline-v1.json",
+      "owns": [
+        "quality.function-baseline.capture-boundary",
+        "quality.function-baseline.immutable-measurements",
+        "quality.function-baseline.limits",
+        "quality.function-baseline.ratchet-checkpoint"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/capture-function-quality-baseline.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/function-quality-metrics.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/function-quality-metrics.test.mjs"
+      ]
+    },
+    {
+      "id": "quality.function-baseline-correction",
+      "owner": "audit/inline-function-quality-baseline-correction-v1.json",
+      "owns": [
+        "quality.function-baseline-correction.immutable-inline-html-measurements",
+        "quality.function-baseline-correction.omission-evidence",
+        "quality.function-baseline-correction.primary-artifact-binding",
+        "quality.function-baseline-correction.separate-ratchets"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/capture-inline-function-quality-correction.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/function-quality-baseline-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/function-quality-metrics.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/inline-function-quality-baseline.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/quality-gate-policy-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-compiler-contracts.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-function-quality-gate.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/function-quality-gate.test.mjs",
+        "audit/tests/function-quality-metrics.test.mjs",
+        "audit/tests/inline-function-quality-baseline.test.mjs"
+      ]
+    },
+    {
+      "id": "quality.gates",
+      "owner": "audit/quality-gate-policy-v1.json",
+      "owns": [
+        "quality.gates.ai-change-loop",
+        "quality.gates.analysis-ratchets",
+        "quality.gates.approved-tutorial-metadata-transition",
+        "quality.gates.candidate-binding",
+        "quality.gates.finish-line",
+        "quality.gates.historical-lint-evidence",
+        "quality.gates.performance-budgets",
+        "quality.gates.performance-evidence",
+        "quality.gates.slice-lifecycle",
+        "quality.gates.source-budgets",
+        "quality.gates.supply-chain",
+        "quality.gates.tool-components"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".markdownlint-cli2.jsonc",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/ai-change-loop-operations.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/axe-accessibility.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/ci-dependency-policy.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/differential-equivalence.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/powershell-function-quality.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/public-candidate-refactor-policies.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/quality-budget-measurements.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/quality-gate-policy.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/tutorial-metadata-transition.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-ai-change-loop.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-bundlewatch-budgets.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-compiler-contracts.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-differential-equivalence.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-function-quality-gate.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-performance-budgets.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-property-fuzz-stage.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-quality-gates.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "eslint.config.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "knip.json",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "package-lock.json",
+          "relationship": "LOCKFILE"
+        },
+        {
+          "path": "package.json",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "stylelint.config.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/ai-change-loop.test.mjs",
+        "audit/tests/axe-accessibility.test.mjs",
+        "audit/tests/bundlewatch-budgets.test.mjs",
+        "audit/tests/compiler-contracts.test.mjs",
+        "audit/tests/differential-equivalence.test.mjs",
+        "audit/tests/function-quality-gate.test.mjs",
+        "audit/tests/property-fuzz-stage.test.mjs",
+        "audit/tests/public-candidate-refactor-policies.test.mjs",
+        "audit/tests/quality-gate-policy.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs",
+        "audit/tests/tutorial-metadata-transition.test.mjs"
+      ]
+    },
+    {
+      "id": "quality.refactor-baseline",
+      "owner": "audit/refactor-baseline-v2.json",
+      "owns": [
+        "quality.refactor-baseline.capture-boundary",
+        "quality.refactor-baseline.coverage-scope",
+        "quality.refactor-baseline.file-inventory",
+        "quality.refactor-baseline.finding-categories",
+        "quality.refactor-baseline.function-measurements",
+        "quality.refactor-baseline.lint-and-suppression-inventory",
+        "quality.refactor-baseline.security-and-dependency-inventory",
+        "quality.refactor-baseline.size-and-performance-inventory"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/capture-refactor-baseline.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/function-quality-baseline-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/powershell-function-quality.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/refactor-baseline.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/measure-powershell-function-quality.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/refactor-baseline.test.mjs"
+      ]
+    },
+    {
+      "id": "release.clearance-contract",
+      "owner": "audit/lib/publication-clearance-contract.mjs",
+      "owns": [
+        "release.clearance-contract.external-gate-order",
+        "release.clearance-contract.historical-exception-tags",
+        "release.clearance-contract.optional-gate-order"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/publication-clearance-record.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/publication-clearance.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
+      ]
+    },
+    {
+      "id": "release.clearance-record",
+      "owner": "audit/lib/publication-clearance-record.mjs",
+      "owns": [
+        "release.clearance-record.field-order-and-projection",
+        "release.clearance-record.pending-and-approved-field-validation"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/publication-clearance.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/release-evidence-successor.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
+      ]
+    },
+    {
       "id": "release.evidence-bindings",
       "owner": "audit/release-evidence-bundle-v1.json",
       "owns": [
@@ -731,6 +1232,10 @@
       "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
       "copyDiscovery": "NONE",
       "projections": [
+        {
+          "path": "audit/lib/audit-publication-report.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
         {
           "path": "audit/run-audit.mjs",
           "relationship": "VALIDATION_EXPECTATION"
@@ -754,6 +1259,34 @@
       ]
     },
     {
+      "id": "release.public-payload",
+      "owner": "audit/lib/public-payload.mjs",
+      "owns": [
+        "release.public-payload.canonical-sha256",
+        "release.public-payload.git-tree-oid"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/release-evidence-successor.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/public-candidate-guard.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/public-candidate-guard.mjs",
+        "audit/tests/publication-clearance.test.mjs"
+      ]
+    },
+    {
       "id": "release.public-shell",
       "owner": "release-shell-v1.json",
       "owns": [
@@ -770,6 +1303,39 @@
       ],
       "validators": [
         "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "release.successor-policy",
+      "owner": "audit/lib/release-evidence-policy.mjs",
+      "owns": [
+        "release.successor-policy.beta-ordinal",
+        "release.successor-policy.successor-path-sets",
+        "release.successor-policy.successor-policy-selection"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/publication-clearance-contract.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/release-evidence-bundle.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/release-evidence-successor.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
       ]
     },
     {
@@ -795,6 +1361,7 @@
         "repository.structure.artifact-ownership",
         "repository.structure.artifact-relations",
         "repository.structure.file-classifications",
+        "repository.structure.hermetic-git-reads",
         "repository.structure.tombstones"
       ],
       "copyPolicy": "REFERENCES_ONLY",
@@ -821,12 +1388,21 @@
       "copyDiscovery": "NONE",
       "projections": [
         {
+          "path": "audit/lib/public-candidate-refactor-policies.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/public-toolchain-records.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "licenses/first-party-paths-v1.txt",
           "relationship": "GENERATED"
         }
       ],
       "validators": [
-        "audit/public-candidate-guard.mjs"
+        "audit/public-candidate-guard.mjs",
+        "audit/tests/public-candidate-refactor-policies.test.mjs"
       ]
     },
     {
@@ -840,6 +1416,1018 @@
       "projections": [],
       "validators": [
         "audit/public-candidate-guard.mjs"
+      ]
+    },
+    {
+      "id": "runtime.engine-invariants",
+      "owner": "index.html",
+      "owns": [
+        "runtime.engine-invariants.immutable-placement-order",
+        "runtime.engine-invariants.persisted-string-lists",
+        "runtime.engine-invariants.validated-placement-replay"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/placement-engine-reuse.test.mjs"
+      ]
+    },
+    {
+      "id": "runtime.progress-source-policy",
+      "owner": "assets/js/math-quest-progress-source.js",
+      "owns": [
+        "runtime.progress-source-policy.fail-closed-prerequisites",
+        "runtime.progress-source-policy.guard-validation",
+        "runtime.progress-source-policy.source-selection"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "sw.js",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/test-launcher-identity.ps1",
+        "audit/tests/architecture-policy.test.mjs",
+        "audit/tests/page-adapter-effects.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs",
+        "audit/tests/progress-source.test.mjs",
+        "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "runtime.pwa-status-policy",
+      "owner": "assets/js/math-quest-pwa-status.js",
+      "owns": [
+        "runtime.pwa-status-policy.activation-challenge-binding",
+        "runtime.pwa-status-policy.readiness-copy",
+        "runtime.pwa-status-policy.readiness-record-canonicalization",
+        "runtime.pwa-status-policy.readiness-reply-freshness",
+        "runtime.pwa-status-policy.readiness-reply-validation",
+        "runtime.pwa-status-policy.state-mapping",
+        "runtime.pwa-status-policy.update-copy"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "sw.js",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/test-launcher-identity.ps1",
+        "audit/tests/architecture-policy.test.mjs",
+        "audit/tests/page-adapter-effects.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs",
+        "audit/tests/pwa-release.test.mjs",
+        "audit/tests/pwa-status.test.mjs"
+      ]
+    },
+    {
+      "id": "security.gates",
+      "owner": "audit/security-gate-policy-v1.json",
+      "owns": [
+        "security.gates.dependency-audit",
+        "security.gates.marker-controls",
+        "security.gates.negative-controls",
+        "security.gates.scanner-pins",
+        "security.gates.scanner-scope"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/install-reviewed-security-tools.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/public-candidate-refactor-policies.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/security-command-runtime.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/security-gate-policy.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/security-scans.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-security-dependency-gate.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/security/semgrep-high-confidence-v1.json",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/public-candidate-refactor-policies.test.mjs",
+        "audit/tests/security-dependency-gate.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.art-dom-observations",
+      "owner": "audit/playwright/art-dom-observations.mjs",
+      "owns": [
+        "testing.art-dom-observations.atomic-dom-capture",
+        "testing.art-dom-observations.geometry-projections",
+        "testing.art-dom-observations.missing-node-observations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.art-migration-source",
+      "owner": "audit/lib/art-migration-source.mjs",
+      "owns": [
+        "testing.art-migration-source.canonical-byte-digests",
+        "testing.art-migration-source.fixture-reconstruction",
+        "testing.art-migration-source.historical-revision-observation"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/art-migration-baseline.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        }
+      ],
+      "validators": [
+        "audit/tests/art-migration-baseline.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.assisted-learning-journey",
+      "owner": "audit/playwright/assisted-learning-journey.mjs",
+      "owns": [
+        "testing.assisted-learning-journey.assisted-retry",
+        "testing.assisted-learning-journey.keyboard-tutorial",
+        "testing.assisted-learning-journey.tutorial-persistence"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.axe-accessibility",
+      "owner": "audit/lib/axe-accessibility.mjs",
+      "owns": [
+        "testing.axe-accessibility.detector-negative-control",
+        "testing.axe-accessibility.manual-review-evidence",
+        "testing.axe-accessibility.result-validation",
+        "testing.axe-accessibility.wcag-rule-tags"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/gate-integrity-policy-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/playwright-deep-ux-census.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/playwright/compact-reporter.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/deep-ux-census.spec.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-deep-ux-census.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "licenses/ci-toolchain.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/axe-accessibility.test.mjs",
+        "audit/tests/playwright-deep-ux-census.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.browser-cdp",
+      "owner": "audit/lib/browser-cdp.mjs",
+      "owns": [
+        "testing.browser-cdp.command-settlement",
+        "testing.browser-cdp.connection-lifecycle"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/browser-smoke.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.browser-lifecycle-contract",
+      "owner": "audit/tests/browser-lifecycle-contract.mjs",
+      "owns": [
+        "testing.browser-lifecycle-contract.feedback-announcements",
+        "testing.browser-lifecycle-contract.placement-nonce-replay",
+        "testing.browser-lifecycle-contract.writer-isolation"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/holistic-child-ux-regressions.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-evidence-contract",
+      "owner": "audit/lib/trusted-https-canary-contract.mjs",
+      "owns": [
+        "testing.canary-evidence-contract.check-identities",
+        "testing.canary-evidence-contract.ordered-fields",
+        "testing.canary-evidence-contract.pinned-caddy-identity",
+        "testing.canary-evidence-contract.reconciliation-identity"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-evidence-fixture",
+      "owner": "audit/tests/canary-evidence-fixture.mjs",
+      "owns": [
+        "testing.canary-evidence-fixture.independent-reconciled-record"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-evidence-validation",
+      "owner": "audit/lib/trusted-https-canary-evidence.mjs",
+      "owns": [
+        "testing.canary-evidence-validation.ordered-evidence-findings",
+        "testing.canary-evidence-validation.reconciliation-proof"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-runner-browser",
+      "owner": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "owns": [
+        "testing.canary-runner-browser.bounded-browser-operations",
+        "testing.canary-runner-browser.cache-observation",
+        "testing.canary-runner-browser.privacy-request-observation"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/canary-runner-effects.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-runner-platform",
+      "owner": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "owns": [
+        "testing.canary-runner-platform.loopback-backend",
+        "testing.canary-runner-platform.request-observation",
+        "testing.canary-runner-platform.snapshot-materialization"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/canary-runner-effects.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.canary-runner-report",
+      "owner": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "owns": [
+        "testing.canary-runner-report.observed-evidence-assembly",
+        "testing.canary-runner-report.ordered-teardown"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/canary-runner-effects.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.child-string-validation",
+      "owner": "audit/lib/child-strings.mjs",
+      "owns": [
+        "testing.child-string-validation.ordered-pools",
+        "testing.child-string-validation.record-shape"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/child-string-validation.test.mjs",
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.css-fixtures",
+      "owner": "audit/tests/css-fixtures.mjs",
+      "owns": [
+        "testing.css-fixtures.cascade-selection",
+        "testing.css-fixtures.selector-subset"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/holistic-child-ux-regressions.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.deep-ux-dom-observations",
+      "owner": "audit/playwright/deep-ux-dom-observations.mjs",
+      "owns": [
+        "testing.deep-ux-dom-observations.atomic-geometry-capture",
+        "testing.deep-ux-dom-observations.ordered-geometry-findings"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/playwright-deep-ux-census.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.deep-ux-sampling",
+      "owner": "audit/lib/playwright-deep-ux-sampling.mjs",
+      "owns": [
+        "testing.deep-ux-sampling.ordered-scenario-selection",
+        "testing.deep-ux-sampling.risk-signatures"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/playwright-deep-ux-census.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.design-token-observations",
+      "owner": "audit/playwright/design-token-observations.mjs",
+      "owns": [
+        "testing.design-token-observations.runtime-token-consumers",
+        "testing.design-token-observations.token-negative-controls"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-ambient-scan",
+      "owner": "audit/lib/engine-loader.mjs",
+      "owns": [
+        "testing.engine-ambient-scan.lexical-state-scanning"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-ambient-scan.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-core-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-ambient-scan.test.mjs",
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-audit",
+      "owner": "audit/tests/engine-suite.mjs",
+      "owns": [
+        "testing.engine-audit.execution-order",
+        "testing.engine-audit.fixture-helpers"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-boundary-checks",
+      "owner": "audit/tests/engine-boundary-checks.mjs",
+      "owns": [
+        "testing.engine-boundary-checks.boundary-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-core-checks",
+      "owner": "audit/tests/engine-core-checks.mjs",
+      "owns": [
+        "testing.engine-core-checks.core-and-behavior-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-free-play-behavior",
+      "owner": "audit/tests/engine-free-play-behavior.mjs",
+      "owns": [
+        "testing.engine-free-play-behavior.free-play-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-learning-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-import-behavior",
+      "owner": "audit/tests/engine-import-behavior.mjs",
+      "owns": [
+        "testing.engine-import-behavior.transactional-import-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-learning-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-input-behavior",
+      "owner": "audit/tests/engine-input-behavior.mjs",
+      "owns": [
+        "testing.engine-input-behavior.input-method-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-core-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-learning-checks",
+      "owner": "audit/tests/engine-learning-checks.mjs",
+      "owns": [
+        "testing.engine-learning-checks.learning-and-persistence-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-placement-behavior",
+      "owner": "audit/tests/engine-placement-behavior.mjs",
+      "owns": [
+        "testing.engine-placement-behavior.placement-state-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-learning-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.engine-placement-boundaries",
+      "owner": "audit/tests/engine-placement-boundaries.mjs",
+      "owns": [
+        "testing.engine-placement-boundaries.placement-route-assertions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-boundary-checks.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.exhaustive-generator",
+      "owner": "audit/exhaustive-generator-audit.mjs",
+      "owns": [
+        "testing.exhaustive-generator.choice-reference-boundaries",
+        "testing.exhaustive-generator.corpus-traversal",
+        "testing.exhaustive-generator.failure-reporting",
+        "testing.exhaustive-generator.negative-controls"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/exhaustive-generator-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.exhaustive-response-fixtures",
+      "owner": "audit/lib/exhaustive-response-fixtures.mjs",
+      "owns": [
+        "testing.exhaustive-response-fixtures.method-dispatch",
+        "testing.exhaustive-response-fixtures.recipient-history",
+        "testing.exhaustive-response-fixtures.state-building"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/exhaustive-generator-audit.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/exhaustive-response-fixtures.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.functional-art-journey",
+      "owner": "audit/playwright/functional-art-journey.mjs",
+      "owns": [
+        "testing.functional-art-journey.forced-colors",
+        "testing.functional-art-journey.identity-and-selection",
+        "testing.functional-art-journey.speech-state"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.generator-contract",
+      "owner": "audit/tests/generator-contract.mjs",
+      "owns": [
+        "testing.generator-contract.complete-representation-matrix",
+        "testing.generator-contract.contract-error-reasons",
+        "testing.generator-contract.direct-objective-scope",
+        "testing.generator-contract.generation-domain-rejection",
+        "testing.generator-contract.independent-response-classes",
+        "testing.generator-contract.neutral-world-fallback",
+        "testing.generator-contract.visible-source-mathematics",
+        "testing.generator-contract.world-invariants"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.manifest-collections",
+      "owner": "audit/lib/manifest-collection-checks.mjs",
+      "owns": [
+        "testing.manifest-collections.duplicate-value-ordering"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/feature-map.test.mjs",
+        "audit/tests/repository-code-map.test.mjs",
+        "audit/tests/tutorial-manifest.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.operation-cleanup",
+      "owner": "audit/lib/operation-cleanup.mjs",
+      "owns": [
+        "testing.operation-cleanup.error-preservation",
+        "testing.operation-cleanup.settlement-order"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/browser-smoke.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-deep-ux-census.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-focused.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/operation-cleanup.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.page-adapter-fixture",
+      "owner": "audit/tests/page-adapter-fixture.mjs",
+      "owns": [
+        "testing.page-adapter-fixture.backup-export-effects",
+        "testing.page-adapter-fixture.isolated-page-vm"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/page-adapter-effects.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.parent-lab-journey",
+      "owner": "audit/playwright/parent-lab-journey.mjs",
+      "owns": [
+        "testing.parent-lab-journey.isolated-parent-lab",
+        "testing.parent-lab-journey.keyboard-mechanics"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.placement-adapter-fixture",
+      "owner": "audit/tests/placement-adapter-fixture.mjs",
+      "owns": [
+        "testing.placement-adapter-fixture.isolated-placement-vm",
+        "testing.placement-adapter-fixture.ordered-effect-recording"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/placement-adapter-effects.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.placement-api-boundary-contract",
+      "owner": "audit/tests/placement-api-boundary-contract.mjs",
+      "owns": [
+        "testing.placement-api-boundary-contract.confirmation-transactions",
+        "testing.placement-api-boundary-contract.creation-isolation",
+        "testing.placement-api-boundary-contract.identity-and-sequence"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.placement-fixtures",
+      "owner": "audit/lib/placement-fixtures.mjs",
+      "owns": [
+        "testing.placement-fixtures.observed-question-reuse",
+        "testing.placement-fixtures.response-recording"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/differential-equivalence.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-placement-behavior.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-placement-boundaries.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-api-boundary-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-engine-reuse.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/placement-fixtures.test.mjs"
       ]
     },
     {
@@ -876,6 +2464,779 @@
       ],
       "validators": [
         "audit/tests/playwright-interaction-fuzz.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.playwright-server-lifecycle",
+      "owner": "audit/lib/playwright-server-lifecycle.mjs",
+      "owns": [
+        "testing.playwright-server-lifecycle.exit-wait",
+        "testing.playwright-server-lifecycle.health-classification",
+        "testing.playwright-server-lifecycle.readiness-polling",
+        "testing.playwright-server-lifecycle.runner-result"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/run-playwright-deep-ux-census.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-focused.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-playwright-interaction-fuzz.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/playwright-server-lifecycle.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.public-api-contract",
+      "owner": "audit/tests/public-api-contract.mjs",
+      "owns": [
+        "testing.public-api-contract.isolated-test-contexts",
+        "testing.public-api-contract.ordered-api-groups",
+        "testing.public-api-contract.private-question-fixtures",
+        "testing.public-api-contract.rational-and-fraction-forms",
+        "testing.public-api-contract.scalar-and-structured-grading",
+        "testing.public-api-contract.submission-telemetry-and-evidence"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/public-api-progression-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.public-api-progression-contract",
+      "owner": "audit/tests/public-api-progression-contract.mjs",
+      "owns": [
+        "testing.public-api-progression-contract.attempt-effects",
+        "testing.public-api-progression-contract.fatigue-and-feedback",
+        "testing.public-api-progression-contract.mastery-transitions",
+        "testing.public-api-progression-contract.reteach-and-promotion",
+        "testing.public-api-progression-contract.review-and-preview-queues",
+        "testing.public-api-progression-contract.spacing-and-fast-track"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/public-api-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.publication-runner-contract",
+      "owner": "audit/tests/publication-runner-contract.mjs",
+      "owns": [
+        "testing.publication-runner-contract.browser-evidence-source-wiring",
+        "testing.publication-runner-contract.report-module-imports"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/publication-clearance.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.qa-browser-fixture",
+      "owner": "audit/tests/qa-browser-fixture.mjs",
+      "owns": [
+        "testing.qa-browser-fixture.isolated-report-browser-state"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/qa-tour.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.response-action-contract",
+      "owner": "audit/tests/response-action-contract.mjs",
+      "owns": [
+        "testing.response-action-contract.empty-and-completed-states",
+        "testing.response-action-contract.malformed-actions",
+        "testing.response-action-contract.valid-wrong-alternatives"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.response-completion-contract",
+      "owner": "audit/tests/response-completion-contract.mjs",
+      "owns": [
+        "testing.response-completion-contract.numeric-serialization",
+        "testing.response-completion-contract.visible-action-completion"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.response-fixtures",
+      "owner": "audit/tests/response-fixtures.mjs",
+      "owns": [
+        "testing.response-fixtures.completed-response-state",
+        "testing.response-fixtures.fresh-request-replay",
+        "testing.response-fixtures.method-witness-discovery"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/node-engine.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/response-action-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/response-completion-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/response-fixtures.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.response-persistence-contract",
+      "owner": "audit/tests/response-persistence-contract.mjs",
+      "owns": [
+        "testing.response-persistence-contract.hostile-state-cases",
+        "testing.response-persistence-contract.transactional-import-rejection"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.response-predicate-contract",
+      "owner": "audit/tests/response-predicate-contract.mjs",
+      "owns": [
+        "testing.response-predicate-contract.defensive-grading-predicates"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.rights-state-fixture",
+      "owner": "audit/tests/rights-state-fixture.mjs",
+      "owns": [
+        "testing.rights-state-fixture.independent-input-byte-mutations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/playwright-focused-contract.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.saved-state-boundary-contract",
+      "owner": "audit/tests/saved-state-boundary-contract.mjs",
+      "owns": [
+        "testing.saved-state-boundary-contract.completed-response-round-trips",
+        "testing.saved-state-boundary-contract.exact-regeneration",
+        "testing.saved-state-boundary-contract.maximum-seen-day",
+        "testing.saved-state-boundary-contract.optional-legacy-event-dates",
+        "testing.saved-state-boundary-contract.phase-and-progress-bindings",
+        "testing.saved-state-boundary-contract.scheduler-choice-resolutions",
+        "testing.saved-state-boundary-contract.spacing-due-boundary"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.saved-state-contract",
+      "owner": "audit/tests/saved-state-contract.mjs",
+      "owns": [
+        "testing.saved-state-contract.baseline-save-fixtures",
+        "testing.saved-state-contract.feedback-and-assistance",
+        "testing.saved-state-contract.ordered-schema-checks",
+        "testing.saved-state-contract.private-assertion-context",
+        "testing.saved-state-contract.supported-session-modes",
+        "testing.saved-state-contract.version-two-phase-migration"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/saved-state-question-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/saved-state-root-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.saved-state-question-contract",
+      "owner": "audit/tests/saved-state-question-contract.mjs",
+      "owns": [
+        "testing.saved-state-question-contract.active-session-schema",
+        "testing.saved-state-question-contract.choice-and-feedback-bindings",
+        "testing.saved-state-question-contract.nested-save-transactions",
+        "testing.saved-state-question-contract.question-and-attempt-discriminators",
+        "testing.saved-state-question-contract.queue-and-ui-booleans"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/saved-state-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.saved-state-root-contract",
+      "owner": "audit/tests/saved-state-root-contract.mjs",
+      "owns": [
+        "testing.saved-state-root-contract.audio-setting-migration",
+        "testing.saved-state-root-contract.expired-active-session",
+        "testing.saved-state-root-contract.history-collections",
+        "testing.saved-state-root-contract.placement-provenance",
+        "testing.saved-state-root-contract.retired-session-migration",
+        "testing.saved-state-root-contract.root-and-skill-schemas"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/saved-state-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-curriculum-facets",
+      "owner": "audit/tests/semantic-curriculum-facets.mjs",
+      "owns": [
+        "testing.semantic-curriculum-facets.curriculum-facet-obligations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-input-facets",
+      "owner": "audit/tests/semantic-input-facets.mjs",
+      "owns": [
+        "testing.semantic-input-facets.input-facet-obligations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-mastery-validation",
+      "owner": "audit/tests/semantic-mastery-validation.mjs",
+      "owns": [
+        "testing.semantic-mastery-validation.mastery-attempt-fixture",
+        "testing.semantic-mastery-validation.mastery-scenarios"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-math-validation",
+      "owner": "audit/tests/semantic-math-validation.mjs",
+      "owns": [
+        "testing.semantic-math-validation.independent-mathematical-rules"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-model-validation",
+      "owner": "audit/tests/semantic-model-validation.mjs",
+      "owns": [
+        "testing.semantic-model-validation.independent-model-truth"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.semantic-persistence-validation",
+      "owner": "audit/tests/semantic-persistence-validation.mjs",
+      "owns": [
+        "testing.semantic-persistence-validation.compatible-state-scenarios",
+        "testing.semantic-persistence-validation.hostile-import-scenarios"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.service-worker-fixture",
+      "owner": "audit/tests/service-worker-fixture.mjs",
+      "owns": [
+        "testing.service-worker-fixture.independent-cache-model",
+        "testing.service-worker-fixture.network-fault-injection"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.session-fixtures",
+      "owner": "audit/tests/session-fixtures.mjs",
+      "owns": [
+        "testing.session-fixtures.active-slots",
+        "testing.session-fixtures.checkpoint-questions",
+        "testing.session-fixtures.choice-resolutions",
+        "testing.session-fixtures.saved-ui-context"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/playwright/critical-journeys.spec.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-api-boundary-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/public-api-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/response-action-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/response-fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/response-persistence-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/saved-state-boundary-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/saved-state-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/saved-state-question-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/session-prefix-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.session-prefix-contract",
+      "owner": "audit/tests/session-prefix-contract.mjs",
+      "owns": [
+        "testing.session-prefix-contract.activated-choice-resolutions",
+        "testing.session-prefix-contract.capstone-prefixes",
+        "testing.session-prefix-contract.fatigue-prefixes",
+        "testing.session-prefix-contract.reteach-prefixes"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.shared-response-fixtures",
+      "owner": "audit/lib/shared-response-fixtures.mjs",
+      "owns": [
+        "testing.shared-response-fixtures.common-state-actions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs",
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.sort-response-fixtures",
+      "owner": "audit/lib/sort-response-fixtures.mjs",
+      "owns": [
+        "testing.sort-response-fixtures.correct-placements",
+        "testing.sort-response-fixtures.incorrect-submissions"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/exhaustive-response-fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/shared-response-fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-input-behavior.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/engine-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/manifest-semantic-suite.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/engine-suite.mjs",
+        "audit/tests/exhaustive-response-fixtures.test.mjs",
+        "audit/tests/manifest-semantic-suite.mjs"
+      ]
+    },
+    {
+      "id": "testing.source-extraction",
+      "owner": "audit/tests/source-extraction.mjs",
+      "owns": [
+        "testing.source-extraction.declaration-selection",
+        "testing.source-extraction.delimiter-matching",
+        "testing.source-extraction.html-script-selection",
+        "testing.source-extraction.listener-selection"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/tests/browser-fixture-contract.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/browser-frame-contract.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/browser-readiness-contract.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/browser-runner-lifecycle.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/exhaustive-generator-contract.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/holistic-functional-regressions.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/page-adapter-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-adapter-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-engine-reuse.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/pwa-release.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/qa-tour.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/source-extraction.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.tutorial-observations",
+      "owner": "audit/playwright/tutorial-observations.mjs",
+      "owns": [
+        "testing.tutorial-observations.phase-signatures",
+        "testing.tutorial-observations.step-observations"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.visual-model-oracle",
+      "owner": "audit/visual-model-oracle.mjs",
+      "owns": [
+        "testing.visual-model-oracle.descriptor-dispatch",
+        "testing.visual-model-oracle.forbidden-answer-keys"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/approved-visual-regression.js",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/approved-visual-regression.js",
+        "audit/tests/holistic-child-ux-regressions.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.visual-stimulus-fixture",
+      "owner": "audit/tests/visual-stimulus-fixture.mjs",
+      "owns": [
+        "testing.visual-stimulus-fixture.isolated-visual-vm",
+        "testing.visual-stimulus-fixture.ordered-question-options"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/holistic-functional-regressions.test.mjs"
       ]
     },
     {
@@ -949,6 +3310,30 @@
     }
   ],
   "artifactRelations": [
+    {
+      "id": "ai-change-loop.operations",
+      "source": "audit/ai-change-loop-operations.mjs",
+      "target": "audit/run-ai-change-loop.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "ai-change-loop.policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/run-ai-change-loop.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "ai-change-loop.test",
+      "source": "audit/run-ai-change-loop.mjs",
+      "target": "audit/tests/ai-change-loop.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "architecture-gate.schema",
+      "source": "audit/schemas/architecture-policy-v1.schema.json",
+      "target": "audit/lib/architecture-policy.mjs",
+      "kind": "VALIDATES"
+    },
     {
       "id": "art-assets.decision",
       "source": "audit/art-design-decision-register-v1.json",
@@ -1024,7 +3409,7 @@
     {
       "id": "art-migration.engine-loader",
       "source": "audit/lib/engine-loader.mjs",
-      "target": "audit/lib/art-migration-baseline.mjs",
+      "target": "audit/lib/art-migration-source.mjs",
       "kind": "CONSUMES"
     },
     {
@@ -1038,6 +3423,18 @@
       "source": "audit/schemas/art-migration-baseline-v1.schema.json",
       "target": "audit/lib/art-migration-baseline.mjs",
       "kind": "VALIDATES"
+    },
+    {
+      "id": "art-migration.source-observation",
+      "source": "audit/lib/art-migration-source.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "art-migration.source-test",
+      "source": "audit/lib/art-migration-source.mjs",
+      "target": "audit/tests/art-migration-baseline.test.mjs",
+      "kind": "TESTS"
     },
     {
       "id": "art-migration.test",
@@ -1154,9 +3551,51 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "audit-browser.runtime-routes",
+      "source": "audit/lib/browser-smoke.mjs",
+      "target": "audit/lib/playwright-focused-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-browser.visual-oracle",
+      "source": "audit/approved-visual-regression.js",
+      "target": "audit/visual-model-oracle.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "audit-browser.visual-settlement",
       "source": "audit.html",
       "target": "audit/approved-visual-regression.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-browser.visual-values",
+      "source": "audit/approved-visual-regression.js",
+      "target": "audit/visual-model-values.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-evidence-comparison.consumer-1",
+      "source": "audit/lib/audit-evidence-comparison.mjs",
+      "target": "audit/lib/bounded-audit-lanes.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane-contract.consumer-1",
+      "source": "audit/lib/audit-lane-contract.mjs",
+      "target": "audit/lib/bounded-audit-lanes.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane-contract.consumer-2",
+      "source": "audit/lib/audit-lane-contract.mjs",
+      "target": "audit/lib/audit-process-supervisor.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-lane-contract.consumer-3",
+      "source": "audit/lib/audit-lane-contract.mjs",
+      "target": "audit/lib/audit-evidence-comparison.mjs",
       "kind": "CONSUMES"
     },
     {
@@ -1184,6 +3623,48 @@
       "kind": "TESTS"
     },
     {
+      "id": "audit-markdown-report.consumer-1",
+      "source": "audit/lib/audit-markdown-report.mjs",
+      "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-process-supervisor.consumer-1",
+      "source": "audit/lib/audit-process-supervisor.mjs",
+      "target": "audit/lib/bounded-audit-lanes.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-publication-report.browser-evidence",
+      "source": "audit/lib/browser-runner-evidence.mjs",
+      "target": "audit/lib/audit-publication-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-publication-report.bundle",
+      "source": "audit/lib/release-evidence-bundle.mjs",
+      "target": "audit/lib/audit-publication-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-publication-report.clearance",
+      "source": "audit/lib/publication-clearance.mjs",
+      "target": "audit/lib/audit-publication-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-publication-report.consumer-1",
+      "source": "audit/lib/audit-publication-report.mjs",
+      "target": "audit/run-audit.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-publication-report.successor",
+      "source": "audit/lib/release-evidence-successor.mjs",
+      "target": "audit/lib/audit-publication-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "blast-radius.development-plan",
       "source": "audit/lib/development-suite-plan.mjs",
       "target": "tools/blast-radius-lookup.mjs",
@@ -1208,6 +3689,96 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "canary-contract.evidence",
+      "source": "audit/lib/trusted-https-canary-contract.mjs",
+      "target": "audit/lib/trusted-https-canary-evidence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-contract.runtime",
+      "source": "audit/lib/trusted-https-canary-contract.mjs",
+      "target": "audit/lib/trusted-https-canary.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-evidence.runtime",
+      "source": "audit/lib/trusted-https-canary-evidence.mjs",
+      "target": "audit/lib/trusted-https-canary.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-evidence.test",
+      "source": "audit/lib/trusted-https-canary-evidence.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "canary-fixture.test",
+      "source": "audit/tests/canary-evidence-fixture.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.canary-runner-effects.test.mjs",
+      "source": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "canary-runner-browser.contract",
+      "source": "audit/lib/trusted-https-canary.mjs",
+      "target": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.platform",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.rights-state.mjs",
+      "source": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.run-trusted-https-canary.mjs",
+      "source": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "target": "audit/run-trusted-https-canary.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.trusted-https-canary-supply-chain.mjs",
+      "source": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "target": "audit/lib/trusted-https-canary-supply-chain.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "canary-runner-browser.trusted-https-canary.test.mjs",
+      "source": "audit/lib/trusted-https-canary-runner-browser.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "canary-runner.effects",
+      "source": "audit/run-trusted-https-canary.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "canary-runner.effects-execution",
+      "source": "audit/tests/canary-runner-effects.test.mjs",
+      "target": "audit/run-audit.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "child-string-validation.test",
+      "source": "audit/lib/child-strings.mjs",
+      "target": "audit/tests/child-string-validation.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "code-map.blast-radius",
       "source": "audit/repository-code-map-v1.json",
       "target": "tools/blast-radius-lookup.mjs",
@@ -1220,6 +3791,12 @@
       "kind": "VALIDATES"
     },
     {
+      "id": "compiler-contracts.powershell-metrics",
+      "source": "audit/lib/powershell-function-quality.mjs",
+      "target": "audit/run-compiler-contracts.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "curriculum.generator",
       "source": "curriculum/math-quest-manifest-v1.json",
       "target": "tools/sync-curriculum-manifest.mjs",
@@ -1230,6 +3807,120 @@
       "source": "tools/sync-curriculum-manifest.mjs",
       "target": "index.html",
       "kind": "EMBEDS"
+    },
+    {
+      "id": "curriculum.strategy-boundary",
+      "source": "curriculum/math-quest-manifest-v1.json",
+      "target": "audit/tests/engine-strategy-boundary-contract.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "engine-ambient-scan.core",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/tests/engine-core-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-ambient-scan.regression",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/tests/engine-ambient-scan.test.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "engine-boundary-checks.suite",
+      "source": "audit/tests/engine-boundary-checks.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-core-checks.suite",
+      "source": "audit/tests/engine-core-checks.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-free-play-behavior.registry",
+      "source": "audit/tests/engine-free-play-behavior.mjs",
+      "target": "audit/tests/engine-learning-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-free-play-behavior.suite",
+      "source": "audit/tests/engine-free-play-behavior.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-import-behavior.registry",
+      "source": "audit/tests/engine-import-behavior.mjs",
+      "target": "audit/tests/engine-learning-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-import-behavior.suite",
+      "source": "audit/tests/engine-import-behavior.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-input-behavior.registry",
+      "source": "audit/tests/engine-input-behavior.mjs",
+      "target": "audit/tests/engine-core-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-input-behavior.suite",
+      "source": "audit/tests/engine-input-behavior.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-learning-checks.suite",
+      "source": "audit/tests/engine-learning-checks.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-placement-behavior.registry",
+      "source": "audit/tests/engine-placement-behavior.mjs",
+      "target": "audit/tests/engine-learning-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-placement-behavior.suite",
+      "source": "audit/tests/engine-placement-behavior.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-placement-boundaries.registry",
+      "source": "audit/tests/engine-placement-boundaries.mjs",
+      "target": "audit/tests/engine-boundary-checks.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-placement-boundaries.suite",
+      "source": "audit/tests/engine-placement-boundaries.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "exhaustive.contract-test-entry",
+      "source": "audit/tests/exhaustive-generator-contract.test.mjs",
+      "target": "audit/tests/audit-orchestration.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "exhaustive.fixture-test-entry",
+      "source": "audit/tests/exhaustive-response-fixtures.test.mjs",
+      "target": "audit/tests/audit-orchestration.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "exhaustive.strategy-oracle",
+      "source": "audit/tests/strategy-build-oracle.mjs",
+      "target": "audit/exhaustive-generator-audit.mjs",
+      "kind": "CONSUMES"
     },
     {
       "id": "feature.art-design",
@@ -1262,6 +3953,204 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "final-warning-refactor.01",
+      "source": "audit/lib/trusted-https-canary.mjs",
+      "target": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.02",
+      "source": "audit/lib/trusted-https-canary.mjs",
+      "target": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.03",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.04",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/run-trusted-https-canary.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.05",
+      "source": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "target": "audit/run-trusted-https-canary.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.06",
+      "source": "audit/lib/trusted-https-canary.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.07",
+      "source": "audit/tests/source-extraction.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.08",
+      "source": "audit/tests/visual-stimulus-fixture.mjs",
+      "target": "audit/tests/holistic-functional-regressions.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.09",
+      "source": "audit/tests/page-adapter-fixture.mjs",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.10",
+      "source": "audit/tests/placement-adapter-fixture.mjs",
+      "target": "audit/tests/placement-adapter-effects.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.11",
+      "source": "audit/tests/service-worker-fixture.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.12",
+      "source": "audit/tests/qa-browser-fixture.mjs",
+      "target": "audit/tests/qa-tour.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.13",
+      "source": "audit/tests/qa-browser-fixture.mjs",
+      "target": "audit/tests/qa-tour.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.14",
+      "source": "audit/tests/visual-stimulus-fixture.mjs",
+      "target": "audit/tests/holistic-functional-regressions.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.15",
+      "source": "audit/tests/page-adapter-fixture.mjs",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.16",
+      "source": "audit/tests/placement-adapter-fixture.mjs",
+      "target": "audit/tests/placement-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.17",
+      "source": "audit/tests/service-worker-fixture.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.18",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.19",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.20",
+      "source": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.21",
+      "source": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "final-warning-refactor.23",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/lib/trusted-https-canary-supply-chain.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.24",
+      "source": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.25",
+      "source": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "target": "audit/lib/trusted-https-canary-supply-chain.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "final-warning-refactor.26",
+      "source": "audit/lib/trusted-https-canary-runner-report.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "function-quality.gate",
+      "source": "audit/lib/function-quality-metrics.mjs",
+      "target": "audit/run-function-quality-gate.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "function-quality.inline-correction-capture",
+      "source": "audit/capture-inline-function-quality-correction.mjs",
+      "target": "audit/inline-function-quality-baseline-correction-v1.json",
+      "kind": "GENERATES"
+    },
+    {
+      "id": "function-quality.inline-correction-gate",
+      "source": "audit/lib/inline-function-quality-baseline.mjs",
+      "target": "audit/run-function-quality-gate.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "function-quality.inline-correction-schema",
+      "source": "audit/schemas/inline-function-quality-baseline-correction-v1.schema.json",
+      "target": "audit/lib/inline-function-quality-baseline.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "function-quality.inline-correction-test",
+      "source": "audit/lib/inline-function-quality-baseline.mjs",
+      "target": "audit/tests/inline-function-quality-baseline.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "function-quality.powershell-metrics",
+      "source": "audit/lib/powershell-function-quality.mjs",
+      "target": "audit/run-function-quality-gate.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "function-quality.schema",
+      "source": "audit/schemas/function-quality-baseline-v1.schema.json",
+      "target": "audit/lib/function-quality-metrics.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "function-quality.test",
+      "source": "audit/run-function-quality-gate.mjs",
+      "target": "audit/tests/function-quality-gate.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "gate-integrity.audit",
       "source": "audit/gate-integrity-policy-v1.json",
       "target": "audit/run-audit.mjs",
@@ -1280,6 +4169,66 @@
       "kind": "TESTS"
     },
     {
+      "id": "hermetic-git.candidate-binding",
+      "source": "audit/lib/repository-code-map.mjs",
+      "target": "audit/run-ai-change-loop.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "hermetic-git.differential-baseline",
+      "source": "audit/lib/repository-code-map.mjs",
+      "target": "audit/lib/differential-equivalence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "manifest-collections.feature-map",
+      "source": "audit/lib/manifest-collection-checks.mjs",
+      "target": "audit/lib/feature-map.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "manifest-collections.repository-code-map",
+      "source": "audit/lib/manifest-collection-checks.mjs",
+      "target": "audit/lib/repository-code-map.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "manifest-collections.tutorial-manifest",
+      "source": "audit/lib/manifest-collection-checks.mjs",
+      "target": "audit/lib/tutorial-manifest.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "operation-cleanup.test-entry",
+      "source": "audit/tests/operation-cleanup.test.mjs",
+      "target": "audit/tests/audit-orchestration.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "placement-engine-reuse.test-entry",
+      "source": "audit/tests/placement-engine-reuse.test.mjs",
+      "target": "audit/tests/adapter-syntax.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "placement-fixtures.engine-placement-behavior",
+      "source": "audit/lib/placement-fixtures.mjs",
+      "target": "audit/tests/engine-placement-behavior.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "placement-fixtures.engine-placement-boundaries",
+      "source": "audit/lib/placement-fixtures.mjs",
+      "target": "audit/tests/engine-placement-boundaries.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "placement-fixtures.node-tests",
+      "source": "audit/tests/placement-fixtures.test.mjs",
+      "target": "audit/tests/node-engine.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "playwright.deep-ux",
       "source": "index.html",
       "target": "audit/playwright/deep-ux-census.spec.mjs",
@@ -1292,10 +4241,358 @@
       "kind": "TESTS"
     },
     {
+      "id": "playwright.journey.art-dom-observations.entry",
+      "source": "audit/playwright/art-dom-observations.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.art-dom-observations.rights",
+      "source": "audit/playwright/art-dom-observations.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.assisted-learning-journey.entry",
+      "source": "audit/playwright/assisted-learning-journey.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.assisted-learning-journey.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/assisted-learning-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.assisted-learning-journey.rights",
+      "source": "audit/playwright/assisted-learning-journey.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.assisted-learning-journey.tutorial",
+      "source": "audit/playwright/tutorial-observations.mjs",
+      "target": "audit/playwright/assisted-learning-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.design-token-observations.entry",
+      "source": "audit/playwright/design-token-observations.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.design-token-observations.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/design-token-observations.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.design-token-observations.rights",
+      "source": "audit/playwright/design-token-observations.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.functional-art-journey.entry",
+      "source": "audit/playwright/functional-art-journey.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.functional-art-journey.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/functional-art-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.functional-art-journey.rights",
+      "source": "audit/playwright/functional-art-journey.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.entry",
+      "source": "audit/playwright/parent-lab-journey.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/parent-lab-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.rights",
+      "source": "audit/playwright/parent-lab-journey.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.tutorial",
+      "source": "audit/playwright/tutorial-observations.mjs",
+      "target": "audit/playwright/parent-lab-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.rights-test",
+      "source": "audit/lib/rights-state.mjs",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "playwright.journey.session-fixtures",
+      "source": "audit/tests/session-fixtures.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.tutorial-observations.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/tutorial-observations.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.tutorial-observations.rights",
+      "source": "audit/playwright/tutorial-observations.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "playwright.product",
       "source": "index.html",
       "target": "audit/playwright/critical-journeys.spec.mjs",
       "kind": "TESTS"
+    },
+    {
+      "id": "playwright.server-lifecycle.identity",
+      "source": "audit/lib/playwright-focused-contract.mjs",
+      "target": "audit/lib/playwright-server-lifecycle.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.server-lifecycle.test-entry",
+      "source": "audit/tests/playwright-server-lifecycle.test.mjs",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.adapter-test",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "progress-source.audit",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit.html",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "progress-source.launcher",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "Serve-MathQuest.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.launcher-fixture",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/test-launcher-identity.ps1",
+      "kind": "TESTS"
+    },
+    {
+      "id": "progress-source.pages",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.playwright-fixture",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/playwright/fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.playwright-identity",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/lib/playwright-focused-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.playwright-test",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "progress-source.release-generator",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "tools/build-pwa-release-manifest.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.release-test",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "progress-source.runtime",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "index.html",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "progress-source.test",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "audit/tests/progress-source.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "progress-source.worker",
+      "source": "assets/js/math-quest-progress-source.js",
+      "target": "sw.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "publication-runner-contract.regression",
+      "source": "audit/tests/publication-runner-contract.mjs",
+      "target": "audit/tests/publication-clearance.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.audit",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit.html",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "pwa-status.audit-runner",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/run-audit.ps1",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "pwa-status.launcher",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "Serve-MathQuest.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.launcher-fixture",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/test-launcher-identity.ps1",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pwa-status.page-adapter-test",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pwa-status.pages",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.playwright-fixture",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/playwright/fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.playwright-identity",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/lib/playwright-focused-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.playwright-test",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pwa-status.release-generator",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "tools/build-pwa-release-manifest.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.release-test",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pwa-status.runtime",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "index.html",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa-status.test",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "audit/tests/pwa-status.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "pwa-status.worker",
+      "source": "assets/js/math-quest-pwa-status.js",
+      "target": "sw.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa.browser-fixture-contract.test-entry",
+      "source": "audit/tests/browser-fixture-contract.test.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa.browser-frame-contract.test-entry",
+      "source": "audit/tests/browser-frame-contract.test.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa.browser-readiness-contract.test-entry",
+      "source": "audit/tests/browser-readiness-contract.test.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "pwa.browser-runner-lifecycle.test-entry",
+      "source": "audit/tests/browser-runner-lifecycle.test.mjs",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "quality-gate.ci-dependency-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/lib/ci-dependency-policy.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "quality-gate.public-candidate-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/lib/public-candidate-refactor-policies.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "quality-gate.schema",
+      "source": "audit/schemas/quality-gate-policy-v1.schema.json",
+      "target": "audit/lib/quality-gate-policy.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "refactor-baseline.schema",
+      "source": "audit/schemas/refactor-baseline-v2.schema.json",
+      "target": "audit/lib/refactor-baseline.mjs",
+      "kind": "VALIDATES"
     },
     {
       "id": "release-evidence.clearance",
@@ -1310,10 +4607,208 @@
       "kind": "TESTS"
     },
     {
+      "id": "release-payload.guard",
+      "source": "audit/lib/public-payload.mjs",
+      "target": "audit/public-candidate-guard.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release-payload.successor",
+      "source": "audit/lib/public-payload.mjs",
+      "target": "audit/lib/release-evidence-successor.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release-payload.test",
+      "source": "audit/lib/public-payload.mjs",
+      "target": "audit/tests/publication-clearance.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "release.clearance-contract.consumer-1",
+      "source": "audit/lib/publication-clearance-contract.mjs",
+      "target": "audit/lib/publication-clearance-record.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.clearance-contract.consumer-2",
+      "source": "audit/lib/publication-clearance-contract.mjs",
+      "target": "audit/lib/publication-clearance.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.clearance-record.consumer-1",
+      "source": "audit/lib/publication-clearance-record.mjs",
+      "target": "audit/lib/publication-clearance.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.clearance-record.consumer-2",
+      "source": "audit/lib/publication-clearance-record.mjs",
+      "target": "audit/lib/release-evidence-successor.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.successor-policy.consumer-1",
+      "source": "audit/lib/release-evidence-policy.mjs",
+      "target": "audit/lib/publication-clearance-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.successor-policy.consumer-2",
+      "source": "audit/lib/release-evidence-policy.mjs",
+      "target": "audit/lib/release-evidence-bundle.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "release.successor-policy.consumer-3",
+      "source": "audit/lib/release-evidence-policy.mjs",
+      "target": "audit/lib/release-evidence-successor.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "response-fixtures.test-entry",
+      "source": "audit/tests/response-fixtures.test.mjs",
+      "target": "audit/tests/adapter-syntax.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "rights-fixture.canary",
+      "source": "audit/tests/rights-state-fixture.mjs",
+      "target": "audit/tests/trusted-https-canary.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "rights-fixture.playwright",
+      "source": "audit/tests/rights-state-fixture.mjs",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "rights.guard",
       "source": "licenses/component-register-v1.json",
       "target": "audit/public-candidate-guard.mjs",
       "kind": "VALIDATES"
+    },
+    {
+      "id": "rights.guard-policy",
+      "source": "licenses/component-register-v1.json",
+      "target": "audit/lib/public-candidate-refactor-policies.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "rights.guard-policy.test",
+      "source": "audit/lib/public-candidate-refactor-policies.mjs",
+      "target": "audit/tests/public-candidate-refactor-policies.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "rights.guard-runtime",
+      "source": "audit/lib/public-candidate-refactor-policies.mjs",
+      "target": "audit/public-candidate-guard.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "rights.toolchain-records",
+      "source": "licenses/component-register-v1.json",
+      "target": "audit/lib/public-toolchain-records.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "rights.toolchain-records.guard",
+      "source": "audit/lib/public-toolchain-records.mjs",
+      "target": "audit/public-candidate-guard.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "security-command.policy",
+      "source": "audit/security-gate-policy-v1.json",
+      "target": "audit/lib/security-command-runtime.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "security-command.report-counts",
+      "source": "audit/lib/security-gate-policy.mjs",
+      "target": "audit/lib/security-command-runtime.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "security-command.runner",
+      "source": "audit/lib/security-command-runtime.mjs",
+      "target": "audit/run-security-dependency-gate.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "security-command.scan-runtime",
+      "source": "audit/lib/security-command-runtime.mjs",
+      "target": "audit/lib/security-scans.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "security-command.test",
+      "source": "audit/lib/security-command-runtime.mjs",
+      "target": "audit/tests/security-dependency-gate.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "security-gate.public-candidate-policy",
+      "source": "audit/security-gate-policy-v1.json",
+      "target": "audit/lib/public-candidate-refactor-policies.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "security-gate.schema",
+      "source": "audit/schemas/security-gate-policy-v1.schema.json",
+      "target": "audit/lib/security-gate-policy.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "semantic-curriculum-facets.suite",
+      "source": "audit/tests/semantic-curriculum-facets.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "semantic-input-facets.suite",
+      "source": "audit/tests/semantic-input-facets.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "semantic-mastery-validation.suite",
+      "source": "audit/tests/semantic-mastery-validation.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "semantic-math-validation.suite",
+      "source": "audit/tests/semantic-math-validation.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "semantic-model-validation.suite",
+      "source": "audit/tests/semantic-model-validation.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "semantic-persistence-validation.suite",
+      "source": "audit/tests/semantic-persistence-validation.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "shared-response.core",
+      "source": "audit/lib/shared-response-fixtures.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "shared-response.semantic",
+      "source": "audit/lib/shared-response-fixtures.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
     },
     {
       "id": "shell.generator",
@@ -1326,6 +4821,108 @@
       "source": "release-shell-v1.json",
       "target": "sw.js",
       "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response-fixtures.engine-input-behavior",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/tests/engine-input-behavior.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response.core",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response.exhaustive",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/lib/exhaustive-response-fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response.semantic",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/tests/manifest-semantic-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response.shared",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/lib/shared-response-fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "sort-response.test",
+      "source": "audit/lib/sort-response-fixtures.mjs",
+      "target": "audit/tests/exhaustive-response-fixtures.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "source-extraction.inline-html",
+      "source": "audit/lib/function-quality-metrics.mjs",
+      "target": "audit/tests/source-extraction.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "source-extraction.parser",
+      "source": "package.json",
+      "target": "audit/tests/source-extraction.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "source-extraction.test-entry",
+      "source": "audit/tests/source-extraction.test.mjs",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "strategy-boundary.runner",
+      "source": "audit/tests/engine-strategy-boundary-contract.mjs",
+      "target": "audit/tests/tutorial-engine-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.browser-lifecycle-contract.entry",
+      "source": "audit/tests/holistic-child-ux-regressions.test.mjs",
+      "target": "audit/tests/browser-lifecycle-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.browser-module-fixtures.child-contract",
+      "source": "audit/tests/holistic-child-ux-regressions.test.mjs",
+      "target": "audit/tests/browser-module-fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.browser-module-fixtures.scroll-contract",
+      "source": "audit/tests/browser-fixture-contract.test.mjs",
+      "target": "audit/tests/browser-module-fixtures.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.deep-ux-dom-observations.consumer",
+      "source": "audit/playwright/deep-ux-dom-observations.mjs",
+      "target": "audit/playwright/deep-ux-census.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.deep-ux-dom-observations.test",
+      "source": "audit/playwright/deep-ux-dom-observations.mjs",
+      "target": "audit/tests/playwright-deep-ux-census.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "testing.deep-ux-sampling.consumer",
+      "source": "audit/lib/playwright-deep-ux-sampling.mjs",
+      "target": "audit/lib/playwright-deep-ux-census.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "testing.deep-ux-sampling.test",
+      "source": "audit/lib/playwright-deep-ux-sampling.mjs",
+      "target": "audit/tests/playwright-deep-ux-census.test.mjs",
+      "kind": "TESTS"
     },
     {
       "id": "tutorial.art-design",
@@ -1346,6 +4943,18 @@
       "kind": "TESTS"
     },
     {
+      "id": "tutorial.engine-contract",
+      "source": "curriculum/math-quest-tutorial-manifest-v1.json",
+      "target": "audit/tests/tutorial-engine-contract.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "tutorial.engine-contract.runner",
+      "source": "audit/tests/tutorial-engine-contract.mjs",
+      "target": "audit/tests/node-engine.test.mjs",
+      "kind": "TESTS"
+    },
+    {
       "id": "tutorial.gate",
       "source": "curriculum/math-quest-tutorial-manifest-v1.json",
       "target": "audit/run-audit.ps1",
@@ -1356,6 +4965,24 @@
       "source": "tools/build-tutorial-manifest.mjs",
       "target": "curriculum/math-quest-tutorial-manifest-v1.json",
       "kind": "GENERATES"
+    },
+    {
+      "id": "tutorial.metadata-comparison",
+      "source": "audit/lib/tutorial-metadata-transition.mjs",
+      "target": "audit/lib/differential-equivalence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "tutorial.metadata-test",
+      "source": "audit/lib/tutorial-metadata-transition.mjs",
+      "target": "audit/tests/tutorial-metadata-transition.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "tutorial.metadata-test-entry",
+      "source": "audit/tests/tutorial-metadata-transition.test.mjs",
+      "target": "audit/tests/differential-equivalence.test.mjs",
+      "kind": "CONSUMES"
     },
     {
       "id": "tutorial.runtime",
@@ -1374,6 +5001,48 @@
       "source": "audit/lib/tutorial-manifest.mjs",
       "target": "audit/tests/tutorial-manifest.test.mjs",
       "kind": "TESTS"
+    },
+    {
+      "id": "visual-model.arithmetic-values",
+      "source": "audit/visual-model-arithmetic.mjs",
+      "target": "audit/visual-model-values.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.geometry-values",
+      "source": "audit/visual-model-geometry.mjs",
+      "target": "audit/visual-model-values.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.money-values",
+      "source": "audit/visual-model-money.mjs",
+      "target": "audit/visual-model-values.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.oracle-arithmetic",
+      "source": "audit/visual-model-oracle.mjs",
+      "target": "audit/visual-model-arithmetic.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.oracle-geometry",
+      "source": "audit/visual-model-oracle.mjs",
+      "target": "audit/visual-model-geometry.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.oracle-money",
+      "source": "audit/visual-model-oracle.mjs",
+      "target": "audit/visual-model-money.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "visual-model.oracle-values",
+      "source": "audit/visual-model-oracle.mjs",
+      "target": "audit/visual-model-values.mjs",
+      "kind": "CONSUMES"
     }
   ],
   "dataArtifactPatterns": [
@@ -1388,6 +5057,11 @@
       "path": "audit/legacy-file-ownership-map.json",
       "reason": "A second ownership authority would drift from the canonical repository code map.",
       "ownerRecord": "audit/repository-code-map-v1.json"
+    },
+    {
+      "path": "audit/tests/placement-fixtures.mjs",
+      "reason": "Shared placement fixture construction moved to the audit library for test and differential consumers.",
+      "ownerRecord": "audit/lib/placement-fixtures.mjs"
     },
     {
       "path": "docs/repository-code-map.md",

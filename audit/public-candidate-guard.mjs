@@ -1,19 +1,28 @@
+import { publicPayloadSha256, publicPayloadTreeOid } from "./lib/public-payload.mjs";
+import { REVIEWED_TOOLCHAIN_RECORDS } from "./lib/public-toolchain-records.mjs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import {
-  BROWSER_RUNNER_EVIDENCE_PATH,
-  parseReviewedBrowserRunnerEvidence,
-} from "./lib/browser-runner-evidence.mjs";
+import { BROWSER_RUNNER_EVIDENCE_PATH, parseReviewedBrowserRunnerEvidence } from "./lib/browser-runner-evidence.mjs";
 import { CURRICULUM_PATH, validateManifest } from "./lib/curriculum-manifest.mjs";
 import { parsePublicationClearance, PUBLICATION_CLEARANCE_PATH } from "./lib/publication-clearance.mjs";
+import * as candidatePolicy from "./lib/public-candidate-refactor-policies.mjs";
 import {
+  buildTrustedHttpsCanarySupplyChainInput,
   trustedHttpsCanarySupplyChainFindings,
   trustedHttpsCanarySupplyChainMutationFailures,
 } from "./lib/trusted-https-canary-supply-chain.mjs";
+
+const {
+  APPROVED_LICENCES, COMPONENT_REGISTER_PATH, DENIED_ARCHIVE_OR_DOCUMENT_EXTENSION, DENIED_TRACKED_PATHS,
+  EVIDENCE_DECLARATION_PATH, EVIDENCE_KINDS, EVIDENCE_LICENCE_EXPRESSIONS, EVIDENCE_ORIGINS,
+  extendedToolchainFindings, FIRST_PARTY_DECLARATION_PATH, FIRST_PARTY_HEADER, KIND_LICENCES,
+  legacyToolchainRegister, PRIVATE_PATH, PUBLIC_FILE_MANIFEST_PATH, REQUIRED_PUBLIC_RUNTIME_PATHS,
+  REQUIRED_RIGHTS_PATHS, reviewedContentFindings, reviewedRegistryMetadataMutationFindings,
+} = candidatePolicy;
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,61 +30,6 @@ export const PUBLIC_CANDIDATE_NEGATIVE_CONTROL_PASS_EVIDENCE = "STDOUT:NEGATIVE_
 export const PUBLIC_CANDIDATE_NEGATIVE_CONTROL_ID = PUBLIC_CANDIDATE_NEGATIVE_CONTROL_PASS_EVIDENCE
   .slice("STDOUT:NEGATIVE_CONTROL=".length, -":PASS".length);
 
-const DENIED_TRACKED_PATHS = new Set([
-  "research/DMPK5_Scope.pdf",
-  "research/curriculum-scope-sequence.md",
-  "research/refined-level-ladder.md",
-]);
-
-const PRIVATE_PATH = /^\.private-prebeta(?:\/|$)/u;
-const DENIED_ARCHIVE_OR_DOCUMENT_EXTENSION = /\.(?:7z|bz2|docm?|docx|gz|od[stp]|pdf|pptm?|pptx|rar|tar|tgz|xlsm?|xlsx|xz|zip)$/iu;
-const REQUIRED_PUBLIC_RUNTIME_PATHS = Object.freeze([
-  "index.html",
-  "manifest.webmanifest",
-  "release-shell-v1.json",
-  "sw.js",
-  CURRICULUM_PATH,
-  "curriculum/math-quest-tutorial-manifest-v1.json",
-]);
-const COMPONENT_REGISTER_PATH = "licenses/component-register-v1.json";
-const EVIDENCE_DECLARATION_PATH = "licenses/evidence-paths-v1.json";
-const FIRST_PARTY_DECLARATION_PATH = "licenses/first-party-paths-v1.txt";
-const PUBLIC_FILE_MANIFEST_PATH = "docs/release/public-file-manifest.txt";
-const FIRST_PARTY_HEADER = Object.freeze([
-  "# Reviewed first-party Math Quest paths.",
-  "# Adding a path asserts original MIT authorship and requires human review.",
-  "",
-]);
-const REQUIRED_RIGHTS_PATHS = Object.freeze([
-  "LICENSE",
-  "OPEN_SOURCE_POLICY.md",
-  "THIRD_PARTY_NOTICES.md",
-  COMPONENT_REGISTER_PATH,
-  EVIDENCE_DECLARATION_PATH,
-  FIRST_PARTY_DECLARATION_PATH,
-  "licenses/Inter-OFL.txt",
-  "licenses/app-icons.md",
-  "licenses/ci-toolchain.md",
-  "licenses/design-tokens.md",
-  "licenses/sound-effects.md",
-]);
-const APPROVED_LICENCES = new Set(["Apache-2.0", "BSD-3-Clause", "MIT", "OFL-1.1", "OGL-UK-3.0", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]);
-const KIND_LICENCES = Object.freeze({
-  "design-token-contract": new Set(["MIT"]),
-  font: new Set(["OFL-1.1", "MIT", "CC0-1.0", "LicenseRef-Public-Domain"]),
-  image: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
-  audio: new Set(["MIT", "CC-BY-4.0", "CC0-1.0", "LicenseRef-Public-Domain"]),
-  "source-tool": new Set(["MIT"]),
-});
-const EVIDENCE_KINDS = new Set(["licence-text", "policy", "attribution", "provenance"]);
-const EVIDENCE_ORIGINS = new Set(["standard-open-text", "original-project", "mixed-open", "third-party-open"]);
-const EVIDENCE_LICENCE_EXPRESSIONS = new Set([
-  "Apache-2.0 AND MIT AND BSD-3-Clause",
-  "MIT",
-  "OFL-1.1",
-  "MIT AND OGL-UK-3.0 AND CC-BY-4.0",
-  "MIT AND OFL-1.1 AND OGL-UK-3.0 AND CC-BY-4.0",
-]);
 const REVIEWED_INTER = Object.freeze({
   id: "inter-variable-font",
   shippedSha256: "4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
@@ -166,13 +120,7 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function publicPayloadSha256(entries) {
-  const canonical = [...entries]
-    .sort((left, right) => left.path.localeCompare(right.path, "en"))
-    .map((entry) => `${entry.mode}\0${entry.hash}\0${entry.stage}\0${entry.path}\0`)
-    .join("");
-  return sha256(Buffer.from(canonical, "utf8"));
-}
+
 
 function publicPayloadEntries(entries) {
   return entries.filter((entry) => entry.path !== PUBLICATION_CLEARANCE_PATH);
@@ -188,48 +136,7 @@ async function untrackedPaths() {
   return stdout.toString("utf8").split("\0").filter(Boolean).map(normalized);
 }
 
-function publicPayloadTreeOid(entries) {
-  if (!entries.length) throw new Error("The public payload cannot be empty.");
-  const oidLength = entries[0].hash.length;
-  const algorithm = oidLength === 40 ? "sha1" : oidLength === 64 ? "sha256" : null;
-  if (!algorithm || entries.some((entry) => entry.hash.length !== oidLength)) {
-    throw new Error("The staged entries use an unsupported or inconsistent Git object format.");
-  }
-  const rootNode = { children: new Map() };
-  for (const entry of entries) {
-    if (entry.stage !== "0") throw new Error(`${entry.path}: an unmerged stage cannot form the public payload tree`);
-    if (!/^(?:100644|100755|120000)$/u.test(entry.mode)) throw new Error(`${entry.path}: unsupported Git mode ${entry.mode}`);
-    const segments = entry.path.split("/");
-    let node = rootNode;
-    for (const segment of segments.slice(0, -1)) {
-      const existing = node.children.get(segment);
-      if (existing?.entry) throw new Error(`${entry.path}: a file conflicts with a directory in the staged tree`);
-      if (!existing) node.children.set(segment, { children: new Map() });
-      node = node.children.get(segment);
-    }
-    const name = segments.at(-1);
-    if (!name || node.children.has(name)) throw new Error(`${entry.path}: duplicate or invalid staged path`);
-    node.children.set(name, { entry });
-  }
-  const objectHash = (type, body) => createHash(algorithm)
-    .update(Buffer.from(`${type} ${body.byteLength}\0`, "utf8"))
-    .update(body)
-    .digest();
-  const treeHash = (node) => {
-    const rows = [...node.children.entries()].map(([name, child]) => ({
-      name,
-      child,
-      sortKey: Buffer.from(child.entry ? name : `${name}/`, "utf8"),
-    })).sort((left, right) => Buffer.compare(left.sortKey, right.sortKey));
-    const body = Buffer.concat(rows.map(({ name, child }) => {
-      const mode = child.entry ? child.entry.mode : "40000";
-      const oid = child.entry ? Buffer.from(child.entry.hash, "hex") : treeHash(child);
-      return Buffer.concat([Buffer.from(`${mode} ${name}\0`, "utf8"), oid]);
-    }));
-    return objectHash("tree", body);
-  };
-  return treeHash(rootNode).toString("hex");
-}
+
 
 function payloadIdentityMutationFindings() {
   const failures = [];
@@ -261,6 +168,18 @@ function payloadIdentityMutationFindings() {
   return failures;
 }
 
+function runtimeArtworkFindings(relativePath, line, index, findings) {
+  if (PLATFORM_PICTOGRAPH.test(line)) {
+    findings.push(`${relativePath}:${index + 1}: platform emoji or pictograph artwork is not allowed; use original HTML/CSS/SVG art`);
+  }
+  if (/data\s*:\s*(?:image|audio|video|font)\//iu.test(line)) {
+    findings.push(`${relativePath}:${index + 1}: inline data-URI media is not allowed; extract, hash, and register the asset`);
+  }
+  if (/(?:\bsrc\b|\bhref\b|\bsrcset\b|\bposter\b)\s*=\s*["']?\s*https?:|url\(\s*["']?\s*https?:|@import\s+(?:url\()?["']?\s*https?:/iu.test(line)) {
+    findings.push(`${relativePath}:${index + 1}: remote runtime asset reference is not allowed`);
+  }
+}
+
 function contentFindings(relativePath, text) {
   const findings = [];
   const lines = text.split(/\r?\n/u);
@@ -281,15 +200,7 @@ function contentFindings(relativePath, text) {
     if (CREDENTIAL_MARKERS.some((pattern) => pattern.test(line))) {
       findings.push(`${relativePath}:${index + 1}: possible embedded credential`);
     }
-    if (relativePath === "index.html" && PLATFORM_PICTOGRAPH.test(line)) {
-      findings.push(`${relativePath}:${index + 1}: platform emoji or pictograph artwork is not allowed; use original HTML/CSS/SVG art`);
-    }
-    if (relativePath === "index.html" && /data\s*:\s*(?:image|audio|video|font)\//iu.test(line)) {
-      findings.push(`${relativePath}:${index + 1}: inline data-URI media is not allowed; extract, hash, and register the asset`);
-    }
-    if (relativePath === "index.html" && /(?:\bsrc\b|\bhref\b|\bsrcset\b|\bposter\b)\s*=\s*["']?\s*https?:|url\(\s*["']?\s*https?:|@import\s+(?:url\()?["']?\s*https?:/iu.test(line)) {
-      findings.push(`${relativePath}:${index + 1}: remote runtime asset reference is not allowed`);
-    }
+    if (relativePath === "index.html") runtimeArtworkFindings(relativePath, line, index, findings);
   }
   return findings;
 }
@@ -341,40 +252,53 @@ function decodeUtf16Be(bytes) {
   return text;
 }
 
+function fontNameTable(bytes) {
+  if (bytes.length < 12) throw new Error("truncated font header");
+  const tableCount = bytes.readUInt16BE(4);
+  let nameOffset = -1;
+  let nameLength = 0;
+  for (let index = 0; index < tableCount; index += 1) {
+    const recordOffset = 12 + index * 16;
+    if (recordOffset + 16 > bytes.length) throw new Error("truncated font table directory");
+    if (bytes.toString("ascii", recordOffset, recordOffset + 4) === "name") {
+      nameOffset = bytes.readUInt32BE(recordOffset + 8);
+      nameLength = bytes.readUInt32BE(recordOffset + 12);
+    }
+  }
+  if (nameOffset < 0 || nameOffset + nameLength > bytes.length || nameLength < 6) {
+    throw new Error("missing or invalid font name table");
+  }
+  return { nameOffset, nameLength };
+}
+
+function fontNameString(bytes, table, recordOffset) {
+  const { nameOffset, nameLength, stringsOffset } = table;
+  if (recordOffset + 12 > nameOffset + nameLength) throw new Error("truncated font name record");
+  const platformId = bytes.readUInt16BE(recordOffset);
+  const length = bytes.readUInt16BE(recordOffset + 8);
+  const relativeOffset = bytes.readUInt16BE(recordOffset + 10);
+  const start = nameOffset + stringsOffset + relativeOffset;
+  const end = start + length;
+  if (start < nameOffset || end > nameOffset + nameLength) throw new Error("font name string is out of bounds");
+  const value = bytes.subarray(start, end);
+  return platformId === 0 || platformId === 3 ? decodeUtf16Be(value) : value.toString("latin1");
+}
+
+function fontNameMetadata(bytes) {
+  const table = fontNameTable(bytes);
+  const count = bytes.readUInt16BE(table.nameOffset + 2);
+  table.stringsOffset = bytes.readUInt16BE(table.nameOffset + 4);
+  const metadataStrings = [];
+  for (let index = 0; index < count; index += 1) {
+    metadataStrings.push(fontNameString(bytes, table, table.nameOffset + 6 + index * 12));
+  }
+  return metadataStrings.join("\n");
+}
+
 function fontMetadataFindings(relativePath, bytes) {
   const findings = [];
   try {
-    if (bytes.length < 12) throw new Error("truncated font header");
-    const tableCount = bytes.readUInt16BE(4);
-    let nameOffset = -1;
-    let nameLength = 0;
-    for (let index = 0; index < tableCount; index += 1) {
-      const recordOffset = 12 + index * 16;
-      if (recordOffset + 16 > bytes.length) throw new Error("truncated font table directory");
-      if (bytes.toString("ascii", recordOffset, recordOffset + 4) === "name") {
-        nameOffset = bytes.readUInt32BE(recordOffset + 8);
-        nameLength = bytes.readUInt32BE(recordOffset + 12);
-      }
-    }
-    if (nameOffset < 0 || nameOffset + nameLength > bytes.length || nameLength < 6) {
-      throw new Error("missing or invalid font name table");
-    }
-    const count = bytes.readUInt16BE(nameOffset + 2);
-    const stringsOffset = bytes.readUInt16BE(nameOffset + 4);
-    const metadataStrings = [];
-    for (let index = 0; index < count; index += 1) {
-      const recordOffset = nameOffset + 6 + index * 12;
-      if (recordOffset + 12 > nameOffset + nameLength) throw new Error("truncated font name record");
-      const platformId = bytes.readUInt16BE(recordOffset);
-      const length = bytes.readUInt16BE(recordOffset + 8);
-      const relativeOffset = bytes.readUInt16BE(recordOffset + 10);
-      const start = nameOffset + stringsOffset + relativeOffset;
-      const end = start + length;
-      if (start < nameOffset || end > nameOffset + nameLength) throw new Error("font name string is out of bounds");
-      const value = bytes.subarray(start, end);
-      metadataStrings.push(platformId === 0 || platformId === 3 ? decodeUtf16Be(value) : value.toString("latin1"));
-    }
-    const metadata = metadataStrings.join("\n");
+    const metadata = fontNameMetadata(bytes);
     if (PERSONAL_OR_LOCAL_MARKERS.some((pattern) => pattern.test(metadata))) {
       findings.push(`${relativePath}: font name metadata contains a personal identity, email, or local user path`);
     }
@@ -383,6 +307,69 @@ function fontMetadataFindings(relativePath, bytes) {
     }
   } catch (error) {
     findings.push(`${relativePath}: font metadata could not be validated (${error.message})`);
+  }
+  return findings;
+}
+
+function pngChunkAt(bytes, offset) {
+  const length = bytes.readUInt32BE(offset);
+  const type = bytes.toString("ascii", offset + 4, offset + 8);
+  const dataStart = offset + 8;
+  const chunkEnd = dataStart + length + 4;
+  if (!/^[A-Za-z]{4}$/u.test(type) || chunkEnd > bytes.length) {
+    throw new Error("truncated or invalid PNG chunk");
+  }
+  return { length, type, dataStart, chunkEnd };
+}
+
+function pngEncodingValid(bytes, dataStart, width, height) {
+  return width && height && width <= 4096 && height <= 4096
+    && bytes[dataStart + 8] === 8 && [2, 6].includes(bytes[dataStart + 9])
+    && bytes[dataStart + 10] === 0 && bytes[dataStart + 11] === 0 && bytes[dataStart + 12] === 0;
+}
+
+function validatePngHeader(bytes, chunk) {
+  if (chunk.type !== "IHDR" || chunk.length !== 13) throw new Error("PNG must begin with one standard IHDR chunk");
+  const width = bytes.readUInt32BE(chunk.dataStart);
+  const height = bytes.readUInt32BE(chunk.dataStart + 4);
+  if (!pngEncodingValid(bytes, chunk.dataStart, width, height)) {
+    throw new Error("PNG dimensions or encoding contract is invalid");
+  }
+}
+
+function validatePngCompletion(bytes, chunks, offset) {
+  if (offset !== bytes.length || chunks.at(-1) !== "IEND" || chunks.filter((type) => type === "IHDR").length !== 1 || !chunks.includes("IDAT")) {
+    throw new Error("PNG chunk stream is incomplete or has trailing bytes");
+  }
+}
+
+function pngChunks(bytes) {
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (bytes.length < 33 || !bytes.subarray(0, signature.length).equals(signature)) throw new Error("invalid PNG signature");
+  const chunks = [];
+  let offset = signature.length;
+  while (offset + 12 <= bytes.length) {
+    const chunk = pngChunkAt(bytes, offset);
+    chunks.push(chunk.type);
+    if (chunks.length === 1) validatePngHeader(bytes, chunk);
+    if (chunk.type === "pHYs" && chunk.length !== 9) throw new Error("PNG physical-density chunk is invalid");
+    if (chunk.type === "IEND" && chunk.length !== 0) throw new Error("PNG end chunk is invalid");
+    offset = chunk.chunkEnd;
+    if (chunk.type === "IEND") break;
+  }
+  validatePngCompletion(bytes, chunks, offset);
+  return chunks;
+}
+
+function pngMetadataFindings(relativePath, bytes) {
+  const findings = [];
+  try {
+    const chunks = pngChunks(bytes);
+    const unexpected = chunks.filter((type) => !["IHDR", "pHYs", "IDAT", "IEND"].includes(type));
+    if (unexpected.length) findings.push(`${relativePath}: PNG contains unexpected metadata chunks ${[...new Set(unexpected)].join(", ")}`);
+    if (chunks.filter((type) => type === "pHYs").length > 1) findings.push(`${relativePath}: PNG contains duplicate physical-density metadata`);
+  } catch (error) {
+    findings.push(`${relativePath}: PNG metadata could not be validated (${error.message})`);
   }
   return findings;
 }
@@ -411,60 +398,7 @@ function wavMetadataFindings(relativePath, bytes) {
   return findings;
 }
 
-function pngMetadataFindings(relativePath, bytes) {
-  const findings = [];
-  try {
-    const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    if (bytes.length < 33 || !bytes.subarray(0, signature.length).equals(signature)) {
-      throw new Error("invalid PNG signature");
-    }
-    const chunks = [];
-    let offset = signature.length;
-    let width = null;
-    let height = null;
-    while (offset + 12 <= bytes.length) {
-      const length = bytes.readUInt32BE(offset);
-      const type = bytes.toString("ascii", offset + 4, offset + 8);
-      const dataStart = offset + 8;
-      const dataEnd = dataStart + length;
-      const chunkEnd = dataEnd + 4;
-      if (!/^[A-Za-z]{4}$/u.test(type) || chunkEnd > bytes.length) {
-        throw new Error("truncated or invalid PNG chunk");
-      }
-      chunks.push(type);
-      if (chunks.length === 1) {
-        if (type !== "IHDR" || length !== 13) throw new Error("PNG must begin with one standard IHDR chunk");
-        width = bytes.readUInt32BE(dataStart);
-        height = bytes.readUInt32BE(dataStart + 4);
-        const bitDepth = bytes[dataStart + 8];
-        const colourType = bytes[dataStart + 9];
-        const compression = bytes[dataStart + 10];
-        const filter = bytes[dataStart + 11];
-        const interlace = bytes[dataStart + 12];
-        if (
-          !width || !height || width > 4096 || height > 4096
-          || bitDepth !== 8 || ![2, 6].includes(colourType)
-          || compression !== 0 || filter !== 0 || interlace !== 0
-        ) {
-          throw new Error("PNG dimensions or encoding contract is invalid");
-        }
-      }
-      if (type === "pHYs" && length !== 9) throw new Error("PNG physical-density chunk is invalid");
-      if (type === "IEND" && length !== 0) throw new Error("PNG end chunk is invalid");
-      offset = chunkEnd;
-      if (type === "IEND") break;
-    }
-    if (offset !== bytes.length || chunks.at(-1) !== "IEND" || chunks.filter((type) => type === "IHDR").length !== 1 || !chunks.includes("IDAT")) {
-      throw new Error("PNG chunk stream is incomplete or has trailing bytes");
-    }
-    const unexpected = chunks.filter((type) => !["IHDR", "pHYs", "IDAT", "IEND"].includes(type));
-    if (unexpected.length) findings.push(`${relativePath}: PNG contains unexpected metadata chunks ${[...new Set(unexpected)].join(", ")}`);
-    if (chunks.filter((type) => type === "pHYs").length > 1) findings.push(`${relativePath}: PNG contains duplicate physical-density metadata`);
-  } catch (error) {
-    findings.push(`${relativePath}: PNG metadata could not be validated (${error.message})`);
-  }
-  return findings;
-}
+
 
 function plainObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -493,26 +427,13 @@ function localEvidencePath(value) {
 }
 
 function canarySupplyChainInput(blobs) {
-  const text = (relativePath) => blobs.get(relativePath)?.toString("utf8") || "";
-  return {
-    packageJsonText: text("package.json"),
-    packageLockText: text("package-lock.json"),
-    dependencyInstallerText: text("audit/install-reviewed-ci-dependencies.ps1"),
-    wrapperText: text("audit/run-trusted-https-canary.ps1"),
-    workflowText: text(".github/workflows/trusted-https-canary.yml"),
-    runnerText: text("audit/run-trusted-https-canary.mjs"),
-    canaryLibraryText: text("audit/lib/trusted-https-canary.mjs"),
-    validatorText: text("audit/validate-trusted-https-canary.mjs"),
-    builderText: text("tools/build-pwa-release-manifest.mjs"),
-    releaseShellText: text("release-shell-v1.json"),
-    serviceWorkerText: text("sw.js"),
-  };
+  return buildTrustedHttpsCanarySupplyChainInput(
+    (relativePath) => blobs.get(relativePath)?.toString("utf8") || "",
+  );
 }
 
-function registerFindings(register, entries, blobs, manifest) {
-  const findings = [];
-  const tracked = new Set(entries.map((entry) => entry.path));
-  const entryByPath = new Map(entries.map((entry) => [entry.path, entry]));
+function registerPolicyFindings(inspection) {
+  const { register, tracked, findings } = inspection;
   const requiredTopLevel = [
     "schemaVersion",
     "policy",
@@ -524,10 +445,10 @@ function registerFindings(register, entries, blobs, manifest) {
     "toolchain",
     "prohibitedSources",
   ];
-  if (!exactKeys(register, requiredTopLevel, COMPONENT_REGISTER_PATH, findings)) return findings;
+  if (!exactKeys(register, requiredTopLevel, COMPONENT_REGISTER_PATH, findings)) return false;
   if (register.schemaVersion !== 1) findings.push(`${COMPONENT_REGISTER_PATH}: schemaVersion must be 1`);
 
-  const policyPath = normalized(path.posix.normalize(path.posix.join("licenses", String(register.policy || ""))));
+  const policyPath = inspection.policyPath = normalized(path.posix.normalize(path.posix.join("licenses", String(register.policy || ""))));
   if (policyPath !== "OPEN_SOURCE_POLICY.md" || !tracked.has(policyPath)) {
     findings.push(`${COMPONENT_REGISTER_PATH}: policy must resolve to tracked OPEN_SOURCE_POLICY.md`);
   }
@@ -538,41 +459,58 @@ function registerFindings(register, entries, blobs, manifest) {
   if (actualLicences.length !== expectedLicences.length || actualLicences.some((value, index) => value !== expectedLicences[index])) {
     findings.push(`${COMPONENT_REGISTER_PATH}: approvedLicences must exactly match the guard's reviewed allowlist`);
   }
+  return true;
+}
 
-  const evidencePaths = new Set();
-  const usedEvidencePaths = new Set();
+function pathsAreSorted(values) {
+  const sorted = [...values].sort();
+  return values.every((value, index) => value === sorted[index]);
+}
+
+function evidenceRecordIdentityFindings(record, evidencePath, label, findings) {
+  if (!nonempty(evidencePath) || evidencePath.startsWith("../") || path.posix.isAbsolute(evidencePath)) findings.push(`${label}: path must be a safe repository-relative path`);
+  if (!EVIDENCE_KINDS.has(record.kind)) findings.push(`${label}: kind is not approved`);
+  if (!EVIDENCE_ORIGINS.has(record.origin)) findings.push(`${label}: origin is not approved`);
+  if (!EVIDENCE_LICENCE_EXPRESSIONS.has(record.licenceExpression) || RESTRICTIVE_LICENCE.test(String(record.licenceExpression))) findings.push(`${label}: licenceExpression is not approved`);
+  if (!nonempty(record.purpose)) findings.push(`${label}: purpose is required`);
+  if (!/^[a-f0-9]{64}$/u.test(String(record.sha256))) findings.push(`${label}: sha256 must be 64 lowercase hexadecimal characters`);
+}
+
+function inspectEvidenceRecord(inspection, record, index, declaredPaths) {
+  const { tracked, blobs, findings, evidencePaths } = inspection;
+  const label = `${EVIDENCE_DECLARATION_PATH} records[${index}]`;
+  if (!exactKeys(record, ["path", "kind", "origin", "licenceExpression", "purpose", "sha256"], label, findings)) return;
+  const evidencePath = normalized(record.path);
+  declaredPaths.push(evidencePath);
+  evidenceRecordIdentityFindings(record, evidencePath, label, findings);
+  if (!tracked.has(evidencePath)) findings.push(`${label}: reviewed evidence path is not staged: ${evidencePath}`);
+  const stagedEvidence = blobs.get(evidencePath);
+  if (stagedEvidence && sha256(stagedEvidence) !== record.sha256) findings.push(`${label}: staged evidence hash differs for ${evidencePath}`);
+  evidencePaths.add(evidencePath);
+}
+
+function inspectEvidenceDeclaration(inspection, declaration) {
+  const { findings } = inspection;
+  if (!exactKeys(declaration, ["schemaVersion", "records"], EVIDENCE_DECLARATION_PATH, findings)) return;
+  if (declaration.schemaVersion !== 1) findings.push(`${EVIDENCE_DECLARATION_PATH}: schemaVersion must be 1`);
+  if (!Array.isArray(declaration.records) || !declaration.records.length) {
+    findings.push(`${EVIDENCE_DECLARATION_PATH}: records must be a nonempty array`);
+    return;
+  }
+  const declaredPaths = [];
+  for (const [index, record] of declaration.records.entries()) inspectEvidenceRecord(inspection, record, index, declaredPaths);
+  if (new Set(declaredPaths).size !== declaredPaths.length) findings.push(`${EVIDENCE_DECLARATION_PATH}: records contain duplicate paths`);
+  if (!pathsAreSorted(declaredPaths)) findings.push(`${EVIDENCE_DECLARATION_PATH}: records must be sorted by path`);
+}
+
+function registerEvidenceFindings(inspection) {
+  const { blobs, findings, policyPath, evidencePaths, usedEvidencePaths } = inspection;
   const evidenceDeclarationBytes = blobs.get(EVIDENCE_DECLARATION_PATH);
   if (!evidenceDeclarationBytes) {
     findings.push(`${EVIDENCE_DECLARATION_PATH}: reviewed evidence declaration is missing`);
   } else {
     try {
-      const declaration = JSON.parse(evidenceDeclarationBytes.toString("utf8"));
-      if (exactKeys(declaration, ["schemaVersion", "records"], EVIDENCE_DECLARATION_PATH, findings)) {
-        if (declaration.schemaVersion !== 1) findings.push(`${EVIDENCE_DECLARATION_PATH}: schemaVersion must be 1`);
-        if (!Array.isArray(declaration.records) || !declaration.records.length) {
-          findings.push(`${EVIDENCE_DECLARATION_PATH}: records must be a nonempty array`);
-        } else {
-          const declaredPaths = [];
-          for (const [index, record] of declaration.records.entries()) {
-            const label = `${EVIDENCE_DECLARATION_PATH} records[${index}]`;
-            if (!exactKeys(record, ["path", "kind", "origin", "licenceExpression", "purpose", "sha256"], label, findings)) continue;
-            const evidencePath = normalized(record.path);
-            declaredPaths.push(evidencePath);
-            if (!nonempty(evidencePath) || evidencePath.startsWith("../") || path.posix.isAbsolute(evidencePath)) findings.push(`${label}: path must be a safe repository-relative path`);
-            if (!EVIDENCE_KINDS.has(record.kind)) findings.push(`${label}: kind is not approved`);
-            if (!EVIDENCE_ORIGINS.has(record.origin)) findings.push(`${label}: origin is not approved`);
-            if (!EVIDENCE_LICENCE_EXPRESSIONS.has(record.licenceExpression) || RESTRICTIVE_LICENCE.test(String(record.licenceExpression))) findings.push(`${label}: licenceExpression is not approved`);
-            if (!nonempty(record.purpose)) findings.push(`${label}: purpose is required`);
-            if (!/^[a-f0-9]{64}$/u.test(String(record.sha256))) findings.push(`${label}: sha256 must be 64 lowercase hexadecimal characters`);
-            if (!tracked.has(evidencePath)) findings.push(`${label}: reviewed evidence path is not staged: ${evidencePath}`);
-            const stagedEvidence = blobs.get(evidencePath);
-            if (stagedEvidence && sha256(stagedEvidence) !== record.sha256) findings.push(`${label}: staged evidence hash differs for ${evidencePath}`);
-            evidencePaths.add(evidencePath);
-          }
-          if (new Set(declaredPaths).size !== declaredPaths.length) findings.push(`${EVIDENCE_DECLARATION_PATH}: records contain duplicate paths`);
-          if (declaredPaths.some((value, index) => value !== [...declaredPaths].sort()[index])) findings.push(`${EVIDENCE_DECLARATION_PATH}: records must be sorted by path`);
-        }
-      }
+      inspectEvidenceDeclaration(inspection, JSON.parse(evidenceDeclarationBytes.toString("utf8")));
     } catch (error) {
       findings.push(`${EVIDENCE_DECLARATION_PATH}: invalid JSON (${error.message})`);
     }
@@ -580,471 +518,382 @@ function registerFindings(register, entries, blobs, manifest) {
   for (const requiredEvidence of [policyPath, "THIRD_PARTY_NOTICES.md"]) {
     if (evidencePaths.has(requiredEvidence)) usedEvidencePaths.add(requiredEvidence);
   }
-  const registeredPaths = new Set();
-  const componentIds = new Set();
-  const firstPartyPaths = Array.isArray(register.firstPartyPaths) ? register.firstPartyPaths.map(normalized) : [];
-  const firstPartySet = new Set(firstPartyPaths);
+}
+
+function firstPartyPathFindings(firstPartyPath, tracked, findings) {
+  if (!nonempty(firstPartyPath) || firstPartyPath.startsWith("../") || path.posix.isAbsolute(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: invalid first-party path ${firstPartyPath}`);
+  if (!tracked.has(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: first-party path is not staged: ${firstPartyPath}`);
+  if (REGISTERED_ASSET_PATH.test(firstPartyPath) || REGISTERED_BINARY_EXTENSION.test(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: assets and binary files require component records, not first-party path classification: ${firstPartyPath}`);
+}
+
+function firstPartyDeclarationFindings(declarationBytes, firstPartyPaths, findings) {
+  const declarationText = declarationBytes.toString("utf8");
+  const declarationLines = declarationText.split("\n");
+  if (declarationText.includes("\r")) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration must use canonical LF line endings`);
+  if (FIRST_PARTY_HEADER.some((line, index) => declarationLines[index] !== line)) {
+    findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration header is invalid`);
+  }
+  const declaredPaths = declarationLines.slice(FIRST_PARTY_HEADER.length).filter(Boolean);
+  if (new Set(declaredPaths).size !== declaredPaths.length) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration contains duplicate paths`);
+  if (!pathsAreSorted(declaredPaths)) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration must be sorted`);
+  if (declaredPaths.length !== firstPartyPaths.length || declaredPaths.some((value, index) => value !== firstPartyPaths[index])) {
+    findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths differs from the reviewed first-party declaration`);
+  }
+}
+
+function registerFirstPartyFindings(inspection) {
+  const { register, blobs, tracked, findings, firstPartyPaths, firstPartySet } = inspection;
   if (!Array.isArray(register.firstPartyPaths) || !firstPartyPaths.length) {
     findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths must be a nonempty exact public-tree inventory`);
   } else {
     if (firstPartySet.size !== firstPartyPaths.length) findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths contains duplicates`);
-    if (firstPartyPaths.some((value, index) => value !== [...firstPartyPaths].sort()[index])) findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths must be sorted`);
-    for (const firstPartyPath of firstPartyPaths) {
-      if (!nonempty(firstPartyPath) || firstPartyPath.startsWith("../") || path.posix.isAbsolute(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: invalid first-party path ${firstPartyPath}`);
-      if (!tracked.has(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: first-party path is not staged: ${firstPartyPath}`);
-      if (REGISTERED_ASSET_PATH.test(firstPartyPath) || REGISTERED_BINARY_EXTENSION.test(firstPartyPath)) findings.push(`${COMPONENT_REGISTER_PATH}: assets and binary files require component records, not first-party path classification: ${firstPartyPath}`);
-    }
+    if (!pathsAreSorted(firstPartyPaths)) findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths must be sorted`);
+    for (const firstPartyPath of firstPartyPaths) firstPartyPathFindings(firstPartyPath, tracked, findings);
   }
   const declarationBytes = blobs.get(FIRST_PARTY_DECLARATION_PATH);
-  if (!declarationBytes) {
-    findings.push(`${FIRST_PARTY_DECLARATION_PATH}: reviewed first-party declaration is missing`);
-  } else {
-    const declarationText = declarationBytes.toString("utf8");
-    const declarationLines = declarationText.split("\n");
-    if (declarationText.includes("\r")) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration must use canonical LF line endings`);
-    if (FIRST_PARTY_HEADER.some((line, index) => declarationLines[index] !== line)) {
-      findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration header is invalid`);
-    }
-    const declaredPaths = declarationLines.slice(FIRST_PARTY_HEADER.length).filter(Boolean);
-    if (new Set(declaredPaths).size !== declaredPaths.length) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration contains duplicate paths`);
-    if (declaredPaths.some((value, index) => value !== [...declaredPaths].sort()[index])) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: declaration must be sorted`);
-    if (declaredPaths.length !== firstPartyPaths.length || declaredPaths.some((value, index) => value !== firstPartyPaths[index])) {
-      findings.push(`${COMPONENT_REGISTER_PATH}: firstPartyPaths differs from the reviewed first-party declaration`);
-    }
+  if (!declarationBytes) findings.push(`${FIRST_PARTY_DECLARATION_PATH}: reviewed first-party declaration is missing`);
+  else firstPartyDeclarationFindings(declarationBytes, firstPartyPaths, findings);
+}
+
+
+
+function registerComponentId(component, label, inspection) {
+  const { componentIds, findings } = inspection;
+  if (!nonempty(component.id) || componentIds.has(component.id)) findings.push(`${label}: id must be unique and nonempty`);
+  else componentIds.add(component.id);
+}
+
+function bundledComponentKeys(component) {
+  return [
+    "id", "kind", "origin", "paths", "sha256", "licence", "version", "creator", "copyright", "sourceUrl", "licenceEvidence", "attributionRecord", "modified",
+    ...(component?.origin === "third-party-open" ? ["sourceCommit", "sourceArtifactSha256", "sourceInnerPath"] : []),
+    ...(component?.origin === "public-domain" ? ["publicDomainBasis", "jurisdiction", "determinationDate", "evidenceUrl", "evidenceSha256"] : []),
+    ...(component?.modified === true ? ["modificationDescription"] : []),
+  ];
+}
+
+function bundledLicenceFindings(component, label, findings) {
+  if (!["original-project", "third-party-open", "public-domain"].includes(component.origin)) findings.push(`${label}: invalid origin`);
+  if (!APPROVED_LICENCES.has(component.licence) || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: unapproved or restrictive licence ${component.licence}`);
+  if (!KIND_LICENCES[component.kind] || !KIND_LICENCES[component.kind].has(component.licence)) findings.push(`${label}: licence ${component.licence} is not approved for component kind ${component.kind}`);
+  if (component.origin === "original-project" && component.licence !== "MIT") findings.push(`${label}: original project material must use MIT`);
+  if (component.origin === "public-domain" && !["CC0-1.0", "LicenseRef-Public-Domain"].includes(component.licence)) findings.push(`${label}: public-domain material must use CC0-1.0 or an evidence-backed public-domain record`);
+}
+
+function publicDomainEvidenceFindings(component, label, findings) {
+  if (![component.publicDomainBasis, component.jurisdiction, component.determinationDate, component.evidenceUrl, component.evidenceSha256].every(nonempty)) findings.push(`${label}: public-domain records require basis, jurisdiction, determination date, evidence URL, and evidence SHA-256`);
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(String(component.determinationDate))) findings.push(`${label}: public-domain determinationDate must use YYYY-MM-DD`);
+  if (!/^https:\/\//iu.test(String(component.evidenceUrl)) || !/^[a-f0-9]{64}$/u.test(String(component.evidenceSha256))) findings.push(`${label}: public-domain evidence URL and SHA-256 are invalid`);
+  if (normalized(String(component.licenceEvidence)) === "LICENSE") findings.push(`${label}: the repository MIT licence cannot serve as public-domain evidence`);
+}
+
+function bundledPathFindings(component, componentPath, label, inspection) {
+  const { registeredPaths, tracked, blobs, findings } = inspection;
+  if (registeredPaths.has(componentPath)) findings.push(`${label}: duplicate registered path ${componentPath}`);
+  registeredPaths.add(componentPath);
+  if (!tracked.has(componentPath)) findings.push(`${label}: registered path is not staged: ${componentPath}`);
+  if (!/^[a-f0-9]{64}$/u.test(String(component.sha256))) findings.push(`${label}: sha256 must be 64 lowercase hexadecimal characters`);
+  const bytes = blobs.get(componentPath);
+  if (bytes && sha256(bytes) !== component.sha256) findings.push(`${label}: staged blob hash differs for ${componentPath}`);
+}
+
+function bundledSourceFindings(component, label, findings) {
+  if (!nonempty(component.version) || !nonempty(component.creator) || !nonempty(component.copyright) || !nonempty(component.sourceUrl)) findings.push(`${label}: version, creator, copyright, and sourceUrl are required`);
+  if (PROHIBITED_ACTIVE_SOURCE.test(String(component.sourceUrl))) findings.push(`${label}: prohibited BBC RemArc or other non-open source cannot supply a bundled component`);
+  if (component.modified !== true && component.modified !== false) findings.push(`${label}: modified must be boolean`);
+}
+
+function thirdPartySourceFindings(component, label, findings) {
+  if (!/^[a-f0-9]{40}$/u.test(String(component.sourceCommit))) findings.push(`${label}: third-party sourceCommit must be an immutable 40-character Git SHA`);
+  if (!/^[a-f0-9]{64}$/u.test(String(component.sourceArtifactSha256))) findings.push(`${label}: third-party sourceArtifactSha256 must be a SHA-256 digest`);
+  if (!nonempty(component.sourceInnerPath) || path.posix.isAbsolute(component.sourceInnerPath) || normalized(component.sourceInnerPath).startsWith("../")) findings.push(`${label}: third-party sourceInnerPath must be a safe archive-relative path`);
+}
+
+function registerLocalEvidence(evidence, field, label, inspection) {
+  const { tracked, findings, evidencePaths, usedEvidencePaths } = inspection;
+  if (!localEvidencePath(evidence) || !tracked.has(normalized(evidence))) findings.push(`${label}: ${field} must be a tracked local file`);
+  else if (!evidencePaths.has(normalized(evidence))) findings.push(`${label}: ${field} must be a reviewed evidence path`);
+  else usedEvidencePaths.add(normalized(evidence));
+}
+
+function bundledLicenceTextFindings(component, licenceBytes, label, findings) {
+  if (component.licence === "OFL-1.1" && (!licenceBytes || sha256(licenceBytes) !== REVIEWED_INTER.licenceEvidenceSha256 || !/SIL OPEN FONT LICENSE Version 1\.1/u.test(licenceBytes.toString("utf8")))) {
+    findings.push(`${label}: OFL licence evidence is not the exact reviewed upstream text`);
   }
+  if (component.licence === "MIT" && (!licenceBytes || !/^MIT License\r?$/mu.test(licenceBytes.toString("utf8")) || !/Permission is hereby granted, free of charge/u.test(licenceBytes.toString("utf8")))) {
+    findings.push(`${label}: MIT licence evidence is missing the reviewed grant`);
+  }
+}
+
+function bundledAttributionFindings(component, componentPath, attributionBytes, label, findings) {
+  const attribution = attributionBytes.toString("utf8");
+  const componentName = path.posix.basename(componentPath);
+  if (!attribution.includes(componentName) || !attribution.toLowerCase().includes(String(component.sha256).toLowerCase())) findings.push(`${label}: attribution record must identify the shipped file and exact SHA-256`);
+}
+
+function reviewedInterFindings(component, label, findings) {
+  for (const [field, expected] of Object.entries({
+    sha256: REVIEWED_INTER.shippedSha256,
+    sourceUrl: REVIEWED_INTER.sourceUrl,
+    sourceCommit: REVIEWED_INTER.sourceCommit,
+    sourceArtifactSha256: REVIEWED_INTER.sourceArtifactSha256,
+    sourceInnerPath: REVIEWED_INTER.sourceInnerPath,
+  })) {
+    if (component[field] !== expected) findings.push(`${label}: reviewed Inter ${field} does not match the approved upstream artifact`);
+  }
+  if (component.kind !== "font" || component.origin !== "third-party-open" || component.licence !== "OFL-1.1" || component.modified !== false) findings.push(`${label}: reviewed Inter classification is invalid`);
+}
+
+function bundledEvidenceFindings(component, componentPath, label, inspection) {
+  const { blobs, findings } = inspection;
+  for (const field of ["licenceEvidence", "attributionRecord"]) registerLocalEvidence(component[field], field, label, inspection);
+  const licenceBytes = blobs.get(normalized(component.licenceEvidence));
+  const attributionBytes = blobs.get(normalized(component.attributionRecord));
+  bundledLicenceTextFindings(component, licenceBytes, label, findings);
+  if (attributionBytes) bundledAttributionFindings(component, componentPath, attributionBytes, label, findings);
+  if (component.id === REVIEWED_INTER.id) reviewedInterFindings(component, label, findings);
+}
+
+function inspectBundledComponent(inspection, component, index) {
+  const { findings } = inspection;
+  const label = `${COMPONENT_REGISTER_PATH} bundledComponents[${index}]`;
+  if (!exactKeys(component, bundledComponentKeys(component), label, findings)) return;
+  registerComponentId(component, label, inspection);
+  bundledLicenceFindings(component, label, findings);
+  if (component.origin === "public-domain") publicDomainEvidenceFindings(component, label, findings);
+  if (component.modified === true && !nonempty(component.modificationDescription)) findings.push(`${label}: modified components require a modificationDescription`);
+  if (!Array.isArray(component.paths) || component.paths.length !== 1 || !nonempty(component.paths[0])) {
+    findings.push(`${label}: paths must contain exactly one staged path so its hash is unambiguous`);
+    return;
+  }
+  const componentPath = normalized(component.paths[0]);
+  bundledPathFindings(component, componentPath, label, inspection);
+  bundledSourceFindings(component, label, findings);
+  if (component.origin === "third-party-open") thirdPartySourceFindings(component, label, findings);
+  bundledEvidenceFindings(component, componentPath, label, inspection);
+}
+
+function registerBundledFindings(inspection) {
+  const { register, findings, entries, registeredPaths } = inspection;
   const bundled = Array.isArray(register.bundledComponents) ? register.bundledComponents : [];
   if (!Array.isArray(register.bundledComponents)) findings.push(`${COMPONENT_REGISTER_PATH}: bundledComponents must be an array`);
-  const bundledKeys = ["id", "kind", "origin", "paths", "sha256", "licence", "version", "creator", "copyright", "sourceUrl", "licenceEvidence", "attributionRecord", "modified"];
-  for (const [index, component] of bundled.entries()) {
-    const label = `${COMPONENT_REGISTER_PATH} bundledComponents[${index}]`;
-    const expectedKeys = [
-      ...bundledKeys,
-      ...(component?.origin === "third-party-open" ? ["sourceCommit", "sourceArtifactSha256", "sourceInnerPath"] : []),
-      ...(component?.origin === "public-domain" ? ["publicDomainBasis", "jurisdiction", "determinationDate", "evidenceUrl", "evidenceSha256"] : []),
-      ...(component?.modified === true ? ["modificationDescription"] : []),
-    ];
-    if (!exactKeys(component, expectedKeys, label, findings)) continue;
-    if (!nonempty(component.id) || componentIds.has(component.id)) findings.push(`${label}: id must be unique and nonempty`);
-    else componentIds.add(component.id);
-    if (!["original-project", "third-party-open", "public-domain"].includes(component.origin)) findings.push(`${label}: invalid origin`);
-    if (!APPROVED_LICENCES.has(component.licence) || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: unapproved or restrictive licence ${component.licence}`);
-    if (!KIND_LICENCES[component.kind] || !KIND_LICENCES[component.kind].has(component.licence)) findings.push(`${label}: licence ${component.licence} is not approved for component kind ${component.kind}`);
-    if (component.origin === "original-project" && component.licence !== "MIT") findings.push(`${label}: original project material must use MIT`);
-    if (component.origin === "public-domain" && !["CC0-1.0", "LicenseRef-Public-Domain"].includes(component.licence)) findings.push(`${label}: public-domain material must use CC0-1.0 or an evidence-backed public-domain record`);
-    if (component.origin === "public-domain") {
-      if (![component.publicDomainBasis, component.jurisdiction, component.determinationDate, component.evidenceUrl, component.evidenceSha256].every(nonempty)) findings.push(`${label}: public-domain records require basis, jurisdiction, determination date, evidence URL, and evidence SHA-256`);
-      if (!/^\d{4}-\d{2}-\d{2}$/u.test(String(component.determinationDate))) findings.push(`${label}: public-domain determinationDate must use YYYY-MM-DD`);
-      if (!/^https:\/\//iu.test(String(component.evidenceUrl)) || !/^[a-f0-9]{64}$/u.test(String(component.evidenceSha256))) findings.push(`${label}: public-domain evidence URL and SHA-256 are invalid`);
-      if (normalized(String(component.licenceEvidence)) === "LICENSE") findings.push(`${label}: the repository MIT licence cannot serve as public-domain evidence`);
-    }
-    if (component.modified === true && !nonempty(component.modificationDescription)) findings.push(`${label}: modified components require a modificationDescription`);
-    if (!Array.isArray(component.paths) || component.paths.length !== 1 || !nonempty(component.paths[0])) {
-      findings.push(`${label}: paths must contain exactly one staged path so its hash is unambiguous`);
-      continue;
-    }
-    const componentPath = normalized(component.paths[0]);
-    if (registeredPaths.has(componentPath)) findings.push(`${label}: duplicate registered path ${componentPath}`);
-    registeredPaths.add(componentPath);
-    if (!tracked.has(componentPath)) findings.push(`${label}: registered path is not staged: ${componentPath}`);
-    if (!/^[a-f0-9]{64}$/u.test(String(component.sha256))) findings.push(`${label}: sha256 must be 64 lowercase hexadecimal characters`);
-    const bytes = blobs.get(componentPath);
-    if (bytes && sha256(bytes) !== component.sha256) findings.push(`${label}: staged blob hash differs for ${componentPath}`);
-    if (!nonempty(component.version) || !nonempty(component.creator) || !nonempty(component.copyright) || !nonempty(component.sourceUrl)) findings.push(`${label}: version, creator, copyright, and sourceUrl are required`);
-    if (PROHIBITED_ACTIVE_SOURCE.test(String(component.sourceUrl))) findings.push(`${label}: prohibited BBC RemArc or other non-open source cannot supply a bundled component`);
-    if (component.modified !== true && component.modified !== false) findings.push(`${label}: modified must be boolean`);
-    if (component.origin === "third-party-open") {
-      if (!/^[a-f0-9]{40}$/u.test(String(component.sourceCommit))) findings.push(`${label}: third-party sourceCommit must be an immutable 40-character Git SHA`);
-      if (!/^[a-f0-9]{64}$/u.test(String(component.sourceArtifactSha256))) findings.push(`${label}: third-party sourceArtifactSha256 must be a SHA-256 digest`);
-      if (!nonempty(component.sourceInnerPath) || path.posix.isAbsolute(component.sourceInnerPath) || normalized(component.sourceInnerPath).startsWith("../")) findings.push(`${label}: third-party sourceInnerPath must be a safe archive-relative path`);
-    }
-    for (const field of ["licenceEvidence", "attributionRecord"]) {
-      const evidence = component[field];
-      if (!localEvidencePath(evidence) || !tracked.has(normalized(evidence))) findings.push(`${label}: ${field} must be a tracked local file`);
-      else if (!evidencePaths.has(normalized(evidence))) findings.push(`${label}: ${field} must be a reviewed evidence path`);
-      else usedEvidencePaths.add(normalized(evidence));
-    }
-    const licenceBytes = blobs.get(normalized(component.licenceEvidence));
-    const attributionBytes = blobs.get(normalized(component.attributionRecord));
-    if (component.licence === "OFL-1.1" && (!licenceBytes || sha256(licenceBytes) !== REVIEWED_INTER.licenceEvidenceSha256 || !/SIL OPEN FONT LICENSE Version 1\.1/u.test(licenceBytes.toString("utf8")))) {
-      findings.push(`${label}: OFL licence evidence is not the exact reviewed upstream text`);
-    }
-    if (component.licence === "MIT" && (!licenceBytes || !/^MIT License\r?$/mu.test(licenceBytes.toString("utf8")) || !/Permission is hereby granted, free of charge/u.test(licenceBytes.toString("utf8")))) {
-      findings.push(`${label}: MIT licence evidence is missing the reviewed grant`);
-    }
-    if (attributionBytes) {
-      const attribution = attributionBytes.toString("utf8");
-      const componentName = path.posix.basename(componentPath);
-      if (!attribution.includes(componentName) || !attribution.toLowerCase().includes(String(component.sha256).toLowerCase())) findings.push(`${label}: attribution record must identify the shipped file and exact SHA-256`);
-    }
-    if (component.id === REVIEWED_INTER.id) {
-      for (const [field, expected] of Object.entries({
-        sha256: REVIEWED_INTER.shippedSha256,
-        sourceUrl: REVIEWED_INTER.sourceUrl,
-        sourceCommit: REVIEWED_INTER.sourceCommit,
-        sourceArtifactSha256: REVIEWED_INTER.sourceArtifactSha256,
-        sourceInnerPath: REVIEWED_INTER.sourceInnerPath,
-      })) {
-        if (component[field] !== expected) findings.push(`${label}: reviewed Inter ${field} does not match the approved upstream artifact`);
-      }
-      if (component.kind !== "font" || component.origin !== "third-party-open" || component.licence !== "OFL-1.1" || component.modified !== false) findings.push(`${label}: reviewed Inter classification is invalid`);
-    }
-  }
-
+  for (const [index, component] of bundled.entries()) inspectBundledComponent(inspection, component, index);
   for (const entry of entries) {
     if ((REGISTERED_ASSET_PATH.test(entry.path) || REGISTERED_BINARY_EXTENSION.test(entry.path)) && !registeredPaths.has(entry.path)) {
       findings.push(`${entry.path}: asset or binary is absent from ${COMPONENT_REGISTER_PATH}`);
     }
   }
+}
 
-  const sources = new Map(Array.isArray(manifest.sources) ? manifest.sources.map((source) => [source.id, source]) : []);
-  const registeredSourceIds = new Set();
-  const referenceKeys = ["id", "kind", "sourceIds", "licence", "sourceUrl", "attributionRecord", "reuseBoundary"];
-  const references = Array.isArray(register.referenceComponents) ? register.referenceComponents : [];
-  if (!Array.isArray(register.referenceComponents)) findings.push(`${COMPONENT_REGISTER_PATH}: referenceComponents must be an array`);
-  for (const [index, component] of references.entries()) {
-    const label = `${COMPONENT_REGISTER_PATH} referenceComponents[${index}]`;
-    if (!exactKeys(component, referenceKeys, label, findings)) continue;
-    if (!nonempty(component.id) || componentIds.has(component.id)) findings.push(`${label}: id must be unique and nonempty`);
-    else componentIds.add(component.id);
-    if (!["open-reference", "factual-citation"].includes(component.kind)) findings.push(`${label}: invalid reference kind`);
-    if (!Array.isArray(component.sourceIds) || !component.sourceIds.length) findings.push(`${label}: sourceIds must be a nonempty array`);
-    for (const sourceId of component.sourceIds || []) {
-      if (!nonempty(sourceId) || registeredSourceIds.has(sourceId)) findings.push(`${label}: source id must be unique and nonempty: ${sourceId}`);
-      registeredSourceIds.add(sourceId);
-      const source = sources.get(sourceId);
-      if (!source) {
-        findings.push(`${label}: manifest source does not exist: ${sourceId}`);
-        continue;
-      }
-      if (component.kind === "factual-citation") {
-        if (component.licence !== null) findings.push(`${label}: factual-citation licence must be null`);
-        if (!/(?:no wording is copied|no imagery or wording is reused)/iu.test(String(source.use))) {
-          findings.push(`${label}: ${sourceId} does not state the no-copied-expression boundary`);
-        }
-      } else {
-        if (!APPROVED_LICENCES.has(component.licence) || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: unapproved or restrictive open-reference licence`);
-        if (component.licence === "OGL-UK-3.0") {
-          const rightsControl = sourceId === "SRC-UK-OGL"
-            && source.url === "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/";
-          if (!rightsControl && !/Open Government Licence v3\.0/iu.test(String(source.licence))) {
-            findings.push(`${label}: ${sourceId} manifest licence conflicts with OGL-UK-3.0`);
-          }
-        }
-        if (component.licence === "CC-BY-4.0") {
-          const rightsControl = sourceId === "SRC-AUS-TERMS"
-            && source.url === "https://www.australiancurriculum.edu.au/copyright-and-terms-of-use/"
-            && /CC BY 4\.0/iu.test(String(source.licence));
-          if (!rightsControl && !/Creative Commons Attribution 4\.0/iu.test(String(source.licence))) {
-            findings.push(`${label}: ${sourceId} manifest licence conflicts with CC-BY-4.0`);
-          }
-        }
-      }
+function openReferenceLicenceFindings(component, source, sourceId, label, findings) {
+  if (!APPROVED_LICENCES.has(component.licence) || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: unapproved or restrictive open-reference licence`);
+  if (component.licence === "OGL-UK-3.0") {
+    const rightsControl = sourceId === "SRC-UK-OGL"
+      && source.url === "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/";
+    if (!rightsControl && !/Open Government Licence v3\.0/iu.test(String(source.licence))) {
+      findings.push(`${label}: ${sourceId} manifest licence conflicts with OGL-UK-3.0`);
     }
-    if (!nonempty(component.sourceUrl) || !nonempty(component.reuseBoundary)) findings.push(`${label}: sourceUrl and reuseBoundary are required`);
-    if (!localEvidencePath(component.attributionRecord) || !tracked.has(normalized(component.attributionRecord))) findings.push(`${label}: attributionRecord must be a tracked local file`);
-    else if (!evidencePaths.has(normalized(component.attributionRecord))) findings.push(`${label}: attributionRecord must be a reviewed evidence path`);
-    else usedEvidencePaths.add(normalized(component.attributionRecord));
   }
-  for (const sourceId of sources.keys()) {
-    if (!registeredSourceIds.has(sourceId)) findings.push(`${COMPONENT_REGISTER_PATH}: manifest source is not registered: ${sourceId}`);
+  if (component.licence === "CC-BY-4.0") ccReferenceLicenceFindings(source, sourceId, label, findings);
+}
+
+function ccReferenceLicenceFindings(source, sourceId, label, findings) {
+  const rightsControl = sourceId === "SRC-AUS-TERMS"
+    && source.url === "https://www.australiancurriculum.edu.au/copyright-and-terms-of-use/"
+    && /CC BY 4\.0/iu.test(String(source.licence));
+  if (!rightsControl && !/Creative Commons Attribution 4\.0/iu.test(String(source.licence))) {
+    findings.push(`${label}: ${sourceId} manifest licence conflicts with CC-BY-4.0`);
   }
+}
+
+function factualCitationFindings(component, source, sourceId, label, findings) {
+  if (component.licence !== null) findings.push(`${label}: factual-citation licence must be null`);
+  if (!/(?:no wording is copied|no imagery or wording is reused)/iu.test(String(source.use))) {
+    findings.push(`${label}: ${sourceId} does not state the no-copied-expression boundary`);
+  }
+}
+
+function referenceSourceFindings(component, sourceId, label, references) {
+  const { findings, sources, registeredSourceIds } = references;
+  if (!nonempty(sourceId) || registeredSourceIds.has(sourceId)) findings.push(`${label}: source id must be unique and nonempty: ${sourceId}`);
+  registeredSourceIds.add(sourceId);
+  const source = sources.get(sourceId);
+  if (!source) {
+    findings.push(`${label}: manifest source does not exist: ${sourceId}`);
+    return;
+  }
+  if (component.kind === "factual-citation") factualCitationFindings(component, source, sourceId, label, findings);
+  else openReferenceLicenceFindings(component, source, sourceId, label, findings);
+}
+
+function inspectReferenceComponent(inspection, component, index, references) {
+  const { findings } = inspection;
+  const label = `${COMPONENT_REGISTER_PATH} referenceComponents[${index}]`;
+  if (!exactKeys(component, ["id", "kind", "sourceIds", "licence", "sourceUrl", "attributionRecord", "reuseBoundary"], label, findings)) return;
+  registerComponentId(component, label, inspection);
+  if (!["open-reference", "factual-citation"].includes(component.kind)) findings.push(`${label}: invalid reference kind`);
+  if (!Array.isArray(component.sourceIds) || !component.sourceIds.length) findings.push(`${label}: sourceIds must be a nonempty array`);
+  for (const sourceId of component.sourceIds || []) referenceSourceFindings(component, sourceId, label, references);
+  if (!nonempty(component.sourceUrl) || !nonempty(component.reuseBoundary)) findings.push(`${label}: sourceUrl and reuseBoundary are required`);
+  registerLocalEvidence(component.attributionRecord, "attributionRecord", label, inspection);
+}
+
+function manifestLicenceFindings(manifest, findings) {
   if (manifest?.licence?.spdx !== "MIT" || manifest?.licence?.originalManifest !== "MIT") {
     findings.push(`${CURRICULUM_PATH}: original manifest expression must be explicitly MIT`);
   }
+}
 
-  const workflowKeys = ["id", "kind", "uses", "commit", "version", "licence", "sourceUrl", "licenceEvidence"];
+function registerReferenceFindings(inspection) {
+  const { register, manifest, findings } = inspection;
+  const sources = new Map(Array.isArray(manifest.sources) ? manifest.sources.map((source) => [source.id, source]) : []);
+  const registeredSourceIds = new Set();
+  const referenceContext = { findings, sources, registeredSourceIds };
+  const references = Array.isArray(register.referenceComponents) ? register.referenceComponents : [];
+  if (!Array.isArray(register.referenceComponents)) findings.push(`${COMPONENT_REGISTER_PATH}: referenceComponents must be an array`);
+  for (const [index, component] of references.entries()) inspectReferenceComponent(inspection, component, index, referenceContext);
+  for (const sourceId of sources.keys()) {
+    if (!registeredSourceIds.has(sourceId)) findings.push(`${COMPONENT_REGISTER_PATH}: manifest source is not registered: ${sourceId}`);
+  }
+  manifestLicenceFindings(manifest, findings);
+}
+
+function inspectWorkflowComponent(component, label, inspection, registeredActions) {
+  const { findings } = inspection;
+  if (!exactKeys(component, ["id", "kind", "uses", "commit", "version", "licence", "sourceUrl", "licenceEvidence"], label, findings)) return;
+  registerComponentId(component, label, inspection);
+  workflowComponentIdentityFindings(component, label, findings);
+  if (registeredActions.has(component.uses)) findings.push(`${label}: duplicate workflow action ${component.uses}`);
+  registeredActions.set(component.uses, component.commit);
+}
+
+function workflowComponentIdentityFindings(component, label, findings) {
+  if (component.kind !== "workflow-action" || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/iu.test(String(component.uses))) findings.push(`${label}: invalid workflow action`);
+  if (!/^[a-f0-9]{40}$/u.test(String(component.commit))) findings.push(`${label}: commit must be an immutable 40-character lowercase Git SHA`);
+  if (component.licence !== "MIT" || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: workflow action must be reviewed MIT material`);
+  if (!nonempty(component.version) || !String(component.sourceUrl).startsWith(`https://github.com/${component.uses}/`) || !String(component.licenceEvidence).startsWith(`https://github.com/${component.uses}/`)) findings.push(`${label}: version and exact GitHub source/licence evidence are required`);
+}
+
+function inspectWorkflowAction(value, location, relativePath, actions) {
+  const { findings, registeredActions, observedActions } = actions;
+  if (value.startsWith("./")) {
+    findings.push(`${location}: local actions require a separately registered and recursively inspected action manifest`);
+    return;
+  }
+  if (value.startsWith("docker://")) {
+    findings.push(`${location}: Docker actions are not approved`);
+    return;
+  }
+  const separator = value.lastIndexOf("@");
+  if (separator <= 0) {
+    findings.push(`${location}: workflow action must name an immutable registered revision`);
+    return;
+  }
+  const action = value.slice(0, separator);
+  const reference = value.slice(separator + 1);
+  if (!/^[a-f0-9]{40}$/u.test(reference)) findings.push(`${relativePath}: workflow action ${action} must be pinned to an immutable 40-character lowercase Git SHA`);
+  if (registeredActions.get(action) !== reference) findings.push(`${relativePath}: workflow action ${action}@${reference} is absent from or differs from the component register`);
+  observedActions.set(action, reference);
+}
+
+function inspectWorkflowMapping(line, lineIndex, relativePath, actions) {
+  const { findings } = actions;
+  const location = `${relativePath}:${lineIndex + 1}`;
+  const quotedMappingKey = /^\s*(?:-\s*)?["'][^"'\r\n]+["']\s*:/u.test(line)
+    || /[{,]\s*["'][^"'\r\n]+["']\s*:/u.test(line);
+  if (quotedMappingKey || /\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})/iu.test(line)) {
+    findings.push(`${location}: quoted or escaped workflow mapping keys are not allowed`);
+    return;
+  }
+  const containsUses = /(?:^|[-{,\s])uses\s*:/iu.test(line);
+  const match = line.match(/^\s+uses\s*:\s*([^'"\s#},]+)(?:\s*#.*)?$/iu);
+  if (containsUses && !match) {
+    findings.push(`${location}: workflow uses value could not be parsed safely`);
+    return;
+  }
+  if (match) inspectWorkflowAction(match[1], location, relativePath, actions);
+}
+
+function inspectWorkflowLines(workflowText, relativePath, actions) {
+  const workflowLines = workflowText.split(/\r?\n/u);
+  let blockScalarIndent = null;
+  for (const [lineIndex, line] of workflowLines.entries()) {
+    const indentation = line.match(/^\s*/u)[0].length;
+    if (blockScalarIndent !== null) {
+      if (!line.trim() || indentation > blockScalarIndent) continue;
+      blockScalarIndent = null;
+    }
+    if (/^\s*(?:-\s*)?run\s*:\s*[|>][-+0-9]*\s*(?:#.*)?$/iu.test(line)) {
+      blockScalarIndent = indentation;
+      continue;
+    }
+    inspectWorkflowMapping(line, lineIndex, relativePath, actions);
+  }
+}
+
+function workflowRuntimeFindings(workflowText, relativePath, findings) {
+  if (/^\s*(?:container|services)\s*:/gmu.test(workflowText)) findings.push(`${relativePath}: job containers and services are not approved workflow dependencies`);
+  if (/(?:^|\s)(?:curl|wget|Invoke-WebRequest|iwr|npm\s+(?:install|ci)|npx|pip\d*\s+install|choco\s+install|winget\s+install|apt-get\s+install|git\s+clone)(?:\s|$)/imu.test(workflowText)) {
+    findings.push(`${relativePath}: network installers or ad-hoc downloaded executables are not allowed in workflows`);
+  }
+  for (const match of workflowText.matchAll(/node-version\s*:\s*["']?([^\s#'"]+)/gmu)) {
+    if (match[1] !== "24.14.0") findings.push(`${relativePath}: Node toolchain must be pinned to reviewed version 24.14.0`);
+  }
+}
+
+function registerWorkflowFindings(inspection) {
+  const { register, blobs, findings } = inspection;
   const workflow = Array.isArray(register.workflowComponents) ? register.workflowComponents : [];
   if (!Array.isArray(register.workflowComponents)) findings.push(`${COMPONENT_REGISTER_PATH}: workflowComponents must be an array`);
   const registeredActions = new Map();
   for (const [index, component] of workflow.entries()) {
-    const label = `${COMPONENT_REGISTER_PATH} workflowComponents[${index}]`;
-    if (!exactKeys(component, workflowKeys, label, findings)) continue;
-    if (!nonempty(component.id) || componentIds.has(component.id)) findings.push(`${label}: id must be unique and nonempty`);
-    else componentIds.add(component.id);
-    if (component.kind !== "workflow-action" || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/iu.test(String(component.uses))) findings.push(`${label}: invalid workflow action`);
-    if (!/^[a-f0-9]{40}$/u.test(String(component.commit))) findings.push(`${label}: commit must be an immutable 40-character lowercase Git SHA`);
-    if (component.licence !== "MIT" || RESTRICTIVE_LICENCE.test(String(component.licence))) findings.push(`${label}: workflow action must be reviewed MIT material`);
-    if (!nonempty(component.version) || !String(component.sourceUrl).startsWith(`https://github.com/${component.uses}/`) || !String(component.licenceEvidence).startsWith(`https://github.com/${component.uses}/`)) findings.push(`${label}: version and exact GitHub source/licence evidence are required`);
-    if (registeredActions.has(component.uses)) findings.push(`${label}: duplicate workflow action ${component.uses}`);
-    registeredActions.set(component.uses, component.commit);
+    inspectWorkflowComponent(component, `${COMPONENT_REGISTER_PATH} workflowComponents[${index}]`, inspection, registeredActions);
   }
   const observedActions = new Map();
+  const actions = { findings, registeredActions, observedActions };
   for (const [relativePath, bytes] of blobs.entries()) {
     if (!/^\.github\/workflows\/.+\.ya?ml$/iu.test(relativePath)) continue;
     const workflowText = bytes.toString("utf8");
-    const workflowLines = workflowText.split(/\r?\n/u);
-    let blockScalarIndent = null;
-    for (const [lineIndex, line] of workflowLines.entries()) {
-      const indentation = line.match(/^\s*/u)[0].length;
-      if (blockScalarIndent !== null) {
-        if (!line.trim() || indentation > blockScalarIndent) continue;
-        blockScalarIndent = null;
-      }
-      if (/^\s*(?:-\s*)?run\s*:\s*[|>][-+0-9]*\s*(?:#.*)?$/iu.test(line)) {
-        blockScalarIndent = indentation;
-        continue;
-      }
-      const quotedMappingKey = /^\s*(?:-\s*)?["'][^"'\r\n]+["']\s*:/u.test(line)
-        || /[{,]\s*["'][^"'\r\n]+["']\s*:/u.test(line);
-      if (quotedMappingKey || /\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})/iu.test(line)) {
-        findings.push(`${relativePath}:${lineIndex + 1}: quoted or escaped workflow mapping keys are not allowed`);
-        continue;
-      }
-      const containsUses = /(?:^|[-{,\s])uses\s*:/iu.test(line);
-      const match = line.match(/^\s+uses\s*:\s*([^'"\s#},]+)(?:\s*#.*)?$/iu);
-      if (containsUses && !match) {
-        findings.push(`${relativePath}:${lineIndex + 1}: workflow uses value could not be parsed safely`);
-        continue;
-      }
-      if (!match) continue;
-      const value = match[1];
-      if (value.startsWith("./")) {
-        findings.push(`${relativePath}:${lineIndex + 1}: local actions require a separately registered and recursively inspected action manifest`);
-        continue;
-      }
-      if (value.startsWith("docker://")) {
-        findings.push(`${relativePath}:${lineIndex + 1}: Docker actions are not approved`);
-        continue;
-      }
-      const separator = value.lastIndexOf("@");
-      if (separator <= 0) {
-        findings.push(`${relativePath}:${lineIndex + 1}: workflow action must name an immutable registered revision`);
-        continue;
-      }
-      const action = value.slice(0, separator);
-      const reference = value.slice(separator + 1);
-      if (!/^[a-f0-9]{40}$/u.test(reference)) findings.push(`${relativePath}: workflow action ${action} must be pinned to an immutable 40-character lowercase Git SHA`);
-      if (registeredActions.get(action) !== reference) findings.push(`${relativePath}: workflow action ${action}@${reference} is absent from or differs from the component register`);
-      observedActions.set(action, reference);
-    }
-    if (/^\s*(?:container|services)\s*:/gmu.test(workflowText)) findings.push(`${relativePath}: job containers and services are not approved workflow dependencies`);
-    if (/(?:^|\s)(?:curl|wget|Invoke-WebRequest|iwr|npm\s+(?:install|ci)|npx|pip\d*\s+install|choco\s+install|winget\s+install|apt-get\s+install|git\s+clone)(?:\s|$)/imu.test(workflowText)) {
-      findings.push(`${relativePath}: network installers or ad-hoc downloaded executables are not allowed in workflows`);
-    }
-    for (const match of workflowText.matchAll(/node-version\s*:\s*["']?([^\s#'"]+)/gmu)) {
-      if (match[1] !== "24.14.0") findings.push(`${relativePath}: Node toolchain must be pinned to reviewed version 24.14.0`);
-    }
+    inspectWorkflowLines(workflowText, relativePath, actions);
+    workflowRuntimeFindings(workflowText, relativePath, findings);
   }
   for (const [action, commit] of registeredActions.entries()) {
     if (observedActions.get(action) !== commit) findings.push(`${COMPONENT_REGISTER_PATH}: registered workflow action is not used at its reviewed commit: ${action}`);
   }
+}
 
-  const nodeToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
-  const caddyToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "signedTagObject", "licenceEvidence", "archiveUrl", "archiveSha256", "archiveSha512", "attributionRecord", "bundled", "scope"];
-  const packageToolKeys = ["id", "kind", "version", "licence", "sourceUrl", "sourceCommit", "licenceEvidence", "packageName", "packageUrl", "packageSri", "attributionRecord", "bundled", "scope"];
+function reviewedNodeToolFindings(nodeTool, findings) {
+  const keys = ["id", "kind", "version", "licence", "sourceUrl", "licenceEvidence", "bundled"];
+  if (!exactKeys(nodeTool, keys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) return;
+  if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
+  if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
+}
+
+function registerToolchainFindings(inspection) {
+  const { register, findings, evidencePaths, usedEvidencePaths } = inspection;
   if (!Array.isArray(register.toolchain) || register.toolchain.length !== 13) {
     findings.push(`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the thirteen reviewed Node.js, Caddy, Playwright, Ajv, fast-check, and pure-rand dependency records`);
-  } else {
-    const [nodeTool, caddyTool, playwrightCoreTool, playwrightTestTool, playwrightRunnerTool, fastCheckTool, pureRandTool, fseventsTool, ajvTool, fastDeepEqualTool, fastUriTool, schemaTraverseTool, requireFromStringTool] = register.toolchain;
-    if (exactKeys(nodeTool, nodeToolKeys, `${COMPONENT_REGISTER_PATH} toolchain[0]`, findings)) {
-      if (nodeTool.id !== "nodejs-24" || nodeTool.version !== "24.14.0" || nodeTool.licence !== "MIT" || nodeTool.bundled !== false) findings.push(`${COMPONENT_REGISTER_PATH}: Node.js toolchain record is not the reviewed open-source version`);
-      if (nodeTool.kind !== "build-and-audit-tool" || nodeTool.sourceUrl !== "https://github.com/nodejs/node/tree/v24.14.0" || nodeTool.licenceEvidence !== "https://github.com/nodejs/node/blob/v24.14.0/LICENSE") findings.push(`${COMPONENT_REGISTER_PATH}: Node.js source or licence evidence is not the reviewed upstream record`);
-    }
-    const exactCaddy = {
-      id: "caddy-2.11.4",
-      kind: "ci-only-trusted-https-server",
-      version: "2.11.4",
-      licence: "Apache-2.0",
-      sourceUrl: "https://github.com/caddyserver/caddy/tree/e2eee6a7fce366321294c9c2a79f3146891dcbdf",
-      sourceCommit: "e2eee6a7fce366321294c9c2a79f3146891dcbdf",
-      signedTagObject: "8ec11a4b7e39a5fd00da2fc5cb9b543e31fd7926",
-      licenceEvidence: "https://github.com/caddyserver/caddy/blob/e2eee6a7fce366321294c9c2a79f3146891dcbdf/LICENSE",
-      archiveUrl: "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_windows_amd64.zip",
-      archiveSha256: "1708333f79e274c7697285afe6d592ab39314e0b131e9ec6bea08ad27df62ebf",
-      archiveSha512: "cd5ccfd86a4b40732cf715890d0dca5bf3f63adefec5a7914de85adf240c60ce7e5d2791631b88ef9758e46b23bb1730e020b9c5d696889740b284ffd4788e35",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "disposable GitHub-hosted Windows canary only",
-    };
-    const exactPlaywright = {
-      id: "playwright-core-1.62.1",
-      kind: "ci-only-browser-driver",
-      version: "1.62.1",
-      licence: "Apache-2.0",
-      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
-      packageName: "playwright-core",
-      packageUrl: "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
-      packageSri: "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "trusted-HTTPS canary and focused browser tests",
-    };
-    const exactPlaywrightTest = {
-      id: "playwright-test-1.62.1",
-      kind: "ci-only-browser-test-runner",
-      version: "1.62.1",
-      licence: "Apache-2.0",
-      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
-      packageName: "@playwright/test",
-      packageUrl: "https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz",
-      packageSri: "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "focused and frozen-candidate browser journeys only",
-    };
-    const exactPlaywrightRunner = {
-      id: "playwright-1.62.1",
-      kind: "ci-only-browser-automation-library",
-      version: "1.62.1",
-      licence: "Apache-2.0",
-      sourceUrl: "https://github.com/microsoft/playwright/tree/26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      sourceCommit: "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
-      licenceEvidence: "https://github.com/microsoft/playwright/blob/26a9e470a7b3c7822084b09fb7f13902c5f37b51/LICENSE",
-      packageName: "playwright",
-      packageUrl: "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz",
-      packageSri: "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "focused and frozen-candidate browser journeys only",
-    };
-    const exactFastCheck = {
-      id: "fast-check-4.9.0",
-      kind: "ci-only-property-based-testing-library",
-      version: "4.9.0",
-      licence: "MIT",
-      sourceUrl: "https://github.com/dubzzz/fast-check/tree/0d3c2547dce556f72413607849377530d18ea283/packages/fast-check",
-      sourceCommit: "0d3c2547dce556f72413607849377530d18ea283",
-      licenceEvidence: "https://github.com/dubzzz/fast-check/blob/0d3c2547dce556f72413607849377530d18ea283/LICENSE",
-      packageName: "fast-check",
-      packageUrl: "https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz",
-      packageSri: "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "bounded seeded Playwright interaction-fuzz diagnostics only",
-    };
-    const exactPureRand = {
-      id: "pure-rand-8.4.2",
-      kind: "ci-only-transitive-pseudorandom-generator",
-      version: "8.4.2",
-      licence: "MIT",
-      sourceUrl: "https://github.com/dubzzz/pure-rand/tree/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
-      sourceCommit: "fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6",
-      licenceEvidence: "https://github.com/dubzzz/pure-rand/blob/fd86674e8e4ca9c3099fe2621ba4e9db0959c5d6/LICENSE",
-      packageName: "pure-rand",
-      packageUrl: "https://registry.npmjs.org/pure-rand/-/pure-rand-8.4.2.tgz",
-      packageSri: "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "fast-check transitive seeded generator for interaction-fuzz diagnostics only",
-    };
-    const exactFsevents = {
-      id: "fsevents-2.3.2",
-      kind: "lockfile-only-optional-macos-dependency",
-      version: "2.3.2",
-      licence: "MIT",
-      sourceUrl: "https://github.com/fsevents/fsevents/tree/a7f5d00939b74e141a73131468c4ce48ee0f2197",
-      sourceCommit: "a7f5d00939b74e141a73131468c4ce48ee0f2197",
-      licenceEvidence: "https://github.com/fsevents/fsevents/blob/a7f5d00939b74e141a73131468c4ce48ee0f2197/LICENSE",
-      packageName: "fsevents",
-      packageUrl: "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
-      packageSri: "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "optional dependency omitted by the reviewed Windows npm ci",
-    };
-    const exactAjv = {
-      id: "ajv-8.20.0",
-      kind: "ci-only-json-schema-validator",
-      version: "8.20.0",
-      licence: "MIT",
-      sourceUrl: "https://github.com/ajv-validator/ajv/tree/0fba0b8e649909613cfce0999b149cd08f4a4987",
-      sourceCommit: "0fba0b8e649909613cfce0999b149cd08f4a4987",
-      licenceEvidence: "https://github.com/ajv-validator/ajv/blob/0fba0b8e649909613cfce0999b149cd08f4a4987/LICENSE",
-      packageName: "ajv",
-      packageUrl: "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
-      packageSri: "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "closed repository JSON-contract build, synchronization, and focused validation only",
-    };
-    const exactFastDeepEqual = {
-      id: "fast-deep-equal-3.1.3",
-      kind: "ci-only-transitive-validator-dependency",
-      version: "3.1.3",
-      licence: "MIT",
-      sourceUrl: "https://github.com/epoberezkin/fast-deep-equal/tree/6d7b0967c6a3c7051ba51e236f2404db34e8b13c",
-      sourceCommit: "6d7b0967c6a3c7051ba51e236f2404db34e8b13c",
-      licenceEvidence: "https://github.com/epoberezkin/fast-deep-equal/blob/6d7b0967c6a3c7051ba51e236f2404db34e8b13c/LICENSE",
-      packageName: "fast-deep-equal",
-      packageUrl: "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz",
-      packageSri: "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
-    };
-    const exactFastUri = {
-      id: "fast-uri-3.1.5",
-      kind: "ci-only-transitive-validator-dependency",
-      version: "3.1.5",
-      licence: "BSD-3-Clause",
-      sourceUrl: "https://github.com/fastify/fast-uri/tree/5e179cbb4636d5f773ed21126e5bd3068e87e94e",
-      sourceCommit: "5e179cbb4636d5f773ed21126e5bd3068e87e94e",
-      licenceEvidence: "https://github.com/fastify/fast-uri/blob/5e179cbb4636d5f773ed21126e5bd3068e87e94e/LICENSE",
-      packageName: "fast-uri",
-      packageUrl: "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.5.tgz",
-      packageSri: "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
-    };
-    const exactSchemaTraverse = {
-      id: "json-schema-traverse-1.0.0",
-      kind: "ci-only-transitive-validator-dependency",
-      version: "1.0.0",
-      licence: "MIT",
-      sourceUrl: "https://github.com/epoberezkin/json-schema-traverse/tree/a20697b59096545a52bc8050b0878135c16979d6",
-      sourceCommit: "a20697b59096545a52bc8050b0878135c16979d6",
-      licenceEvidence: "https://github.com/epoberezkin/json-schema-traverse/blob/a20697b59096545a52bc8050b0878135c16979d6/LICENSE",
-      packageName: "json-schema-traverse",
-      packageUrl: "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz",
-      packageSri: "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
-    };
-    const exactRequireFromString = {
-      id: "require-from-string-2.0.2",
-      kind: "ci-only-transitive-validator-dependency",
-      version: "2.0.2",
-      licence: "MIT",
-      sourceUrl: "https://github.com/floatdrop/require-from-string/tree/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13",
-      sourceCommit: "bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13",
-      licenceEvidence: "https://github.com/floatdrop/require-from-string/blob/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13/LICENSE",
-      packageName: "require-from-string",
-      packageUrl: "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz",
-      packageSri: "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==",
-      attributionRecord: "licenses/ci-toolchain.md",
-      bundled: false,
-      scope: "Ajv transitive dependency for closed repository JSON-contract validation only",
-    };
-    for (const [tool, keys, expected, index] of [
-      [caddyTool, caddyToolKeys, exactCaddy, 1],
-      [playwrightCoreTool, packageToolKeys, exactPlaywright, 2],
-      [playwrightTestTool, packageToolKeys, exactPlaywrightTest, 3],
-      [playwrightRunnerTool, packageToolKeys, exactPlaywrightRunner, 4],
-      [fastCheckTool, packageToolKeys, exactFastCheck, 5],
-      [pureRandTool, packageToolKeys, exactPureRand, 6],
-      [fseventsTool, packageToolKeys, exactFsevents, 7],
-      [ajvTool, packageToolKeys, exactAjv, 8],
-      [fastDeepEqualTool, packageToolKeys, exactFastDeepEqual, 9],
-      [fastUriTool, packageToolKeys, exactFastUri, 10],
-      [schemaTraverseTool, packageToolKeys, exactSchemaTraverse, 11],
-      [requireFromStringTool, packageToolKeys, exactRequireFromString, 12],
-    ]) {
-      const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
-      if (exactKeys(tool, keys, label, findings)
-          && Object.entries(expected).some(([key, value]) => tool[key] !== value)) {
-        findings.push(`${label}: CI-only tool identity, licence, source, integrity, attribution, and scope must remain exact`);
-      }
-      if (tool?.attributionRecord === "licenses/ci-toolchain.md" && evidencePaths.has(tool.attributionRecord)) usedEvidencePaths.add(tool.attributionRecord);
-    }
+    return;
   }
-  findings.push(...trustedHttpsCanarySupplyChainFindings(canarySupplyChainInput(blobs)));
+  reviewedNodeToolFindings(register.toolchain[0], findings);
+  for (const { index, keys, expected } of REVIEWED_TOOLCHAIN_RECORDS) {
+    const tool = register.toolchain[index];
+    const label = `${COMPONENT_REGISTER_PATH} toolchain[${index}]`;
+    if (exactKeys(tool, keys, label, findings)
+        && Object.entries(expected).some(([key, value]) => tool[key] !== value)) {
+      findings.push(`${label}: CI-only tool identity, licence, source, integrity, attribution, and scope must remain exact`);
+    }
+    if (tool?.attributionRecord === "licenses/ci-toolchain.md" && evidencePaths.has(tool.attributionRecord)) usedEvidencePaths.add(tool.attributionRecord);
+  }
+}
 
+function registerCanaryFindings(inspection) {
+  const { blobs, findings } = inspection;
+  findings.push(...trustedHttpsCanarySupplyChainFindings(canarySupplyChainInput(blobs)));
+}
+
+function registerProhibitedFindings(inspection) {
+  const { register, findings } = inspection;
   const prohibitedKeys = ["id", "reason", "url"];
   if (!Array.isArray(register.prohibitedSources) || !register.prohibitedSources.length) findings.push(`${COMPONENT_REGISTER_PATH}: prohibitedSources must record the BBC RemArc exclusion`);
   else {
@@ -1055,7 +904,10 @@ function registerFindings(register, entries, blobs, manifest) {
     }
     if (!register.prohibitedSources.some((source) => source.id === "bbc-sound-effects-remarc" && /non-commercial/iu.test(source.reason))) findings.push(`${COMPONENT_REGISTER_PATH}: BBC RemArc non-commercial exclusion is missing`);
   }
+}
 
+function registerClassificationFindings(inspection) {
+  const { tracked, findings, firstPartySet, registeredPaths, evidencePaths, usedEvidencePaths } = inspection;
   for (const relativePath of tracked) {
     if (relativePath.startsWith("licenses/") && relativePath !== COMPONENT_REGISTER_PATH && !evidencePaths.has(relativePath) && !firstPartySet.has(relativePath)) {
       findings.push(`${relativePath}: orphaned licence or attribution file is not referenced by the component register`);
@@ -1067,11 +919,37 @@ function registerFindings(register, entries, blobs, manifest) {
   for (const evidencePath of evidencePaths) {
     if (!usedEvidencePaths.has(evidencePath)) findings.push(`${EVIDENCE_DECLARATION_PATH}: declared evidence path is not used: ${evidencePath}`);
   }
+}
 
+function registerRequiredRightsFindings(inspection) {
+  const { entryByPath, findings } = inspection;
   for (const requiredPath of REQUIRED_RIGHTS_PATHS) {
     if (!entryByPath.has(requiredPath)) findings.push(`${requiredPath}: required open-source rights record is not staged`);
   }
-  return findings;
+}
+
+function registerFindings(register, entries, blobs, manifest) {
+  const inspection = {
+    register, entries, blobs, manifest, findings: [],
+    tracked: new Set(entries.map((entry) => entry.path)),
+    entryByPath: new Map(entries.map((entry) => [entry.path, entry])),
+    evidencePaths: new Set(), usedEvidencePaths: new Set(),
+    registeredPaths: new Set(), componentIds: new Set(),
+  };
+  if (!registerPolicyFindings(inspection)) return inspection.findings;
+  registerEvidenceFindings(inspection);
+  inspection.firstPartyPaths = Array.isArray(register.firstPartyPaths) ? register.firstPartyPaths.map(normalized) : [];
+  inspection.firstPartySet = new Set(inspection.firstPartyPaths);
+  registerFirstPartyFindings(inspection);
+  registerBundledFindings(inspection);
+  registerReferenceFindings(inspection);
+  registerWorkflowFindings(inspection);
+  registerToolchainFindings(inspection);
+  registerCanaryFindings(inspection);
+  registerProhibitedFindings(inspection);
+  registerClassificationFindings(inspection);
+  registerRequiredRightsFindings(inspection);
+  return inspection.findings;
 }
 
 function publicFileManifestFindings(entries, blobs) {
@@ -1098,6 +976,87 @@ function publicFileManifestFindings(entries, blobs) {
   return findings;
 }
 
+const LICENCE_GUARD_MUTATIONS = Object.freeze([
+  ["an unregistered asset", ({ entries: rows, blobs: candidateBlobs }) => {
+  rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "assets/unregistered.wav" });
+  candidateBlobs.set("assets/unregistered.wav", Buffer.from("unregistered"));
+}, /absent from .*component-register/u],
+  ["changed registered bytes", ({ blobs: candidateBlobs }) => {
+  candidateBlobs.set("assets/fonts/Inter-Variable.ttf", Buffer.from("changed-font"));
+}, /staged blob hash differs/u],
+  ["missing local licence evidence", ({ entries: rows, blobs: candidateBlobs }) => {
+  const index = rows.findIndex((entry) => entry.path === "licenses/Inter-OFL.txt");
+  if (index >= 0) rows.splice(index, 1);
+  candidateBlobs.delete("licenses/Inter-OFL.txt");
+}, /licenceEvidence must be a tracked local file/u],
+  ["a non-commercial licence", ({ register: candidateRegister }) => {
+  candidateRegister.bundledComponents[0].licence = "CC-BY-NC-4.0";
+}, /unapproved or restrictive licence/u],
+  ["a non-MIT original component", ({ register: candidateRegister }) => {
+  const original = candidateRegister.bundledComponents.find((component) => component.origin === "original-project");
+  original.licence = "OFL-1.1";
+}, /original project material must use MIT/u],
+  ["a floating workflow action", ({ blobs: candidateBlobs }) => {
+  const workflowPath = ".github/workflows/audit.yml";
+  const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/actions\/checkout@[a-f0-9]{40}/u, "actions/checkout@v6");
+  candidateBlobs.set(workflowPath, Buffer.from(text));
+}, /must be pinned to an immutable/u],
+  ["an unregistered manifest source", ({ manifest: candidateManifest }) => {
+  candidateManifest.sources.push({ id: "SRC-UNREGISTERED" });
+}, /manifest source is not registered/u],
+  ["a BBC RemArc bundled source", ({ register: candidateRegister }) => {
+  candidateRegister.bundledComponents[0].sourceUrl = "https://sound-effects.bbcrewind.co.uk/example";
+}, /prohibited BBC RemArc/u],
+  ["a synchronizer-auto-certified copied source file", ({ register: candidateRegister, entries: rows, blobs: candidateBlobs }) => {
+  rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "vendor/copied.js" });
+  candidateBlobs.set("vendor/copied.js", Buffer.from("export default 'unreviewed';"));
+  candidateRegister.firstPartyPaths.push("vendor/copied.js");
+  candidateRegister.firstPartyPaths.sort();
+}, /differs from the reviewed first-party declaration/u],
+  ["an undeclared copied file used as attribution evidence", ({ register: candidateRegister, entries: rows, blobs: candidateBlobs }) => {
+  rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "vendor/copied.js" });
+  candidateBlobs.set("vendor/copied.js", Buffer.from("unreviewed attribution"));
+  candidateRegister.referenceComponents[0].attributionRecord = "vendor/copied.js";
+}, /attributionRecord must be a reviewed evidence path/u],
+  ["a licence incompatible with its component kind", ({ register: candidateRegister }) => {
+  candidateRegister.bundledComponents.find((component) => component.kind === "font").kind = "audio";
+}, /is not approved for component kind/u],
+  ["an empty attribution record", ({ blobs: candidateBlobs }) => {
+  candidateBlobs.set("THIRD_PARTY_NOTICES.md", Buffer.from(""));
+}, /attribution record must identify/u],
+  ["a generic MIT file used as public-domain evidence", ({ register: candidateRegister, blobs: candidateBlobs }) => {
+  const sound = candidateRegister.bundledComponents.find((component) => component.kind === "audio");
+  sound.origin = "public-domain";
+  sound.licence = "LicenseRef-Public-Domain";
+  sound.publicDomainBasis = "Unsubstantiated assertion";
+  sound.jurisdiction = "Unknown";
+  sound.determinationDate = "2026-07-27";
+  sound.evidenceUrl = "https://example.invalid/evidence";
+  sound.evidenceSha256 = sha256(candidateBlobs.get("LICENSE"));
+  sound.licenceEvidence = "LICENSE";
+}, /MIT licence cannot serve as public-domain evidence/u],
+  ["a quoted and spaced floating workflow action", ({ blobs: candidateBlobs }) => {
+  const workflowPath = ".github/workflows/audit.yml";
+  const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}/u, '"uses" : "actions/checkout@v6"');
+  candidateBlobs.set(workflowPath, Buffer.from(text));
+}, /quoted or escaped workflow mapping keys are not allowed/u],
+  ["a dash-prefixed floating workflow action", ({ blobs: candidateBlobs }) => {
+  const workflowPath = ".github/workflows/audit.yml";
+  const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}/u, "- uses: actions/checkout@v6");
+  candidateBlobs.set(workflowPath, Buffer.from(text));
+}, /workflow uses value could not be parsed safely/u],
+  ["an unsafe flow-mapping workflow action", ({ blobs: candidateBlobs }) => {
+  const workflowPath = ".github/workflows/audit.yml";
+  const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}[^\r\n]*/u, "- { uses: actions/checkout@v6 }");
+  candidateBlobs.set(workflowPath, Buffer.from(text));
+}, /workflow uses value could not be parsed safely/u],
+  ["an escaped workflow uses key", ({ blobs: candidateBlobs }) => {
+  const workflowPath = ".github/workflows/audit.yml";
+  const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}[^\r\n]*/u, '"u\\u0073es": "actions/checkout@v6"');
+  candidateBlobs.set(workflowPath, Buffer.from(text));
+}, /quoted or escaped workflow mapping keys are not allowed/u],
+]);
+
 function licenceGuardMutationFindings(register, entries, blobs, manifest) {
   const failures = [];
   const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -1111,198 +1070,167 @@ function licenceGuardMutationFindings(register, entries, blobs, manifest) {
     if (!result.some((finding) => expected.test(finding))) failures.push(`open-licence guard mutation self-test did not reject ${label}`);
   };
 
-  run("an unregistered asset", ({ entries: rows, blobs: candidateBlobs }) => {
-    rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "assets/unregistered.wav" });
-    candidateBlobs.set("assets/unregistered.wav", Buffer.from("unregistered"));
-  }, /absent from .*component-register/u);
-  run("changed registered bytes", ({ blobs: candidateBlobs }) => {
-    candidateBlobs.set("assets/fonts/Inter-Variable.ttf", Buffer.from("changed-font"));
-  }, /staged blob hash differs/u);
-  run("missing local licence evidence", ({ entries: rows, blobs: candidateBlobs }) => {
-    const index = rows.findIndex((entry) => entry.path === "licenses/Inter-OFL.txt");
-    if (index >= 0) rows.splice(index, 1);
-    candidateBlobs.delete("licenses/Inter-OFL.txt");
-  }, /licenceEvidence must be a tracked local file/u);
-  run("a non-commercial licence", ({ register: candidateRegister }) => {
-    candidateRegister.bundledComponents[0].licence = "CC-BY-NC-4.0";
-  }, /unapproved or restrictive licence/u);
-  run("a non-MIT original component", ({ register: candidateRegister }) => {
-    const original = candidateRegister.bundledComponents.find((component) => component.origin === "original-project");
-    original.licence = "OFL-1.1";
-  }, /original project material must use MIT/u);
-  run("a floating workflow action", ({ blobs: candidateBlobs }) => {
-    const workflowPath = ".github/workflows/audit.yml";
-    const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/actions\/checkout@[a-f0-9]{40}/u, "actions/checkout@v6");
-    candidateBlobs.set(workflowPath, Buffer.from(text));
-  }, /must be pinned to an immutable/u);
-  run("an unregistered manifest source", ({ manifest: candidateManifest }) => {
-    candidateManifest.sources.push({ id: "SRC-UNREGISTERED" });
-  }, /manifest source is not registered/u);
-  run("a BBC RemArc bundled source", ({ register: candidateRegister }) => {
-    candidateRegister.bundledComponents[0].sourceUrl = "https://sound-effects.bbcrewind.co.uk/example";
-  }, /prohibited BBC RemArc/u);
-  run("a synchronizer-auto-certified copied source file", ({ register: candidateRegister, entries: rows, blobs: candidateBlobs }) => {
-    rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "vendor/copied.js" });
-    candidateBlobs.set("vendor/copied.js", Buffer.from("export default 'unreviewed';"));
-    candidateRegister.firstPartyPaths.push("vendor/copied.js");
-    candidateRegister.firstPartyPaths.sort();
-  }, /differs from the reviewed first-party declaration/u);
-  run("an undeclared copied file used as attribution evidence", ({ register: candidateRegister, entries: rows, blobs: candidateBlobs }) => {
-    rows.push({ mode: "100644", hash: "0".repeat(40), stage: "0", path: "vendor/copied.js" });
-    candidateBlobs.set("vendor/copied.js", Buffer.from("unreviewed attribution"));
-    candidateRegister.referenceComponents[0].attributionRecord = "vendor/copied.js";
-  }, /attributionRecord must be a reviewed evidence path/u);
-  run("a licence incompatible with its component kind", ({ register: candidateRegister }) => {
-    candidateRegister.bundledComponents.find((component) => component.kind === "font").kind = "audio";
-  }, /is not approved for component kind/u);
-  run("an empty attribution record", ({ blobs: candidateBlobs }) => {
-    candidateBlobs.set("THIRD_PARTY_NOTICES.md", Buffer.from(""));
-  }, /attribution record must identify/u);
-  run("a generic MIT file used as public-domain evidence", ({ register: candidateRegister, blobs: candidateBlobs }) => {
-    const sound = candidateRegister.bundledComponents.find((component) => component.kind === "audio");
-    sound.origin = "public-domain";
-    sound.licence = "LicenseRef-Public-Domain";
-    sound.publicDomainBasis = "Unsubstantiated assertion";
-    sound.jurisdiction = "Unknown";
-    sound.determinationDate = "2026-07-27";
-    sound.evidenceUrl = "https://example.invalid/evidence";
-    sound.evidenceSha256 = sha256(candidateBlobs.get("LICENSE"));
-    sound.licenceEvidence = "LICENSE";
-  }, /MIT licence cannot serve as public-domain evidence/u);
-  run("a quoted and spaced floating workflow action", ({ blobs: candidateBlobs }) => {
-    const workflowPath = ".github/workflows/audit.yml";
-    const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}/u, '"uses" : "actions/checkout@v6"');
-    candidateBlobs.set(workflowPath, Buffer.from(text));
-  }, /quoted or escaped workflow mapping keys are not allowed/u);
-  run("a dash-prefixed floating workflow action", ({ blobs: candidateBlobs }) => {
-    const workflowPath = ".github/workflows/audit.yml";
-    const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}/u, "- uses: actions/checkout@v6");
-    candidateBlobs.set(workflowPath, Buffer.from(text));
-  }, /workflow uses value could not be parsed safely/u);
-  run("an unsafe flow-mapping workflow action", ({ blobs: candidateBlobs }) => {
-    const workflowPath = ".github/workflows/audit.yml";
-    const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}[^\r\n]*/u, "- { uses: actions/checkout@v6 }");
-    candidateBlobs.set(workflowPath, Buffer.from(text));
-  }, /workflow uses value could not be parsed safely/u);
-  run("an escaped workflow uses key", ({ blobs: candidateBlobs }) => {
-    const workflowPath = ".github/workflows/audit.yml";
-    const text = candidateBlobs.get(workflowPath).toString("utf8").replace(/uses:\s*actions\/checkout@[a-f0-9]{40}[^\r\n]*/u, '"u\\u0073es": "actions/checkout@v6"');
-    candidateBlobs.set(workflowPath, Buffer.from(text));
-  }, /quoted or escaped workflow mapping keys are not allowed/u);
+  LICENCE_GUARD_MUTATIONS.forEach((mutation) => run(...mutation));
   failures.push(...trustedHttpsCanarySupplyChainMutationFailures(canarySupplyChainInput(blobs)));
   return failures;
 }
 
-async function inspectPublicCandidate() {
-  const findings = [];
-  findings.push(...privacyMutationFindings());
-  findings.push(...payloadIdentityMutationFindings());
-  const entries = await trackedEntries();
+function initialCandidateFindings() {
+  return [
+    ...privacyMutationFindings(),
+    ...reviewedRegistryMetadataMutationFindings(contentFindings),
+    ...payloadIdentityMutationFindings(),
+  ];
+}
+
+function candidatePayloadIdentity(entries) {
   const payloadEntries = publicPayloadEntries(entries);
-  const payloadSha256 = publicPayloadSha256(payloadEntries);
-  const payloadTreeOid = publicPayloadTreeOid(payloadEntries);
-  const paths = entries.map((entry) => entry.path);
-  const tracked = new Set(paths);
+  return {
+    payloadSha256: publicPayloadSha256(payloadEntries),
+    payloadTreeOid: publicPayloadTreeOid(payloadEntries),
+  };
+}
+
+async function candidateBlobs(entries, findings) {
   const blobs = new Map();
   for (const entry of entries) {
-    if (entry.stage !== "0") findings.push(`${entry.path}: unmerged Git stage ${entry.stage} cannot form a public candidate`);
+    if (entry.stage !== "0") findings.push(entry.path + ": unmerged Git stage " + entry.stage + " cannot form a public candidate");
     if (entry.mode === "120000") {
-      findings.push(`${entry.path}: tracked symbolic links are not allowed in the public candidate`);
+      findings.push(entry.path + ": tracked symbolic links are not allowed in the public candidate");
       continue;
     }
     try {
       blobs.set(entry.path, await stagedBlob(entry.hash));
     } catch (error) {
-      findings.push(`${entry.path}: staged Git blob cannot be read (${error.code || error})`);
+      findings.push(entry.path + ": staged Git blob cannot be read (" + (error.code || error) + ")");
     }
     try {
       const workingBytes = await readFile(path.join(root, entry.path));
-      if (sha256(workingBytes) !== sha256(blobs.get(entry.path) || Buffer.alloc(0))) findings.push(`${entry.path}: working-tree bytes differ from the staged public candidate`);
+      if (sha256(workingBytes) !== sha256(blobs.get(entry.path) || Buffer.alloc(0))) {
+        findings.push(entry.path + ": working-tree bytes differ from the staged public candidate");
+      }
     } catch (error) {
-      findings.push(`${entry.path}: working-tree file cannot be matched to the staged public candidate (${error.code || error})`);
+      findings.push(entry.path + ": working-tree file cannot be matched to the staged public candidate (" + (error.code || error) + ")");
     }
   }
-  for (const untrackedPath of await untrackedPaths()) findings.push(`${untrackedPath}: untracked public-working-tree file makes the audited candidate ambiguous`);
-  const clearanceBytes = blobs.get(PUBLICATION_CLEARANCE_PATH);
-  if (clearanceBytes) {
-    const parsedClearance = parsePublicationClearance(clearanceBytes.toString("utf8"));
-    for (const issue of parsedClearance.issues) findings.push(`${PUBLICATION_CLEARANCE_PATH}: ${issue}`);
-  }
-  const browserEvidenceBytes = blobs.get(BROWSER_RUNNER_EVIDENCE_PATH);
-  if (!browserEvidenceBytes) {
-    findings.push(`${BROWSER_RUNNER_EVIDENCE_PATH}: reviewed browser/runner evidence record is required`);
-  } else {
-    const parsedBrowserEvidence = parseReviewedBrowserRunnerEvidence(browserEvidenceBytes.toString("utf8"));
-    for (const issue of parsedBrowserEvidence.issues) {
-      findings.push(`${BROWSER_RUNNER_EVIDENCE_PATH}: ${issue}`);
-    }
-  }
-  for (const requiredPath of REQUIRED_PUBLIC_RUNTIME_PATHS) {
-    if (!tracked.has(requiredPath)) findings.push(`${requiredPath}: required public runtime file is not tracked`);
-  }
-
-  // The shared loader performs the complete closed-schema validation and
-  // canonical hashing used by the runtime and release audit. Any parse,
-  // schema, reference, task-type, or canonicalization failure aborts this
-  // public-candidate check instead of being downgraded to a warning.
-  let manifest;
-  try {
-    manifest = JSON.parse(blobs.get(CURRICULUM_PATH)?.toString("utf8") || "");
-    const issues = validateManifest(manifest);
-    if (issues.length) throw new Error(`Invalid curriculum manifest:\n- ${issues.join("\n- ")}`);
-  } catch (error) {
-    findings.push(`${CURRICULUM_PATH}: staged manifest is invalid (${error.message})`);
-  }
-  try {
-    const register = JSON.parse(blobs.get(COMPONENT_REGISTER_PATH)?.toString("utf8") || "");
-    if (manifest) {
-      findings.push(...registerFindings(register, entries, blobs, manifest));
-      findings.push(...licenceGuardMutationFindings(register, entries, blobs, manifest));
-    }
-  } catch (error) {
-    findings.push(`${COMPONENT_REGISTER_PATH}: staged component register is invalid (${error.message})`);
-  }
-  findings.push(...publicFileManifestFindings(entries, blobs));
-  const manifestMutation = new Map(blobs);
-  manifestMutation.set(PUBLIC_FILE_MANIFEST_PATH, Buffer.from("# incomplete inventory\n", "utf8"));
-  if (!publicFileManifestFindings(entries, manifestMutation).some((finding) => /listed paths do not exactly match/u.test(finding))) {
-    findings.push("public-file manifest mutation self-test did not reject an incomplete inventory");
-  }
-
-  for (const entry of entries) {
-    const relativePath = entry.path;
-    if (PERSONAL_OR_LOCAL_MARKERS.some((pattern) => pattern.test(relativePath))) {
-      findings.push(`${relativePath}: public path contains a personal identity or local user path`);
-    }
-    if (PRIVATE_PATH.test(relativePath)) {
-      findings.push(`${relativePath}: private pre-beta material must never be tracked`);
-      continue;
-    }
-    if (DENIED_ARCHIVE_OR_DOCUMENT_EXTENSION.test(relativePath)) {
-      findings.push(`${relativePath}: archives and metadata-bearing office/reference documents are not allowed in the public candidate`);
-      continue;
-    }
-    if (DENIED_TRACKED_PATHS.has(relativePath)) {
-      findings.push(`${relativePath}: private publisher-derived source artifact must not be tracked`);
-      continue;
-    }
-
-    const bytes = blobs.get(relativePath);
-    if (!bytes) continue;
-    if (bytes.includes(0)) {
-      findings.push(...binaryFindings(relativePath, bytes));
-      const extension = path.extname(relativePath).toLowerCase();
-      if (extension === ".ttf" || extension === ".otf") findings.push(...fontMetadataFindings(relativePath, bytes));
-      else if (extension === ".wav") findings.push(...wavMetadataFindings(relativePath, bytes));
-      else if (extension === ".png") findings.push(...pngMetadataFindings(relativePath, bytes));
-      else findings.push(`${relativePath}: unexpected binary file type in the public candidate`);
-    } else {
-      findings.push(...contentFindings(relativePath, bytes.toString("utf8")));
-    }
-  }
-  return { findings, payloadSha256, payloadTreeOid };
+  return blobs;
 }
 
+function untrackedCandidateFindings(paths) {
+  return paths.map((relativePath) => relativePath + ": untracked public-working-tree file makes the audited candidate ambiguous");
+}
+
+function clearanceFindings(blobs) {
+  const bytes = blobs.get(PUBLICATION_CLEARANCE_PATH);
+  if (!bytes) return [];
+  return parsePublicationClearance(bytes.toString("utf8")).issues
+    .map((issue) => PUBLICATION_CLEARANCE_PATH + ": " + issue);
+}
+
+function browserEvidenceFindings(blobs) {
+  const bytes = blobs.get(BROWSER_RUNNER_EVIDENCE_PATH);
+  if (!bytes) return [BROWSER_RUNNER_EVIDENCE_PATH + ": reviewed browser/runner evidence record is required"];
+  return parseReviewedBrowserRunnerEvidence(bytes.toString("utf8")).issues
+    .map((issue) => BROWSER_RUNNER_EVIDENCE_PATH + ": " + issue);
+}
+
+function runtimePathFindings(tracked) {
+  return REQUIRED_PUBLIC_RUNTIME_PATHS
+    .filter((relativePath) => !tracked.has(relativePath))
+    .map((relativePath) => relativePath + ": required public runtime file is not tracked");
+}
+
+function stagedCurriculumManifest(blobs, findings) {
+  try {
+    const manifest = JSON.parse(blobs.get(CURRICULUM_PATH)?.toString("utf8") || "");
+    const issues = validateManifest(manifest);
+    if (issues.length) throw new Error("Invalid curriculum manifest:\n- " + issues.join("\n- "));
+    return manifest;
+  } catch (error) {
+    findings.push(CURRICULUM_PATH + ": staged manifest is invalid (" + error.message + ")");
+    return null;
+  }
+}
+
+function componentRegisterInspectionFindings(manifest, entries, blobs) {
+  try {
+    const register = JSON.parse(blobs.get(COMPONENT_REGISTER_PATH)?.toString("utf8") || "");
+    if (!manifest) return [];
+    return [
+      ...registerFindings(legacyToolchainRegister(register), entries, blobs, manifest),
+      ...extendedToolchainFindings(register, blobs),
+      ...licenceGuardMutationFindings(register, entries, blobs, manifest),
+    ];
+  } catch (error) {
+    return [COMPONENT_REGISTER_PATH + ": staged component register is invalid (" + error.message + ")"];
+  }
+}
+
+function publicManifestInspectionFindings(entries, blobs) {
+  const findings = publicFileManifestFindings(entries, blobs);
+  const mutant = new Map(blobs);
+  mutant.set(PUBLIC_FILE_MANIFEST_PATH, Buffer.from("# incomplete inventory\n", "utf8"));
+  if (!publicFileManifestFindings(entries, mutant).some((finding) => /listed paths do not exactly match/u.test(finding))) {
+    findings.push("public-file manifest mutation self-test did not reject an incomplete inventory");
+  }
+  return findings;
+}
+
+function blockedPublicPathFinding(relativePath) {
+  if (PRIVATE_PATH.test(relativePath)) return relativePath + ": private pre-beta material must never be tracked";
+  if (DENIED_ARCHIVE_OR_DOCUMENT_EXTENSION.test(relativePath)) {
+    return relativePath + ": archives and metadata-bearing office/reference documents are not allowed in the public candidate";
+  }
+  if (DENIED_TRACKED_PATHS.has(relativePath)) {
+    return relativePath + ": private publisher-derived source artifact must not be tracked";
+  }
+  return null;
+}
+
+function binaryAssetFindings(relativePath, bytes) {
+  const findings = binaryFindings(relativePath, bytes);
+  const extension = path.extname(relativePath).toLowerCase();
+  if (extension === ".ttf" || extension === ".otf") findings.push(...fontMetadataFindings(relativePath, bytes));
+  else if (extension === ".wav") findings.push(...wavMetadataFindings(relativePath, bytes));
+  else if (extension === ".png") findings.push(...pngMetadataFindings(relativePath, bytes));
+  else findings.push(relativePath + ": unexpected binary file type in the public candidate");
+  return findings;
+}
+
+function candidateEntryFindings(entry, blobs) {
+  const relativePath = entry.path;
+  const findings = PERSONAL_OR_LOCAL_MARKERS.some((pattern) => pattern.test(relativePath))
+    ? [relativePath + ": public path contains a personal identity or local user path"]
+    : [];
+  const blocked = blockedPublicPathFinding(relativePath);
+  if (blocked) return [...findings, blocked];
+  const bytes = blobs.get(relativePath);
+  if (!bytes) return findings;
+  return bytes.includes(0)
+    ? [...findings, ...binaryAssetFindings(relativePath, bytes)]
+    : [...findings, ...reviewedContentFindings(contentFindings, relativePath, bytes.toString("utf8"))];
+}
+
+function candidateContentFindings(entries, blobs) {
+  return entries.flatMap((entry) => candidateEntryFindings(entry, blobs));
+}
+
+async function inspectPublicCandidate() {
+  const findings = initialCandidateFindings();
+  const entries = await trackedEntries();
+  const identity = candidatePayloadIdentity(entries);
+  const tracked = new Set(entries.map((entry) => entry.path));
+  const blobs = await candidateBlobs(entries, findings);
+  findings.push(...untrackedCandidateFindings(await untrackedPaths()));
+  findings.push(...clearanceFindings(blobs));
+  findings.push(...browserEvidenceFindings(blobs));
+  findings.push(...runtimePathFindings(tracked));
+  const manifest = stagedCurriculumManifest(blobs, findings);
+  findings.push(...componentRegisterInspectionFindings(manifest, entries, blobs));
+  findings.push(...publicManifestInspectionFindings(entries, blobs));
+  findings.push(...candidateContentFindings(entries, blobs));
+  return { findings, ...identity };
+}
 try {
   const { findings, payloadSha256, payloadTreeOid } = await inspectPublicCandidate();
   if (findings.length) {

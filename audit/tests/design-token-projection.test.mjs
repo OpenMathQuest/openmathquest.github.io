@@ -42,9 +42,8 @@ test("ART-MIG-04 through ART-MIG-06 projection is exact, collision-safe, linked,
   assert.equal((await loadDesignTokenProjection()).projection.activationGate, "EARLY_COUNTING_COUNT_TOUCH_AND_MQ_026_TEN_FRAME_PLAIN_BASELINES_AND_ORACLES_VERIFIED");
 });
 
-test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {
-  const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
-  const cases = [
+function projectionByteDriftCases() {
+  return [
     {
       mutate: ({ cssBytes: bytes }) => ({ cssBytes: Buffer.concat([bytes, Buffer.from("body{}\n")]) }),
       pattern: /exact deterministic generator output/u,
@@ -57,6 +56,11 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
       },
       pattern: /projection metadata is stale/u,
     },
+  ];
+}
+
+function runtimeConsumerDriftCases() {
+  return [
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: { "index.html": `${sources["index.html"]}\n<style>#app{transform:translateX(var(${DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX}dimension-body-min))}</style>` } }),
       pattern: /outside the ART-MIG-04-06 allowlisted style blocks/u,
@@ -118,6 +122,11 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
       }),
       pattern: /dynamically read or author CSS/u,
     },
+  ];
+}
+
+function projectionLinkDriftCases() {
+  return [
     {
       mutate: ({ runtimeSources: sources }) => ({ runtimeSources: { "index.html": sources["index.html"].replace(/<link rel="stylesheet"[^>]+data-mq-design-token-projection="v1">/u, "") } }),
       pattern: /exactly one closed design-token projection stylesheet link/u,
@@ -149,6 +158,11 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
       }),
       pattern: /exactly one closed design-token projection stylesheet link/u,
     },
+  ];
+}
+
+function releaseShellDriftCases() {
+  return [
     {
       mutate: ({ releaseShell: shell }) => {
         const mutant = clone(shell);
@@ -157,6 +171,16 @@ test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal r
       },
       pattern: /release shell does not bind/u,
     },
+  ];
+}
+
+test("[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed", async () => {
+  const { tokens, cssBytes, releaseShell, runtimeSources } = await fixture();
+  const cases = [
+    ...projectionByteDriftCases(),
+    ...runtimeConsumerDriftCases(),
+    ...projectionLinkDriftCases(),
+    ...releaseShellDriftCases(),
   ];
   for (const { mutate, pattern } of cases) {
     const original = { tokens, cssBytes, releaseShell, runtimeSources };

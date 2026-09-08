@@ -33,26 +33,38 @@ async function ghJson(endpoint, { environment = process.env } = {}) {
   return JSON.parse(stdout);
 }
 
-export function normalizeGithubEnforcementSnapshot(requiredStatusChecks, rulesetDetails) {
-  const contexts = new Set([
+function requiredPullRequestContexts(requiredStatusChecks) {
+  return new Set([
     ...(Array.isArray(requiredStatusChecks?.contexts) ? requiredStatusChecks.contexts : []),
     ...(Array.isArray(requiredStatusChecks?.checks) ? requiredStatusChecks.checks.map((entry) => entry?.context) : []),
   ].filter((entry) => typeof entry === "string" && entry.length > 0));
+}
+
+function normalizedTagRule(pattern, types, ruleset) {
+  return {
+    pattern,
+    rules: [
+      ...(types.has("deletion") ? ["DELETION_PROHIBITED"] : []),
+      ...(types.has("update") ? ["UPDATE_PROHIBITED"] : []),
+    ],
+    bypassActorsObserved: Array.isArray(ruleset.bypass_actors),
+    bypassActorCount: Array.isArray(ruleset.bypass_actors) ? ruleset.bypass_actors.length : null,
+  };
+}
+
+function appendActiveTagRules(ruleset, tagRules) {
+  if (ruleset?.target !== "tag" || ruleset?.enforcement !== "active") return;
+  const types = new Set((ruleset.rules || []).map((entry) => entry?.type));
+  for (const pattern of ruleset.conditions?.ref_name?.include || []) {
+    tagRules.push(normalizedTagRule(pattern, types, ruleset));
+  }
+}
+
+export function normalizeGithubEnforcementSnapshot(requiredStatusChecks, rulesetDetails) {
+  const contexts = requiredPullRequestContexts(requiredStatusChecks);
   const tagRules = [];
   for (const ruleset of Array.isArray(rulesetDetails) ? rulesetDetails : []) {
-    if (ruleset?.target !== "tag" || ruleset?.enforcement !== "active") continue;
-    const types = new Set((ruleset.rules || []).map((entry) => entry?.type));
-    for (const pattern of ruleset.conditions?.ref_name?.include || []) {
-      tagRules.push({
-        pattern,
-        rules: [
-          ...(types.has("deletion") ? ["DELETION_PROHIBITED"] : []),
-          ...(types.has("update") ? ["UPDATE_PROHIBITED"] : []),
-        ],
-        bypassActorsObserved: Array.isArray(ruleset.bypass_actors),
-        bypassActorCount: Array.isArray(ruleset.bypass_actors) ? ruleset.bypass_actors.length : null,
-      });
-    }
+    appendActiveTagRules(ruleset, tagRules);
   }
   return Object.freeze({
     requiredPullRequestChecks: Object.freeze([...contexts].sort()),

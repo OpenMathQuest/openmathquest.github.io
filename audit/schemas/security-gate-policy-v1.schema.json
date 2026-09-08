@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/audit/schemas/security-gate-policy-v1.schema.json",
+  "title": "Math Quest security and dependency gate policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyId", "version", "schemaVersion", "status", "authority", "baselineCommit",
+    "artifactCacheEnvironmentVariable", "defaultArtifactCacheDirectoryName", "tools",
+    "semgrep", "truffleHog", "dependencyAudit", "markers", "negativeControls"
+  ],
+  "properties": {
+    "policyId": { "const": "math-quest-security-dependency-gate" },
+    "version": { "const": "1.1.0" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "authority": { "type": "string", "minLength": 1 },
+    "baselineCommit": { "$ref": "#/$defs/sha1" },
+    "artifactCacheEnvironmentVariable": { "const": "MQ_SECURITY_TOOL_CACHE" },
+    "defaultArtifactCacheDirectoryName": { "const": "math-quest-security-tools" },
+    "tools": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/tool" }
+    },
+    "semgrep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rulesPath", "rulesSha256", "rulesBytes", "requiredRuleIds", "sourceExtensions",
+        "executableInlineHtml", "maximumFindings", "maximumErrors"
+      ],
+      "properties": {
+        "rulesPath": { "const": "audit/security/semgrep-high-confidence-v1.json" },
+        "rulesSha256": { "$ref": "#/$defs/sha256" },
+        "rulesBytes": { "type": "integer", "minimum": 1 },
+        "requiredRuleIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^math-quest\\.security\\." }
+        },
+        "sourceExtensions": {
+          "type": "array",
+          "const": [".js", ".mjs"]
+        },
+        "executableInlineHtml": { "const": true },
+        "maximumFindings": { "const": 0 },
+        "maximumErrors": { "const": 0 }
+      }
+    },
+    "truffleHog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceScope", "historyStartCommit", "verificationMode", "filterEntropy",
+        "maximumWorktreeFindings", "maximumHistoryFindings", "failOnScanErrors"
+      ],
+      "properties": {
+        "sourceScope": { "const": "GIT_TRACKED_PLUS_UNTRACKED_NONIGNORED" },
+        "historyStartCommit": { "$ref": "#/$defs/sha1" },
+        "verificationMode": { "const": "OFFLINE_UNVERIFIED_DETECTION" },
+        "filterEntropy": { "type": "number", "minimum": 3 },
+        "maximumWorktreeFindings": { "const": 0 },
+        "maximumHistoryFindings": { "const": 0 },
+        "failOnScanErrors": { "const": true }
+      }
+    },
+    "dependencyAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool", "version", "registry", "packageLockOnly", "ignoreScripts", "omitOptional",
+        "auditLevel", "temporaryDirectoryEnvironmentVariable", "maximumVulnerabilities"
+      ],
+      "properties": {
+        "tool": { "const": "npm" },
+        "version": { "const": "11.9.0" },
+        "registry": { "const": "https://registry.npmjs.org/" },
+        "packageLockOnly": { "const": true },
+        "ignoreScripts": { "const": true },
+        "omitOptional": { "const": true },
+        "auditLevel": { "const": "low" },
+        "temporaryDirectoryEnvironmentVariable": { "const": "MQ_NPM_AUDIT_TEMP" },
+        "maximumVulnerabilities": { "$ref": "#/$defs/vulnerabilityCounts" }
+      }
+    },
+    "markers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokens", "trackingReferencePattern", "explanationPattern", "maximumUntrackedMarkers"],
+      "properties": {
+        "tokens": { "type": "array", "const": ["TODO", "FIXME", "HACK"] },
+        "trackingReferencePattern": { "type": "string", "minLength": 1 },
+        "explanationPattern": { "type": "string", "minLength": 1 },
+        "maximumUntrackedMarkers": { "const": 0 }
+      }
+    },
+    "negativeControls": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^NC-[A-Z0-9-]+$" }
+    }
+  },
+  "$defs": {
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "url", "bytes", "sha256", "packaging", "executableRelativePath"],
+      "properties": {
+        "filename": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "pattern": "^https://" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "packaging": { "enum": ["TAR_GZIP", "ZIP_WHEEL"] },
+        "executableRelativePath": { "type": "string", "minLength": 1 },
+        "upstreamChecksumManifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["filename", "sha256", "declaredArtifactSha256"],
+          "properties": {
+            "filename": { "type": "string", "minLength": 1 },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "declaredArtifactSha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "kind", "version", "licenceExpression", "sourceUrl",
+        "sourceCommit", "licenceEvidence", "scope", "artifact"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "enum": ["Semgrep", "TruffleHog"] },
+        "kind": { "enum": ["ci-only-secret-scanner", "ci-only-static-security-analyzer"] },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "licenceExpression": { "enum": ["AGPL-3.0-only", "LGPL-2.1-or-later"] },
+        "sourceUrl": { "type": "string", "pattern": "^https://github\\.com/" },
+        "sourceCommit": { "$ref": "#/$defs/sha1" },
+        "licenceEvidence": { "type": "string", "pattern": "^https://github\\.com/" },
+        "scope": { "type": "string", "minLength": 1 },
+        "artifact": { "$ref": "#/$defs/artifact" }
+      }
+    },
+    "vulnerabilityCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["info", "low", "moderate", "high", "critical", "total"],
+      "properties": {
+        "info": { "const": 0 },
+        "low": { "const": 0 },
+        "moderate": { "const": 0 },
+        "high": { "const": 0 },
+        "critical": { "const": 0 },
+        "total": { "const": 0 }
+      }
+    }
+  }
+}

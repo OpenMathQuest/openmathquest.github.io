@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.13.0",
+  "version": "1.15.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -111,7 +111,7 @@
   "metricFloors": {
     "engineBranchCoverage": {
       "version": 1,
-      "minimumPercent": 88,
+      "minimumPercent": 89.33,
       "numerator": "COVERED_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
       "denominator": "ALL_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
       "changePolicy": "OWNER_APPROVAL_ONLY_WHEN_MEASUREMENT_SEMANTICS_OR_PRODUCT_CONTRACT_CHANGES"
@@ -306,6 +306,26 @@
     }
   },
   "gateFamilies": [
+    {
+      "id": "gate.accessibility-automation",
+      "claim": "AXE_CORE_SCANS_EVERY_FOCUSED_FINAL_STATE_AND_EVERY_SELECTED_DEEP_UX_STATE_WITH_DEFINITE_VIOLATIONS_FAILING_AND_INCOMPLETE_RESULTS_RETAINED_FOR_MANUAL_REVIEW",
+      "proofClass": "EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "AUTOMATED_AXE_RESULTS_DO_NOT_REPLACE_HUMAN_CHILD_SCREEN_READER_REAL_DEVICE_OR_COMPREHENSION_REVIEW",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-AXE-UNNAMED-BUTTON-DETECTED", "executionMode": "SELF_TEST", "executionPath": "audit/lib/axe-accessibility.mjs", "passEvidence": "STDOUT:NEGATIVE_CONTROL=NC-AXE-UNNAMED-BUTTON-DETECTED:PASS" },
+      "implementationPaths": ["audit/lib/axe-accessibility.mjs", "audit/lib/playwright-deep-ux-census.mjs", "audit/lib/playwright-focused-contract.mjs", "audit/playwright/compact-reporter.mjs", "audit/playwright/deep-ux-census.spec.mjs", "audit/playwright/fixtures.mjs", "audit/run-playwright-deep-ux-census.mjs", "licenses/ci-toolchain.md", "package-lock.json", "package.json"],
+      "validatorPaths": ["audit/tests/axe-accessibility.test.mjs", "audit/tests/playwright-deep-ux-census.test.mjs", "audit/tests/playwright-focused-contract.test.mjs"]
+    },
+    {
+      "id": "gate.ai-change-loop",
+      "claim": "EVERY_AI_CHANGE_ADVANCES_ONLY_AFTER_EXACT_STAGED_TREE_BINDING_AND_THE_CLOSED_NINE_STAGE_LOOP_IN_ORDER_WITH_FIRST_FAILURE_RETENTION_ZERO_RETRIES_EXPLICIT_FUNCTION_COMPLEXITY_RATCHETS_COMPLETE_EXECUTABLE_INLINE_HTML_COVERAGE_AND_NO_OMITTED_COVERAGE",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "THE_ORDERED_DEVELOPMENT_LOOP_DOES_NOT_REPLACE_RELEASE_CERTIFICATION_HUMAN_PLAY_REVIEW_OR_REAL_DEVICE_EVIDENCE",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": { "id": "NC-AI-CHANGE-LOOP-FIRST-FAILURE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/ai-change-loop.test.mjs", "testName": "[NC-AI-CHANGE-LOOP-FIRST-FAILURE] the first failure stops all later stages without retry" },
+      "implementationPaths": [".github/workflows/audit.yml", "audit/ai-change-loop-operations.mjs", "audit/capture-inline-function-quality-correction.mjs", "audit/inline-function-quality-baseline-correction-v1.json", "audit/lib/ci-dependency-policy.mjs", "audit/lib/differential-equivalence.mjs", "audit/lib/function-quality-metrics.mjs", "audit/lib/inline-function-quality-baseline.mjs", "audit/lib/powershell-function-quality.mjs", "audit/lib/quality-gate-policy.mjs", "audit/lib/repository-code-map.mjs", "audit/quality-gate-policy-v1.json", "audit/run-ai-change-loop.mjs", "audit/run-compiler-contracts.mjs", "audit/run-differential-equivalence.mjs", "audit/run-function-quality-gate.mjs", "audit/run-quality-gates.mjs", "audit/schemas/function-quality-baseline-v1.schema.json", "audit/schemas/inline-function-quality-baseline-correction-v1.schema.json", "audit/schemas/quality-gate-policy-v1.schema.json", "package.json"],
+      "validatorPaths": ["audit/tests/ai-change-loop.test.mjs", "audit/tests/compiler-contracts.test.mjs", "audit/tests/differential-equivalence.test.mjs", "audit/tests/function-quality-gate.test.mjs", "audit/tests/function-quality-metrics.test.mjs", "audit/tests/inline-function-quality-baseline.test.mjs", "audit/tests/quality-gate-policy.test.mjs", "audit/tests/repository-code-map.test.mjs", "audit/tests/trusted-https-canary.test.mjs"]
+    },
     {
       "id": "gate.art-design-governance",
       "claim": "ART_DESIGN_CONTRACTS_REJECT_UNRESOLVED_REJECTED_UNREGISTERED_STALE_CONFLICTING_UNAUTHORIZED_INCOMPLETE_RIGHTS_UNBOUND_MATHEMATICALLY_UNPROVED_OR_HAND_EDITED_PROJECTIONS",

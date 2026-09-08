@@ -1,3 +1,5 @@
+import { auditMarkdown } from "./lib/audit-markdown-report.mjs";
+import { publicationClearance } from "./lib/audit-publication-report.mjs";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
@@ -10,21 +12,12 @@ import { PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS } from "./lib/playwright-focuse
 import {
   BROWSER_RUNNER_EVIDENCE_PATH,
   parseReviewedBrowserRunnerEvidence,
-  publicationBrowserEvidenceState,
 } from "./lib/browser-runner-evidence.mjs";
 import { CURRICULUM_PATH, loadManifest } from "./lib/curriculum-manifest.mjs";
 import {
-  clearanceMatches,
   computeReleaseDecision,
-  CURRENT_EVIDENCE_SUCCESSOR_POLICY,
-  CURRENT_RELEASE_TAG,
-  evaluateExternalReleaseEvidence,
   EXTERNAL_RELEASE_GATE_IDS,
-  parsePublicationClearance,
-  PUBLICATION_CLEARANCE_PATH,
 } from "./lib/publication-clearance.mjs";
-import { observeEvidenceSuccessor } from "./lib/release-evidence-successor.mjs";
-import { loadReleaseEvidenceBundle } from "./lib/release-evidence-bundle.mjs";
 import { rightsStateSha256 } from "./lib/rights-state.mjs";
 import { AI_READER_CONTRACT_REF } from "./lib/repository-code-map.mjs";
 import {
@@ -52,8 +45,6 @@ function arg(name) {
   const prefix = `--${name}=`; const entry = process.argv.find((value) => value.startsWith(prefix)); return entry ? entry.slice(prefix.length) : null;
 }
 
-function esc(value) { return String(value ?? "").replace(/\|/gu, "\\|").replace(/\r?\n/gu, " "); }
-function tick(value) { return `\`${String(value ?? "—").replace(/`/gu, "\\`")}\``; }
 function sanitizeHostDetails(value) {
   const home = os.homedir();
   const replacements = [
@@ -214,257 +205,33 @@ async function reviewedBrowserRunnerEvidence() {
   }
 }
 
-async function publicationClearance(engineSha256, curriculumManifest, rightsSha256, publicCandidate, browser, reviewedBrowserEvidence, now) {
-  const clearancePath = path.join(root, PUBLICATION_CLEARANCE_PATH);
-  const liveBrowserEvidence = browser?.evidence ?? {};
-  const browserEvidenceState = publicationBrowserEvidenceState(liveBrowserEvidence, reviewedBrowserEvidence);
-  const reviewedBrowserTuple = browserEvidenceState.reviewedTuple ?? {};
-  const expected = {
-    engineSha256,
-    manifestVersion: curriculumManifest.version,
-    manifestSha256: curriculumManifest.sha256,
-    rightsSha256,
-    payloadSha256: publicCandidate.payloadSha256,
-    payloadTreeOid: publicCandidate.payloadTreeOid,
-    browserProductName: reviewedBrowserTuple.browserProductName,
-    browserFullVersion: reviewedBrowserTuple.browserFullVersion,
-    browserExecutableSha256: reviewedBrowserTuple.browserExecutableSha256,
-    runnerImageOS: reviewedBrowserTuple.runnerImageOS,
-    runnerImageVersion: reviewedBrowserTuple.runnerImageVersion,
-    browserRunnerEvidenceSha256: reviewedBrowserEvidence.sha256,
-    browserRunnerEvidenceReviewed: browserEvidenceState.valid,
-    releaseTag: CURRENT_RELEASE_TAG,
-    now,
-  };
-  try {
-    const clearance = await readFile(clearancePath, "utf8");
-    const parsed = parsePublicationClearance(clearance);
-    const releaseEvidenceBundle = await loadReleaseEvidenceBundle();
-    expected.releaseEvidenceBindings = releaseEvidenceBundle.bindings;
-    if (!releaseEvidenceBundle.releaseReady && parsed.status !== "PENDING") {
-      throw new Error(`Release evidence bundle is not release-ready: ${releaseEvidenceBundle.issues.join("; ") || releaseEvidenceBundle.lifecycleState}`);
-    }
-    const evidenceSuccessor = parsed.status === "EMERGENCY_APPROVED"
-      ? { valid: true, issues: [] }
-      : await observeEvidenceSuccessor(root, parsed.qualificationCommitSha, CURRENT_EVIDENCE_SUCCESSOR_POLICY, CURRENT_RELEASE_TAG);
-    expected.qualificationCommitSha = parsed.qualificationCommitSha;
-    expected.evidenceSuccessorValid = evidenceSuccessor.valid;
-    expected.qualificationPayloadSha256 = evidenceSuccessor.qualificationPayloadSha256;
-    expected.qualificationPayloadTreeOid = evidenceSuccessor.qualificationPayloadTreeOid;
-    const browserEvidenceReady = browserEvidenceState.valid;
-    const externalReleaseEvidence = evaluateExternalReleaseEvidence(parsed, expected, now);
-    const approved = curriculumManifest.status === "PASS"
-      && publicCandidate.status === "PASS"
-      && browserEvidenceReady
-      && releaseEvidenceBundle.valid
-      && ["PASS", "EMERGENCY_WAIVER"].includes(externalReleaseEvidence.status)
-      && clearanceMatches(parsed, expected);
-    return {
-      status: approved ? parsed.status : "BLOCKED",
-      reviewDate: parsed.reviewDate,
-      reviewResult: parsed.reviewResult,
-      requiredFailures: parsed.requiredFailures,
-      requiredSkips: parsed.requiredSkips,
-      residualRisks: parsed.residualRisks,
-      releaseEvidenceBundle: {
-        status: releaseEvidenceBundle.valid ? "VALIDATED" : "BLOCKED",
-        issues: releaseEvidenceBundle.issues,
-      },
-      reviewedEngineSha256: parsed.reviewedEngineSha256,
-      reviewedManifestVersion: parsed.reviewedManifestVersion,
-      reviewedManifestSha256: parsed.reviewedManifestSha256,
-      reviewedRightsSha256: parsed.reviewedRightsSha256,
-      reviewedPayloadSha256: parsed.reviewedPayloadSha256,
-      reviewedPayloadTreeOid: parsed.reviewedPayloadTreeOid,
-      reviewedBrowserProductName: parsed.reviewedBrowserProductName,
-      reviewedBrowserFullVersion: parsed.reviewedBrowserFullVersion,
-      reviewedBrowserExecutableSha256: parsed.reviewedBrowserExecutableSha256,
-      reviewedRunnerImageOS: parsed.reviewedRunnerImageOS,
-      reviewedRunnerImageVersion: parsed.reviewedRunnerImageVersion,
-      browserEvidenceReady,
-      liveBrowserEvidenceValid: browserEvidenceState.liveValid,
-      reviewedBrowserEvidenceValid: browserEvidenceState.reviewedValid,
-      browserTuplesMatch: browserEvidenceState.tuplesMatch,
-      evidenceSuccessor,
-      externalReleaseEvidence,
-      schemaIssues: parsed.issues,
-      reason: approved
-        ? parsed.status === "EMERGENCY_APPROVED"
-          ? "Emergency Beta 3 clearance matches the exact candidate and reviewed hosted-Windows record, and the final hosted tuple is independently valid; six external evidence gates are transparently owner-waived for this tag only."
-          : externalReleaseEvidence.prereleaseHostDeferralEligible
-            ? "Reviewed publication clearance matches the exact prerelease candidate, direct evidence successor, reviewed qualification hosted-Windows record, independently valid final hosted tuple, every mandatory Beta external gate, the visible non-passing host deferral, both optional evidence records, and project-owner authorization."
-            : "Reviewed publication clearance matches the exact candidate, reviewed qualification hosted-Windows record, independently valid final hosted tuple, every mandatory external gate, both visible optional evidence records, and project-owner authorization."
-        : `PUBLICATION_CLEARANCE.md is absent, pending, stale, invalid, or does not match the exact candidate, direct evidence successor, reviewed qualification browser/runner record, independently valid final hosted tuple, required external gates, and visible optional, owner-skipped, or prerelease-deferred evidence records${[...parsed.issues, ...(evidenceSuccessor.issues || [])].length ? ` (${[...parsed.issues, ...(evidenceSuccessor.issues || [])].join("; ")})` : ""}.`,
-    };
-  } catch (error) {
-    const parsed = parsePublicationClearance("");
-    return {
-      status: "BLOCKED",
-      reviewedEngineSha256: null,
-      reviewedManifestVersion: null,
-      reviewedManifestSha256: null,
-      reviewedRightsSha256: null,
-      reviewedPayloadSha256: null,
-      reviewedPayloadTreeOid: null,
-      reviewedBrowserProductName: null,
-      reviewedBrowserFullVersion: null,
-      reviewedBrowserExecutableSha256: null,
-      reviewedRunnerImageOS: null,
-      reviewedRunnerImageVersion: null,
-      browserEvidenceReady: false,
-      liveBrowserEvidenceValid: false,
-      reviewedBrowserEvidenceValid: false,
-      browserTuplesMatch: false,
-      externalReleaseEvidence: evaluateExternalReleaseEvidence(parsed, expected, now),
-      schemaIssues: ["publication clearance is absent or unreadable"],
-      reason: `PUBLICATION_CLEARANCE.md is absent or unreadable; all external release evidence and owner authorization remain blocked (${String(error)}).`,
-    };
-  }
-}
-
-function markdown(report, { final = false } = {}) {
-  const engineResults = report.engine.results;
-  const semanticResults = report.semantic.assertions;
-  const mutationCases = report.mutation.families.flatMap((family) => family.cases ?? [family]);
-  const failures = [
-    ...semanticResults.filter((x) => x.status === "FAIL" || x.ok === false).map((x) => `${x.id}: ${x.title} — ${x.details || x.reason || "semantic assertion failed"}`),
-    ...(!report.semantic.ok && semanticResults.length === 0 ? report.semantic.failures.map((x) => `${x.id}: ${x.title} — ${x.details || x.reason || "semantic suite failed"}`) : []),
-    ...(report.semantic.contractPass ? [] : [`Semantic contract totals: expected ${EXPECTED_SEMANTIC.assertions} assertions, ${EXPECTED_SEMANTIC.skills} skills, ${EXPECTED_SEMANTIC.taskTypes} task types, and ${EXPECTED_SEMANTIC.questions} questions; observed ${semanticResults.length}, ${report.semantic.summary.skills ?? "unavailable"}, ${report.semantic.summary.taskTypes ?? "unavailable"}, and ${report.semantic.summary.questions ?? "unavailable"}.`]),
-    ...engineResults.filter((x) => x.status === "FAIL").map((x) => `${x.id}: ${x.title} — ${x.details}`),
-    ...report.browser.results.filter((x) => x.status === "FAIL").map((x) => `${x.id}: ${x.title} — ${x.details}`),
-    ...report.playwright.results.filter((x) => x.status !== "passed").map((x) => `${x.key}: direct Playwright journey ended ${x.status}`),
-    ...report.mutation.families.filter((x) => x.status === "FAIL").map((x) => `Mutation ${x.family}: ${x.reason}`),
-    ...(report.generator.status === "PASS" ? [] : [`Exhaustive generator gate: ${(report.generator.issues || []).join("; ") || report.generator.error || "process did not pass"}`]),
-    ...(report.coverage.status === "PASS" ? [] : [`Coverage: ${report.coverage.calibration.reasons.join("; ") || report.coverage.aggregationError || `engine branch result ${report.coverage.branchPct ?? "unavailable"}`}`]),
-    ...(report.browser.status === "PASS" ? [] : [`Browser smoke process: ${report.browser.reason || report.browser.process?.error || report.browser.process?.stderr || "did not complete"}`]),
-    ...(report.playwright.status === "PASS" ? [] : report.playwright.findings.map((item) => `Playwright Test: ${item}`)),
-    ...(report.auditOrchestration.status === "PASS" ? [] : report.auditOrchestration.issues.map((item) => `Audit orchestration: ${item}`)),
-    ...(report.curriculumManifest.status === "PASS" ? [] : [`Curriculum manifest: ${report.curriculumManifest.issues.join("; ") || "validation failed"}`]),
-    ...(report.countsMatch ? [] : ["Predicted and actual audit counts do not match."]),
-  ];
-  const skipped = [
-    ...semanticResults.filter((x) => x.status === "SKIP").map((x) => `${x.id}: ${x.title} — ${x.details || ""}`),
-    ...engineResults.filter((x) => x.status === "SKIP").map((x) => `${x.id}: ${x.title} — ${x.details}`),
-    ...report.browser.results.filter((x) => x.status === "SKIP").map((x) => `${x.id}: ${x.title} — ${x.details}`),
-    ...(report.browser.status === "SKIP" ? [report.browser.reason] : []),
-    ...report.externalReleaseEvidence.gates
-      .filter((item) => item.status !== "PASS")
-      .map((item) => `${item.id} [${item.classification}]: ${item.title} — ${item.details}`),
-    ...(["APPROVED", "EMERGENCY_APPROVED"].includes(report.publication.status) ? [] : [`Public publication: ${report.publication.reason}`]),
-  ];
-  const title = final ? "Final build audit report" : "Last audit report";
-  const browserEvidenceDetail = !report.publication.reviewedBrowserEvidenceValid
-    ? "reviewed qualification record is invalid or pending"
-    : !report.publication.liveBrowserEvidenceValid
-      ? "final hosted tuple is invalid or unavailable"
-      : report.publication.browserTuplesMatch
-        ? "both exact tuples happen to match"
-        : "both exact tuples differ because windows-latest floated";
-  const lines = [
-    `# ${title}`, "",
-    `- **Generated:** ${tick(report.generatedAt)}`,
-    `- **Overall:** ${tick(report.status)}`,
-    `- **Technical game gates:** ${tick(report.technicalShippable ? "PASS" : "FAIL")}`,
-    `- **Audit orchestration:** ${tick(`${report.auditOrchestration.status}; ${report.auditOrchestration.executionMode}; ${report.auditOrchestration.maximumObservedConcurrency}/${report.auditOrchestration.maximumConcurrentLanes} top-level lanes`)}`,
-    `- **Public publication clearance:** ${tick(report.publication.status)}`,
-    `- **External release evidence:** ${tick(`${report.externalReleaseEvidence.status} (${report.externalReleaseEvidence.passCount}/${report.externalReleaseEvidence.requiredCount} mandatory; ${report.externalReleaseEvidence.deferredCount ?? 0} prerelease deferred; ${report.externalReleaseEvidence.optionalCompletedCount}/${report.externalReleaseEvidence.optionalCount} optional completed)`)}`,
-    `- **External evidence expiry:** ${tick(report.externalReleaseEvidence.expiresAt || "PENDING")}`,
-    `- **Shippable:** ${tick(report.shippable ? "YES" : "NO")}`,
-    `- **Build contract:** ${tick(`docs/development/build-spec.md v${report.metadata.promptVersion}`)}`,
-    `- **Prompt revision ID:** ${tick(`sha256:${report.metadata.promptSha256}`)}`,
-    `- **Register revision ID:** ${tick(report.metadata.registerRevision)}`,
-    `- **Final misread-test result:** ${tick("Prompt v2.1 version record: no material divergence")}`,
-    `- **Engine revision ID:** ${tick(report.coverage.engineSha256 ? `sha256:${report.coverage.engineSha256}` : "UNAVAILABLE")}`,
-    `- **Curriculum manifest:** ${tick(report.curriculumManifest.manifestId && report.curriculumManifest.version ? `${report.curriculumManifest.manifestId} v${report.curriculumManifest.version}` : "INVALID")}`,
-    `- **Curriculum manifest revision ID:** ${tick(report.curriculumManifest.sha256 ? `sha256:${report.curriculumManifest.sha256}` : "UNAVAILABLE")}`,
-    `- **Open-component rights-state revision ID:** ${tick(report.rightsStateSha256 ? `sha256:${report.rightsStateSha256}` : "UNAVAILABLE")}`,
-    `- **Public payload revision ID:** ${tick(report.publicCandidate.payloadSha256 ? `sha256:${report.publicCandidate.payloadSha256}` : "UNAVAILABLE")}`,
-    `- **Public payload tree OID:** ${tick(report.publicCandidate.payloadTreeOid || "UNAVAILABLE")}`,
-    `- **Browser product:** ${tick(report.browser.evidence?.browserProductName || "UNAVAILABLE")}`,
-    `- **Browser full version:** ${tick(report.browser.evidence?.browserFullVersion || "UNAVAILABLE")}`,
-    `- **Browser executable SHA-256:** ${tick(report.browser.evidence?.browserExecutableSha256 || "UNAVAILABLE")}`,
-    `- **GitHub-hosted runner ImageOS:** ${tick(report.browser.evidence?.runnerImageOS || "UNAVAILABLE")}`,
-    `- **GitHub-hosted runner ImageVersion:** ${tick(report.browser.evidence?.runnerImageVersion || "UNAVAILABLE")}`,
-    `- **Reviewed browser/runner evidence:** ${tick(report.reviewedBrowserRunnerEvidence.status)}`,
-    `- **Curriculum manifest counts:** ${tick(`${report.curriculumManifest.counts.levels} levels; ${report.curriculumManifest.counts.skills} skills; ${report.curriculumManifest.counts.strands} strands; ${report.curriculumManifest.counts.families} generator families; ${report.curriculumManifest.counts.gateways} gateways`)}`,
-    `- **Parent-string approval:** ${tick(report.parentStrings.status)}`,
-    `- **Parent-string approval digest:** ${tick(report.parentStrings.digest || "PENDING")}`,
-    `- **Child-string candidate digest:** ${tick(report.parentStrings.candidateDigest || "UNAVAILABLE")}`, "",
-    "## Predicted and actual results", "",
-    "| Countable result | Predicted | Actual | Result |", "|---|---:|---:|---|",
-    `| Engine assertions | ${EXPECTED.engineAssertions} | ${report.actual.engineAssertions} | ${report.actual.engineAssertions === EXPECTED.engineAssertions ? "MATCH" : "MISMATCH"} |`,
-    `| Manifest semantic assertions | ${EXPECTED.semanticAssertions} | ${report.actual.semanticAssertions} | ${report.actual.semanticAssertions === EXPECTED.semanticAssertions ? "MATCH" : "MISMATCH"} |`,
-    `| Browser assertions | ${EXPECTED.browserAssertions} | ${report.actual.browserAssertions} | ${report.actual.browserAssertions === EXPECTED.browserAssertions ? "MATCH" : "MISMATCH"} |`,
-    `| Direct Playwright assertions | ${EXPECTED.playwrightAssertions} | ${report.actual.playwrightAssertions} | ${report.actual.playwrightAssertions === EXPECTED.playwrightAssertions ? "MATCH" : "MISMATCH"} |`,
-    `| Mutation families | ${EXPECTED.mutationFamilies} | ${report.actual.mutationFamilies} | ${report.actual.mutationFamilies === EXPECTED.mutationFamilies ? "MATCH" : "MISMATCH"} |`,
-    `| Coverage gates | ${EXPECTED.coverageGates} | ${report.actual.coverageGates} | ${report.actual.coverageGates === EXPECTED.coverageGates ? "MATCH" : "MISMATCH"} |`,
-    `| Exhaustive generator gates | ${EXPECTED.generatorGates} | ${report.actual.generatorGates} | ${report.actual.generatorGates === EXPECTED.generatorGates ? "MATCH" : "MISMATCH"} |`,
-    `| Audit orchestration gates | ${EXPECTED.auditOrchestrationGates} | ${report.actual.auditOrchestrationGates} | ${report.actual.auditOrchestrationGates === EXPECTED.auditOrchestrationGates ? "MATCH" : "MISMATCH"} |`,
-    `| Launcher/server gates | ${EXPECTED.launcherGates} | ${report.actual.launcherGates} | ${report.actual.launcherGates === EXPECTED.launcherGates ? "MATCH" : "MISMATCH"} |`,
-    `| External release-evidence gates | ${EXPECTED.externalEvidenceGates} | ${report.actual.externalEvidenceGates} | ${report.actual.externalEvidenceGates === EXPECTED.externalEvidenceGates ? "MATCH" : "MISMATCH"} |`,
-    `| **Total** | **${EXPECTED.total}** | **${report.actual.total}** | **${report.actual.total === EXPECTED.total ? "MATCH" : "MISMATCH"}** |`, "",
-    "Inventory equality proves only that every expected record was emitted. It is not a pass count.", "",
-    "## Outcome summary", "",
-    "| Outcome class | Count |", "|---|---:|",
-    `| Literal PASS | ${report.outcomeSummary.passedCount} |`,
-    `| Failure or blocked | ${report.outcomeSummary.failedCount} |`,
-    `| Skipped required execution | ${report.outcomeSummary.skippedCount} |`,
-    `| Missing artifact | ${report.outcomeSummary.missingCount} |`,
-    `| Required but not run | ${report.outcomeSummary.notRunCount} |`,
-    `| Accepted non-pass | ${report.outcomeSummary.acceptedNonPassCount} |`,
-    `| Inventory | ${report.outcomeSummary.inventoryActual}/${report.outcomeSummary.inventoryExpected} |`,
-    `| Run ID | ${esc(report.outcomeSummary.runId)} |`, "",
-    "## Gate results", "",
-    "| Gate | Result | Evidence |", "|---|---|---|",
-    `| Exact engine bytes | ${report.coverage.exactBytes ? "PASS" : "FAIL"} | ${esc(report.coverage.engineSha256 || "unavailable")} |`,
-    `| Canonical curriculum manifest | ${report.curriculumManifest.status} | ${esc(report.curriculumManifest.manifestId || "invalid")} v${esc(report.curriculumManifest.version || "unavailable")}; ${esc(report.curriculumManifest.sha256 || "unavailable")}; ${report.curriculumManifest.canonicalBytes} canonical bytes |`,
-    `| Open-component rights state | ${/^[a-f0-9]{64}$/u.test(String(report.rightsStateSha256)) ? "PASS" : "FAIL"} | ${esc(report.rightsStateSha256 || "unavailable")} |`,
-    `| Stable staged privacy and open-component guard | ${report.publicCandidate.status} | revision ${esc(report.publicCandidate.revisionBefore || "unavailable")} → ${esc(report.publicCandidate.revisionAfter || "unavailable")}; before and after payload ${esc(report.publicCandidate.payloadSha256 || "unavailable")}; payload tree ${esc(report.publicCandidate.payloadTreeOid || "unavailable")} |`,
-    `| Restricted VM and behavioral suite | ${report.engine.summary.requiredFailures === 0 ? "PASS" : "FAIL"} | ${report.engine.summary.PASS} pass, ${report.engine.summary.FAIL} fail, ${report.engine.summary.SKIP} skip |`,
-    `| Manifest-to-generator semantic suite | ${report.semantic.contractPass ? "PASS" : "FAIL"} | ${report.semantic.summary.PASS ?? 0} pass, ${report.semantic.summary.FAIL ?? report.semantic.failures.length} fail, ${report.semantic.summary.SKIP ?? 0} skip; ${report.semantic.summary.taskTypes ?? 0}/${EXPECTED_SEMANTIC.taskTypes} task types; ${report.semantic.summary.questions ?? 0}/${EXPECTED_SEMANTIC.questions} deterministic questions |`,
-    `| Required Node major | ${report.coverage.node24 ? "PASS" : "FAIL"} | ${esc(report.coverage.nodeVersion || "unavailable")} |`,
-    `| Native branch calibration | ${report.coverage.calibrated ? "PASS" : "FAIL"} | full ${report.coverage.calibration.fullBranchPct ?? "—"}%; partial ${report.coverage.calibration.partialBranchPct ?? "—"}%; complementary repeated-filename aggregation ${report.coverage.calibration.aggregateBranchPct ?? "—"}% |`,
-    `| Engine branch coverage | ${report.coverage.status} | calibrated native ${report.coverage.branchPct ?? "not measured"}% (minimum ${MINIMUM_ENGINE_BRANCH_COVERAGE_PCT}%); raw diagnostic ${report.coverage.branchCovered ?? 0}/${report.coverage.branchTotal ?? 0} ${esc(report.coverage.branchMetric || "branch ranges")} (${report.coverage.rawBlockRangePct ?? "—"}%); ${report.coverage.scriptInstanceCount ?? 0} merged exact-URL script record(s); virtual file ${esc(report.coverage.virtualFilename || "missing")} |`,
-    `| Exhaustive generated-question audit | ${report.generator.status} | ${report.generator.questions ?? 0} questions; ${report.generator.skills ?? 0} skills |`,
-    `| Eleven-family mutation sanity | ${report.mutation.status} | ${report.mutation.families.filter((x) => x.status === "PASS").length}/11 families; ${mutationCases.filter((x) => x.status === "PASS").length}/${mutationCases.length} effect-sensitive cases killed |`,
-    `| Browser smoke | ${report.browser.status} | ${report.browser.results.filter((x) => x.status === "PASS").length} pass, ${report.browser.results.filter((x) => x.status === "FAIL").length} fail, ${report.browser.results.filter((x) => x.status === "SKIP").length} skip |`,
-    `| Direct Playwright journeys | ${report.playwright.status} | ${report.playwright.summary.passed}/${report.playwright.summary.expected} pass; ${report.playwright.summary.failed} fail; ${report.playwright.summary.skipped} skip; zero retries required |`,
-    `| Bounded audit orchestration | ${report.auditOrchestration.status} | ${report.auditOrchestration.executionMode}; ${report.auditOrchestration.wallDurationMs} ms wall; ${report.auditOrchestration.serialEquivalentDurationMs} ms summed lane time; ${report.auditOrchestration.observedOverlapReductionPercent}% observed overlap reduction; ${report.auditOrchestration.maximumObservedConcurrency}/${report.auditOrchestration.maximumConcurrentLanes} top-level lanes; zero retries |`,
-    `| Browser executable identity | ${report.browser.evidence?.browserIdentityValid ? "PASS" : "FAIL"} | ${esc(report.browser.evidence?.browserProductName || "unavailable")} ${esc(report.browser.evidence?.browserFullVersion || "unavailable")}; sha256:${esc(report.browser.evidence?.browserExecutableSha256 || "unavailable")} |`,
-    `| GitHub-hosted runner image identity | ${report.browser.evidence?.validForPublication ? "PASS" : "NOT_HOSTED"} | ImageOS ${esc(report.browser.evidence?.runnerImageOS || "unavailable")}; ImageVersion ${esc(report.browser.evidence?.runnerImageVersion || "unavailable")}; requested label ${esc(report.browser.evidence?.requestedRunnerLabel || "unavailable")} |`,
-    `| Reviewed qualification browser/runner tuple | ${report.publication.browserEvidenceReady ? "PASS" : "PENDING"} | ${browserEvidenceDetail} |`,
-    `| Launcher/server preflight | ${String(report.launcherPreflight).startsWith("PASS_") ? "PASS" : "FAIL"} | ${esc(report.launcherPreflight)} |`,
-    `| Prompt digest matches register | ${report.metadata.promptDigestMatchesRegister ? "PASS" : "FAIL"} | recorded ${esc(report.metadata.recordedPromptSha || "missing")} |`,
-    `| Parent string approval | ${report.parentStrings.status === "APPROVED" ? "PASS" : "PENDING"} | ${esc(report.parentStrings.digest || "No approved digest recorded")} |`,
-    ...report.externalReleaseEvidence.gates.map((item) => `| ${esc(item.id)}: ${esc(item.title)} | ${item.status} | ${esc(item.classification)}; ${esc(item.details)} |`),
-    "",
-    "## Failures", "",
-    ...(failures.length ? failures.map((item) => `- ${item.replace(/\r?\n/gu, " ")}`) : ["- None."]), "",
-    "## Skipped, deferred, and pending checks", "",
-    ...(skipped.length ? skipped.map((item) => `- ${item.replace(/\r?\n/gu, " ")}`) : ["- None."]), "",
-    "## Delivered files", "", ...report.deliveredFiles.map((file) => `- \`${file}\``), "",
-    "## Residual risks", "",
-    ...(report.residualRisks.length ? report.residualRisks.map((risk) => `- ${risk}`) : ["- None identified by the completed checks."]), "",
-    "## Unverified claims", "",
-    ...(report.unverifiedClaims.length ? report.unverifiedClaims.map((claim) => `- ${claim}`) : ["- None."]), "",
-  ];
-  return `${lines.join("\n")}\n`;
+function markdown(report, options) {
+  return auditMarkdown(report, options, { EXPECTED, EXPECTED_SEMANTIC, MINIMUM_ENGINE_BRANCH_COVERAGE_PCT });
 }
 
 export async function runAudit({ browserPath = null } = {}) {
-  const auditTime = new Date();
-  const gateIntegrityPolicy = await loadGateIntegrityPolicy();
-  const indexPath = path.join(root, "index.html");
-  const revisionBefore = await repositoryRevision();
-  const publicCandidateBefore = await runPublicCandidateGuard();
-  const [meta, curriculumManifest] = await Promise.all([
-    metadata(),
-    curriculumManifestStatus(),
-  ]);
-  const candidateId = `${revisionBefore}:${publicCandidateBefore.payloadSha256 || "UNAVAILABLE"}`;
-  const runId = process.env.GITHUB_RUN_ID
-    ? `${process.env.GITHUB_RUN_ID}:${process.env.GITHUB_RUN_ATTEMPT || "1"}`
-    : `LOCAL:${process.pid}:${auditTime.toISOString()}`;
+  const { auditTime, gateIntegrityPolicy, indexPath, revisionBefore, publicCandidateBefore, meta, curriculumManifest, candidateId, runId } = await initializeAudit();
+  const laneExecution = await executeAuditLanes({ browserPath, candidateId, indexPath, gateIntegrityPolicy, runId });
+  const { auditOrchestration, coverage, browser, playwright, mutation, generator, structured, engine, semantic, engineSuite } = interpretLaneEvidence({ laneExecution });
+  const reviewedBrowserEvidence = await reviewedBrowserRunnerEvidence();
+  const publicCandidate = await verifyPublicCandidateStability({ publicCandidateBefore, revisionBefore });
+  const { stringTechnicalPass, parentStrings } = parentStringEvidence({ engine, structured, engineSuite });
+  const rightsStateDigest = await rightsStateSha256(root);
+  const publication = await publicationClearance({
+    root, engineSha256: coverage.engineSha256, curriculumManifest, rightsSha256: rightsStateDigest,
+    publicCandidate, browser, reviewedBrowserEvidence, now: auditTime,
+  });
+  const externalReleaseEvidence = publication.externalReleaseEvidence;
+  const { actual, countsMatch } = auditCounts({ engine, semantic, browser, playwright, mutation, coverage, generator, auditOrchestration, externalReleaseEvidence });
+  const outcomeSummary = auditOutcomeSummary({ engine, semantic, browser, playwright, mutation, coverage, generator, auditOrchestration, externalReleaseEvidence });
+  const delivered = await deliveredFiles();
+  const { residualRisks, unverifiedClaims, launcherPreflight } = auditRiskNotes({ parentStrings, browser, playwright, reviewedBrowserEvidence, coverage, mutation, generator, semantic, curriculumManifest, publicCandidate, externalReleaseEvidence });
+  const gatesPass = auditGatesPass({ auditOrchestration, engine, stringTechnicalPass, semantic, curriculumManifest, coverage, mutation, generator, browser, playwright, countsMatch, meta, launcherPreflight, publicCandidate });
+  const report = assembleAuditReport({ gatesPass, parentStrings, publication, residualRisks, externalReleaseEvidence, gateIntegrityPolicy, auditTime, meta, actual, countsMatch, outcomeSummary, auditOrchestration, engine, semantic, coverage, mutation, generator, browser, playwright, curriculumManifest, rightsStateDigest, launcherPreflight, publicCandidate, reviewedBrowserEvidence, delivered, unverifiedClaims });
+  return await writeAuditReports({ report });
+}
+
+async function executeAuditLanes({ browserPath, candidateId, indexPath, gateIntegrityPolicy, runId }) {
   let laneExecution;
   try {
     laneExecution = await runBoundedAuditLanes({
@@ -501,6 +268,10 @@ export async function runAudit({ browserPath = null } = {}) {
       results: Object.fromEntries(AUDIT_LANE_IDS.map((laneId) => [laneId, failedAuditLaneResult(laneId, message, "ERROR")])),
     };
   }
+  return laneExecution;
+}
+
+function interpretLaneEvidence({ laneExecution }) {
   const auditOrchestration = laneExecution.report;
   const coverage = laneExecution.results.coverage;
   const browser = laneExecution.results.browser;
@@ -514,16 +285,11 @@ export async function runAudit({ browserPath = null } = {}) {
   const semantic = structured
     ? structured.semantic
     : { assertions: [], summary: {}, failures: ["Instrumented semantic evidence is unavailable."], contractPass: false };
-  const engineSuite = {
-    extracted: { sha256: coverage.engineSha256 ?? null },
-    engine: {
-      CONSTANTS: {
-        CHILD_STRINGS_PENDING_APPROVAL: structured?.engine?.childStringConstants?.pendingApproval ?? true,
-        CHILD_STRING_APPROVAL_SHA256: structured?.engine?.childStringConstants?.approvalSha256 ?? null,
-      },
-    },
-  };
-  const reviewedBrowserEvidence = await reviewedBrowserRunnerEvidence();
+  const engineSuite = engineEvidenceProjection({ coverage, structured });
+  return { auditOrchestration, coverage, browser, playwright, mutation, generator, structured, engine, semantic, engineSuite };
+}
+
+async function verifyPublicCandidateStability({ publicCandidateBefore, revisionBefore }) {
   const publicCandidateAfter = await runPublicCandidateGuard();
   const revisionAfter = await repositoryRevision();
   const publicCandidateStability = auditCandidateStabilityIssues({
@@ -546,22 +312,19 @@ export async function runAudit({ browserPath = null } = {}) {
       ? "The repository revision, public payload, and payload tree remained identical before and after the audit."
       : "The public-candidate guard failed, the repository revision was invalid or changed, or the public payload changed during the audit.",
   };
+  return publicCandidate;
+}
+
+function parentStringEvidence({ engine, structured, engineSuite }) {
   const stringResult = engine.results.find((item) => item.id === "BEH-25");
   const stringTechnicalPass = Boolean(stringResult && stringResult.status !== "FAIL");
   const candidateDigest = structured?.engine?.childStringCandidateSha256 ?? null;
-  const digest = stringResult?.status === "PASS" ? (engineSuite.engine?.CONSTANTS?.CHILD_STRING_APPROVAL_SHA256 ?? engineSuite.engine?.CONSTANTS?.CHILD_STRING_DIGEST ?? candidateDigest) : null;
+  const digest = approvedStringDigest({ stringResult, engineSuite, candidateDigest });
   const parentStrings = { status: stringResult?.status === "PASS" ? "APPROVED" : "PENDING_APPROVAL", digest, candidateDigest };
-  const rightsStateDigest = await rightsStateSha256(root);
-  const publication = await publicationClearance(
-    coverage.engineSha256,
-    curriculumManifest,
-    rightsStateDigest,
-    publicCandidate,
-    browser,
-    reviewedBrowserEvidence,
-    auditTime,
-  );
-  const externalReleaseEvidence = publication.externalReleaseEvidence;
+  return { stringTechnicalPass, parentStrings };
+}
+
+function auditCounts({ engine, semantic, browser, playwright, mutation, coverage, generator, auditOrchestration, externalReleaseEvidence }) {
   const actual = {
     engineAssertions: engine.results.length,
     semanticAssertions: semantic.assertions.length,
@@ -576,6 +339,10 @@ export async function runAudit({ browserPath = null } = {}) {
   };
   actual.total = Object.values(actual).reduce((sum, value) => sum + value, 0);
   const countsMatch = Object.entries(EXPECTED).every(([key, value]) => actual[key] === value);
+  return { actual, countsMatch };
+}
+
+function auditOutcomeSummary({ engine, semantic, browser, playwright, mutation, coverage, generator, auditOrchestration, externalReleaseEvidence }) {
   const normalizedOutcomeStatus = (status) => ({
     failed: "FAIL",
     interrupted: "CANCELLED",
@@ -601,20 +368,17 @@ export async function runAudit({ browserPath = null } = {}) {
     inventoryExpected: EXPECTED.total,
     runId: process.env.GITHUB_RUN_ID || "LOCAL",
   });
-  const delivered = await deliveredFiles();
+  return outcomeSummary;
+}
+
+function auditRiskNotes({ parentStrings, browser, playwright, reviewedBrowserEvidence, coverage, mutation, generator, semantic, curriculumManifest, publicCandidate, externalReleaseEvidence }) {
   const residualRisks = [];
   const unverifiedClaims = [];
   residualRisks.push("At 390×844, an adult who expands an optional teaching model in the Parent Test Lab may need to scroll to its Grade control; the live child flow and the approved question-first narrow Lab baseline remain within their tested viewport and size floors.");
   residualRisks.push("MEDIUM: GitHub's windows-latest selector is floating. The qualification evidence and final certification each bind their own exact browser product/version/executable SHA-256 and hosted ImageOS/ImageVersion; the label alone is never evidence, and the two independently valid tuples may differ.");
   unverifiedClaims.push("This local automated review does not verify control of the OpenMathQuest organization and OpenMathQuest/openmathquest.github.io repository, exclusive use of that organization for Math Quest Pages, the root Pages configuration, absence of a CNAME, HTTPS, deployment from the exact reviewed release tag, the deployed artifact, physical Windows/iPhone/iPad devices, or external legal/privacy review.");
   if (parentStrings.status !== "APPROVED") residualRisks.push("Child-facing strings are placeholders pending the project owner's parent approval; the game is not shippable.");
-  if (browser.status !== "PASS") unverifiedClaims.push("The complete real-browser interaction flow is not verified.");
-  if (playwright.status !== "PASS") unverifiedClaims.push("The direct native-input Playwright journey matrix is not verified.");
-  if (!browser.evidence?.validForPublication) unverifiedClaims.push("This run did not record a complete GitHub-hosted browser/runner tuple suitable for publication approval.");
-  if (reviewedBrowserEvidence.status !== "REVIEWED") unverifiedClaims.push("The exact GitHub-hosted browser/runner tuple remains pending independent review.");
-  if (coverage.status !== "PASS") unverifiedClaims.push(`At least ${MINIMUM_ENGINE_BRANCH_COVERAGE_PCT}% branch coverage of the exact shipped engine bytes is not verified.`);
-  if (mutation.status !== "PASS") unverifiedClaims.push("All eleven required representative mutant families have not been shown to fail.");
-  if (generator.status !== "PASS") unverifiedClaims.push("Every generated question has not passed the exhaustive self-grade and input-reachability audit.");
+  appendExecutionClaims({ browser, playwright, reviewedBrowserEvidence, coverage, mutation, generator, unverifiedClaims });
   if (!semantic.contractPass) unverifiedClaims.push("The canonical manifest-to-generator task-type and constraint semantics, including all 166 declared task types, have not all passed their independent effect-sensitive checks.");
   if (curriculumManifest.status !== "PASS") unverifiedClaims.push("The versioned neutral curriculum manifest is not valid, canonical-hashed, and complete across 21 six-skill levels and its six declared strands.");
   const launcherPreflight = process.env.MQ_LAUNCHER_PREFLIGHT || "NOT_RUN";
@@ -627,7 +391,40 @@ export async function runAudit({ browserPath = null } = {}) {
       unverifiedClaims.push(`${gateResult.id} [${gateResult.classification}]: ${gateResult.title} is not verified (${gateResult.details}).`);
     }
   }
-  const gatesPass = auditOrchestration.status === "PASS" && engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS" && coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && playwright.status === "PASS" && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
+  return { residualRisks, unverifiedClaims, launcherPreflight };
+}
+
+function auditGatesPass({ auditOrchestration, engine, stringTechnicalPass, semantic, curriculumManifest, coverage, mutation, generator, browser, playwright, countsMatch, meta, launcherPreflight, publicCandidate }) {
+  return learningGatesPass({ auditOrchestration, engine, stringTechnicalPass, semantic, curriculumManifest }) && executionGatesPass({ coverage, mutation, generator, browser, playwright }) && countsMatch && meta.promptDigestMatchesRegister && launcherPreflight.startsWith("PASS_") && publicCandidate.status === "PASS";
+}
+
+
+async function initializeAudit() {
+  const auditTime = new Date();
+  const gateIntegrityPolicy = await loadGateIntegrityPolicy();
+  const indexPath = path.join(root, "index.html");
+  const revisionBefore = await repositoryRevision();
+  const publicCandidateBefore = await runPublicCandidateGuard();
+  const [meta, curriculumManifest] = await Promise.all([
+    metadata(),
+    curriculumManifestStatus(),
+  ]);
+  const candidateId = `${revisionBefore}:${publicCandidateBefore.payloadSha256 || "UNAVAILABLE"}`;
+  const runId = process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_RUN_ID}:${process.env.GITHUB_RUN_ATTEMPT || "1"}`
+    : `LOCAL:${process.pid}:${auditTime.toISOString()}`;
+  return { auditTime, gateIntegrityPolicy, indexPath, revisionBefore, publicCandidateBefore, meta, curriculumManifest, candidateId, runId };
+}
+
+async function writeAuditReports({ report }) {
+  const publicReport = sanitizeHostDetails(report);
+  await writeFile(path.join(root, "audit", "last-report.json"), `${JSON.stringify(publicReport, null, 2)}\n`, "utf8");
+  await writeFile(path.join(root, "audit", "last-report.md"), markdown(publicReport), "utf8");
+  await writeFile(path.join(root, "audit", "final-build-report.md"), markdown(publicReport, { final: true }), "utf8");
+  return publicReport;
+}
+
+function assembleAuditReport({ gatesPass, parentStrings, publication, residualRisks, externalReleaseEvidence, gateIntegrityPolicy, auditTime, meta, actual, countsMatch, outcomeSummary, auditOrchestration, engine, semantic, coverage, mutation, generator, browser, playwright, curriculumManifest, rightsStateDigest, launcherPreflight, publicCandidate, reviewedBrowserEvidence, delivered, unverifiedClaims }) {
   const technicalShippable = gatesPass && parentStrings.status === "APPROVED";
   if (!["APPROVED", "EMERGENCY_APPROVED"].includes(publication.status)) residualRisks.push(publication.reason);
   const shippable = computeReleaseDecision({
@@ -642,12 +439,44 @@ export async function runAudit({ browserPath = null } = {}) {
     technicalShippable, shippable, publication, metadata: meta, predicted: EXPECTED, actual, countsMatch, outcomeSummary, auditOrchestration, engine, semantic, coverage, mutation, generator, browser, playwright,
     externalReleaseEvidence, curriculumManifest, rightsStateSha256: rightsStateDigest, parentStrings, launcherPreflight, publicCandidate, reviewedBrowserRunnerEvidence: reviewedBrowserEvidence, deliveredFiles: delivered, residualRisks, unverifiedClaims,
   };
-  const publicReport = sanitizeHostDetails(report);
-  await writeFile(path.join(root, "audit", "last-report.json"), `${JSON.stringify(publicReport, null, 2)}\n`, "utf8");
-  await writeFile(path.join(root, "audit", "last-report.md"), markdown(publicReport), "utf8");
-  await writeFile(path.join(root, "audit", "final-build-report.md"), markdown(publicReport, { final: true }), "utf8");
-  return publicReport;
+  return report;
 }
+
+function engineEvidenceProjection({ coverage, structured }) {
+  const engineSuite = {
+    extracted: { sha256: coverage.engineSha256 ?? null },
+    engine: {
+      CONSTANTS: {
+        CHILD_STRINGS_PENDING_APPROVAL: structured?.engine?.childStringConstants?.pendingApproval ?? true,
+        CHILD_STRING_APPROVAL_SHA256: structured?.engine?.childStringConstants?.approvalSha256 ?? null,
+      },
+    },
+  };
+  return engineSuite;
+}
+
+function approvedStringDigest({ stringResult, engineSuite, candidateDigest }) {
+  return stringResult?.status === "PASS" ? (engineSuite.engine?.CONSTANTS?.CHILD_STRING_APPROVAL_SHA256 ?? engineSuite.engine?.CONSTANTS?.CHILD_STRING_DIGEST ?? candidateDigest) : null;
+}
+
+function appendExecutionClaims({ browser, playwright, reviewedBrowserEvidence, coverage, mutation, generator, unverifiedClaims }) {
+  if (browser.status !== "PASS") unverifiedClaims.push("The complete real-browser interaction flow is not verified.");
+  if (playwright.status !== "PASS") unverifiedClaims.push("The direct native-input Playwright journey matrix is not verified.");
+  if (!browser.evidence?.validForPublication) unverifiedClaims.push("This run did not record a complete GitHub-hosted browser/runner tuple suitable for publication approval.");
+  if (reviewedBrowserEvidence.status !== "REVIEWED") unverifiedClaims.push("The exact GitHub-hosted browser/runner tuple remains pending independent review.");
+  if (coverage.status !== "PASS") unverifiedClaims.push(`At least ${MINIMUM_ENGINE_BRANCH_COVERAGE_PCT}% branch coverage of the exact shipped engine bytes is not verified.`);
+  if (mutation.status !== "PASS") unverifiedClaims.push("All eleven required representative mutant families have not been shown to fail.");
+  if (generator.status !== "PASS") unverifiedClaims.push("Every generated question has not passed the exhaustive self-grade and input-reachability audit.");
+}
+
+function learningGatesPass({ auditOrchestration, engine, stringTechnicalPass, semantic, curriculumManifest }) {
+  return auditOrchestration.status === "PASS" && engine.summary.requiredFailures === 0 && stringTechnicalPass && semantic.contractPass && curriculumManifest.status === "PASS";
+}
+
+function executionGatesPass({ coverage, mutation, generator, browser, playwright }) {
+  return coverage.status === "PASS" && mutation.status === "PASS" && generator.status === "PASS" && browser.status === "PASS" && playwright.status === "PASS";
+}
+
 
 const report = await runAudit({ browserPath: arg("browser") || process.env.MQ_BROWSER_PATH || null });
 const browserDiagnostic = report.browser.status === "PASS" ? null : {

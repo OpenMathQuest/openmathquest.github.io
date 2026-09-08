@@ -4,9 +4,18 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { evaluateExternalReleaseEvidence, parsePublicationClearance } from "../lib/publication-clearance.mjs";
-import { loadReleaseEvidenceBundle } from "../lib/release-evidence-bundle.mjs";
+import { loadReleaseEvidenceBundle, parsePendingTrustedHttpsCanaryEvidence } from "../lib/release-evidence-bundle.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+test("non-object pending canary records return invalid evidence without throwing", () => {
+  for (const value of [null, false, 0, "invalid", []]) {
+    const parsed = parsePendingTrustedHttpsCanaryEvidence(JSON.stringify(value) + "\n");
+    assert.equal(parsed.valid, false);
+    assert.deepEqual(parsed.fields, value);
+    assert.ok(parsed.issues.includes("pending canary evidence must contain only the exact ordered schema"));
+  }
+});
 
 test("the checked-in release evidence bundle validates every bound artifact", async () => {
   const loaded = await loadReleaseEvidenceBundle();
@@ -192,7 +201,7 @@ test("a Beta 8 qualification bundle is structurally valid but cannot claim relea
 
 test("release consumers require releaseReady and cannot promote structural validity", async () => {
   const [auditSource, validatorSource] = await Promise.all([
-    readFile(path.join(root, "audit", "run-audit.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "lib", "audit-publication-report.mjs"), "utf8"),
     readFile(path.join(root, "audit", "validate-publication-clearance.mjs"), "utf8"),
   ]);
   assert.match(auditSource, /!releaseEvidenceBundle\.releaseReady/u);

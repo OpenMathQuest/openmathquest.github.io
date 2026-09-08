@@ -15,6 +15,7 @@ import {
   deepUxCensusReportFindings,
   deepUxCensusRequiredForVersion,
   deepUxEffectBoundRerenderAction,
+  deepUxEnterGrownUps,
   deepUxFirstScreenResponseRequired,
   deepUxNativeScrollDelta,
   deepUxPartialResponseControlPriority,
@@ -24,6 +25,21 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const digest = "a".repeat(64);
+
+test("Deep UX waits for the initial screen before choosing the anonymous or restored Home path", async () => {
+  for (const fresh of [true, false]) {
+    const actions = [];
+    const readiness = { waitFor: async (options) => { assert.equal(options.state, "visible"); actions.push("ready"); } };
+    const control = (name) => ({
+      or: () => ({ first: () => readiness }),
+      isVisible: async () => { assert.equal(actions[0], "ready"); return fresh; },
+      tap: async () => { actions.push(name); }, click: async () => { actions.push(name); },
+    });
+    const page = { getByRole: (_role, { name }) => control(name), evaluate: async () => true };
+    await deepUxEnterGrownUps(page);
+    assert.deepEqual(actions, fresh ? ["ready", "Continue without a name", "Grown-ups corner"] : ["ready", "Grown-ups corner"]);
+  }
+});
 
 function fakeEngine() {
   return {
@@ -55,12 +71,16 @@ function fakeEngine() {
   };
 }
 
-function cleanReport(plan, mode = "FULL") {
-  const ids = plan.cells.map((cell) => cell.cellId).sort();
-  const projectCounts = DEEP_UX_CENSUS_VIEWPORTS.map((viewport) => {
+function cleanProjectCounts(plan) {
+  return DEEP_UX_CENSUS_VIEWPORTS.map((viewport) => {
     const expected = plan.cells.filter((cell) => cell.viewportId === viewport.id).length;
     return { projectId: viewport.id, expected, actual: expected, passed: expected, failed: 0 };
   });
+}
+
+function cleanReport(plan, mode = "FULL") {
+  const ids = plan.cells.map((cell) => cell.cellId).sort();
+  const projectCounts = cleanProjectCounts(plan);
   return {
     schemaVersion: DEEP_UX_CENSUS_REPORT_SCHEMA_VERSION,
     contractId: DEEP_UX_CENSUS_REPORT_ID,
@@ -73,6 +93,7 @@ function cleanReport(plan, mode = "FULL") {
     toolchain: { runnerPackage: "@playwright/test", runnerVersion: "1.62.1", browserProduct: "Microsoft Edge", browserVersion: "151.0.4129.72", browserExecutableSha256: digest },
     privacy: { usesSyntheticStateOnly: true, includesChildName: false, includesChildProgress: false, includesPassScreenshots: false, includesPassTraces: false, failureArtifactsSyntheticOnly: true, failureArtifactsUploadedOnFailure: true },
     execution: { expectedCells: ids.length, actualCells: ids.length, passedCells: ids.length, failedCells: 0, skippedCells: 0, unknownCells: 0, duplicateCells: 0, expectedCellSetSha256: sha256(ids), executedCellSetSha256: sha256(ids), durationMs: 123, projectCounts },
+    axe: { enginePackage: "axe-core", engineVersion: "4.13.0", runTags: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"], negativeControl: { id: "NC-AXE-UNNAMED-BUTTON-DETECTED", status: "PASS" }, violationCount: 0, manualReviewItems: [] },
     anomalies: [],
   };
 }
@@ -187,6 +208,7 @@ test("[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing 
     (report) => { report.cadence.satisfied = false; },
     (report) => { report.candidate.commitSha = null; },
     (report) => { report.anomalies = [{ cellId: "DUX-bad@desktop", scenarioId: "DUX-bad", viewportId: "desktop", skillId: "MQ-001", tier: "EASY", representation: "PICTORIAL", theme: "forest", ordinal: 0, state: "BROWSER", code: "PAGE_ERROR", message: "synthetic", screenshotFile: null, ariaFile: null, geometryFile: null }]; },
+    (report) => { report.axe.negativeControl.status = "FAIL"; },
     (report) => { report.extra = true; },
   ]) {
     const report = cleanReport(plan); mutate(report);
@@ -194,15 +216,7 @@ test("[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing 
   }
 });
 
-test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly capture, context network observation, and no pass artifacts", async () => {
-  const [config, spec, censusLibrary, runner, index, workflow] = await Promise.all([
-    readFile(path.join(root, "playwright.deep-ux.config.mjs"), "utf8"),
-    readFile(path.join(root, "audit", "playwright", "deep-ux-census.spec.mjs"), "utf8"),
-    readFile(path.join(root, "audit", "lib", "playwright-deep-ux-census.mjs"), "utf8"),
-    readFile(path.join(root, "audit", "run-playwright-deep-ux-census.mjs"), "utf8"),
-    readFile(path.join(root, "index.html"), "utf8"),
-    readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8"),
-  ]);
+function assertCensusConfiguration(config, workflow) {
   assert.match(config, /retries:\s*0/u);
   assert.match(config, /workers:\s*process\.env\.MQ_DEEP_UX_HOSTED === "1" \? 2 : 1/u);
   assert.match(config, /serviceWorkers:\s*"block"/u);
@@ -211,6 +225,9 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(config, /screenshot:\s*"off"/u);
   const censusJob = workflow.split(/  deep-ux-census:/u)[1]?.split(/  audit-execution-qualification:/u)[0] || "";
   assert.match(censusJob, /timeout-minutes:\s*240/u);
+}
+
+function assertNativeCensusActions(censusLibrary, spec) {
   assert.match(censusLibrary, /scroll:\s*"none"/u);
   assert.match(censusLibrary, /locator\.tap\(options\)/u);
   assert.match(censusLibrary, /locator\.click\(options\)/u);
@@ -223,6 +240,9 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(spec, /positionOuterDocumentControl\(model, page\)/u);
   assert.match(spec, /activate\(model, page, \{ preserveScroll: true \}\)/u);
   assert.doesNotMatch(spec, /locator\.(?:tap|click)\(/u);
+}
+
+function assertCensusGeometry(spec) {
   assert.match(spec, /ariaSnapshot\(\{ mode: "ai", boxes: true/u);
   assert.match(spec, /type: "webp"/u);
   assert.match(spec, /page\.context\(\)\.on\("request"/u);
@@ -239,6 +259,9 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(spec, /data-render-settled/u);
   assert.match(spec, /\[data-lab-expected\][\s\S]*toBeVisible/u);
   assert.match(spec, /\.model\[data-worked-result='true'\][\s\S]*toBeVisible/u);
+}
+
+function assertTutorialIdentities(spec) {
   for (const state of ["TUTORIAL_STEP_1_DIFFERENT_EXAMPLE", "TUTORIAL_STEP_2_PLAN", "TUTORIAL_STEP_3_CHECK"]) assert.match(spec, new RegExp(state, "u"));
   assert.match(spec, /data-source-question-id/u);
   assert.match(spec, /data-example-question-id/u);
@@ -251,6 +274,9 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(spec, /data-terminal-answer-rendered/u);
   assert.match(spec, /data-tutorial-phase-id/u);
   for (const label of ["Notice — Step 1 of 3", "Plan — Step 2 of 3", "Check — Step 3 of 3"]) assert.match(spec, new RegExp(label, "u"));
+}
+
+function assertTutorialVisualEffects(spec) {
   assert.match(spec, /data-visual-anchor-ids/u);
   assert.match(spec, /data-visual-cue-ids/u);
   assert.match(spec, /\.tutorial-example \[data-visual-anchor-role\]\[data-visual-cue-id\]/u);
@@ -265,6 +291,9 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   const returnedVisualSignature = spec.split(/return JSON\.stringify\(\{/u)[1]?.split(/\}\);/u)[0] || "";
   for (const visualField of ["outlineWidth", "outlineColor", "outlineStyle", "outlineOffset", "overlayGeometry"]) assert.match(returnedVisualSignature, new RegExp(visualField, "u"));
   for (const authoredField of ["phase", "declaredAnchor", "declaredCue", "anchorRole", "cueId"]) assert.doesNotMatch(returnedVisualSignature, new RegExp(authoredField, "u"));
+}
+
+function assertCensusArtifactBoundaries({ spec, index, workflow, runner }) {
   assert.match(spec, /toHaveCount\(0\)/u);
   assert.match(spec, /Back to your question/u);
   assert.match(index, /lab\.showTutorial=!lab\.showTutorial/u);
@@ -281,4 +310,24 @@ test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly c
   assert.match(runner, /RUNNER_ENVIRONMENT !== "github-hosted"/u);
   assert.match(runner, /MQ_DEEP_UX_CANDIDATE_SHA !== process\.env\.GITHUB_SHA/u);
   for (const hook of ["data-lab-representation", "data-lab-theme", "data-lab-sample", "data-sample-key"]) assert.match(index, new RegExp(hook, "u"));
+}
+
+test("Playwright census uses native actionability, AI ARIA boxes, WebP anomaly capture, context network observation, and no pass artifacts", async () => {
+  const [config, censusSpec, censusLibrary, runner, index, workflow, observations] = await Promise.all([
+    readFile(path.join(root, "playwright.deep-ux.config.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "playwright", "deep-ux-census.spec.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "lib", "playwright-deep-ux-census.mjs"), "utf8"),
+    readFile(path.join(root, "audit", "run-playwright-deep-ux-census.mjs"), "utf8"),
+    readFile(path.join(root, "index.html"), "utf8"),
+    readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8"),
+    readFile(path.join(root, "audit", "playwright", "deep-ux-dom-observations.mjs"), "utf8"),
+  ]);
+  const spec = `${censusSpec}\n${observations}`;
+  assert.match(censusSpec, /import \{ captureTutorialPhaseEffect, geometryCensus \} from "\.\/deep-ux-dom-observations\.mjs"/u);
+  assertCensusConfiguration(config, workflow);
+  assertNativeCensusActions(censusLibrary, spec);
+  assertCensusGeometry(spec);
+  assertTutorialIdentities(spec);
+  assertTutorialVisualEffects(spec);
+  assertCensusArtifactBoundaries({ spec, index, workflow, runner });
 });

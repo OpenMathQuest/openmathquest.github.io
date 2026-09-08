@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { assertRightsInputBindings } from "./rights-state-fixture.mjs";
+import { validEvidence } from "./canary-evidence-fixture.mjs";
 import { execFile as execFileCallback } from "node:child_process";
 import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -9,26 +11,11 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import {
   activateCanaryHomeUpdate,
-  CADDY_ARCHIVE_SHA256,
-  CADDY_ARCHIVE_SHA512,
-  CADDY_VERSION,
   beta1GradedSelectionAnswer,
   EMPTY_PROFILE_PROCESS_SET_SHA256,
   LOOPBACK_LISTENER_QUERY_SCRIPT,
-  PLAYWRIGHT_CORE_SRI,
-  PLAYWRIGHT_CORE_VERSION,
-  RETAINED_BETA1_COMPLETE_SHA256,
   RETAINED_BETA1_FRESH_START_NOTICE,
-  RETAINED_BETA1_FRESH_START_NOTICE_SHA256,
-  TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
-  TRUSTED_HTTPS_CANARY_BETA1_TAG,
-  TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT,
   TRUSTED_HTTPS_CANARY_CHECK_IDS,
-  TRUSTED_HTTPS_CANARY_KIND,
-  TRUSTED_HTTPS_CANARY_SCHEMA_VERSION,
-  TRUSTED_HTTPS_CANARY_STATUS,
-  TRUSTED_HTTPS_CANARY_TAG,
-  TRUSTED_HTTPS_CANARY_WORKFLOW,
   WINDOWS_POWERSHELL_CERTIFICATE_SHA256_SCRIPT,
   canaryBrowserArguments,
   canaryBackendRequestViolation,
@@ -38,16 +25,13 @@ import {
   canaryChildExitSucceeded,
   canaryWorkspaceRemovalAllowed,
   canonicalCertificateThumbprint,
-  captureCanaryObservation,
   canonicalCanaryEvidence,
   loopbackListenerProbeInvocation,
-  observePromiseSettlement,
   observeCanaryRetainedFreshStartNotice,
   openCanaryInstallHelp,
   parseTrustedHttpsCanaryEvidence,
   profileProcessSetSha256,
   reloadCanaryCandidateFromBeta1,
-  recoverAndDrainOperation,
   runCanaryTeardown,
   snapshotSha256,
   trustedTlsInspectionScript,
@@ -58,6 +42,9 @@ import {
   waitForExactLoopbackListener,
 } from "../lib/trusted-https-canary.mjs";
 import {
+  buildTrustedHttpsCanarySupplyChainInput,
+  trustedHttpsCanaryRunnerText,
+  TRUSTED_HTTPS_CANARY_SUPPLY_CHAIN_INPUT_PATHS,
   trustedHttpsCanarySupplyChainFindings,
   trustedHttpsCanarySupplyChainMutationFailures,
 } from "../lib/trusted-https-canary-supply-chain.mjs";
@@ -68,152 +55,12 @@ const sha = (character) => character.repeat(64);
 const candidateSha = "1".repeat(40);
 const execFile = promisify(execFileCallback);
 
-function validEvidence() {
-  return {
-    schemaVersion: TRUSTED_HTTPS_CANARY_SCHEMA_VERSION,
-    artifactKind: TRUSTED_HTTPS_CANARY_KIND,
-    certificationStatus: TRUSTED_HTTPS_CANARY_STATUS,
-    reconciliationState: "RECONCILED",
-    repository: "OpenMathQuest/openmathquest.github.io",
-    ref: "refs/heads/main",
-    candidateSha,
-    intendedReleaseTag: TRUSTED_HTTPS_CANARY_TAG,
-    workflowFile: TRUSTED_HTTPS_CANARY_WORKFLOW,
-    workflowRunId: "123",
-    workflowRunAttempt: "1",
-    observedAtUtc: "2026-08-03T12:34:56.000Z",
-    hostQualificationState: "DEFERRED_PRERELEASE",
-    beta1Identity: {
-      tag: TRUSTED_HTTPS_CANARY_BETA1_TAG,
-      tagObjectSha: TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT,
-      commitSha: TRUSTED_HTTPS_CANARY_BETA1_COMMIT,
-    },
-    runtimeIdentity: {
-      beta1SnapshotSha256: sha("a"),
-      candidateSnapshotSha256: sha("b"),
-      candidateReleaseManifestSha256: sha("c"),
-      candidateServiceWorkerSha256: sha("d"),
-      candidateIndexSha256: sha("e"),
-    },
-    origin: {
-      scheme: "https",
-      hostname: "localhost",
-      port: 43123,
-      scope: "https://localhost:43123/",
-      exposure: "LOOPBACK_ONLY",
-    },
-    toolchain: {
-      caddyVersion: CADDY_VERSION,
-      caddyArchiveSha256: CADDY_ARCHIVE_SHA256,
-      caddyArchiveSha512: CADDY_ARCHIVE_SHA512,
-      caddyExecutableSha256: sha("f"),
-      playwrightCoreVersion: PLAYWRIGHT_CORE_VERSION,
-      playwrightCoreSri: PLAYWRIGHT_CORE_SRI,
-    },
-    browser: { productName: "Microsoft Edge", fullVersion: "140.0.1.2", executableSha256: sha("1") },
-    runner: { requestedLabel: "windows-latest", environment: "github-hosted", imageOS: "win25", imageVersion: "20260801.1" },
-    certificate: {
-      rootSha256: sha("2"),
-      leafSha256: sha("3"),
-      subjectName: "localhost",
-      issuer: "Caddy Local Authority - ECC Intermediate",
-      validFromUnix: 1_786_000_000,
-      validToUnix: 1_786_086_400,
-    },
-    tlsProtocol: "TLS 1.3",
-    networkProof: {
-      expectedResponseCount: 16,
-      verifiedResponseCount: 16,
-      responseSetSha256: sha("6"),
-      responseHeaderSetSha256: sha("7"),
-      caddyAccessLogSha256: sha("8"),
-    },
-    cacheProof: {
-      physicalCacheName: `math-quest-static-v1.0.0-beta.8-${sha("c")}`,
-      expectedEntryCount: 14,
-      waitingEntryCount: 14,
-      activeEntryCount: 14,
-      offlineEntryCount: 14,
-      repairedEntryCount: 14,
-      waitingSetSha256: sha("9"),
-      activeSetSha256: sha("9"),
-      offlineSetSha256: sha("9"),
-      repairedSetSha256: sha("9"),
-      unexpectedCacheCount: 0,
-      stagingCacheCount: 0,
-    },
-    offlineProof: {
-      responseFromServiceWorker: true,
-      originPortClosed: true,
-      backendPortClosed: true,
-      controllerScriptUrlSha256: sha("a"),
-      readinessRelease: "1.0.0-beta.8",
-      readinessBuildId: "math-quest-pwa-v1.0.0-beta.8",
-      readinessCacheIdentity: "math-quest-static-v1.0.0-beta.8",
-    },
-    navigationProof: {
-      expectedReloadCount: 1,
-      observedReloadCount: 1,
-      unexpectedNavigationCount: 0,
-      initialUrlSha256: sha("b"),
-      navigationSetSha256: sha("c"),
-    },
-    privacy: {
-      profileMode: "anonymous",
-      syntheticOnly: true,
-      childIdentityStored: false,
-      automaticUpload: false,
-      requestMetadataSha256: sha("d"),
-      unexpectedRequestCount: 0,
-      externalRequestCount: 0,
-      queryStringCount: 0,
-      allowedRecoveryQueryCount: 0,
-      unexpectedQueryStringCount: 0,
-      requestBodyCount: 0,
-      cookieHeaderCount: 0,
-      authorizationHeaderCount: 0,
-      sensitiveHeaderCount: 0,
-      webSocketCount: 0,
-      eventSourceCount: 0,
-      otherActiveChannelCount: 0,
-    },
-    progress: {
-      sourceKey: "math-quest:v2",
-      protectedKey: "math-quest:progress:v2",
-      sourceSha256: sha("4"),
-      protectedSha256: sha("5"),
-      sourceSchemaVersion: 2,
-      targetSchemaVersion: 3,
-      sourceEarnedLevel: 2,
-      sourcePracticeCount: 3,
-      protectedEarnedLevel: 1,
-      protectedPracticeCount: 0,
-      expectedFreshSha256: sha("5"),
-      retiredProjectionSha256: sha("e"),
-      freshProjectionSha256: sha("6"),
-      retiredProjectionFieldCount: 57,
-      freshProjectionFieldCount: 42,
-      retainedMarkerSha256: RETAINED_BETA1_COMPLETE_SHA256,
-      retainedNoticeSha256: RETAINED_BETA1_FRESH_START_NOTICE_SHA256,
-    },
-    checks: TRUSTED_HTTPS_CANARY_CHECK_IDS.map((id) => ({ id, status: "PASS", detail: `Effect-sensitive proof for ${id}.` })),
-    teardown: {
-      status: "PASS",
-      browserClosed: true,
-      caddyStopped: true,
-      backendStopped: true,
-      certificateRemoved: true,
-      profileRemoved: true,
-      temporaryFilesRemoved: true,
-      portClosed: true,
-      certificateThumbprint: "1".repeat(40),
-      remainingMatchingCertificateCount: 0,
-      observedProfileProcessCount: 1,
-      observedProfileProcessSetSha256: sha("f"),
-      remainingProfileProcessCount: 0,
-      remainingProfileProcessSetSha256: EMPTY_PROFILE_PROCESS_SET_SHA256,
-    },
-  };
+async function trustedHttpsCanarySupplyChainTestInput() {
+  const pairs = await Promise.all(
+    TRUSTED_HTTPS_CANARY_SUPPLY_CHAIN_INPUT_PATHS.map(async ([, relativePath]) => [relativePath, await read(relativePath)]),
+  );
+  const texts = new Map(pairs);
+  return buildTrustedHttpsCanarySupplyChainInput((relativePath) => texts.get(relativePath));
 }
 
 test("canonical trusted-HTTPS evidence accepts only the exact reconciled candidate", () => {
@@ -374,8 +221,8 @@ test("hosted Windows listener observation tolerates only transient no-match resu
     );
   }
 
-  const [runnerText, wrapperText] = await Promise.all([
-    read("audit/run-trusted-https-canary.mjs"),
+  const [runnerText] = await Promise.all([
+    readCanaryRunnerSources(),
     read("audit/run-trusted-https-canary.ps1"),
   ]);
   assert.match(LOOPBACK_LISTENER_QUERY_SCRIPT, /CmdletizationQuery_NotFound/u);
@@ -790,116 +637,34 @@ test("candidate cache observation retries a concurrent install and binds one ato
   assert.match(result.rows[0].sha256, /^[a-f0-9]{64}$/u);
 });
 
-test("canary checks emit progress markers and bind open-ended waits", async () => {
-  assert.deepEqual(await observePromiseSettlement(Promise.resolve("done"), 100), { settled: true, value: "done", error: null });
-  const delayed = new Promise((resolve) => setTimeout(() => resolve("later"), 30));
-  assert.deepEqual(await observePromiseSettlement(delayed, 5), { settled: false, value: undefined, error: null });
-  assert.deepEqual(await observePromiseSettlement(delayed, 100), { settled: true, value: "later", error: null });
-  let resourceOpen = true;
-  let mutatedAfterTimeout = false;
-  let operationSettled = false;
-  const recoverable = new Promise((resolve) => setTimeout(() => {
-    if (resourceOpen) mutatedAfterTimeout = true;
-    operationSettled = true;
-    resolve("drained");
-  }, 30));
-  await assert.rejects(recoverAndDrainOperation(recoverable, {
-    timeoutMs: 5,
-    drainTimeoutMs: 100,
-    label: "delayed browser operation",
-    recover: async () => { resourceOpen = false; },
-  }), /settled only after recovery/u);
-  assert.equal(operationSettled, true);
-  assert.equal(mutatedAfterTimeout, false);
-  const observationFailures = [];
-  const failedHeaders = await captureCanaryObservation(Promise.reject(new Error("header observation failed")), observationFailures, "request headers");
-  assert.deepEqual(failedHeaders, { ok: false, value: null });
-  assert.deepEqual(observationFailures, [{ label: "request headers", error: "header observation failed" }]);
-  const [runnerText, wrapperText] = await Promise.all([
-    read("audit/run-trusted-https-canary.mjs"),
-    read("audit/run-trusted-https-canary.ps1"),
-  ]);
-  assert.match(runnerText, /\[canary\] START \$\{id\}/u);
-  assert.match(runnerText, /\[canary\] PASS \$\{id\}/u);
-  assert.match(runnerText, /\[canary\] FAIL \$\{id\}/u);
-  assert.match(runnerText, /Beta 1 service-worker readiness timed out/u);
-  assert.match(runnerText, /START ONLINE_TO_OFFLINE_SHUTDOWN/u);
-  assert.match(runnerText, /closePersistentContext\(context, profilePath\)/u);
-  assert.match(runnerText, /boundedPageEvaluate/u);
-  assert.match(runnerText, /boundedBrowserOperation/u);
-  assert.match(runnerText, /closeAuxiliaryContext/u);
-  assert.match(runnerText, /closeAllConnections/u);
-  assert.doesNotMatch(runnerText, /await\s+[A-Za-z_$][\w$]*\.evaluate\s*\(/u);
-  assert.doesNotMatch(runnerText, /networkBrowser/u);
-  assert.doesNotMatch(runnerText, /await\s+networkContext\.close\s*\(/u);
-  assert.doesNotMatch(runnerText, /await\s+context\.newPage\s*\(/u);
-  assert.doesNotMatch(runnerText, /await\s+context\.setOffline\s*\(/u);
-  assert.doesNotMatch(runnerText, /allHeaders\(\)\s*\)\.catch/u);
-  assert.doesNotMatch(runnerText, /\.allHeaders\(\)|Playwright request-header observation/u);
-  assert.match(runnerText, /canaryRequestHeaderFlags\(request\.headers\(\)\)/u);
-  assert.match(runnerText, /canaryBackendRequestViolation\(item, allowed\)/u);
-  assert.match(runnerText, /Backend request violation count=/u);
-  assert.match(runnerText, /EXPECTED_BROWSER_PROBE_PATHS = Object\.freeze\(\["\/favicon\.ico"\]\)/u);
-  assert.match(runnerText, /responseStatus: 404/u);
-  assert.match(runnerText, /status: row\.responseStatus/u);
-  assert.match(runnerText, /trustedTlsInspectionScript\(\)/u);
-  assert.match(runnerText, /validateCanaryBrowserTlsSecurity\(security, tls\)/u);
-  assert.match(runnerText, /validateCanaryRootScopeProof\(\{ manifest, \.\.\.scope, origin \}\)/u);
-  assert.doesNotMatch(runnerText, /fetch\("\.\/manifest\.webmanifest"/u);
-  assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
-  assert.match(runnerText, /waitForCanaryHomeUpdate\(candidatePage, "1\.0\.0-beta\.8"\)/u);
-  assert.match(runnerText, /activateCanaryHomeUpdate\(candidatePage\)/u);
-  assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(beta1Page, "1\.0\.0-beta\.8"\)/u);
-  assert.match(runnerText, /RETIRED_BETA1_PRESERVED_FRESH_START/u);
-  assert.match(runnerText, /MathQuestEngine\.exportState\(MathQuestEngine\.createInitialState\(state\.maxSeenPlayDay\)\)/u);
-  assert.match(runnerText, /assert\.equal\(protectedBytes, expectedFreshBytes/u);
-  assert.match(runnerText, /assert\.equal\(fresh\.marker, RETAINED_BETA1_COMPLETE_VALUE\)/u);
-  assert.match(runnerText, /observeCanaryRetainedFreshStartNotice\(candidatePage\)/u);
-  assert.match(runnerText, /candidatePage\.waitForFunction\(canaryWaitingCacheReady/u);
-  assert.match(runnerText, /boundedPageEvaluate\([\s\S]*exactCandidateCacheObservation/u);
-  assert.match(runnerText, /assert\.equal\(retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256\)/u);
-  assert.doesNotMatch(runnerText, /projectApprovedShape|SCHEMA3_MIGRATION_PRESERVED/u);
-  assert.doesNotMatch(runnerText, /Playwright candidate page creation|waitForCanaryWriterBlocked|closeCanaryWriterPage/u);
-  assert.match(runnerText, /openCanaryInstallHelp\(candidatePage\)/u);
-  assert.doesNotMatch(runnerText, /candidatePage\.locator\('\[data-action="pwa-apply"\]'\)/u);
-  assert.doesNotMatch(runnerText, /async function waitForCandidateHome|async function openInstallHelp/u);
-  assert.match(runnerText, /const answer = question\.inputClass === "SELECTION"\s*\? gradedSelectionAnswer\(question, E\.gradeAnswer\)\s*:\s*String\(question\.answer\.value\)/u);
-  assert.match(runnerText, /E\.submitAnswer\(question, answer,/u);
-  assert.doesNotMatch(runnerText, /HashData|ToHexString/u);
-  assert.match(runnerText, /assert\.deepEqual\(requestTrackers\.flatMap\(\(tracker\) => tracker\.observationFailures\), \[\]\)/u);
-  assert.match(runnerText, /X509Store\]::new\('Root',\[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
-  assert.match(runnerText, /WindowsBuiltInRole\]::Administrator/u);
-  assert.match(runnerText, /\$store\.Add\(\$certificate\)/u);
-  assert.match(runnerText, /\$store\.Remove\(\$certificate\)/u);
-  assert.match(runnerText, /canonicalCertificateThumbprint\(certificateThumbprint\)/u);
-  assert.match(runnerText, /persistCleanupIdentifiers\(workRoot, \{ processIds: \[caddy\.child\.pid\], certificateThumbprint, originPort \}\);\s*assert\.equal\(Number\(await run\("powershell\.exe"/u);
-  assert.match(wrapperText, /certificateCleanup\.WaitForExit\(30000\)/u);
-  assert.match(wrapperText, /certificateCleanup\.Kill\(\)/u);
-  assert.match(wrapperText, /Fallback certificate removal did not remove the exact canary root/u);
-  assert.match(wrapperText, /X509Store\]::new\('Root', \[Security\.Cryptography\.X509Certificates\.StoreLocation\]::LocalMachine\)/u);
-  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /StoreLocation\]::CurrentUser/u);
-  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /Import-Certificate/u);
-  assert.doesNotMatch(`${runnerText}\n${wrapperText}`, /certutil\.exe/u);
-  assert.doesNotMatch(runnerText, /\$args\[0\]/u);
-});
-
 test("CI-only toolchain is closed, pinned, manual, private, fresh, and absent from the release shell", async () => {
-  const [packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, canaryLibraryText, validatorText, builderText, releaseShellText, serviceWorkerText] = await Promise.all([
-    read("package.json"),
-    read("package-lock.json"),
-    read("audit/install-reviewed-ci-dependencies.ps1"),
-    read("audit/run-trusted-https-canary.ps1"),
-    read(".github/workflows/trusted-https-canary.yml"),
-    read("audit/run-trusted-https-canary.mjs"),
-    read("audit/lib/trusted-https-canary.mjs"),
-    read("audit/validate-trusted-https-canary.mjs"),
-    read("tools/build-pwa-release-manifest.mjs"),
-    read("release-shell-v1.json"),
-    read("sw.js"),
-  ]);
-  const input = { packageJsonText, packageLockText, dependencyInstallerText, wrapperText, workflowText, runnerText, canaryLibraryText, validatorText, builderText, releaseShellText, serviceWorkerText };
+  const input = await trustedHttpsCanarySupplyChainTestInput();
   assert.deepEqual(trustedHttpsCanarySupplyChainFindings(input), []);
   assert.deepEqual(trustedHttpsCanarySupplyChainMutationFailures(input), []);
+  assertCurrentCanaryCheckIdentities(input);
+});
+
+test("[NC-CANARY-EVIDENCE-RIGHTS-BINDING] canary contracts and validators affect rights evidence", async () => {
+  await assertRightsInputBindings([
+    "audit/lib/trusted-https-canary-contract.mjs",
+    "audit/lib/trusted-https-canary-evidence.mjs",
+    "audit/lib/trusted-https-canary-runner-platform.mjs",
+    "audit/lib/trusted-https-canary-runner-browser.mjs",
+    "audit/lib/trusted-https-canary-runner-report.mjs",
+  ]);
+});
+
+async function readCanaryRunnerSources() {
+  return (await Promise.all([
+    read("audit/run-trusted-https-canary.mjs"),
+    read("audit/lib/trusted-https-canary-runner-platform.mjs"),
+    read("audit/lib/trusted-https-canary-runner-browser.mjs"),
+    read("audit/lib/trusted-https-canary-runner-report.mjs"),
+  ])).join("\n");
+}
+
+function assertCurrentCanaryCheckIdentities(input) {
+  const runnerText = trustedHttpsCanaryRunnerText(input);
   for (const id of TRUSTED_HTTPS_CANARY_CHECK_IDS) assert.match(runnerText, new RegExp(`"${id}"`, "u"), id);
   assert.doesNotMatch(runnerText, /BETA4_(?:WAITING|REAL|ACTIVE|OFFLINE)|RESPONSIVE_BETA4/u);
-});
+}

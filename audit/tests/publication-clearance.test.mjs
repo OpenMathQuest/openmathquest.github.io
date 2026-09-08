@@ -1,3 +1,4 @@
+import { assertPublicationRunnerWiring } from "./publication-runner-contract.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -728,17 +729,14 @@ test("declining the offered six-reviewer cycle is nonblocking but cannot conceal
     ["Required independent-reviewer reports", "6"],
     ["Sealed independent-reviewer reports", "1"],
     ["Independent-reviewer evidence state", "PENDING"],
+    ["Independent-reviewer evidence state", "EMERGENCY"],
   ]) {
-    const mutant = parsePublicationClearance(optionalReviewerClearance({ [field]: value }));
-    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
-    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+    assertBlockedClearance(optionalReviewerClearance({ [field]: value }), `${field} must preserve the exact optional-not-run state`);
   }
 
-  const incompleteSelected = parsePublicationClearance(approvedClearance({
+  assertBlockedClearance(approvedClearance({
     "Sealed independent-reviewer reports": "5",
   }));
-  assert.equal(incompleteSelected.valid, false);
-  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
 });
 
 test("declining the offered six-lane device cycle is nonblocking but cannot conceal malformed or partial device evidence", () => {
@@ -763,17 +761,14 @@ test("declining the offered six-lane device cycle is nonblocking but cannot conc
     ["Passed physical-device lanes", "1"],
     ["Primary iPad journey result", "PASS"],
     ["Physical-device evidence state", "PENDING"],
+    ["Physical-device evidence state", "EMERGENCY"],
   ]) {
-    const mutant = parsePublicationClearance(optionalDeviceClearance({ [field]: value }));
-    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
-    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+    assertBlockedClearance(optionalDeviceClearance({ [field]: value }), `${field} must preserve the exact optional-not-run state`);
   }
 
-  const incompleteSelected = parsePublicationClearance(approvedClearance({
+  assertBlockedClearance(approvedClearance({
     "Passed physical-device lanes": "5",
   }));
-  assert.equal(incompleteSelected.valid, false);
-  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
 });
 
 test("external evidence rejects missing, stale, future, and mismatched records", () => {
@@ -977,15 +972,7 @@ test("qualification review and final hosted observation are exact without requir
   assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceReviewed: pending.valid }), false);
   assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceSha256: "0".repeat(64) }), false);
 
-  const runner = await readFile(path.join(root, "audit", "run-audit.mjs"), "utf8");
-  const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
-  assert.match(runner, /publicationBrowserEvidenceState\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
-  assert.match(runner, /browserProductName:\s*reviewedBrowserTuple\.browserProductName/u);
-  assert.match(runner, /reviewed qualification record is invalid or pending/u);
-  assert.match(runner, /final hosted tuple is invalid or unavailable/u);
-  assert.doesNotMatch(runner, /browserRunnerTuplesMatch\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
-  assert.match(workflow, /clearance or its independently required hosted evidence is invalid/u);
-  assert.doesNotMatch(workflow, /clearance does not match this exact browser\/runner audit tuple/u);
+  await assertPublicationRunnerWiring(root);
 });
 
 test("live browser evidence binds the selected bytes and exact hosted image tuple", async () => {
@@ -1046,3 +1033,9 @@ test("live browser evidence binds the selected bytes and exact hosted image tupl
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+function assertBlockedClearance(source, message) {
+  const parsed = parsePublicationClearance(source);
+  assert.equal(parsed.valid, false, message);
+  assert.equal(evaluateExternalReleaseEvidence(parsed, expected, expected.now).status, "BLOCKED");
+}

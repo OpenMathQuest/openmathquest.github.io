@@ -2,41 +2,36 @@ import {
   CADDY_ARCHIVE_SHA256,
   CADDY_ARCHIVE_SHA512,
   CADDY_VERSION,
-  PLAYWRIGHT_CORE_SRI,
-  PLAYWRIGHT_CORE_VERSION,
 } from "./trusted-https-canary.mjs";
+import {
+  ciDependencyPolicyFindings,
+  ciDependencyPolicyMutationFailures,
+} from "./ci-dependency-policy.mjs";
 
-export const CADDY_ARCHIVE_URL = `https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_windows_amd64.zip`;
-export const PLAYWRIGHT_CORE_URL = `https://registry.npmjs.org/playwright-core/-/playwright-core-${PLAYWRIGHT_CORE_VERSION}.tgz`;
-export const PLAYWRIGHT_TEST_VERSION = "1.62.1";
-export const PLAYWRIGHT_TEST_URL = `https://registry.npmjs.org/@playwright/test/-/test-${PLAYWRIGHT_TEST_VERSION}.tgz`;
-export const PLAYWRIGHT_TEST_SRI = "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==";
-export const PLAYWRIGHT_PACKAGE_URL = `https://registry.npmjs.org/playwright/-/playwright-${PLAYWRIGHT_TEST_VERSION}.tgz`;
-export const PLAYWRIGHT_PACKAGE_SRI = "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==";
-export const FSEVENTS_VERSION = "2.3.2";
-export const FSEVENTS_URL = `https://registry.npmjs.org/fsevents/-/fsevents-${FSEVENTS_VERSION}.tgz`;
-export const FSEVENTS_SRI = "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==";
-export const AJV_VERSION = "8.20.0";
-export const AJV_URL = `https://registry.npmjs.org/ajv/-/ajv-${AJV_VERSION}.tgz`;
-export const AJV_SRI = "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==";
-export const FAST_DEEP_EQUAL_VERSION = "3.1.3";
-export const FAST_DEEP_EQUAL_URL = `https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-${FAST_DEEP_EQUAL_VERSION}.tgz`;
-export const FAST_DEEP_EQUAL_SRI = "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==";
-export const FAST_URI_VERSION = "3.1.5";
-export const FAST_URI_URL = `https://registry.npmjs.org/fast-uri/-/fast-uri-${FAST_URI_VERSION}.tgz`;
-export const FAST_URI_SRI = "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==";
-export const JSON_SCHEMA_TRAVERSE_VERSION = "1.0.0";
-export const JSON_SCHEMA_TRAVERSE_URL = `https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-${JSON_SCHEMA_TRAVERSE_VERSION}.tgz`;
-export const JSON_SCHEMA_TRAVERSE_SRI = "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==";
-export const REQUIRE_FROM_STRING_VERSION = "2.0.2";
-export const REQUIRE_FROM_STRING_URL = `https://registry.npmjs.org/require-from-string/-/require-from-string-${REQUIRE_FROM_STRING_VERSION}.tgz`;
-export const REQUIRE_FROM_STRING_SRI = "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==";
-export const FAST_CHECK_VERSION = "4.9.0";
-export const FAST_CHECK_URL = `https://registry.npmjs.org/fast-check/-/fast-check-${FAST_CHECK_VERSION}.tgz`;
-export const FAST_CHECK_SRI = "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==";
-export const PURE_RAND_VERSION = "8.4.2";
-export const PURE_RAND_URL = `https://registry.npmjs.org/pure-rand/-/pure-rand-${PURE_RAND_VERSION}.tgz`;
-export const PURE_RAND_SRI = "sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==";
+const CADDY_ARCHIVE_URL = `https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_windows_amd64.zip`;
+export const TRUSTED_HTTPS_CANARY_SUPPLY_CHAIN_INPUT_PATHS = Object.freeze([
+  ["qualityPolicyText", "audit/quality-gate-policy-v1.json"],
+  ["packageJsonText", "package.json"],
+  ["packageLockText", "package-lock.json"],
+  ["dependencyInstallerText", "audit/install-reviewed-ci-dependencies.ps1"],
+  ["wrapperText", "audit/run-trusted-https-canary.ps1"],
+  ["workflowText", ".github/workflows/trusted-https-canary.yml"],
+  ["runnerText", "audit/run-trusted-https-canary.mjs"],
+  ["runnerPlatformText", "audit/lib/trusted-https-canary-runner-platform.mjs"],
+  ["runnerBrowserText", "audit/lib/trusted-https-canary-runner-browser.mjs"],
+  ["runnerReportText", "audit/lib/trusted-https-canary-runner-report.mjs"],
+  ["canaryLibraryText", "audit/lib/trusted-https-canary.mjs"],
+  ["validatorText", "audit/validate-trusted-https-canary.mjs"],
+  ["builderText", "tools/build-pwa-release-manifest.mjs"],
+  ["releaseShellText", "release-shell-v1.json"],
+  ["serviceWorkerText", "sw.js"],
+].map(Object.freeze));
+
+export function buildTrustedHttpsCanarySupplyChainInput(textForPath) {
+  return Object.fromEntries(
+    TRUSTED_HTTPS_CANARY_SUPPLY_CHAIN_INPUT_PATHS.map(([key, relativePath]) => [key, textForPath(relativePath)]),
+  );
+}
 
 const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "package.json",
@@ -56,418 +51,259 @@ const FORBIDDEN_PUBLIC_NAMES = Object.freeze([
   "tools/sync-tutorial-manifest.mjs",
 ]);
 
-function exactKeys(value, expected) {
-  return Boolean(
-    value
-    && typeof value === "object"
-    && !Array.isArray(value)
-    && Object.keys(value).length === expected.length
-    && Object.keys(value).every((key, index) => key === expected[index]),
-  );
-}
-
-function parseJson(text, label, findings) {
-  try {
-    return JSON.parse(String(text));
-  } catch {
-    findings.push(`${label}: invalid JSON`);
-    return null;
-  }
-}
-
 function count(text, expression) {
   return [...String(text).matchAll(expression)].length;
 }
 
-export function trustedHttpsCanarySupplyChainFindings(input) {
-  const findings = [];
-  const packageJson = parseJson(input.packageJsonText, "package.json", findings);
-  const packageLock = parseJson(input.packageLockText, "package-lock.json", findings);
-  if (packageJson) {
-    if (!exactKeys(packageJson, ["name", "version", "private", "license", "engines", "devDependencies"])) {
-      findings.push("package.json: CI dependency manifest must use the exact closed schema");
-    }
-    if (packageJson.name !== "open-math-quest-ci-tools" || packageJson.version !== "0.0.0" || packageJson.private !== true || packageJson.license !== "MIT") {
-      findings.push("package.json: CI dependency manifest identity must remain exact and private");
-    }
-    if (!exactKeys(packageJson.engines, ["node"]) || packageJson.engines?.node !== "24.14.0") {
-      findings.push("package.json: Node must remain pinned to 24.14.0");
-    }
-    if (!exactKeys(packageJson.devDependencies, ["@playwright/test", "ajv", "fast-check", "playwright-core"])
-        || packageJson.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
-        || packageJson.devDependencies?.ajv !== AJV_VERSION
-        || packageJson.devDependencies?.["fast-check"] !== FAST_CHECK_VERSION
-        || packageJson.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION) {
-      findings.push("package.json: Playwright Test, Ajv, fast-check, and Playwright Core must remain the exact reviewed dev dependencies");
-    }
-  }
-  if (packageLock) {
-    if (!exactKeys(packageLock, ["name", "version", "lockfileVersion", "requires", "packages"])) {
-      findings.push("package-lock.json: lockfile must use the exact closed schema");
-    }
-    if (packageLock.name !== "open-math-quest-ci-tools" || packageLock.version !== "0.0.0" || packageLock.lockfileVersion !== 3 || packageLock.requires !== true) {
-      findings.push("package-lock.json: lockfile identity must remain exact");
-    }
-    if (!exactKeys(packageLock.packages, ["", "node_modules/@playwright/test", "node_modules/ajv", "node_modules/fast-check", "node_modules/fast-deep-equal", "node_modules/fast-uri", "node_modules/fsevents", "node_modules/json-schema-traverse", "node_modules/playwright", "node_modules/playwright-core", "node_modules/pure-rand", "node_modules/require-from-string"])) {
-      findings.push("package-lock.json: lockfile must contain only the reviewed Playwright Test, Ajv, and fast-check dependency closures");
-    }
-    const root = packageLock.packages?.[""];
-    if (!exactKeys(root, ["name", "version", "license", "devDependencies", "engines"])
-        || root?.name !== packageJson?.name
-        || root?.version !== packageJson?.version
-        || root?.license !== "MIT"
-        || !exactKeys(root?.devDependencies, ["@playwright/test", "ajv", "fast-check", "playwright-core"])
-        || root?.devDependencies?.["@playwright/test"] !== PLAYWRIGHT_TEST_VERSION
-        || root?.devDependencies?.ajv !== AJV_VERSION
-        || root?.devDependencies?.["fast-check"] !== FAST_CHECK_VERSION
-        || root?.devDependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
-        || !exactKeys(root?.engines, ["node"])
-        || root?.engines?.node !== "24.14.0") {
-      findings.push("package-lock.json: root package must exactly mirror the reviewed manifest");
-    }
-    const playwright = packageLock.packages?.["node_modules/playwright-core"];
-    if (!exactKeys(playwright, ["version", "resolved", "integrity", "dev", "license", "bin", "engines"])
-        || playwright?.version !== PLAYWRIGHT_CORE_VERSION
-        || playwright?.resolved !== PLAYWRIGHT_CORE_URL
-        || playwright?.integrity !== PLAYWRIGHT_CORE_SRI
-        || playwright?.dev !== true
-        || playwright?.license !== "Apache-2.0"
-        || !exactKeys(playwright?.bin, ["playwright-core"])
-        || playwright?.bin?.["playwright-core"] !== "cli.js"
-        || !exactKeys(playwright?.engines, ["node"])
-        || playwright?.engines?.node !== ">=18") {
-      findings.push("package-lock.json: Playwright Core artifact, integrity, licence, and package metadata must remain exact");
-    }
-    const testRunner = packageLock.packages?.["node_modules/@playwright/test"];
-    if (!exactKeys(testRunner, ["version", "resolved", "integrity", "dev", "license", "dependencies", "bin", "engines"])
-        || testRunner?.version !== PLAYWRIGHT_TEST_VERSION
-        || testRunner?.resolved !== PLAYWRIGHT_TEST_URL
-        || testRunner?.integrity !== PLAYWRIGHT_TEST_SRI
-        || testRunner?.dev !== true
-        || testRunner?.license !== "Apache-2.0"
-        || !exactKeys(testRunner?.dependencies, ["playwright"])
-        || testRunner?.dependencies?.playwright !== PLAYWRIGHT_TEST_VERSION
-        || !exactKeys(testRunner?.bin, ["playwright"])
-        || testRunner?.bin?.playwright !== "cli.js"
-        || !exactKeys(testRunner?.engines, ["node"])
-        || testRunner?.engines?.node !== ">=20") {
-      findings.push("package-lock.json: Playwright Test artifact, integrity, licence, and package metadata must remain exact");
-    }
-    const runnerPackage = packageLock.packages?.["node_modules/playwright"];
-    if (!exactKeys(runnerPackage, ["version", "resolved", "integrity", "dev", "license", "dependencies", "bin", "engines", "optionalDependencies"])
-        || runnerPackage?.version !== PLAYWRIGHT_TEST_VERSION
-        || runnerPackage?.resolved !== PLAYWRIGHT_PACKAGE_URL
-        || runnerPackage?.integrity !== PLAYWRIGHT_PACKAGE_SRI
-        || runnerPackage?.dev !== true
-        || runnerPackage?.license !== "Apache-2.0"
-        || !exactKeys(runnerPackage?.dependencies, ["playwright-core"])
-        || runnerPackage?.dependencies?.["playwright-core"] !== PLAYWRIGHT_CORE_VERSION
-        || !exactKeys(runnerPackage?.bin, ["playwright"])
-        || runnerPackage?.bin?.playwright !== "cli.js"
-        || !exactKeys(runnerPackage?.engines, ["node"])
-        || runnerPackage?.engines?.node !== ">=20"
-        || !exactKeys(runnerPackage?.optionalDependencies, ["fsevents"])
-        || runnerPackage?.optionalDependencies?.fsevents !== FSEVENTS_VERSION) {
-      findings.push("package-lock.json: Playwright runner artifact, integrity, licence, and dependency metadata must remain exact");
-    }
-    const fsevents = packageLock.packages?.["node_modules/fsevents"];
-    if (!exactKeys(fsevents, ["version", "resolved", "integrity", "dev", "hasInstallScript", "license", "optional", "os", "engines"])
-        || fsevents?.version !== FSEVENTS_VERSION
-        || fsevents?.resolved !== FSEVENTS_URL
-        || fsevents?.integrity !== FSEVENTS_SRI
-        || fsevents?.dev !== true
-        || fsevents?.hasInstallScript !== true
-        || fsevents?.license !== "MIT"
-        || fsevents?.optional !== true
-        || !Array.isArray(fsevents?.os)
-        || fsevents.os.length !== 1
-        || fsevents.os[0] !== "darwin"
-        || !exactKeys(fsevents?.engines, ["node"])
-        || fsevents?.engines?.node !== "^8.16.0 || ^10.6.0 || >=11.0.0") {
-      findings.push("package-lock.json: optional fsevents artifact, integrity, licence, and macOS-only metadata must remain exact");
-    }
-    const ajv = packageLock.packages?.["node_modules/ajv"];
-    if (!exactKeys(ajv, ["version", "resolved", "integrity", "dev", "license", "dependencies", "funding"])
-        || ajv?.version !== AJV_VERSION
-        || ajv?.resolved !== AJV_URL
-        || ajv?.integrity !== AJV_SRI
-        || ajv?.dev !== true
-        || ajv?.license !== "MIT"
-        || !exactKeys(ajv?.dependencies, ["fast-deep-equal", "fast-uri", "json-schema-traverse", "require-from-string"])
-        || ajv?.dependencies?.["fast-deep-equal"] !== "^3.1.3"
-        || ajv?.dependencies?.["fast-uri"] !== "^3.0.1"
-        || ajv?.dependencies?.["json-schema-traverse"] !== "^1.0.0"
-        || ajv?.dependencies?.["require-from-string"] !== "^2.0.2"
-        || !exactKeys(ajv?.funding, ["type", "url"])
-        || ajv?.funding?.type !== "github"
-        || ajv?.funding?.url !== "https://github.com/sponsors/epoberezkin") {
-      findings.push("package-lock.json: Ajv artifact, integrity, licence, dependency closure, and metadata must remain exact");
-    }
-    const fastDeepEqual = packageLock.packages?.["node_modules/fast-deep-equal"];
-    if (!exactKeys(fastDeepEqual, ["version", "resolved", "integrity", "dev", "license"])
-        || fastDeepEqual?.version !== FAST_DEEP_EQUAL_VERSION
-        || fastDeepEqual?.resolved !== FAST_DEEP_EQUAL_URL
-        || fastDeepEqual?.integrity !== FAST_DEEP_EQUAL_SRI
-        || fastDeepEqual?.dev !== true
-        || fastDeepEqual?.license !== "MIT") {
-      findings.push("package-lock.json: fast-deep-equal artifact, integrity, licence, and metadata must remain exact");
-    }
-    const fastUri = packageLock.packages?.["node_modules/fast-uri"];
-    if (!exactKeys(fastUri, ["version", "resolved", "integrity", "dev", "funding", "license"])
-        || fastUri?.version !== FAST_URI_VERSION
-        || fastUri?.resolved !== FAST_URI_URL
-        || fastUri?.integrity !== FAST_URI_SRI
-        || fastUri?.dev !== true
-        || fastUri?.license !== "BSD-3-Clause"
-        || !Array.isArray(fastUri?.funding)
-        || fastUri.funding.length !== 2
-        || !exactKeys(fastUri.funding[0], ["type", "url"])
-        || fastUri.funding[0].type !== "github"
-        || fastUri.funding[0].url !== "https://github.com/sponsors/fastify"
-        || !exactKeys(fastUri.funding[1], ["type", "url"])
-        || fastUri.funding[1].type !== "opencollective"
-        || fastUri.funding[1].url !== "https://opencollective.com/fastify") {
-      findings.push("package-lock.json: fast-uri artifact, integrity, BSD licence, and funding metadata must remain exact");
-    }
-    const schemaTraverse = packageLock.packages?.["node_modules/json-schema-traverse"];
-    if (!exactKeys(schemaTraverse, ["version", "resolved", "integrity", "dev", "license"])
-        || schemaTraverse?.version !== JSON_SCHEMA_TRAVERSE_VERSION
-        || schemaTraverse?.resolved !== JSON_SCHEMA_TRAVERSE_URL
-        || schemaTraverse?.integrity !== JSON_SCHEMA_TRAVERSE_SRI
-        || schemaTraverse?.dev !== true
-        || schemaTraverse?.license !== "MIT") {
-      findings.push("package-lock.json: json-schema-traverse artifact, integrity, licence, and metadata must remain exact");
-    }
-    const requireFromString = packageLock.packages?.["node_modules/require-from-string"];
-    if (!exactKeys(requireFromString, ["version", "resolved", "integrity", "dev", "license", "engines"])
-        || requireFromString?.version !== REQUIRE_FROM_STRING_VERSION
-        || requireFromString?.resolved !== REQUIRE_FROM_STRING_URL
-        || requireFromString?.integrity !== REQUIRE_FROM_STRING_SRI
-        || requireFromString?.dev !== true
-        || requireFromString?.license !== "MIT"
-        || !exactKeys(requireFromString?.engines, ["node"])
-        || requireFromString?.engines?.node !== ">=0.10.0") {
-      findings.push("package-lock.json: require-from-string artifact, integrity, licence, and engine metadata must remain exact");
-    }
-    const fastCheck = packageLock.packages?.["node_modules/fast-check"];
-    if (!exactKeys(fastCheck, ["version", "resolved", "integrity", "dev", "funding", "license", "dependencies", "engines"])
-        || fastCheck?.version !== FAST_CHECK_VERSION
-        || fastCheck?.resolved !== FAST_CHECK_URL
-        || fastCheck?.integrity !== FAST_CHECK_SRI
-        || fastCheck?.dev !== true
-        || fastCheck?.license !== "MIT"
-        || !exactKeys(fastCheck?.dependencies, ["pure-rand"])
-        || fastCheck?.dependencies?.["pure-rand"] !== "^8.0.0"
-        || !exactKeys(fastCheck?.engines, ["node"])
-        || fastCheck?.engines?.node !== ">=12.17.0"
-        || !Array.isArray(fastCheck?.funding)
-        || fastCheck.funding.length !== 2
-        || !exactKeys(fastCheck.funding[0], ["type", "url"])
-        || fastCheck.funding[0].type !== "individual"
-        || fastCheck.funding[0].url !== "https://github.com/sponsors/dubzzz"
-        || !exactKeys(fastCheck.funding[1], ["type", "url"])
-        || fastCheck.funding[1].type !== "opencollective"
-        || fastCheck.funding[1].url !== "https://opencollective.com/fast-check") {
-      findings.push("package-lock.json: fast-check artifact, integrity, licence, dependency closure, and metadata must remain exact");
-    }
-    const pureRand = packageLock.packages?.["node_modules/pure-rand"];
-    if (!exactKeys(pureRand, ["version", "resolved", "integrity", "dev", "funding", "license"])
-        || pureRand?.version !== PURE_RAND_VERSION
-        || pureRand?.resolved !== PURE_RAND_URL
-        || pureRand?.integrity !== PURE_RAND_SRI
-        || pureRand?.dev !== true
-        || pureRand?.license !== "MIT"
-        || !Array.isArray(pureRand?.funding)
-        || pureRand.funding.length !== 2
-        || !exactKeys(pureRand.funding[0], ["type", "url"])
-        || pureRand.funding[0].type !== "individual"
-        || pureRand.funding[0].url !== "https://github.com/sponsors/dubzzz"
-        || !exactKeys(pureRand.funding[1], ["type", "url"])
-        || pureRand.funding[1].type !== "opencollective"
-        || pureRand.funding[1].url !== "https://opencollective.com/fast-check") {
-      findings.push("package-lock.json: pure-rand artifact, integrity, licence, and metadata must remain exact");
-    }
-  }
+const DEPENDENCY_INSTALLER_REQUIRED_TEXT = Object.freeze([
+  "ci --ignore-scripts --omit=optional --no-audit --no-fund",
+  "$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'",
+  "quality-gate-policy-v1.json",
+  "foreach ($dependency in $policy.supplyChain.directDependencies)",
+  "$manifest.name -cne $dependency.name",
+  "$manifest.version -cne $dependency.version",
+  "$manifest.license -cne $dependency.licence",
+]);
+const WRAPPER_CADDY_PINS = Object.freeze([
+  `$caddyVersion = '${CADDY_VERSION}'`,
+  `$caddyUrl = '${CADDY_ARCHIVE_URL}'`,
+  `$caddySha256 = '${CADDY_ARCHIVE_SHA256}'`,
+  `$caddySha512 = '${CADDY_ARCHIVE_SHA512}'`,
+]);
+const WRAPPER_CLEANUP_CONTROLS = Object.freeze([
+  "Canary evidence output must be a new file inside the exact repository checkout.",
+  "cleanup-identifiers-v1.json",
+  "Refusing to stop a process outside the disposable canary workspace.",
+  "Fallback certificate removal did not remove the exact canary root.",
+  "Fallback teardown left the canary HTTPS port listening.",
+]);
+const VALIDATOR_FRESHNESS_CONTROLS = Object.freeze([
+  "workflowRunId: process.env.GITHUB_RUN_ID",
+  "workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT",
+]);
+const RUNNER_PRODUCTION_CONTROLS = Object.freeze([
+  "skip_install_trust",
+  "strict_sni_host on",
+  "bind 127.0.0.1",
+  "server.listen(requestedPort, \"127.0.0.1\"",
+  "activateCanaryHomeUpdate(state.candidatePage)",
+  "reloadCanaryCandidateFromBeta1(state.beta1Page, \"1.0.0-beta.8\")",
+  "Playwright same-tab Beta 1 to Beta 8 candidate transition",
+  "[data-action=\"pwa-retry\"]",
+  "[data-action=\"pwa-repair\"]",
+  "v1.0.0-beta.1",
+  "math-quest:v2",
+  "math-quest:progress:v2",
+  "responseHeaderSetSha256",
+  "offlineCacheProof",
+  "candidateMainFrameNavigations",
+  "freshProtectedProjection",
+  "RETIRED_BETA1_PRESERVED_FRESH_START",
+  "RETAINED_BETA1_COMPLETE_VALUE",
+  "observeCanaryRetainedFreshStartNotice(state.candidatePage)",
+  "RETAINED_BETA1_FRESH_START_NOTICE_SHA256",
+  "state.candidatePage.waitForFunction(canaryWaitingCacheReady",
+  "remainingMatchingCertificateCount",
+  "profileBoundEdgeProcesses(profilePath)",
+  "Get-CimInstance Win32_Process -Filter \\\"Name = 'msedge.exe'\\\" -ErrorAction Stop",
+  "canaryWorkspaceRemovalAllowed(state.remainingProfileProcessCount)",
+  "remainingProfileProcessSetSha256 = EMPTY_PROFILE_PROCESS_SET_SHA256",
+  "await state.beta1Page.reload",
+]);
+const CANARY_LIBRARY_PRODUCTION_CONTROLS = Object.freeze([
+  "waitForCanaryHomeUpdate",
+  "[data-action=\"pwa-check\"]",
+  "[data-action=\"home\"]",
+  "activateCanaryHomeUpdate",
+  "[data-action=\"pwa-apply\"]",
+  "Canary update activation must begin directly on Home",
+  "openCanaryInstallHelp",
+  "reloadCanaryCandidateFromBeta1",
+  "page.reload({ waitUntil: \"domcontentloaded\"",
+  "observeCanaryRetainedFreshStartNotice",
+  ".runtime-warning[role=\"alert\"]",
+  "Canary fresh-start notice did not match the exact approved grown-up message",
+  "canaryWaitingCacheReady",
+  "__mathQuestCanaryWaitingCacheStableSince",
+  "Canary candidate transition requires the existing Beta 1 page",
+  "[data-action=\"grown\"]",
+  "[data-action=\"install-help\"]",
+]);
 
-  const dependencyInstaller = String(input.dependencyInstallerText);
-  if (count(dependencyInstaller, /\bnpm(?:\.cmd)?\s+ci\b/gu) !== 1
-      || !dependencyInstaller.includes("ci --ignore-scripts --omit=optional --no-audit --no-fund")
-      || !dependencyInstaller.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")
-      || !dependencyInstaller.includes("$manifest.name -cne '@playwright/test'")
-      || !dependencyInstaller.includes("$manifest.version -cne '1.62.1'")
-      || !dependencyInstaller.includes("$ajvManifest.name -cne 'ajv'")
-      || !dependencyInstaller.includes("$ajvManifest.version -cne '8.20.0'")
-      || !dependencyInstaller.includes("$fastCheckManifest.name -cne 'fast-check'")
-      || !dependencyInstaller.includes("$fastCheckManifest.version -cne '4.9.0'")
-      || !dependencyInstaller.includes("$pureRandManifest.name -cne 'pure-rand'")
-      || !dependencyInstaller.includes("$pureRandManifest.version -cne '8.4.2'")) {
+function missingRequiredTextFindings(text, requiredText, label) {
+  return requiredText
+    .filter((required) => !text.includes(required))
+    .map((required) => `${label}: ${required}`);
+}
+
+function dependencyInstallerFindings(text) {
+  const findings = [];
+  if (count(text, /\bnpm(?:\.cmd)?\s+ci\b/gu) !== 1
+      || DEPENDENCY_INSTALLER_REQUIRED_TEXT.some((required) => !text.includes(required))) {
     findings.push("audit/install-reviewed-ci-dependencies.ps1: install must retain the exact lockfile, script, optional-dependency, browser-download, and installed-version controls");
   }
-  if (/(?:\bnpx\b|\bnpm(?:\.cmd)?\s+install\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b|Invoke-WebRequest)/iu.test(dependencyInstaller)) {
+  if (/(?:\bnpx\b|\bnpm(?:\.cmd)?\s+install\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b|Invoke-WebRequest)/iu.test(text)) {
     findings.push("audit/install-reviewed-ci-dependencies.ps1: an unreviewed installer or downloader was introduced");
-  }
-
-  const wrapper = String(input.wrapperText);
-  if (!wrapper.includes(`$caddyVersion = '${CADDY_VERSION}'`)
-      || !wrapper.includes(`$caddyUrl = '${CADDY_ARCHIVE_URL}'`)
-      || !wrapper.includes(`$caddySha256 = '${CADDY_ARCHIVE_SHA256}'`)
-      || !wrapper.includes(`$caddySha512 = '${CADDY_ARCHIVE_SHA512}'`)) {
-    findings.push("audit/run-trusted-https-canary.ps1: Caddy version, archive URL, and both checksums must remain exact");
-  }
-  if (count(wrapper, /Invoke-WebRequest\b/gu) !== 1
-      || !wrapper.includes("Invoke-WebRequest -UseBasicParsing -Uri $caddyUrl -OutFile $zipPath")) {
-    findings.push("audit/run-trusted-https-canary.ps1: exactly one reviewed Caddy download is allowed");
-  }
-  if (count(wrapper, /\bnpm\s+(?:ci|install)\b/gu) !== 2
-      || count(wrapper, /npm ci --ignore-scripts --omit=optional --no-audit --no-fund/gu) !== 1
-      || !wrapper.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")) {
-    findings.push("audit/run-trusted-https-canary.ps1: npm ci must retain every reviewed hardening flag and suppress browser downloads");
-  }
-  if (/(?:\bnpx\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b)/iu.test(wrapper)) {
-    findings.push("audit/run-trusted-https-canary.ps1: an unreviewed installer or downloader was introduced");
-  }
-  for (const required of [
-    "Canary evidence output must be a new file inside the exact repository checkout.",
-    "cleanup-identifiers-v1.json",
-    "Refusing to stop a process outside the disposable canary workspace.",
-    "Fallback certificate removal did not remove the exact canary root.",
-    "Fallback teardown left the canary HTTPS port listening.",
-  ]) {
-    if (!wrapper.includes(required)) findings.push(`audit/run-trusted-https-canary.ps1: missing crash-safe cleanup control: ${required}`);
-  }
-
-  const validator = String(input.validatorText);
-  for (const required of [
-    "workflowRunId: process.env.GITHUB_RUN_ID",
-    "workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT",
-  ]) {
-    if (!validator.includes(required)) findings.push(`audit/validate-trusted-https-canary.mjs: missing live workflow freshness binding: ${required}`);
-  }
-
-  const workflow = String(input.workflowText);
-  if (!/^on:\n  workflow_dispatch:\n/mu.test(workflow)
-      || /\n\s{2}(?:push|pull_request|schedule):/u.test(workflow)
-      || !workflow.includes("runs-on: windows-latest")) {
-    findings.push(".github/workflows/trusted-https-canary.yml: canary must remain manual and GitHub-hosted Windows only");
-  }
-  if (!workflow.includes(".\\audit\\run-trusted-https-canary.ps1")
-      || /(?:audit\.bat|run-audit\.(?:mjs|ps1))/iu.test(workflow)) {
-    findings.push(".github/workflows/trusted-https-canary.yml: workflow must invoke only the narrow canary, never the full gauntlet");
-  }
-  if (!workflow.includes("path: audit-artifacts/trusted-https-canary-v1.json")
-      || /(?:screenshot|trace|\.har\b|video)/iu.test(workflow)) {
-    findings.push(".github/workflows/trusted-https-canary.yml: artifact upload must remain sanitized canonical JSON only");
-  }
-
-  const runner = String(input.runnerText);
-  for (const required of [
-    "skip_install_trust",
-    "strict_sni_host on",
-    "bind 127.0.0.1",
-    "server.listen(requestedPort, \"127.0.0.1\"",
-    "activateCanaryHomeUpdate(candidatePage)",
-    "reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.8\")",
-    "Playwright same-tab Beta 1 to Beta 8 candidate transition",
-    "[data-action=\"pwa-retry\"]",
-    "[data-action=\"pwa-repair\"]",
-    "v1.0.0-beta.1",
-    "math-quest:v2",
-    "math-quest:progress:v2",
-    "responseHeaderSetSha256",
-    "offlineCacheProof",
-    "candidateMainFrameNavigations",
-    "freshProtectedProjection",
-    "RETIRED_BETA1_PRESERVED_FRESH_START",
-    "RETAINED_BETA1_COMPLETE_VALUE",
-    "observeCanaryRetainedFreshStartNotice(candidatePage)",
-    "RETAINED_BETA1_FRESH_START_NOTICE_SHA256",
-    "candidatePage.waitForFunction(canaryWaitingCacheReady",
-    "remainingMatchingCertificateCount",
-    "profileBoundEdgeProcesses(profilePath)",
-    "Get-CimInstance Win32_Process -Filter \\\"Name = 'msedge.exe'\\\" -ErrorAction Stop",
-    "canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)",
-    "remainingProfileProcessSetSha256 = EMPTY_PROFILE_PROCESS_SET_SHA256",
-    "await beta1Page.reload",
-  ]) {
-    if (!runner.includes(required)) findings.push(`audit/run-trusted-https-canary.mjs: missing required production-path canary control: ${required}`);
-  }
-  const canaryLibrary = String(input.canaryLibraryText);
-  for (const required of [
-    "waitForCanaryHomeUpdate",
-    "[data-action=\"pwa-check\"]",
-    "[data-action=\"home\"]",
-    "activateCanaryHomeUpdate",
-    "[data-action=\"pwa-apply\"]",
-    "Canary update activation must begin directly on Home",
-    "openCanaryInstallHelp",
-    "reloadCanaryCandidateFromBeta1",
-    "page.reload({ waitUntil: \"domcontentloaded\"",
-    "observeCanaryRetainedFreshStartNotice",
-    ".runtime-warning[role=\"alert\"]",
-    "Canary fresh-start notice did not match the exact approved grown-up message",
-    "canaryWaitingCacheReady",
-    "__mathQuestCanaryWaitingCacheStableSince",
-    "Canary candidate transition requires the existing Beta 1 page",
-    "[data-action=\"grown\"]",
-    "[data-action=\"install-help\"]",
-  ]) {
-    if (!canaryLibrary.includes(required)) findings.push(`audit/lib/trusted-https-canary.mjs: missing required production-path canary control: ${required}`);
-  }
-  if (/(?:--ignore-certificate-errors|--allow-insecure-localhost|--unsafely-treat-insecure-origin-as-secure|--no-sandbox)/u.test(runner)) {
-    findings.push("audit/run-trusted-https-canary.mjs: insecure browser flags are forbidden");
-  }
-  if (/legacy-recovery=beta1|\.navigate\s*\(/u.test(runner)) {
-    findings.push("audit/run-trusted-https-canary.mjs: retained clients must update only through explicit reload, never a recovery query or forced navigation");
-  }
-
-  const publicSources = [input.builderText, input.releaseShellText, input.serviceWorkerText].map(String).join("\n");
-  for (const name of FORBIDDEN_PUBLIC_NAMES) {
-    if (publicSources.toLowerCase().includes(name.toLowerCase())) {
-      findings.push(`child-facing release shell must exclude CI-only material: ${name}`);
-    }
   }
   return findings;
 }
 
+function wrapperFindings(text) {
+  const findings = [];
+  if (WRAPPER_CADDY_PINS.some((required) => !text.includes(required))) {
+    findings.push("audit/run-trusted-https-canary.ps1: Caddy version, archive URL, and both checksums must remain exact");
+  }
+  if (count(text, /Invoke-WebRequest\b/gu) !== 1
+      || !text.includes("Invoke-WebRequest -UseBasicParsing -Uri $caddyUrl -OutFile $zipPath")) {
+    findings.push("audit/run-trusted-https-canary.ps1: exactly one reviewed Caddy download is allowed");
+  }
+  if (count(text, /\bnpm\s+(?:ci|install)\b/gu) !== 2
+      || count(text, /npm ci --ignore-scripts --omit=optional --no-audit --no-fund/gu) !== 1
+      || !text.includes("$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1'")) {
+    findings.push("audit/run-trusted-https-canary.ps1: npm ci must retain every reviewed hardening flag and suppress browser downloads");
+  }
+  if (/(?:\bnpx\b|\bchoco\s+install\b|\bwinget\s+install\b|\bpip\d*\s+install\b|\bgit\s+clone\b|\bcurl\b|\bwget\b)/iu.test(text)) {
+    findings.push("audit/run-trusted-https-canary.ps1: an unreviewed installer or downloader was introduced");
+  }
+  findings.push(...missingRequiredTextFindings(
+    text,
+    WRAPPER_CLEANUP_CONTROLS,
+    "audit/run-trusted-https-canary.ps1: missing crash-safe cleanup control",
+  ));
+  return findings;
+}
+
+function workflowFindings(text) {
+  const findings = [];
+  if (!/^on:\n  workflow_dispatch:\n/mu.test(text)
+      || /\n\s{2}(?:push|pull_request|schedule):/u.test(text)
+      || !text.includes("runs-on: windows-latest")) {
+    findings.push(".github/workflows/trusted-https-canary.yml: canary must remain manual and GitHub-hosted Windows only");
+  }
+  if (!text.includes(".\\audit\\run-trusted-https-canary.ps1")
+      || /(?:audit\.bat|run-audit\.(?:mjs|ps1))/iu.test(text)) {
+    findings.push(".github/workflows/trusted-https-canary.yml: workflow must invoke only the narrow canary, never the full gauntlet");
+  }
+  if (!text.includes("path: audit-artifacts/trusted-https-canary-v1.json")
+      || /(?:screenshot|trace|\.har\b|video)/iu.test(text)) {
+    findings.push(".github/workflows/trusted-https-canary.yml: artifact upload must remain sanitized canonical JSON only");
+  }
+  return findings;
+}
+
+function runnerBoundaryFindings(text) {
+  const findings = [];
+  if (/(?:--ignore-certificate-errors|--allow-insecure-localhost|--unsafely-treat-insecure-origin-as-secure|--no-sandbox)/u.test(text)) {
+    findings.push("audit/run-trusted-https-canary.mjs: insecure browser flags are forbidden");
+  }
+  if (/legacy-recovery=beta1|\.navigate\s*\(/u.test(text)) {
+    findings.push("audit/run-trusted-https-canary.mjs: retained clients must update only through explicit reload, never a recovery query or forced navigation");
+  }
+  return findings;
+}
+
+function publicShellFindings(input) {
+  const publicSources = [input.builderText, input.releaseShellText, input.serviceWorkerText].map(String).join("\n");
+  return FORBIDDEN_PUBLIC_NAMES
+    .filter((name) => publicSources.toLowerCase().includes(name.toLowerCase()))
+    .map((name) => `child-facing release shell must exclude CI-only material: ${name}`);
+}
+
+export function trustedHttpsCanarySupplyChainFindings(input) {
+  return [
+    ...ciDependencyPolicyFindings(input),
+    ...dependencyInstallerFindings(String(input.dependencyInstallerText)),
+    ...wrapperFindings(String(input.wrapperText)),
+    ...missingRequiredTextFindings(
+      String(input.validatorText),
+      VALIDATOR_FRESHNESS_CONTROLS,
+      "audit/validate-trusted-https-canary.mjs: missing live workflow freshness binding",
+    ),
+    ...workflowFindings(String(input.workflowText)),
+    ...runnerProductionFindings(input),
+    ...publicShellFindings(input),
+  ];
+}
+
 export function trustedHttpsCanarySupplyChainMutationFailures(input) {
-  const failures = [];
+  const failures = ciDependencyPolicyMutationFailures(input);
   const run = (label, field, change, expected) => {
     const mutant = { ...input, [field]: change(String(input[field])) };
     if (!trustedHttpsCanarySupplyChainFindings(mutant).some((finding) => expected.test(finding))) {
       failures.push(`trusted-HTTPS supply-chain mutation self-test did not reject ${label}`);
     }
   };
-  run("a changed Playwright version", "packageJsonText", (text) => text.replace(`\"@playwright\/test\": \"${PLAYWRIGHT_TEST_VERSION}\"`, '"@playwright/test": "1.62.0"'), /exact reviewed dev dependencies/u);
-  run("a changed Playwright integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_CORE_SRI, "sha512-forged"), /artifact, integrity/u);
-  run("a changed Playwright Test integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_TEST_SRI, "sha512-forged"), /Playwright Test artifact, integrity/u);
-  run("a changed Playwright runner integrity", "packageLockText", (text) => text.replace(PLAYWRIGHT_PACKAGE_SRI, "sha512-forged"), /Playwright runner artifact, integrity/u);
-  run("a changed optional dependency integrity", "packageLockText", (text) => text.replace(FSEVENTS_SRI, "sha512-forged"), /optional fsevents artifact, integrity/u);
-  run("a changed Ajv version", "packageJsonText", (text) => text.replace(`"ajv": "${AJV_VERSION}"`, '"ajv": "8.19.0"'), /exact reviewed dev dependencies/u);
-  run("a changed Ajv integrity", "packageLockText", (text) => text.replace(AJV_SRI, "sha512-forged"), /Ajv artifact, integrity/u);
-  run("a changed fast-deep-equal integrity", "packageLockText", (text) => text.replace(FAST_DEEP_EQUAL_SRI, "sha512-forged"), /fast-deep-equal artifact, integrity/u);
-  run("a changed fast-uri integrity", "packageLockText", (text) => text.replace(FAST_URI_SRI, "sha512-forged"), /fast-uri artifact, integrity/u);
-  run("a changed json-schema-traverse integrity", "packageLockText", (text) => text.replace(JSON_SCHEMA_TRAVERSE_SRI, "sha512-forged"), /json-schema-traverse artifact, integrity/u);
-  run("a changed require-from-string integrity", "packageLockText", (text) => text.replace(REQUIRE_FROM_STRING_SRI, "sha512-forged"), /require-from-string artifact, integrity/u);
-  run("a changed fast-check version", "packageJsonText", (text) => text.replace(`"fast-check": "${FAST_CHECK_VERSION}"`, '"fast-check": "4.8.0"'), /exact reviewed dev dependencies/u);
-  run("a changed fast-check integrity", "packageLockText", (text) => text.replace(FAST_CHECK_SRI, "sha512-forged"), /fast-check artifact, integrity/u);
-  run("a changed pure-rand integrity", "packageLockText", (text) => text.replace(PURE_RAND_SRI, "sha512-forged"), /pure-rand artifact, integrity/u);
-  run("an added dependency", "packageJsonText", (text) => text.replace(`\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\"`, `\"playwright-core\": \"${PLAYWRIGHT_CORE_VERSION}\",\n    \"another-package\": \"1.0.0\"`), /exact reviewed dev dependencies/u);
   run("relaxed focused dependency install", "dependencyInstallerText", (text) => text.replace("ci --ignore-scripts --omit=optional --no-audit --no-fund", "ci"), /install must retain/u);
   run("relaxed npm install flags", "wrapperText", (text) => text.replace("npm ci --ignore-scripts --omit=optional --no-audit --no-fund", "npm ci"), /retain every reviewed hardening flag/u);
   run("a changed Caddy URL", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_URL, "https://example.invalid/caddy.zip"), /Caddy version, archive URL/u);
   run("a changed Caddy checksum", "wrapperText", (text) => text.replace(CADDY_ARCHIVE_SHA256, "0".repeat(64)), /Caddy version, archive URL/u);
   run("removed certificate absence proof", "wrapperText", (text) => text.replace("Fallback certificate removal did not remove the exact canary root.", "Certificate cleanup assumed."), /missing crash-safe cleanup control/u);
   run("removed workflow-run freshness binding", "validatorText", (text) => text.replace("workflowRunId: process.env.GITHUB_RUN_ID", "workflowRunId: undefined"), /missing live workflow freshness binding/u);
-  run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
-  run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
-  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(beta1Page, \"1.0.0-beta.8\")", "context.newPage()"), /missing required production-path canary control/u);
+  canaryRuntimeBoundaryMutationControls(run);
+  return failures;
+}
+
+export function trustedHttpsCanaryRunnerText(input) {
+  return [input.runnerText, input.runnerPlatformText, input.runnerBrowserText, input.runnerReportText].map(String).join("\n");
+}
+
+function runnerModuleFindings(input) {
+  return [
+    ...missingRequiredTextFindings(String(input.runnerText), [
+      'from "./lib/trusted-https-canary-runner-platform.mjs"',
+      'from "./lib/trusted-https-canary-runner-report.mjs"',
+      'from "./lib/trusted-https-canary-runner-browser.mjs"',
+      "assert.equal(fresh.marker, RETAINED_BETA1_COMPLETE_VALUE)",
+    ], "canary runner: missing required production-path canary control"),
+    ...missingRequiredTextFindings(String(input.runnerPlatformText), [
+      "async function startBackend(",
+      "async function inspectTrustedTls(",
+    ], "canary platform: missing required production-path canary control"),
+    ...missingRequiredTextFindings(String(input.runnerBrowserText), [
+      "async function boundedBrowserOperation(",
+      "async function closePersistentContext(",
+      "async function inspectExactCandidateCache(",
+    ], "canary browser: missing required production-path canary control"),
+    ...missingRequiredTextFindings(String(input.runnerReportText), [
+      "async function finishCanaryRun(",
+      "function buildCanaryRunEvidence(",
+      "canonicalCanaryEvidence(evidence)",
+    ], "canary report: missing required production-path canary control"),
+  ];
+}
+
+function runnerProductionFindings(input) {
+  const runner = trustedHttpsCanaryRunnerText(input);
+  return [
+    ...missingRequiredTextFindings(
+      runner,
+      RUNNER_PRODUCTION_CONTROLS,
+      "audit/run-trusted-https-canary.mjs: missing required production-path canary control",
+    ),
+    ...missingRequiredTextFindings(
+      String(input.canaryLibraryText),
+      CANARY_LIBRARY_PRODUCTION_CONTROLS,
+      "audit/lib/trusted-https-canary.mjs: missing required production-path canary control",
+    ),
+    ...runnerModuleFindings(input),
+    ...runnerBoundaryFindings(runner),
+  ];
+}
+
+function canaryRuntimeBoundaryMutationControls(run) {
+  run("removed lingering-profile deletion interlock", "runnerText", (text) => text.replaceAll("canaryWorkspaceRemovalAllowed(state.remainingProfileProcessCount)", "true"), /missing required production-path canary control/u);
+  run("removed direct Home update activation", "runnerText", (text) => text.replace("activateCanaryHomeUpdate(state.candidatePage)", "openCanaryInstallHelp(candidatePage)"), /missing required production-path canary control/u);
+  run("replaced same-tab candidate transition", "runnerText", (text) => text.replace("reloadCanaryCandidateFromBeta1(state.beta1Page, \"1.0.0-beta.8\")", "context.newPage()"), /missing required production-path canary control/u);
   run("reintroduced retired-curriculum migration", "runnerText", (text) => text.replace("RETIRED_BETA1_PRESERVED_FRESH_START", "SCHEMA3_MIGRATION_PRESERVED"), /missing required production-path canary control/u);
   run("removed retained-source terminal proof", "runnerText", (text) => text.replaceAll("RETAINED_BETA1_COMPLETE_VALUE", "null"), /missing required production-path canary control/u);
-  run("removed retained fresh-start notice observation", "runnerText", (text) => text.replace("observeCanaryRetainedFreshStartNotice(candidatePage)", "Promise.resolve(null)"), /missing required production-path canary control/u);
-  run("removed exact waiting-cache predicate", "runnerText", (text) => text.replace("candidatePage.waitForFunction(canaryWaitingCacheReady", "candidatePage.waitForFunction(async () => true"), /missing required production-path canary control/u);
-  run("weakened retained fresh-start notice selector", "canaryLibraryText", (text) => text.replace('.runtime-warning[role=\"alert\"]', '.runtime-warning'), /missing required production-path canary control/u);
+  run("removed retained fresh-start notice observation", "runnerText", (text) => text.replace("observeCanaryRetainedFreshStartNotice(state.candidatePage)", "Promise.resolve(null)"), /missing required production-path canary control/u);
+  run("removed exact waiting-cache predicate", "runnerText", (text) => text.replace("state.candidatePage.waitForFunction(canaryWaitingCacheReady", "candidatePage.waitForFunction(async () => true"), /missing required production-path canary control/u);
+  run("weakened retained fresh-start notice selector", "canaryLibraryText", (text) => text.replace('.runtime-warning[role="alert"]', '.runtime-warning'), /missing required production-path canary control/u);
   run("removed Home update journey control", "canaryLibraryText", (text) => text.replaceAll('[data-action="pwa-check"]', '[data-action="obsolete-update"]'), /missing required production-path canary control/u);
   run("removed migrated-screen Home boundary", "canaryLibraryText", (text) => text.replaceAll('[data-action="home"]', '[data-action="obsolete-home"]'), /missing required production-path canary control/u);
   run("reintroduced forced legacy navigation", "runnerText", (text) => `${text}\nclient.navigate("./?legacy-recovery=beta1");`, /explicit reload, never a recovery query/u);
-  return failures;
+  for (const field of ["runnerPlatformText", "runnerBrowserText", "runnerReportText"]) {
+    run("removed governed canary module", field, () => "", /missing required production-path canary control/u);
+    run("insecure imported canary module", field, (text) => text + "\n--ignore-certificate-errors", /insecure browser flags/u);
+  }
 }

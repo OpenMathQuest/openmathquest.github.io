@@ -28,7 +28,7 @@ jobs:
   development-checks:
     if: github.event_name != 'workflow_dispatch'
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -46,30 +46,14 @@ jobs:
         shell: powershell
         run: .\audit\install-reviewed-ci-dependencies.ps1
 
-      - name: Run focused development checks
+      - name: Install reviewed security scanners
         shell: powershell
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BEFORE_SHA: ${{ github.event.before }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
-          $baseSha = if ($env:EVENT_NAME -ceq 'pull_request') { $env:PR_BASE_SHA } else { $env:BEFORE_SHA }
-          $changedPaths = @()
-          if ($baseSha -match '^[a-f0-9]{40}$' -and $baseSha -cne ('0' * 40)) {
-            git cat-file -e "$baseSha^{commit}"
-            if ($LASTEXITCODE -eq 0) {
-              $changedPaths = @(git diff --name-only --diff-filter=ACDMRTUXB $baseSha $env:GITHUB_SHA)
-              if ($LASTEXITCODE -ne 0) { $changedPaths = @() }
-              $renames = @(git diff --name-status --diff-filter=R $baseSha $env:GITHUB_SHA)
-              if ($LASTEXITCODE -ne 0 -or $renames.Count -gt 0) {
-                # A rename's old path may carry the broader impact; fail safe.
-                $changedPaths += '__rename_unknown__'
-              }
-            }
-          }
-          # An empty or unavailable diff deliberately selects the broad fail-safe plan.
-          & .\audit\run-audit.ps1 -NodePath $nodePath -DevelopmentOnly -ChangedPath $changedPaths
+          .\audit\install-reviewed-security-tools.ps1 -CachePath (Join-Path $env:RUNNER_TEMP 'math-quest-security-tools')
+
+      - name: Run complete ordered AI-change loop
+        shell: powershell
+        run: node .\audit\run-ai-change-loop.mjs --progress
 
   full-audit:
     if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true

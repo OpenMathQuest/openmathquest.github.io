@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
-export const ENGINE_FILENAME = "math-quest.engine.js";
-export const START_MARKER = "ENGINE-START";
-export const END_MARKER = "ENGINE-END";
+const ENGINE_FILENAME = "math-quest.engine.js";
+const START_MARKER = "ENGINE-START";
+const END_MARKER = "ENGINE-END";
 
 const AMBIENT_PATTERNS = Object.freeze([
   ["Math.random", /\bMath\s*\.\s*random\b/u],
@@ -86,48 +86,71 @@ export async function extractEngine(indexPath) {
 // This scanner removes ordinary comments and quoted text before looking for the
 // prompt's banned direct references. It intentionally treats template literals
 // conservatively: engine code should use plain data rather than template code.
-export function stripNonCode(source) {
-  let out = "";
-  let state = "code";
-  let quote = "";
-  const templateFrames = [];
-  for (let i = 0; i < source.length; i += 1) {
-    const c = source[i];
-    const n = source[i + 1];
-    if (state === "line") {
-      if (c === "\n") { state = "code"; out += "\n"; } else out += " ";
-    } else if (state === "block") {
-      if (c === "*" && n === "/") { out += "  "; i += 1; state = "code"; }
-      else out += c === "\n" ? "\n" : " ";
-    } else if (state === "string") {
-      if (c === "\\") { out += "  "; i += 1; }
-      else if (c === quote) { out += " "; state = "code"; }
-      else out += c === "\n" ? "\n" : " ";
-    } else if (state === "template") {
-      if (c === "\\") { out += "  "; i += 1; }
-      else if (c === "`" ) {
-        out += " "; templateFrames.pop();
-        state = templateFrames.length && templateFrames.at(-1).depth === null ? "template" : "code";
-      } else if (c === "$" && n === "{") {
-        out += "  "; i += 1; templateFrames.at(-1).depth = 1; state = "code";
-      } else out += c === "\n" ? "\n" : " ";
-    } else if (c === "/" && n === "/") {
-      out += "  "; i += 1; state = "line";
-    } else if (c === "/" && n === "*") {
-      out += "  "; i += 1; state = "block";
-    } else if (c === "\"" || c === "'") {
-      quote = c; out += " "; state = "string";
-    } else if (c === "`") {
-      templateFrames.push({ depth: null }); out += " "; state = "template";
-    } else if (templateFrames.length && templateFrames.at(-1).depth !== null && c === "{") {
-      templateFrames.at(-1).depth += 1; out += c;
-    } else if (templateFrames.length && templateFrames.at(-1).depth !== null && c === "}") {
-      templateFrames.at(-1).depth -= 1;
-      if (templateFrames.at(-1).depth === 0) { templateFrames.at(-1).depth = null; state = "template"; out += " "; }
-      else out += c;
-    } else out += c;
+function maskPair(cursor, nextState = cursor.state) {
+  cursor.out += "  ";
+  cursor.index += 1;
+  cursor.state = nextState;
+}
+
+function scanTemplateCode(cursor, c) {
+  const frame = cursor.frames.at(-1);
+  if (frame && frame.depth !== null) {
+    if (c === "{") frame.depth += 1;
+    else if (c === "}") {
+      frame.depth -= 1;
+      if (frame.depth === 0) {
+        frame.depth = null;
+        cursor.state = "template";
+        cursor.out += " ";
+        return;
+      }
+    }
   }
-  return out;
+  cursor.out += c;
+}
+
+const scanStates = Object.freeze({
+  line(cursor, c) {
+    if (c === "\n") { cursor.state = "code"; cursor.out += "\n"; }
+    else cursor.out += " ";
+  },
+  block(cursor, c, n) {
+    if (c === "*" && n === "/") maskPair(cursor, "code");
+    else cursor.out += c === "\n" ? "\n" : " ";
+  },
+  string(cursor, c) {
+    if (c === "\\") maskPair(cursor);
+    else if (c === cursor.quote) { cursor.out += " "; cursor.state = "code"; }
+    else cursor.out += c === "\n" ? "\n" : " ";
+  },
+  template(cursor, c, n) {
+    if (c === "\\") maskPair(cursor);
+    else if (c === "`") {
+      cursor.out += " ";
+      cursor.frames.pop();
+      cursor.state = cursor.frames.length && cursor.frames.at(-1).depth === null ? "template" : "code";
+    } else if (c === "$" && n === "{") {
+      maskPair(cursor, "code");
+      cursor.frames.at(-1).depth = 1;
+    } else cursor.out += c === "\n" ? "\n" : " ";
+  },
+  code(cursor, c, n) {
+    if (c === "/" && n === "/") maskPair(cursor, "line");
+    else if (c === "/" && n === "*") maskPair(cursor, "block");
+    else if (c === "\"" || c === "'") {
+      cursor.quote = c; cursor.out += " "; cursor.state = "string";
+    } else if (c === "`") {
+      cursor.frames.push({ depth: null }); cursor.out += " "; cursor.state = "template";
+    } else scanTemplateCode(cursor, c);
+  },
+});
+
+function stripNonCode(source) {
+  const cursor = { out: "", state: "code", quote: "", frames: [], index: 0 };
+  for (; cursor.index < source.length; cursor.index += 1) {
+    scanStates[cursor.state](cursor, source[cursor.index], source[cursor.index + 1]);
+  }
+  return cursor.out;
 }
 
 export function scanAmbientReferences(source) {

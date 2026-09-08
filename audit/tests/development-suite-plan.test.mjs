@@ -177,3 +177,91 @@ test("watcher uses a quiet-period batch and passes the complete path set once", 
   assert.match(watcher, /__rename_unknown__/u);
   assert.doesNotMatch(watcher, /Start-Sleep -Milliseconds 750[\s\S]*Invoke-DevelopmentChecks/iu);
 });
+
+test("historical art source reconstruction selects art validation and drift checks", () => {
+  const plan = planDevelopmentSuites(["audit/lib/art-migration-source.mjs"]);
+  assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS");
+  assert.equal(plan.suites.includes("art-design"), true);
+  assert.equal(plan.suites.includes("driftless"), true);
+});
+
+test("manifest collection checks select both tutorial and drift validation", () => {
+  const plan = planDevelopmentSuites(["audit/lib/manifest-collection-checks.mjs"]);
+  assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS");
+  assert.equal(plan.suites.includes("tutorial"), true);
+  assert.equal(plan.suites.includes("driftless"), true);
+});
+
+test("child-string negative controls select and execute in the engine development suite", async () => {
+  const plan = planDevelopmentSuites(["audit/tests/child-string-validation.test.mjs"]);
+  assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS");
+  assert.equal(plan.suites.includes("engine"), true);
+  const audit = await readFile(path.join(root, "audit/run-audit.ps1"), "utf8");
+  assert.match(audit, /--test @\(\(Join-Path \$auditDirectory 'tests\\node-engine\.test\.mjs'\), \(Join-Path \$auditDirectory 'tests\\child-string-validation\.test\.mjs'\)\)/u);
+});
+
+test("extracted Deep UX observations and sampling select the focused browser suite", () => {
+  for (const file of ["audit/lib/playwright-deep-ux-sampling.mjs", "audit/playwright/deep-ux-dom-observations.mjs"]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+    assert.equal(plan.suites.includes("playwright"), true, file);
+  }
+});
+
+test("canary evidence helpers and shared rights mutations select their protecting suites", () => {
+  for (const file of ["audit/lib/trusted-https-canary-contract.mjs", "audit/lib/trusted-https-canary-evidence.mjs", "audit/tests/canary-evidence-fixture.mjs", "audit/tests/rights-state-fixture.mjs"]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+    assert.equal(plan.suites.includes("canary"), true, file);
+  }
+  assert.equal(planDevelopmentSuites(["audit/tests/rights-state-fixture.mjs"]).suites.includes("playwright"), true);
+});
+
+test("refactored adapter fixtures and canary modules select their protecting suites", () => {
+  for (const [file, suite] of [
+  [
+    "audit/tests/qa-browser-fixture.mjs",
+    "product"
+  ],
+  [
+    "audit/tests/visual-stimulus-fixture.mjs",
+    "product"
+  ],
+  [
+    "audit/tests/page-adapter-fixture.mjs",
+    "product"
+  ],
+  [
+    "audit/tests/placement-adapter-fixture.mjs",
+    "product"
+  ],
+  [
+    "audit/tests/service-worker-fixture.mjs",
+    "pwa"
+  ],
+  [
+    "audit/tests/page-adapter-fixture.mjs",
+    "pwa"
+  ],
+  [
+    "audit/lib/trusted-https-canary-runner-platform.mjs",
+    "canary"
+  ],
+  [
+    "audit/lib/trusted-https-canary-runner-browser.mjs",
+    "canary"
+  ],
+  [
+    "audit/lib/trusted-https-canary-runner-report.mjs",
+    "canary"
+  ],
+  [
+    "audit/tests/canary-runner-effects.test.mjs",
+    "canary"
+  ]
+]) {
+    const plan = planDevelopmentSuites([file]);
+    assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS", file);
+    assert.equal(plan.suites.includes(suite), true, file);
+  }
+});

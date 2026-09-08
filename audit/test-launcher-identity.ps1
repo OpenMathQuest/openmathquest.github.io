@@ -24,7 +24,7 @@ $RuntimeEntries = @(
     @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
     @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
     @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
-    @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'),
+    @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'), @('/assets/js/math-quest-progress-source.js', 'assets/js/math-quest-progress-source.js'), @('/assets/js/math-quest-pwa-status.js', 'assets/js/math-quest-pwa-status.js'),
     @('/assets/sounds/close.wav', 'assets/sounds/close.wav'),
     @('/assets/sounds/confirm.wav', 'assets/sounds/confirm.wav'),
     @('/assets/sounds/incorrect.wav', 'assets/sounds/incorrect.wav'),

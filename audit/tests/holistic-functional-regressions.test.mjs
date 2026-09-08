@@ -1,3 +1,5 @@
+import { assessedVisualQuestions, visualStimulusHarness } from "./visual-stimulus-fixture.mjs";
+import { createSourceExtractor } from "./source-extraction.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -6,69 +8,15 @@ import { loadShippedEngine } from "../lib/engine-loader.mjs";
 
 const indexUrl = new URL("../../index.html", import.meta.url);
 const html = readFileSync(indexUrl, "utf8");
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
+const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
   .map((match) => match[1]);
 assert.equal(scripts.length, 2, "the shipped page must retain one engine and one adapter script");
 const adapter = scripts[1];
 const { engine } = await loadShippedEngine(indexUrl);
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
-function matchingDelimiter(source, openIndex, open, close) {
-  assert.equal(source[openIndex], open);
-  let depth = 0;
-  let quote = null;
-  let lineComment = false;
-  let blockComment = false;
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    if (lineComment) {
-      if (character === "\n") lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (character === "*" && next === "/") {
-        blockComment = false;
-        index += 1;
-      }
-      continue;
-    }
-    if (quote) {
-      if (character === "\\") index += 1;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === "/" && next === "/") {
-      lineComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "/" && next === "*") {
-      blockComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    if (character === close && --depth === 0) return index;
-  }
-  throw new Error(`unclosed ${open}${close} delimiter`);
-}
-
-function extractFunction(name) {
-  const expression = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu");
-  const matches = [...adapter.matchAll(expression)];
-  assert.equal(matches.length, 1, `${name} must have one shipped declaration`);
-  const start = matches[0].index;
-  const parametersStart = adapter.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(start, bodyEnd + 1);
-}
+const extraction = createSourceExtractor(adapter);
+const extractFunction = (name) => extraction.functionDeclaration(name);
 
 function questionsFor(skillId, count = 16) {
   const skill = engine.SKILL_BY_ID[skillId];
@@ -416,7 +364,7 @@ test("QA-004 count and multiply volume entry are transactional on failed persist
       `${method} failed method selection restores exact exported bytes`,
     );
 
-    const { effects, harness } = createRouteDispatchHarness(question, true);
+    const { harness } = createRouteDispatchHarness(question, true);
     harness.status().ui.responseState.viewedLayers = [...viewedLayers];
     harness.run({
       dataset: {
@@ -756,42 +704,7 @@ test("QA-026 mastery requires every declared representation phase in order", () 
   assert.deepEqual(plain(migrated.state.skills[skill.skillId].witnessIds), []);
 });
 
-test("QA-027 assessed stimuli stay answer-free while worked Help remains complete and accessible", () => {
-  const source = `(()=>{
-    "use strict";
-    const MODEL_FAMILIES=new Set(["attributeSet","comparison","numberBond","tenFrame","array","fractionPair","placeValue","numberLine","proportionalBar","areaGrid","clockSpan","visualPrompt"]);
-    const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const roleLabel=value=>String(value??"").replace(/([a-z])([A-Z])/g,"$1 $2").replace(/[_-]+/g," ").trim();
-    const s=(id,slots={})=>({
-      "aria.mathModel":"Math model",
-      "aria.objectGroup":"Objects in the group: "+slots.items+".",
-      "aria.patternSequence":"Pattern, from left to right: "+slots.items+".",
-      "aria.numberCards":"Number cards: "+slots.items+".",
-      "aria.hiddenFrame":"Ten-cell frame. Showing: "+slots.items+". The remaining cells are covered.",
-      "aria.tenFrameCells":"Ten-frame cells, from left to right: "+slots.cells+"."
-    })[id]||id;
-    function patternTokenName(value){return ({"●":"circle","▲":"triangle","■":"square","◆":"diamond"})[String(value)]||String(value);}
-    const E={CONSTANTS:{READABLE_PROBLEM_TEXT_FROM_LEVEL:8},makeTeachingSupport(question){return question.support;}};
-    const displayPrompt=q=>escape(q.prompt);
-    let ui={screen:"session",phase:"question",question:{prompt:"Pair every shell with one shell."}};
-    function questionSpeechText(){return ui.question.prompt;}
-    ${extractFunction("modelOperandDescription")}
-    ${extractFunction("repeatedStimulusItems")}
-    ${extractFunction("clockHandStimulusDescription")}
-    ${extractFunction("unlabelledTickRunDescription")}
-    ${extractFunction("stimulusOperandDescription")}
-    ${extractFunction("semanticModel")}
-    ${extractFunction("workedTeachingDescriptor")}
-    ${extractFunction("workedResultText")}
-    ${extractFunction("teachingSupportSpeech")}
-    ${extractFunction("durationEvidenceSpeech")}
-    ${extractFunction("replayText")}
-    return {modelOperandDescription,stimulusOperandDescription,semanticModel,workedTeachingDescriptor,teachingSupportSpeech,durationEvidenceSpeech,replayText};
-  })()`;
-  const harness = new vm.Script(source, {
-    filename: "math-quest-complete-visual-operands.js",
-  }).runInNewContext({ structuredClone });
-
+function assertUnlabelledAssessedStimuli(harness) {
   const clock = { type: "visualPrompt", values: { kind: "clock", items: [{ hour: 6, minute: 30 }] } };
   const clockSpeech = harness.durationEvidenceSpeech({ modelDescriptor: clock });
   assert.match(clockSpeech, /short hour hand is between 6 and 7/u);
@@ -809,7 +722,9 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
   const objectSpeech = harness.stimulusOperandDescription(objects);
   assert.equal((objectSpeech.match(/acorn/gu) || []).length, 3);
   assert.doesNotMatch(objectSpeech, /contains 3|3 acorns/u);
+}
 
+function assertCompleteWorkedBond(harness) {
   const supportQuestion = {
     answer: { value: "2" },
     support: {
@@ -824,7 +739,9 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
   assert.match(harness.teachingSupportSpeech(supportQuestion), /Worked result: 2/u);
   const workedModel = harness.semanticModel(worked, supportQuestion, "<span>worked visual</span>", { worked: true });
   assert.match(workedModel, /Whole 5\. Parts 3 and 2/u);
+}
 
+function assertMoneyModelOperands(harness) {
   const practiceToken = {
     type: "visualPrompt",
     values: { kind: "practiceMoney", items: [{ kind: "practiceCoin", tokenId: "single-dot", label: "one-dot practice token" }] },
@@ -851,7 +768,9 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
   assert.match(moneySpeech, /first coin way total 100 with parts coin 1 25, coin 2 25/u);
   assert.match(moneySpeech, /equivalent coin way total 100 with parts coin count unknown \$1 coins/u);
   assert.doesNotMatch(moneySpeech, /\[object Object\]|undefined|\bNaN\b/u);
+}
 
+function assertCategoricalModelOperands(harness) {
   const sortModel = {
     type: "attributeSet",
     values: { items: Array.from({ length: 6 }, () => ({ shape: "circle" })), rule: { attribute: "colour" } },
@@ -870,24 +789,24 @@ test("QA-027 assessed stimuli stay answer-free while worked Help remains complet
     harness.modelOperandDescription(categoricalSort),
     "2 objects. Sort by colour. Bins: red objects, blue objects.",
   );
+}
+
+test("QA-027 assessed stimuli stay answer-free while worked Help remains complete and accessible", () => {
+  const harness = visualStimulusHarness(extractFunction);
+
+  assertUnlabelledAssessedStimuli(harness);
+  assertCompleteWorkedBond(harness);
+  assertMoneyModelOperands(harness);
+  assertCategoricalModelOperands(harness);
 
   let generatedStimuli = 0;
   const disclosurePattern = /(?:The clock shows \d|The angle measures \d|The set contains \d|pattern shows \d)/iu;
-  for (const skillId of ["MQ-001", "MQ-002", "MQ-008", "MQ-009", "MQ-020", "MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"]) {
-    for (const tier of ["EASY", "HARD/TARGET"]) {
-      for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
-        for (const theme of ["ocean", "forest", "space"]) {
-          for (let ordinal = 0; ordinal < 32; ordinal += 1) {
-            const question = engine.makeQuestion({ skillId, tier, representation, theme, ordinal, eligibleQuestionOrdinal: ordinal, seed: 0x4d515558 });
-            const description = harness.stimulusOperandDescription(question.modelDescriptor);
-            assert.doesNotMatch(description, disclosurePattern, `${question.questionId} speech stimulus`);
-            const semantic = harness.semanticModel(question.modelDescriptor, question, "<span>visual</span>");
-            assert.doesNotMatch(semantic, disclosurePattern, `${question.questionId} semantic stimulus`);
-            generatedStimuli += 1;
-          }
-        }
-      }
-    }
+  for (const question of assessedVisualQuestions(engine, ["MQ-001", "MQ-002", "MQ-008", "MQ-009", "MQ-020", "MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"])) {
+  const description = harness.stimulusOperandDescription(question.modelDescriptor);
+  assert.doesNotMatch(description, disclosurePattern, `${question.questionId} speech stimulus`);
+  const semantic = harness.semanticModel(question.modelDescriptor, question, "<span>visual</span>");
+  assert.doesNotMatch(semantic, disclosurePattern, `${question.questionId} semantic stimulus`);
+  generatedStimuli += 1;
   }
   assert.equal(generatedStimuli, 5_760);
 
@@ -968,24 +887,15 @@ test("QA-027B structured visual controls expose answer-free equivalents instead 
   assert.doesNotMatch(metric, /aria-label="[^"]*(?:mark 7|reaches 7|points to 7)/u);
 
   const methodCounts = { ANGLE_MEASURE: 0, CLOCK_READ: 0, METRIC_SCALE: 0 };
-  for (const skillId of ["MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"]) {
-    for (const tier of ["EASY", "HARD/TARGET"]) {
-      for (const representation of ["CONCRETE", "PICTORIAL", "ABSTRACT"]) {
-        for (const theme of ["ocean", "forest", "space"]) {
-          for (let ordinal = 0; ordinal < 32; ordinal += 1) {
-            const question = engine.makeQuestion({ skillId, tier, representation, theme, ordinal, eligibleQuestionOrdinal: ordinal, seed: 0x4d515558 });
-            const controls = { responseState: engine.createResponseState(question) };
-            let html = "";
-            if (question.inputMethod === "ANGLE_MEASURE") html = render.angleMeasureConstructionHtml(question, "play", controls);
-            else if (question.inputMethod === "CLOCK_READ") html = render.clockReadConstructionHtml(question, "play", controls);
-            else if (question.inputMethod === "METRIC_SCALE") html = render.metricScaleConstructionHtml(question, "play", controls);
-            else continue;
-            methodCounts[question.inputMethod] += 1;
-            assert.doesNotMatch(html, /aria-label="[^"]*(?:Angle measuring \d+ degrees|clock showing \d|reaches mark \d|points to mark \d)/iu, `${question.questionId} control label`);
-          }
-        }
-      }
-    }
+  for (const question of assessedVisualQuestions(engine, ["MQ-042", "MQ-066", "MQ-069", "MQ-086", "MQ-124"])) {
+  const controls = { responseState: engine.createResponseState(question) };
+  let html = "";
+  if (question.inputMethod === "ANGLE_MEASURE") html = render.angleMeasureConstructionHtml(question, "play", controls);
+  else if (question.inputMethod === "CLOCK_READ") html = render.clockReadConstructionHtml(question, "play", controls);
+  else if (question.inputMethod === "METRIC_SCALE") html = render.metricScaleConstructionHtml(question, "play", controls);
+  else continue;
+  methodCounts[question.inputMethod] += 1;
+  assert.doesNotMatch(html, /aria-label="[^"]*(?:Angle measuring \d+ degrees|clock showing \d|reaches mark \d|points to mark \d)/iu, `${question.questionId} control label`);
   }
   assert.ok(Object.values(methodCounts).every((count) => count > 0), JSON.stringify(methodCounts));
 });
@@ -1075,7 +985,7 @@ test("QA-030 early pattern choices stay visible, spoken, and joined to the sourc
     const colourName=value=>["red","blue","green","yellow"].includes(String(value))?String(value):"";
     const categoryIconHtml=value=>"<i data-animal=\\""+escape(value)+"\\"></i>";
     const shapeVisualHtml=value=>"<i data-shape=\\""+escape(value)+"\\"></i>";
-    const responseAction=()=>\"\";
+    const responseAction=()=>"";
     const questionModelHtml=()=>'<div class="math-model"><div class="pattern-cue-row"><span data-token-kind="source-1"></span><span data-token-kind="source-2"></span></div></div>';
     ${extractFunction("patternTokenName")}
     ${extractFunction("patternTokenVisualHtml")}

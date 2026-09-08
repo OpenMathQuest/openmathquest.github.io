@@ -25,38 +25,43 @@ import { activate, expect, test } from "./fixtures.mjs";
 const outputDirectory = process.env.MQ_INTERACTION_FUZZ_OUTPUT_DIR;
 if (!outputDirectory) throw new Error("MQ_INTERACTION_FUZZ_OUTPUT_DIR is required.");
 
+function captureActionCandidates(elements, suppliedFamilyId) {
+  const interactionFlags = (element) => ({
+    disabled: element.matches(":disabled") || element.getAttribute("aria-disabled") === "true",
+    selected: element.getAttribute("aria-pressed") === "true" || element.dataset.selectedLabel === "Selected",
+  });
+  const actionable = ({ disabled, selected }, dataAction, key) => {
+    const destructiveKeyNoOp = dataAction === "key" && (key === "Clear" || key === "⌫");
+    return !disabled && !selected && !destructiveKeyNoOp;
+  };
+  const rendered = (style, box) => !(box.width <= 0 || box.height <= 0
+    || style.display === "none" || style.visibility === "hidden" || style.pointerEvents === "none");
+  const accessibleName = (element) => String(
+    element.getAttribute("aria-label") || element.getAttribute("title") || element.innerText || element.value || "",
+  ).replace(/\s+/gu, " ").trim();
+  return elements.map((element, index) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    const flags = interactionFlags(element);
+    const dataAction = element.dataset.action || null;
+    const responseAction = element.dataset.responseAction || null;
+    const key = element.dataset.key || null;
+    if (!actionable(flags, dataAction, key) || !rendered(style, box)) return null;
+    return {
+      familyId: suppliedFamilyId,
+      domIndex: index,
+      dataAction,
+      responseAction,
+      key,
+      value: element.dataset.value || element.dataset.id || element.dataset.optionId || null,
+      accessibleName: accessibleName(element),
+    };
+  }).filter(Boolean);
+
+}
+
 async function availableCandidates(page, family) {
-  return page.locator(family.selector).evaluateAll(
-    (elements, suppliedFamilyId) => elements.map((element, index) => {
-      const style = getComputedStyle(element);
-      const box = element.getBoundingClientRect();
-      const disabled = element.matches(":disabled") || element.getAttribute("aria-disabled") === "true";
-      const selected = element.getAttribute("aria-pressed") === "true" || element.dataset.selectedLabel === "Selected";
-      const dataAction = element.dataset.action || null;
-      const responseAction = element.dataset.responseAction || null;
-      const key = element.dataset.key || null;
-      const destructiveKeyNoOp = dataAction === "key" && (key === "Clear" || key === "⌫");
-      if (disabled || selected || destructiveKeyNoOp || box.width <= 0 || box.height <= 0
-          || style.display === "none" || style.visibility === "hidden" || style.pointerEvents === "none") return null;
-      const accessibleName = String(
-        element.getAttribute("aria-label")
-          || element.getAttribute("title")
-          || element.innerText
-          || element.value
-          || "",
-      ).replace(/\s+/gu, " ").trim();
-      return {
-        familyId: suppliedFamilyId,
-        domIndex: index,
-        dataAction,
-        responseAction,
-        key,
-        value: element.dataset.value || element.dataset.id || element.dataset.optionId || null,
-        accessibleName,
-      };
-    }).filter(Boolean),
-    family.id,
-  );
+  return page.locator(family.selector).evaluateAll(captureActionCandidates, family.id);
 }
 
 async function allAvailableCandidates(page) {
@@ -65,19 +70,8 @@ async function allAvailableCandidates(page) {
   )).flat();
 }
 
-async function effectSnapshot(page) {
-  const raw = await page.evaluate(() => {
-    const root = document.querySelector("#app");
-    const rootStyle = root ? getComputedStyle(root) : null;
-    const rootBox = root?.getBoundingClientRect() || null;
-    const storage = Object.fromEntries(
-      Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
-        .filter(Boolean)
-        .sort()
-        .map((key) => [key, localStorage.getItem(key)]),
-    );
-    const engine = window.MathQuestEngine;
-    const progressBytes = engine ? localStorage.getItem(engine.CONSTANTS.STORAGE_NAMESPACE) : null;
+function captureEffectSnapshot() {
+  const savedProgressError = (engine, progressBytes) => {
     let saveValidationError = null;
     if (!engine) saveValidationError = "MathQuestEngine unavailable";
     else if (progressBytes !== null) {
@@ -87,30 +81,53 @@ async function effectSnapshot(page) {
         saveValidationError = `unparseable saved progress: ${String(error?.message || error)}`;
       }
     }
+    return saveValidationError;
+  };
+  const readChildIdentityMode = () => {
     let childIdentityMode = "missing";
     try {
       const child = JSON.parse(localStorage.getItem("math-quest:child-name:v1") || "null");
-      if (child?.mode === "anonymous" && child?.name === "") childIdentityMode = "anonymous";
-      else if (child?.mode === "named" || child?.name) childIdentityMode = "named";
+      const identity = child ?? {};
+      if (identity.mode === "anonymous" && identity.name === "") childIdentityMode = "anonymous";
+      else if (identity.mode === "named" || identity.name) childIdentityMode = "named";
       else if (child !== null) childIdentityMode = "invalid";
     } catch {
       childIdentityMode = "invalid";
     }
-    return {
-      rootHtml: root?.innerHTML || "",
-      formValues: Array.from(root?.querySelectorAll("input, select, textarea") || [], (control) => ({
-        value: control.value,
-        checked: "checked" in control ? Boolean(control.checked) : null,
-        selectedIndex: "selectedIndex" in control ? control.selectedIndex : null,
-      })),
-      storage,
-      rootVisible: Boolean(root && rootBox && rootBox.width > 0 && rootBox.height > 0
-        && rootStyle?.display !== "none" && rootStyle?.visibility !== "hidden"),
-      locationPath: location.pathname,
-      saveValidationError,
-      childIdentityMode,
-    };
-  });
+    return childIdentityMode;
+  };
+  const visiblyRendered = (root, box, style) => Boolean(root && box && box.width > 0 && box.height > 0
+    && style?.display !== "none" && style?.visibility !== "hidden");
+  const root = document.querySelector("#app");
+  const rootStyle = root ? getComputedStyle(root) : null;
+  const rootBox = root?.getBoundingClientRect() || null;
+  const storage = Object.fromEntries(
+    Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
+      .filter(Boolean)
+      .sort()
+      .map((key) => [key, localStorage.getItem(key)]),
+  );
+  const engine = window.MathQuestEngine;
+  const progressBytes = engine ? localStorage.getItem(engine.CONSTANTS.STORAGE_NAMESPACE) : null;
+  const saveValidationError = savedProgressError(engine, progressBytes);
+  const childIdentityMode = readChildIdentityMode();
+  return {
+    rootHtml: root?.innerHTML || "",
+    formValues: Array.from(root?.querySelectorAll("input, select, textarea") || [], (control) => ({
+      value: control.value,
+      checked: "checked" in control ? Boolean(control.checked) : null,
+      selectedIndex: "selectedIndex" in control ? control.selectedIndex : null,
+    })),
+    storage,
+    rootVisible: visiblyRendered(root, rootBox, rootStyle),
+    locationPath: location.pathname,
+    saveValidationError,
+    childIdentityMode,
+  };
+}
+
+async function effectSnapshot(page) {
+  const raw = await page.evaluate(captureEffectSnapshot);
   return {
     domDigest: interactionFuzzSha256({ rootHtml: raw.rootHtml, formValues: raw.formValues }),
     saveDigest: interactionFuzzSha256(raw.storage),
@@ -141,10 +158,7 @@ function guardFindings(guard, baseline) {
 
 async function openSyntheticAnonymousHome(page) {
   await page.goto("/index.html", { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-  });
+  await clearSyntheticBrowserState(page);
   await page.reload({ waitUntil: "domcontentloaded" });
   const anonymous = page.getByRole("button", { name: "Continue without a name", exact: true });
   await expect(anonymous).toBeVisible();
@@ -154,6 +168,16 @@ async function openSyntheticAnonymousHome(page) {
   expect(interactionFuzzEffectFindings({ ...initial, domDigest: "setup" }, initial)).toEqual([]);
 }
 
+function clearSyntheticStorage() {
+  window.dispatchEvent(new PageTransitionEvent("pagehide"));
+  localStorage.clear();
+  sessionStorage.clear();
+}
+
+async function clearSyntheticBrowserState(page) {
+  await expect(page.locator("#app button:visible").first()).toBeVisible();
+  await page.evaluate(clearSyntheticStorage);
+}
 class SafeActivateCommand {
   constructor(ordinal) {
     this.ordinal = ordinal;

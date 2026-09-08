@@ -1,4 +1,4 @@
-export const HOSTED_WINDOWS_OBSERVATION_SCHEMA_VERSION = 1;
+const HOSTED_WINDOWS_OBSERVATION_SCHEMA_VERSION = 1;
 export const HOSTED_WINDOWS_OBSERVATION_KIND = "HOSTED_WINDOWS_BROWSER_IDENTITY_OBSERVATION_V1";
 export const HOSTED_WINDOWS_OBSERVATION_STATUS = "OBSERVATION_ONLY_NOT_CERTIFICATION";
 
@@ -40,9 +40,7 @@ function exactOrderedKeys(value) {
   );
 }
 
-export function parseHostedWindowsObservation(text, expected = {}) {
-  const source = String(text);
-  const issues = [];
+function readObservationFields(source, issues) {
   if (source.includes("\r")) issues.push("observation must use LF line endings");
   if (!source.endsWith("\n") || source.endsWith("\n\n")) {
     issues.push("observation must end with exactly one LF");
@@ -53,6 +51,10 @@ export function parseHostedWindowsObservation(text, expected = {}) {
   } catch {
     issues.push("observation is not valid JSON");
   }
+  return value;
+}
+
+function observationSchemaIssues(value, source, issues) {
   if (!exactOrderedKeys(value)) issues.push("observation must contain only the exact ordered schema");
   if (Object.keys(value).length && `${JSON.stringify(value)}\n` !== source) {
     issues.push("observation must use canonical compact JSON");
@@ -60,22 +62,49 @@ export function parseHostedWindowsObservation(text, expected = {}) {
   if (value.schemaVersion !== HOSTED_WINDOWS_OBSERVATION_SCHEMA_VERSION) issues.push("schemaVersion must be 1");
   if (value.artifactKind !== HOSTED_WINDOWS_OBSERVATION_KIND) issues.push("artifactKind must identify the hosted identity observation schema");
   if (value.certificationStatus !== HOSTED_WINDOWS_OBSERVATION_STATUS) issues.push("certificationStatus must state that this is not certification");
+}
+
+function observationProvenanceIssues(value, issues) {
   if (value.repository !== "OpenMathQuest/openmathquest.github.io") issues.push("repository must be the public Math Quest repository");
   if (value.ref !== "refs/heads/main") issues.push("ref must be protected main");
   if (!SHA_40.test(String(value.candidateSha || ""))) issues.push("candidateSha must be 40 lowercase hexadecimal characters");
   if (value.workflowFile !== ".github/workflows/hosted-windows-observation.yml") issues.push("workflowFile must identify the observation-only workflow");
+}
+
+function observationWorkflowRunIssues(value, issues) {
   if (!RUN_NUMBER.test(String(value.workflowRunId || ""))) issues.push("workflowRunId must be a positive integer string");
   if (!RUN_NUMBER.test(String(value.workflowRunAttempt || ""))) issues.push("workflowRunAttempt must be a positive integer string");
   if (!UTC_MILLISECONDS.test(String(value.observedAtUtc || "")) || Number.isNaN(Date.parse(value.observedAtUtc))) issues.push("observedAtUtc must be a valid UTC millisecond timestamp");
+}
+
+function observationBrowserIssues(value, issues) {
   if (!BROWSER_PRODUCTS.has(value.browserProductName)) issues.push("browserProductName must be Microsoft Edge or Google Chrome");
   if (!VERSION_4.test(String(value.browserFullVersion || ""))) issues.push("browserFullVersion must contain the full four-part version");
   if (!SHA_64.test(String(value.browserExecutableSha256 || ""))) issues.push("browserExecutableSha256 must be 64 lowercase hexadecimal characters");
+}
+
+function observationRunnerIssues(value, issues) {
   if (value.requestedRunnerLabel !== "windows-latest") issues.push("requestedRunnerLabel must be windows-latest");
   if (value.runnerEnvironment !== "github-hosted") issues.push("runnerEnvironment must be github-hosted");
   if (value.runnerImageOS === "PENDING" || !RUNNER_IDENTITY.test(String(value.runnerImageOS || ""))) issues.push("runnerImageOS must be a nonempty GitHub-hosted image identifier");
   if (value.runnerImageVersion === "PENDING" || !RUNNER_IDENTITY.test(String(value.runnerImageVersion || ""))) issues.push("runnerImageVersion must be a nonempty GitHub-hosted image version");
+}
+
+function observationExpectedIdentityIssues(value, expected, issues) {
   if (expected.candidateSha !== undefined && value.candidateSha !== expected.candidateSha) issues.push("candidateSha does not match the requested candidate");
   if (expected.runnerImageOS !== undefined && value.runnerImageOS !== expected.runnerImageOS) issues.push("runnerImageOS does not match the live runner");
   if (expected.runnerImageVersion !== undefined && value.runnerImageVersion !== expected.runnerImageVersion) issues.push("runnerImageVersion does not match the live runner");
+}
+
+export function parseHostedWindowsObservation(text, expected = {}) {
+  const source = String(text);
+  const issues = [];
+  const value = readObservationFields(source, issues);
+  observationSchemaIssues(value, source, issues);
+  observationProvenanceIssues(value, issues);
+  observationWorkflowRunIssues(value, issues);
+  observationBrowserIssues(value, issues);
+  observationRunnerIssues(value, issues);
+  observationExpectedIdentityIssues(value, expected, issues);
   return Object.freeze({ valid: issues.length === 0, value: Object.freeze({ ...value }), issues: Object.freeze(issues) });
 }

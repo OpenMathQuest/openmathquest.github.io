@@ -265,7 +265,7 @@ test("interaction-fuzz implementation uses fast-check commands and native unforc
     readFile(new URL("../playwright/fixtures.mjs", import.meta.url), "utf8"),
     readFile(new URL("../../playwright.interaction-fuzz.config.mjs", import.meta.url), "utf8"),
   ]);
-  assert.match(spec, /fc\.commands\(/u);
+  assert.match(spec, /(?=[\s\S]*#app button)(?=[\s\S]*PageTransitionEvent\("pagehide"\))(?=[\s\S]*localStorage\.clear\(\))(?=[\s\S]*fc\.commands\()/u);
   assert.match(spec, /fc\.asyncModelRun\(/u);
   assert.match(spec, /fc\.check\(/u);
   assert.doesNotMatch(spec, /force\s*:/u);

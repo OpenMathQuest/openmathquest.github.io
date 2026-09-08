@@ -10,16 +10,23 @@ import {
   tutorialFeatureInventory,
   validateTutorialManifest,
 } from "../lib/tutorial-manifest.mjs";
+import {
+  assertTutorialEngineContract,
+  tutorialSourceQuestion,
+} from "./tutorial-engine-contract.mjs";
 
 const root = new URL("../../", import.meta.url);
 const curriculumPath = new URL("curriculum/math-quest-manifest-v1.json", root);
 const tutorialPath = new URL("curriculum/math-quest-tutorial-manifest-v1.json", root);
 const artDesignPath = new URL("audit/art-design-decision-register-v1.json", root);
-const indexPath = new URL("index.html", root);
+const indexPath = process.env.MQ_INDEX_PATH || new URL("index.html", root);
 
 const curriculumArtifact = await loadManifest(curriculumPath);
 const artDesign = JSON.parse(await readFile(artDesignPath, "utf8"));
-const { engine } = await loadShippedEngine(indexPath, { timeoutMs: 3_000 });
+const { engine } = await loadShippedEngine(indexPath, {
+  filename: process.env.MQ_ENGINE_COVERAGE_FILE,
+  timeoutMs: 3_000,
+});
 const featureInventory = tutorialFeatureInventory(engine);
 const inputMethods = Object.keys(engine.CONSTANTS.INPUT_CLASS_BY_METHOD).sort();
 const childStringIds = engine.CHILD_STRINGS.map((record) => record.id);
@@ -35,64 +42,6 @@ const tutorialArtifact = await loadTutorialManifest(tutorialPath, validationOpti
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-function structure(question) {
-  return canonicalizeJson({
-    taskType: question.taskType,
-    semanticPromptStringId: question.semanticPromptStringId,
-    representation: question.representation,
-    inputClass: question.inputClass,
-    inputMethod: question.inputMethod,
-    answerKind: question.answer.kind,
-    targetForm: question.answer.targetForm,
-    optionCount: question.optionCount,
-    responseKeys: Object.keys(engine.createResponseState(question)).sort(),
-  });
-}
-
-function compatibleStructure(question) {
-  return canonicalizeJson({
-    semanticPromptStringId: question.semanticPromptStringId,
-    representation: question.representation,
-    inputClass: question.inputClass,
-    inputMethod: question.inputMethod,
-    answerKind: question.answer.kind,
-    targetForm: question.answer.targetForm,
-    optionCount: question.optionCount,
-    responseKeys: Object.keys(engine.createResponseState(question)).sort(),
-  });
-}
-
-function independentTerminalProjection(question) {
-  if (question.inputMethod === "FACT_FAMILY") {
-    const a = Number(question.params.a);
-    const b = Number(question.params.b);
-    const whole = Number(question.params.whole);
-    const multiplyDivide = question.params.equationFamily === "multiply-divide";
-    const equationFamily = multiplyDivide ? "multiply-divide" : "add-subtract";
-    const equations = (multiplyDivide
-      ? [`${a}×${b}=${whole}`, `${b}×${a}=${whole}`, `${whole}÷${a}=${b}`, `${whole}÷${b}=${a}`]
-      : [`${a}+${b}=${whole}`, `${b}+${a}=${whole}`, `${whole}−${a}=${b}`, `${whole}−${b}=${a}`]).sort();
-    return canonicalizeJson({ kind: "fact-family", equationFamily, equations });
-  }
-  return canonicalizeJson({ kind: question.answer.kind, targetForm: question.answer.targetForm, value: question.answer.value });
-}
-
-function sourceQuestion(skill, taskIndex) {
-  return engine.makeQuestion({
-    skillId: skill.skillId,
-    tier: "HARD/TARGET",
-    representation: "PICTORIAL",
-    theme: "forest",
-    seed: 1_297_175_628,
-    ordinal: taskIndex,
-    eligibleQuestionOrdinal: taskIndex,
-    scheduledReview: false,
-    coldTest: false,
-    preview: false,
-    scaffolded: false,
-  });
 }
 
 test("tutorial manifest is schema-valid, canonical, embedded exactly, and covers every live method/profile/feature", async () => {
@@ -141,58 +90,11 @@ test("tutorial manifest rejects missing coverage, stale curriculum, and missing 
 });
 
 test("every skill/task obligation follows its exact V2 resolution mode without answer-revealing fallback", () => {
-  let obligations = 0;
-  let structuredAnswersBeyondShallowValue = 0;
-  const resolutionCounts = { SAME_TASK_DIFFERENT_ANSWER: 0, SIBLING_TASK_DIFFERENT_ANSWER: 0, PROCEDURE_ONLY: 0 };
-  const bindingByKey = new Map(tutorialArtifact.manifest.obligationBindings.map((record) => [`${record.skillId}|${record.taskType}`, record]));
-  for (const skill of engine.SKILLS) {
-    const taskTypes = skill.constraints.taskTypes ?? [skill.generatorProfile];
-    for (let taskIndex = 0; taskIndex < taskTypes.length; taskIndex += 1) {
-      const source = sourceQuestion(skill, taskIndex);
-      const plan = engine.makeTutorialPlan(source);
-      const binding = bindingByKey.get(`${skill.skillId}|${taskTypes[taskIndex]}`);
-      assert.ok(binding, `${skill.skillId}/${taskTypes[taskIndex]} needs an exact resolution binding`);
-      assert.ok(plan, `${skill.skillId}/${taskTypes[taskIndex]} needs a tutorial`);
-      const example = plan.example;
-      assert.equal(source.taskType, taskTypes[taskIndex]);
-      assert.equal(plan.resolutionMode, binding.resolutionMode);
-      assert.equal(plan.answerDisclosurePolicy, binding.answerDisclosurePolicy);
-      assert.equal(plan.contractVersion, "tutorial-contract-v2");
-      assert.deepEqual(Array.from(plan.phaseBindings, (record) => record.phaseId), ["NOTICE", "PLAN", "CHECK"]);
-      assert.ok(plan.visualTeachingContractId.startsWith("VISUAL_TEACHING_"));
-      if (binding.resolutionMode === "SIBLING_TASK_DIFFERENT_ANSWER") {
-        assert.equal(example.taskType, binding.siblingTaskType);
-        assert.notEqual(example.taskType, source.taskType);
-        assert.equal(compatibleStructure(example), compatibleStructure(source));
-        assert.equal(plan.compatibilityContractId, "MQ048_TOKEN_VALUE_LOOKUP");
-      } else {
-        assert.equal(structure(example), structure(source));
-      }
-      assert.notEqual(example.questionId, source.questionId);
-      assert.notEqual(example.sampleKey, source.sampleKey);
-      assert.notEqual(canonicalizeJson(example.params), canonicalizeJson(source.params));
-      assert.equal(example.preview, true);
-      assert.equal(example.scaffolded, true);
-      assert.equal(example.coldTest, false);
-      assert.equal(example.scheduledReview, false);
-      if (binding.answerDisclosurePolicy === "DIFFERENT_ANSWER_REQUIRED") {
-        assert.notEqual(independentTerminalProjection(example), independentTerminalProjection(source), `${skill.skillId}/${source.taskType} must have a different terminal answer`);
-        if (String(example.answer.value) === String(source.answer.value)) structuredAnswersBeyondShallowValue += 1;
-      } else {
-        assert.equal(binding.resolutionMode, "PROCEDURE_ONLY");
-        assert.equal(example.taskType, source.taskType);
-      }
-      resolutionCounts[binding.resolutionMode] += 1;
-      obligations += 1;
-    }
-  }
-  assert.equal(obligations, tutorialArtifact.manifest.curriculumBinding.taskObligationCount);
-  assert.deepEqual(resolutionCounts, { SAME_TASK_DIFFERENT_ANSWER: 149, SIBLING_TASK_DIFFERENT_ANSWER: 5, PROCEDURE_ONLY: 12 });
-  assert.equal(structuredAnswersBeyondShallowValue, 2, "both fact-family obligations need full-equation terminal projections rather than their shallow sentinel value");
+  assertTutorialEngineContract(engine, tutorialArtifact.manifest);
 });
 
 test("assisted attempts preserve feedback truth while becoming non-evidentiary", () => {
-  const source = sourceQuestion(engine.SKILL_BY_ID["MQ-009"], 0);
+  const source = tutorialSourceQuestion(engine, engine.SKILL_BY_ID["MQ-009"], 0);
   const attempt = engine.submitAnswer(source, { optionId: source.options[source.correctIndex].optionId }, {
     promptFinishedAt: 100,
     submittedAt: 2_000,

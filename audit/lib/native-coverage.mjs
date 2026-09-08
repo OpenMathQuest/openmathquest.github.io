@@ -6,7 +6,7 @@ function parseNumber(cell) {
   return Number.isFinite(value) ? value : null;
 }
 
-export function parseNativeCoverage(output) {
+function parseNativeCoverage(output) {
   const rows = new Map();
   for (const line of String(output).split(/\r?\n/u)) {
     if (!line.includes("|")) continue;
@@ -30,6 +30,22 @@ function findRow(rows, suffix) {
   return [...rows.values()].find((row) => row.file.replace(/\\/gu, "/").toLowerCase().endsWith(normalized));
 }
 
+function coverageProcessOutput(child) {
+  return {
+    stdout: child.stdout ?? "",
+    stderr: child.stderr ?? "",
+  };
+}
+
+function coverageProcessErrors(child, timeoutMs) {
+  return [
+    child.spawnError,
+    child.timedOut ? `ETIMEDOUT: native coverage process exceeded ${timeoutMs} ms` : null,
+    child.outputOverflow ? "native coverage process exceeded its output limit" : null,
+    child.cleanupVerified === false ? `process-tree cleanup was not verified (${child.cleanupDetail})` : null,
+  ].filter(Boolean);
+}
+
 export async function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 120_000, env } = {}) {
   const args = [
     "--test",
@@ -46,11 +62,8 @@ export async function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 1
     env: { ...process.env, ...env },
     timeoutMs,
   });
-  const errors = [];
-  if (child.spawnError) errors.push(child.spawnError);
-  if (child.timedOut) errors.push(`ETIMEDOUT: native coverage process exceeded ${timeoutMs} ms`);
-  if (child.outputOverflow) errors.push("native coverage process exceeded its output limit");
-  if (child.cleanupVerified === false) errors.push(`process-tree cleanup was not verified (${child.cleanupDetail})`);
+  const output = coverageProcessOutput(child);
+  const errors = coverageProcessErrors(child, timeoutMs);
   return {
     command: [nodePath, ...args],
     status: child.exitCode,
@@ -60,10 +73,33 @@ export async function runNativeCoverage(nodePath, testFile, { cwd, timeoutMs = 1
     outputOverflow: child.outputOverflow,
     cleanupVerified: child.cleanupVerified,
     cleanupDetail: child.cleanupDetail,
-    stdout: child.stdout || "",
-    stderr: child.stderr || "",
-    rows: parseNativeCoverage(`${child.stdout || ""}\n${child.stderr || ""}`),
+    ...output,
+    rows: parseNativeCoverage(`${output.stdout}\n${output.stderr}`),
   };
+}
+
+function calibrationProcessReasons(run, reasons) {
+  if (run.status !== 0) reasons.push(`calibration process exited ${run.status ?? run.signal ?? "without status"}`);
+  if (run.timedOut) reasons.push("calibration process timed out");
+  if (run.outputOverflow) reasons.push("calibration process exceeded its output limit");
+  if (run.cleanupVerified === false) reasons.push(`calibration process-tree cleanup was not verified (${run.cleanupDetail})`);
+}
+
+function missingCalibrationFixtures(full, partial, aggregate, reasons) {
+  if (!full) reasons.push("native report omitted the full vm.Script filename");
+  if (!partial) reasons.push("native report omitted the partial vm.Script filename");
+  if (!aggregate) reasons.push("native report omitted the repeated-filename aggregation fixture");
+}
+
+function calibrationFixtureReasons(full, partial, aggregate, reasons) {
+  missingCalibrationFixtures(full, partial, aggregate, reasons);
+  if (full && full.branchPct !== 100) reasons.push(`full fixture branch coverage was ${full.branchPct}, expected 100`);
+  if (partial && !(partial.branchPct >= 0 && partial.branchPct < 100)) {
+    reasons.push(`partial fixture branch coverage was ${partial.branchPct}, expected less than 100`);
+  }
+  if (aggregate && aggregate.branchPct !== 100) {
+    reasons.push(`repeated-filename aggregation fixture branch coverage was ${aggregate.branchPct}, expected 100`);
+  }
 }
 
 export async function calibrateNativeCoverage(nodePath, root) {
@@ -73,20 +109,8 @@ export async function calibrateNativeCoverage(nodePath, root) {
   const partial = findRow(run.rows, "mq-coverage-calibration-partial.js");
   const aggregate = findRow(run.rows, "mq-coverage-calibration-aggregate.js");
   const reasons = [];
-  if (run.status !== 0) reasons.push(`calibration process exited ${run.status ?? run.signal ?? "without status"}`);
-  if (run.timedOut) reasons.push("calibration process timed out");
-  if (run.outputOverflow) reasons.push("calibration process exceeded its output limit");
-  if (run.cleanupVerified === false) reasons.push(`calibration process-tree cleanup was not verified (${run.cleanupDetail})`);
-  if (!full) reasons.push("native report omitted the full vm.Script filename");
-  if (!partial) reasons.push("native report omitted the partial vm.Script filename");
-  if (!aggregate) reasons.push("native report omitted the repeated-filename aggregation fixture");
-  if (full && full.branchPct !== 100) reasons.push(`full fixture branch coverage was ${full.branchPct}, expected 100`);
-  if (partial && !(partial.branchPct >= 0 && partial.branchPct < 100)) {
-    reasons.push(`partial fixture branch coverage was ${partial.branchPct}, expected less than 100`);
-  }
-  if (aggregate && aggregate.branchPct !== 100) {
-    reasons.push(`repeated-filename aggregation fixture branch coverage was ${aggregate.branchPct}, expected 100`);
-  }
+  calibrationProcessReasons(run, reasons);
+  calibrationFixtureReasons(full, partial, aggregate, reasons);
   return { ok: reasons.length === 0, reasons, full, partial, aggregate, run };
 }
 
