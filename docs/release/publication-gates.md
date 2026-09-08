@@ -46,7 +46,7 @@ They may establish that real production behavior is **implemented**, but they
 do not run or satisfy the complete certification gauntlet and cannot establish
 **release-certified** status.
 
-After all planned release work is finished, first commit the exact Beta 8
+After all planned release work is finished, first commit the exact Beta 9
 qualification revision to protected `main` with final game/runtime/PWA bytes
 and all four pending evidence authorities. Run the trusted-HTTPS canary and
 hosted-Windows observation against that qualification commit, then create the
@@ -70,7 +70,7 @@ than release certification.
 
 ## Remaining fail-closed review
 
-During preparation and the single final Public Beta 8 certification cycle:
+During preparation and the single final Public Beta 9 certification cycle:
 
 1. Freeze and canonicalize the exact manifest.
 2. Compute the exact manifest and engine SHA-256 values from shipped bytes.
@@ -103,7 +103,7 @@ During preparation and the single final Public Beta 8 certification cycle:
    offline/update/recovery checks; otherwise record `OPTIONAL_NOT_RUN`.
 9. For a semantic-version prerelease, bind the current host review and owner
    decision as exact `DEFERRED_PRERELEASE`; never report the host as approved
-   or privacy-cleared. For Beta 8, require the canary as exact `RECONCILED`
+   or privacy-cleared. For Beta 9, require the canary as exact `RECONCILED`
    with its canonical evidence SHA-256 and report `EXT-CANARY: PASS`. Complete
    adjudication, finding-disposition, hosted-Windows, and owner-authorization
    gates defined in
@@ -146,7 +146,7 @@ report plus synthetic anomaly evidence on failure. A local 100-cell benchmark,
 an odd-numbered beta, or a clean direct-journey result cannot impersonate the
 scheduled census. The census neither changes the 304-result gauntlet count nor
 replaces browser, mathematical, human, accessibility, PWA, or device evidence.
-Beta 8 is scheduled, so the complete census must pass. The local balanced
+Beta 9 is not scheduled; record the cadence exclusion without claiming a census pass. The local balanced
 100-cell benchmark remains non-certifying and cannot satisfy, replace, or
 strengthen the release gate.
 11. Prove on the exact frozen candidate that an exact schema-2 save and backup
@@ -182,7 +182,7 @@ when the bundle validator proves their exact canonical artifact bytes or their
 explicitly typed structured assertion. A 64-character hexadecimal value by
 itself is not evidence. The canary binding is the exact sanitized
 artifact named by the bundle. Beta 7 retains its historical
-`audit/trusted-https-canary-beta7-v1.json`; Beta 8 uses the canonical
+`audit/trusted-https-canary-beta7-v1.json`; Beta 9 uses the canonical
 `audit/trusted-https-canary-v1.json`. Optional-not-run records remain absence
 records and make no pass claim.
 
@@ -262,16 +262,16 @@ then the immutable candidate on which the single final gauntlet runs:
 - `Hosted-Windows evidence SHA-256: <SHA-256 of the exact canonical audit/browser-runner-evidence-v1.json bytes>`
 - `Owner authorization state: PR_PUSH_AUTHORIZED`
 - `Owner authorization evidence SHA-256: <64 lowercase hexadecimal characters>`
-- `Authorized release tag: v1.0.0-beta.8`
+- `Authorized release tag: v1.0.0-beta.9`
 - `Authorized protected ref: refs/heads/main`
 - `Review-bundle SHA-256: <64 lowercase hexadecimal characters>`
 
-For `v1.0.0-beta.8`, the owner's 2026-08-25 release authorization did not
+For `v1.0.0-beta.9`, the owner's 2026-09-08 release authorization did not
 select either optional cycle. The physical-device fields are exact
 `OPTIONAL_NOT_RUN`/`NONE`/`0`/`0`/`NOT_RUN`; the independent-reviewer fields are
 exact `OPTIONAL_NOT_RUN`/`NONE`/`0`/`0`. No evidence, platform qualification,
 or independent-review claim is inferred from their zero counts. The same
-decision records exact `PR_PUSH_AUTHORIZED` for `v1.0.0-beta.8` on
+decision records exact `PR_PUSH_AUTHORIZED` for `v1.0.0-beta.9` on
 `refs/heads/main`; it does not bypass any mandatory gate or authorize changed
 bytes after certification.
 
@@ -297,7 +297,7 @@ successor, and separately requires the current successor's public-candidate
 guard to pass. Comparing those fields to the successor's necessarily changed
 evidence payload would create a circular and impossible gate.
 
-For Beta 8, `RELEASE_EVIDENCE_SUCCESSOR_V2` closes the lifecycle introduced by
+For Beta 9, `RELEASE_EVIDENCE_SUCCESSOR_V2` closes the lifecycle introduced by
 the sole-authority evidence bundle. The qualification commit contains all four
 pending authorities: `PUBLICATION_CLEARANCE.md`,
 `audit/browser-runner-evidence-v1.json`,
@@ -341,7 +341,7 @@ empty, pending, malformed, or mismatched fields.
 
 The eight external records are counted release-audit inputs, not narrative
 claims. Inventory equality proves record completeness, not successful
-verification. For Beta 8, five are mandatory PASS gates: `EXT-CANARY`,
+verification. For Beta 9, five are mandatory PASS gates: `EXT-CANARY`,
 `EXT-ADJUDICATION`, `EXT-FINDINGS`, `EXT-HOSTED-WINDOWS`, and `EXT-OWNER`.
 `EXT-HOST` is visibly `DEFERRED_PRERELEASE`/`DEFERRED`, while `EXT-DEVICE` and
 `EXT-REVIEWERS` retain their exact optional states. The host deferral is not a
@@ -390,7 +390,7 @@ secret, provenance, or PWA check. Beta 4 alone uses the later, explicit
 2026-08-09 owner skip below; that skip is visible non-passing missing evidence,
 not canary reconciliation.
 
-For Beta 8, the Beta 4 canary exception is expired. `EXT-CANARY` must instead
+For Beta 9, the Beta 4 canary exception is expired. `EXT-CANARY` must instead
 be exact `RECONCILED` with canonical evidence and report `PASS`, while
 `EXT-HOST` remains exact digest-bound `DEFERRED_PRERELEASE`/`DEFERRED`.
 

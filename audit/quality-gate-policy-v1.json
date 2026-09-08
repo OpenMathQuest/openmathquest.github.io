@@ -386,7 +386,7 @@
       "legacyViolationCeilings": {
         "javascript": {
           "cyclomatic": 0,
-          "abcMagnitude": 59,
+          "abcMagnitude": 56,
           "cognitive": 4,
           "functionLines": 3,
           "maxNesting": 0
@@ -514,7 +514,7 @@
       },
       {
         "path": "audit/tests/pwa-release.test.mjs",
-        "maximumLines": 1918
+        "maximumLines": 1909
       },
       {
         "path": "audit/tests/qa-tour.test.mjs",

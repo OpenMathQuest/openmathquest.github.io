@@ -218,26 +218,30 @@ test("generator, worker, page, and browser audit share one exact explicit shell 
   );
 });
 
-async function assertPreparedRelease(preparedManifestText, preparedWorker) {
-  const preparedManifest = JSON.parse(preparedManifestText);
+function assertReleaseManifestIdentity(manifest) {
   assert.deepEqual(
     {
-      schemaVersion: preparedManifest.schemaVersion,
-      release: preparedManifest.release,
-      buildId: preparedManifest.buildId,
-      cacheName: preparedManifest.cacheName,
-      entryPath: preparedManifest.entryPath,
-      excludedPaths: preparedManifest.excludedPaths,
+      schemaVersion: manifest.schemaVersion,
+      release: manifest.release,
+      buildId: manifest.buildId,
+      cacheName: manifest.cacheName,
+      entryPath: manifest.entryPath,
+      excludedPaths: manifest.excludedPaths,
     },
     {
       schemaVersion: 1,
-      release: "1.0.0-beta.8",
-      buildId: "math-quest-pwa-v1.0.0-beta.8",
-      cacheName: "math-quest-static-v1.0.0-beta.8",
+      release: "1.0.0-beta.9",
+      buildId: "math-quest-pwa-v1.0.0-beta.9",
+      cacheName: "math-quest-static-v1.0.0-beta.9",
       entryPath: "./index.html",
       excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     },
   );
+}
+
+async function assertPreparedRelease(preparedManifestText, preparedWorker) {
+  const preparedManifest = JSON.parse(preparedManifestText);
+  assertReleaseManifestIdentity(preparedManifest);
   assert.deepEqual(
     preparedManifest.entries.map((entry) => [entry.path, entry.mime]),
     RELEASE_ENTRY_SPECS,
@@ -309,7 +313,7 @@ async function createFreezeFixture(temporaryRoot, originalWorker) {
     await readFile(path.join(root, "tools", "build-pwa-release-manifest.mjs")),
   );
   await writeFile(path.join(freezeFixture, "sw.js"), originalWorker);
-  await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.8\n", "utf8");
+  await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.9\n", "utf8");
   await copyFrozenEntryInputs(freezeFixture);
   return { freezeFixture, fixtureToolPath };
 }
@@ -387,32 +391,7 @@ test("the generator prepares a self-consistent candidate without mutating the fr
   }
 });
 
-test("Beta 8 release-shell manifest binds every declared byte", async () => {
-  const [text, worker] = await Promise.all([
-    readFile(path.join(root, "release-shell-v1.json"), "utf8"),
-    readFile(path.join(root, "sw.js"), "utf8"),
-  ]);
-  assert.equal(text.endsWith("\n"), true);
-  assert.equal(text.includes("\r"), false);
-  const manifest = JSON.parse(text);
-  assert.deepEqual(
-    {
-      schemaVersion: manifest.schemaVersion,
-      release: manifest.release,
-      buildId: manifest.buildId,
-      cacheName: manifest.cacheName,
-      entryPath: manifest.entryPath,
-      excludedPaths: manifest.excludedPaths,
-    },
-    {
-      schemaVersion: 1,
-      release: "1.0.0-beta.8",
-      buildId: "math-quest-pwa-v1.0.0-beta.8",
-      cacheName: "math-quest-static-v1.0.0-beta.8",
-      entryPath: "./index.html",
-      excludedPaths: ["./release-shell-v1.json", "./sw.js"],
-    },
-  );
+async function assertFrozenManifestEntries(manifest) {
   assert.equal(new Set(manifest.entries.map((entry) => entry.path)).size, manifest.entries.length);
   assert.deepEqual(
     manifest.entries.map((entry) => [entry.path, entry.mime]),
@@ -425,6 +404,18 @@ test("Beta 8 release-shell manifest binds every declared byte", async () => {
     assert.equal(entry.status, 200, entry.path);
     assert.match(entry.mime, /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/u, entry.path);
   }
+}
+
+test("Beta 9 release-shell manifest binds every declared byte", async () => {
+  const [text, worker] = await Promise.all([
+    readFile(path.join(root, "release-shell-v1.json"), "utf8"),
+    readFile(path.join(root, "sw.js"), "utf8"),
+  ]);
+  assert.equal(text.endsWith("\n"), true);
+  assert.equal(text.includes("\r"), false);
+  const manifest = JSON.parse(text);
+  assertReleaseManifestIdentity(manifest);
+  await assertFrozenManifestEntries(manifest);
   assert.match(
     worker,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${sha256(Buffer.from(text, "utf8"))}";`, "u"),
@@ -1126,7 +1117,7 @@ function snapshotFixtureBytes() {
   const releaseManifestBytes = Buffer.from(
     `${JSON.stringify({
       schemaVersion: 1,
-      release: "1.0.0-beta.8",
+      release: "1.0.0-beta.9",
       buildId: "fixture",
       cacheName: "fixture",
       entryPath: "./index.html",
@@ -1268,9 +1259,9 @@ async function loadServiceWorkerFixture() {
   }));
   const releaseManifest = {
     schemaVersion: 1,
-    release: "1.0.0-beta.8",
-    buildId: "math-quest-pwa-v1.0.0-beta.8",
-    cacheName: "math-quest-static-v1.0.0-beta.8",
+    release: "1.0.0-beta.9",
+    buildId: "math-quest-pwa-v1.0.0-beta.9",
+    cacheName: "math-quest-static-v1.0.0-beta.9",
     entryPath: "./index.html",
     excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     entries,
@@ -1288,7 +1279,7 @@ async function loadServiceWorkerFixture() {
     workerText,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${expectedManifestHash}";`, "u"),
   );
-  const logicalBeta8Name = "math-quest-static-v1.0.0-beta.8";
+  const logicalBeta8Name = "math-quest-static-v1.0.0-beta.9";
   const beta8Name = `${logicalBeta8Name}-${expectedManifestHash}`;
   const publicBeta3PhysicalName =
     "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7";

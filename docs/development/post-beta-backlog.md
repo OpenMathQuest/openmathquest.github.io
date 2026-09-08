@@ -1371,6 +1371,27 @@ The final nine-stage AI-change run includes the normal development audit in its
 tests stage. Its frozen report supplies completion evidence; release
 qualification, external canary evidence and publication remain separate.
 
+### Refactor acceptance and Beta 9 handoff — 2026-09-08
+
+The refactor passed all nine development acceptance stages on staged tree
+`4ba8fbdc3dd37f0a4252b76b584632036ed92ced`, subsequently committed as
+`04c34d7fc0709010b1d2527ca23f72c38fd620bc`. Initial and final source bindings
+match, no findings remain, and fresh engine branch coverage is 90.5 percent.
+Report SHA-256:
+`de0281b3b42a4203549aa49156d29195401f9a17f395da06bb4bf35fcce7f3ec`.
+Live lint warnings/errors are zero. Native inline-script legacy exceptions
+remain 175/92/84/13/3 and PowerShell 6/3/4/0/0 for cyclomatic/ABC/cognitive/
+function-line/nesting counts, under unchanged no-regression protections.
+
+The owner has now requested a new beta. PB-055 records the Beta 9 release
+scope and preserved evidence requirements. Release preparation advances
+version identifiers, preserves historical Beta 8 evidence, and resets current
+qualification authorities to pending. The differential comparator validates
+both versions against their own VERSION authorities and compares only the
+declared product-version fields using the baseline value; all other constants,
+state fields and serialized bytes remain under exact comparison. This release
+metadata projection does not rewrite R0 or substitute an engine implementation.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,

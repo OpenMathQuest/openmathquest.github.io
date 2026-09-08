@@ -121,7 +121,7 @@ function qaReportHarness({
   const reportRecords = records ?? completeQaRecords();
   const context = qaReportContext(effects, anchors, { engine, share, shareThrows });
   const source = `(()=>{"use strict";
-    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.8",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.8";
+    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.9",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.9";
     let childName="CHILD-NAME-SECRET";
     let lab={saveBytes:effects.storedSave,qaTour:true,qaComplete:effects.complete,qaIndex:49,qaRecords:structuredClone(effects.records),qaSubmitted:false,qaSubmitNotice:"",qaBusy:false,integrityError:effects.integrityError};
     let ui={screen:"lab",world:"forest"};

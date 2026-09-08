@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { loadReleaseVersionComparison, comparableReleaseConstants, comparableReleaseState, comparableReleaseExport } from "./release-version-comparison.mjs";
 import { fileURLToPath } from "node:url";
 import { evaluateEngine, extractEngineFromPageBytes, loadShippedEngine } from "./engine-loader.mjs";
 import { hermeticGit } from "./repository-code-map.mjs";
@@ -325,11 +326,11 @@ function addStageObservations(observations, engine) {
   }
 }
 
-function addStateObservations(observations, engine) {
+function addStateObservations(observations, engine, version) {
   for (const playDay of [0, 21_000, 24_000]) {
     const state = engine.createInitialState(playDay);
-    addObservation(observations, "state:" + playDay, state);
-    addObservation(observations, "state-export:" + playDay, engine.exportState(state));
+    addObservation(observations, "state:" + playDay, comparableReleaseState(state, version));
+    addObservation(observations, "state-export:" + playDay, comparableReleaseExport(engine.exportState(state), version));
     addObservation(observations, "queue:" + playDay, engine.buildSessionQueue(state, { playDay, seed: 0x51f15e }));
   }
 }
@@ -356,10 +357,10 @@ function addPlacementObservations(observations, engine) {
   }
 }
 
-function engineObservations(engine, semanticDiscovery = discoverSemanticWitnesses(engine)) {
+function engineObservations(engine, semanticDiscovery, version) {
   const observations = [];
   addObservation(observations, "api", Object.keys(engine).sort());
-  addObservation(observations, "constants", engine.CONSTANTS);
+  addObservation(observations, "constants", comparableReleaseConstants(engine.CONSTANTS, version));
   addObservation(observations, "levels", engine.LEVELS);
   addObservation(observations, "skills", engine.SKILLS);
   addObservation(observations, "curriculum-hash", engine.CURRICULUM_MANIFEST_SHA256);
@@ -374,7 +375,7 @@ function engineObservations(engine, semanticDiscovery = discoverSemanticWitnesse
   addGeneratedCorpusObservations(observations, engine, semanticDiscovery.requests);
   addSemanticSupportCaseObservations(observations, engine);
   addStageObservations(observations, engine);
-  addStateObservations(observations, engine);
+  addStateObservations(observations, engine, version);
   addPlacementObservations(observations, engine);
   addDefaultQuestionObservations(observations, engine);
   return Object.freeze(observations);
@@ -393,19 +394,20 @@ function observationFindings(baseline, candidate) {
   return findings;
 }
 
-function differentialContext(baselineEngine, tutorialAuthority) {
+function differentialContext(baselineEngine, tutorialAuthority, releaseVersions) {
   const discovery = discoverSemanticWitnesses(baselineEngine);
   return Object.freeze({
     discovery,
     baselineEngine,
     tutorialAuthority,
-    baseline: engineObservations(baselineEngine, discovery),
+    releaseVersions,
+    baseline: engineObservations(baselineEngine, discovery, releaseVersions.baseline),
   });
 }
 
 function compareCandidate(context, candidateEngine) {
   const tutorial = tutorialMetadataComparison(context.baselineEngine, candidateEngine, context.tutorialAuthority);
-  const candidate = engineObservations(tutorial.engine, context.discovery);
+  const candidate = engineObservations(tutorial.engine, context.discovery, context.releaseVersions.candidate);
   const findings = [...context.discovery.findings, ...observationFindings(context.baseline, candidate)];
   return Object.freeze({
     baselineCount: context.baseline.length,
@@ -418,12 +420,13 @@ function compareCandidate(context, candidateEngine) {
     semanticWitnessRegistrySha256: context.discovery.witnessRegistrySha256,
     semanticSupportCaseIds: Object.freeze(SEMANTIC_SUPPORT_CASES.map((record) => record.id)),
     approvedMetadataTransition: Object.freeze(tutorial.evidence),
+    approvedReleaseVersionTransition: context.releaseVersions.evidence,
     findings: Object.freeze(findings),
   });
 }
 
-function differentialFindings(baselineEngine, candidateEngine, tutorialAuthority) {
-  return compareCandidate(differentialContext(baselineEngine, tutorialAuthority), candidateEngine);
+function differentialFindings(baselineEngine, candidateEngine, tutorialAuthority, releaseVersions) {
+  return compareCandidate(differentialContext(baselineEngine, tutorialAuthority, releaseVersions), candidateEngine);
 }
 
 export function loadEngineFromGit(commit, relativePath = "index.html") {
@@ -438,7 +441,7 @@ export function loadEngineFromGit(commit, relativePath = "index.html") {
 export async function compareWithBaseline(commit, indexPath = path.join(root, "index.html")) {
   const baselineEngine = loadEngineFromGit(commit);
   const { engine: candidateEngine } = await loadShippedEngine(indexPath);
-  return differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit));
+  return differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit));
 }
 
 function mutationDetected(context, mutant, observationPrefix) {
@@ -558,7 +561,7 @@ function responseMutationFailures(context, engine) {
 export async function differentialMutationFailures(commit) {
   const baselineEngine = loadEngineFromGit(commit);
   const { engine } = await loadShippedEngine(path.join(root, "index.html"));
-  const context = differentialContext(baselineEngine, await loadTutorialMetadataAuthority(commit));
+  const context = differentialContext(baselineEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit));
   return Object.freeze([
     ...tutorialMetadataMutationFailures(baselineEngine, engine, context.tutorialAuthority),
     ...semanticDiscoveryMutationFailures(context.discovery),

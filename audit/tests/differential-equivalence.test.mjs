@@ -3,12 +3,14 @@ import test from "node:test";
 import { loadQualityGatePolicy } from "../lib/quality-gate-policy.mjs";
 import { compareWithBaseline, differentialMutationFailures, loadEngineFromGit } from "../lib/differential-equivalence.mjs";
 import "./tutorial-metadata-transition.test.mjs";
+import "./release-version-comparison.test.mjs";
 
 test("the refactored engine remains differentially equivalent to the immutable R0 engine", async () => {
   const policy = await loadQualityGatePolicy();
   const result = await compareWithBaseline(policy.baselineCommit);
   assert.equal(result.baselineCount, result.candidateCount);
   assert.equal(result.candidateCount, 9_300);
+  assert.equal(result.approvedReleaseVersionTransition.status, "VERIFIED_DECLARED_RELEASE_VERSION");
   assert.equal(result.approvedMetadataTransition.status, "VERIFIED_APPROVED_METADATA_TRANSITION");
   assert.equal(result.approvedMetadataTransition.decisionId, "ART-DEC-013");
   assert.equal(result.discoveryRequestCount, 48_384);

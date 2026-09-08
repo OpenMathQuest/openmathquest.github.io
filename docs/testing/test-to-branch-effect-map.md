@@ -1013,7 +1013,7 @@ request's observed status instead of assuming every allowed request returned
 | `EXT-ADJUDICATION` | Independent adjudication must be `APPROVED`, recommend `RELEASE`, and carry its exact digest. Pending, missing, contrary, or malformed adjudication blocks. |
 | `EXT-FINDINGS` | Disposition must be `COMPLETE`, with zero open Critical/High, zero unaccepted Medium, and zero unrecorded Low findings. Each nonzero-count mutant blocks independently. |
 | `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest and clearance fields must equal the canonical qualification browser/runner evidence bytes. The final audit independently requires a complete exact GitHub-hosted tuple; because `windows-latest` floats, equality between the two valid tuples is diagnostic rather than a gate. Local, malformed, pending, stale, falsely labelled, or digest-mismatched evidence blocks. |
-| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.8`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
+| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.9`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
 
 The suite preserves the historical Beta 4 effect test for
 `DIRECT_EVIDENCE_SUCCESSOR_V1`: the final Beta 4
@@ -1140,3 +1140,12 @@ chain controls reject missing imported modules and insecure flags inside each
 module. The canary rights control mutates all three runner modules independently;
 the focused canary command includes the runner-effect test file. Routing checks
 require every extracted fixture/module to select its protecting suite.
+
+Release-version comparison executes both immutable R0 and shipped engines.
+It verifies CONSTANTS.PRODUCT_VERSION, initial-state productVersion and the
+single canonical exported productVersion against each revision's VERSION.
+Only those three fields are compared using the baseline version; other
+constants, progress and serialized bytes retain exact comparisons. Negative
+controls reject wrong, missing and duplicate version fields, and changes to
+schema, earned level and export formatting remain observable. Actual baseline
+saves must load into the current engine with all other state unchanged.

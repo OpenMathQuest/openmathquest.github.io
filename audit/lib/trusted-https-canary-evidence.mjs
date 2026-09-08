@@ -101,7 +101,7 @@ function canaryProvenanceIssues(value, issues) {
   issueIf(issues, value.repository !== "OpenMathQuest/openmathquest.github.io", "repository must be the public Math Quest repository");
   issueIf(issues, value.ref !== "refs/heads/main", "ref must be protected main");
   issueIf(issues, !SHA40.test(String(value.candidateSha || "")), "candidateSha must be 40 lowercase hexadecimal characters");
-  issueIf(issues, value.intendedReleaseTag !== TRUSTED_HTTPS_CANARY_TAG, "intendedReleaseTag must be the Beta 8 tag");
+  issueIf(issues, value.intendedReleaseTag !== TRUSTED_HTTPS_CANARY_TAG, "intendedReleaseTag must be the Beta 9 tag");
   issueIf(issues, value.workflowFile !== TRUSTED_HTTPS_CANARY_WORKFLOW, "workflowFile must identify the trusted-HTTPS canary workflow");
 }
 
@@ -182,9 +182,9 @@ function canaryNetworkProofIssues(value, failed, issues) {
 function canaryCacheProofIssues(value, failed, issues) {
   issueIf(issues, !exactOrderedKeys(value.cacheProof, CACHE_PROOF_KEYS), "cacheProof must use the exact closed schema");
   const cacheProof = value.cacheProof ?? {};
-  issueIf(issues, !/^math-quest-static-v1\.0\.0-beta\.8-[a-f0-9]{64}$/u.test(String(cacheProof.physicalCacheName || "")) && !(failed && cacheProof.physicalCacheName === null), "physical cache name must bind the logical name and detached manifest SHA-256");
+  issueIf(issues, !/^math-quest-static-v1\.0\.0-beta\.9-[a-f0-9]{64}$/u.test(String(cacheProof.physicalCacheName || "")) && !(failed && cacheProof.physicalCacheName === null), "physical cache name must bind the logical name and detached manifest SHA-256");
   issueIf(issues, value.reconciliationState === "RECONCILED"
-    && cacheProof.physicalCacheName !== `math-quest-static-v1.0.0-beta.8-${value.runtimeIdentity?.candidateReleaseManifestSha256}`, "physical cache name must exactly bind the candidate release-manifest SHA-256");
+    && cacheProof.physicalCacheName !== `math-quest-static-v1.0.0-beta.9-${value.runtimeIdentity?.candidateReleaseManifestSha256}`, "physical cache name must exactly bind the candidate release-manifest SHA-256");
   for (const key of ["expectedEntryCount", "waitingEntryCount", "activeEntryCount", "offlineEntryCount", "repairedEntryCount", "unexpectedCacheCount", "stagingCacheCount"]) {
     issueIf(issues, !validNonnegativeOrNull(cacheProof[key], failed), `${key} is invalid`);
   }
@@ -300,9 +300,9 @@ function canaryReconciledOfflineIssues(value, issues) {
   issueIf(issues, offlineProof.responseFromServiceWorker !== true
     || offlineProof.originPortClosed !== true
     || offlineProof.backendPortClosed !== true
-    || offlineProof.readinessRelease !== "1.0.0-beta.8"
-    || offlineProof.readinessBuildId !== "math-quest-pwa-v1.0.0-beta.8"
-    || offlineProof.readinessCacheIdentity !== "math-quest-static-v1.0.0-beta.8", "RECONCILED evidence requires a service-worker cold response with both server ports closed and exact readiness identity");
+    || offlineProof.readinessRelease !== "1.0.0-beta.9"
+    || offlineProof.readinessBuildId !== "math-quest-pwa-v1.0.0-beta.9"
+    || offlineProof.readinessCacheIdentity !== "math-quest-static-v1.0.0-beta.9", "RECONCILED evidence requires a service-worker cold response with both server ports closed and exact readiness identity");
 }
 
 function canaryReconciledProgressIssues(value, issues) {
@@ -313,7 +313,7 @@ function canaryReconciledProgressIssues(value, issues) {
     || progress.retiredProjectionFieldCount < 1
     || progress.freshProjectionFieldCount < 1
     || progress.retainedMarkerSha256 !== RETAINED_BETA1_COMPLETE_SHA256
-    || progress.retainedNoticeSha256 !== RETAINED_BETA1_FRESH_START_NOTICE_SHA256, "RECONCILED evidence requires byte-identical retired Beta 1 retention, an independently fresh protected Beta 8 state, and the exact visible grown-up notice");
+    || progress.retainedNoticeSha256 !== RETAINED_BETA1_FRESH_START_NOTICE_SHA256, "RECONCILED evidence requires byte-identical retired Beta 1 retention, an independently fresh protected Beta 9 state, and the exact visible grown-up notice");
 }
 
 function canaryReconciledPrivacyIssues(value, issues) {

@@ -976,6 +976,29 @@ The one complete certification gauntlet and cadence-required Deep UX Census run
 only on the exact successor. Only that successor may be tagged, released, or
 deployed as Beta 8.
 
+## Owner-authorized Beta 9 release
+
+On 2026-09-08, the project owner requested publication of a new beta for the
+completed refactor. The next unused release line is `v1.0.0-beta.9`. This
+authorizes its ordinary end-to-end release operations under the standing owner
+interaction policy. It does not select the optional physical-device or
+six-reviewer cycles; both remain `OPTIONAL_NOT_RUN`. The prerelease host
+qualification deferral remains visible and is not a host-approval claim.
+
+Beta 9 uses `RELEASE_EVIDENCE_SUCCESSOR_V2`. Its protected-main qualification
+commit contains final product/runtime/PWA bytes and the four pending evidence
+authorities. Fresh hosted-Windows observation and reconciled trusted-HTTPS
+canary evidence must bind that exact qualification commit. The immediate,
+non-merge, sole-child successor changes exactly `PUBLICATION_CLEARANCE.md`,
+`audit/browser-runner-evidence-v1.json`,
+`audit/release-evidence-bundle-v1.json`, and
+`audit/trusted-https-canary-v1.json`; every other byte remains unchanged.
+The final complete certification gauntlet runs once on that frozen successor
+immediately before its tag, release and deployment. Odd-numbered Beta 9 is
+excluded by the existing alternating-beta Deep UX Census cadence, which must
+be recorded as an exclusion rather than a pass. Ordinary bounded independent
+review and all other mandatory release gates remain required.
+
 ## Certification framework entry points
 
 Treat the following as one modular certification system and keep their

@@ -124,12 +124,13 @@ test("cross-record release identity contradictions fail closed", async () => {
   for (const mutate of [
     (bundle) => { bundle.records.ownerAuthorization.releaseTag = "v9.9.9-beta.9"; },
     (bundle) => { bundle.records.canaryReconciliation.candidateSha = "0".repeat(40); },
-    (bundle) => { bundle.records.adjudication.decisionBasis = reviewed ? "RECORDED_BETA9_CLEARANCE" : "RECORDED_BETA8_CLEARANCE"; },
-    (bundle) => { bundle.releaseTag = "v1.0.0-beta.9"; },
+    (bundle) => { bundle.records.adjudication.decisionBasis = reviewed ? "RECORDED_BETA10_CLEARANCE" : "RECORDED_BETA9_CLEARANCE"; },
+    (bundle) => { bundle.releaseTag = "v1.0.0-beta.10"; },
     (bundle) => { bundle.lifecycleState = reviewed ? "QUALIFICATION_PENDING" : "EVIDENCE_REVIEWED"; },
   ]) {
     const bundle = structuredClone(baseline);
     mutate(bundle);
+    assert.notDeepEqual(bundle, baseline, "negative control must change the release record");
     await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
     const loaded = await loadReleaseEvidenceBundle(bundlePath);
     assert.equal(loaded.valid, false);
@@ -138,14 +139,18 @@ test("cross-record release identity contradictions fail closed", async () => {
   await rm(bundlePath, { force: true });
 });
 
-test("a Beta 8 qualification bundle is structurally valid but cannot claim release readiness", async () => {
-  const bundlePath = path.join(root, "audit", ".tmp-release-evidence-pending.json");
-  const canaryPath = path.join(root, "audit", "trusted-https-canary-v1.json");
-  const originalCanary = await readFile(canaryPath, "utf8");
-  const baseline = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+function assertPendingQualificationResult(loaded) {
+  assert.equal(loaded.valid, true, loaded.issues.join("; "));
+  assert.equal(loaded.releaseReady, false);
+  assert.equal(loaded.lifecycleState, "QUALIFICATION_PENDING");
+  assert.equal(loaded.bindings["EXT-CANARY"].state, "PENDING");
+  assert.equal(loaded.bindings["REVIEW-BUNDLE"].state, "QUALIFICATION_PENDING");
+}
+
+function pendingQualificationBundle(baseline) {
   const bundle = structuredClone(baseline);
   bundle.lifecycleState = "QUALIFICATION_PENDING";
-  bundle.releaseTag = "v1.0.0-beta.8";
+  bundle.releaseTag = "v1.0.0-beta.9";
   bundle.qualificationCommitSha = "PENDING";
   bundle.reviewedAtUtc = "PENDING";
   bundle.expiresAtUtc = "PENDING";
@@ -171,28 +176,37 @@ test("a Beta 8 qualification bundle is structurally valid but cannot claim relea
   Object.assign(bundle.records.ownerAuthorization, {
     state: "PENDING", digestMode: "PENDING", releaseTag: "PENDING", protectedRef: "PENDING", authorizationScope: "PENDING",
   });
-  const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8" };
+  return bundle;
+}
+
+async function assertPendingQualificationMutations(bundlePath, canaryPath, bundle, pendingCanary) {
+  const loaded = await loadReleaseEvidenceBundle(bundlePath);
+  assertPendingQualificationResult(loaded);
+
+  await writeFile(canaryPath, `${JSON.stringify({ ...pendingCanary, unexpected: true }, null, 2)}\n`, "utf8");
+  const openCanary = await loadReleaseEvidenceBundle(bundlePath);
+  assert.equal(openCanary.valid, false);
+  assert.ok(openCanary.issues.some((issue) => issue.includes("exact ordered schema")));
+  await writeFile(canaryPath, `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
+
+  bundle.records.canaryReconciliation.state = "RECONCILED";
+  await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+  const mixed = await loadReleaseEvidenceBundle(bundlePath);
+  assert.equal(mixed.valid, false);
+  assert.ok(mixed.issues.some((issue) => issue.includes("must be equal to constant")));
+}
+
+test("a Beta 9 qualification bundle is structurally valid but cannot claim release readiness", async () => {
+  const bundlePath = path.join(root, "audit", ".tmp-release-evidence-pending.json");
+  const canaryPath = path.join(root, "audit", "trusted-https-canary-v1.json");
+  const originalCanary = await readFile(canaryPath, "utf8");
+  const baseline = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
+  const bundle = pendingQualificationBundle(baseline);
+  const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.9" };
   await writeFile(canaryPath, `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
   await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
   try {
-    const loaded = await loadReleaseEvidenceBundle(bundlePath);
-    assert.equal(loaded.valid, true, loaded.issues.join("; "));
-    assert.equal(loaded.releaseReady, false);
-    assert.equal(loaded.lifecycleState, "QUALIFICATION_PENDING");
-    assert.equal(loaded.bindings["EXT-CANARY"].state, "PENDING");
-    assert.equal(loaded.bindings["REVIEW-BUNDLE"].state, "QUALIFICATION_PENDING");
-
-    await writeFile(canaryPath, `${JSON.stringify({ ...pendingCanary, unexpected: true }, null, 2)}\n`, "utf8");
-    const openCanary = await loadReleaseEvidenceBundle(bundlePath);
-    assert.equal(openCanary.valid, false);
-    assert.ok(openCanary.issues.some((issue) => issue.includes("exact ordered schema")));
-    await writeFile(canaryPath, `${JSON.stringify(pendingCanary, null, 2)}\n`, "utf8");
-
-    bundle.records.canaryReconciliation.state = "RECONCILED";
-    await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
-    const mixed = await loadReleaseEvidenceBundle(bundlePath);
-    assert.equal(mixed.valid, false);
-    assert.ok(mixed.issues.some((issue) => issue.includes("must be equal to constant")));
+    await assertPendingQualificationMutations(bundlePath, canaryPath, bundle, pendingCanary);
   } finally {
     await rm(bundlePath, { force: true });
     await writeFile(canaryPath, originalCanary, "utf8");

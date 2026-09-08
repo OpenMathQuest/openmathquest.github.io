@@ -101,7 +101,7 @@ function cleanReport(plan, mode = "FULL") {
 test("alternating beta cadence starts with Beta 4 and never applies to stable or malformed versions", () => {
   assert.deepEqual(DEEP_UX_BETA_CADENCE, { firstRequiredBetaOrdinal: 4, modulus: 2, remainder: 0 });
   for (const version of ["1.0.0-beta.4", "1.0.0-beta.6", "1.0.0-beta.8", "2.3.1-beta.18"]) assert.equal(deepUxCensusRequiredForVersion(version), true, version);
-  for (const version of ["1.0.0-beta.1", "1.0.0-beta.3", "1.0.0-beta.5", "1.0.0-beta.7", "1.0.0", "1.0.0-rc.4", "v1.0.0-beta.4", "1.0.0-beta.04"]) assert.equal(deepUxCensusRequiredForVersion(version), false, version);
+  for (const version of ["1.0.0-beta.1", "1.0.0-beta.3", "1.0.0-beta.5", "1.0.0-beta.7", "1.0.0-beta.9", "1.0.0", "1.0.0-rc.4", "v1.0.0-beta.4", "1.0.0-beta.04"]) assert.equal(deepUxCensusRequiredForVersion(version), false, version);
 });
 
 test("only later-grade short-landscape questions may require deliberate outer scrolling", () => {

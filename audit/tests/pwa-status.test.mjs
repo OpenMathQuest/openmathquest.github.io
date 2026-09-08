@@ -37,9 +37,9 @@ const READINESS_STATUS_CASES = Object.freeze([
 const READINESS_NOW = Date.parse("2026-08-28T12:00:00.000Z");
 const READINESS_REQUIRED_PATHS = Object.freeze(["./index.html", "./PRIVACY.md"]);
 const READINESS_CONTRACT = Object.freeze({
-  release: "1.0.0-beta.8",
-  buildId: "math-quest-pwa-v1.0.0-beta.8",
-  cacheIdentity: "math-quest-static-v1.0.0-beta.8",
+  release: "1.0.0-beta.9",
+  buildId: "math-quest-pwa-v1.0.0-beta.9",
+  cacheIdentity: "math-quest-static-v1.0.0-beta.9",
   requiredPaths: READINESS_REQUIRED_PATHS,
   now: () => READINESS_NOW,
   expectedType: "MATH_QUEST_READINESS_V1",

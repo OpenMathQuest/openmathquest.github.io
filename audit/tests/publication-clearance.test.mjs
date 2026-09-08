@@ -162,7 +162,7 @@ function pendingClearance() {
 async function beta8PendingBundle() {
   const bundle = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
   bundle.lifecycleState = "QUALIFICATION_PENDING";
-  bundle.releaseTag = "v1.0.0-beta.8";
+  bundle.releaseTag = "v1.0.0-beta.9";
   bundle.qualificationCommitSha = "PENDING";
   bundle.reviewedAtUtc = "PENDING";
   bundle.expiresAtUtc = "PENDING";
@@ -445,7 +445,7 @@ test("the Git observer proves an actual immediate Beta 7 runtime-equivalent evid
   }
 });
 
-test("the Beta 8 release evidence successor changes the four closed evidence authorities and no runtime path", () => {
+test("the current beta release evidence successor changes the four closed evidence authorities and no runtime path", () => {
   const candidateCommitSha = "1".repeat(40);
   const qualificationCommitSha = "2".repeat(40);
   const baseline = {
@@ -458,8 +458,8 @@ test("the Beta 8 release evidence successor changes the four closed evidence aut
     qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
     qualificationCanaryEvidenceStatus: "PENDING",
     qualificationAuthoritiesValid: true,
-    qualificationReleaseTag: "v1.0.0-beta.8",
-    expectedReleaseTag: "v1.0.0-beta.8",
+    qualificationReleaseTag: "v1.0.0-beta.9",
+    expectedReleaseTag: "v1.0.0-beta.9",
   };
   const exact = evaluateReleaseEvidenceSuccessorV2(baseline);
   assert.equal(exact.valid, true, exact.issues.join("; "));
@@ -474,7 +474,7 @@ test("the Beta 8 release evidence successor changes the four closed evidence aut
     ["bundle already reviewed", { qualificationBundleLifecycleState: "EVIDENCE_REVIEWED" }],
     ["canary already reconciled", { qualificationCanaryEvidenceStatus: "RECONCILED" }],
     ["malformed qualification authority", { qualificationAuthoritiesValid: false }],
-    ["wrong release tag", { qualificationReleaseTag: "v1.0.0-beta.9" }],
+    ["wrong release tag", { qualificationReleaseTag: "v1.0.0-beta.10" }],
   ]) {
     const result = evaluateReleaseEvidenceSuccessorV2({ ...baseline, ...mutation });
     assert.equal(result.valid, false, label);
@@ -502,7 +502,7 @@ test("the V2 Git observer proves an actual four-file immediate evidence successo
       runnerImageOS: "PENDING",
       runnerImageVersion: "PENDING",
     };
-    const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8" };
+    const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.9" };
     await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
     await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
     await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
@@ -516,13 +516,13 @@ test("the V2 Git observer proves an actual four-file immediate evidence successo
     await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
     git("add", ".");
     git("commit", "-m", "evidence successor");
-    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
     assert.equal(observed.valid, true, observed.issues.join("; "));
     assert.equal(observed.policy, RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
     assert.deepEqual(observed.changedPaths, RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2);
     assert.match(observed.qualificationPayloadSha256, /^[a-f0-9]{64}$/u);
     assert.match(observed.qualificationPayloadTreeOid, /^[a-f0-9]{40}$/u);
-    const wrongRelease = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
+    const wrongRelease = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.10");
     assert.equal(wrongRelease.valid, false);
     assert.ok(wrongRelease.issues.some((issue) => issue.includes("expected release tag")));
   } finally {
@@ -542,7 +542,7 @@ test("the V2 Git observer rejects malformed pending authorities even when all fo
       schemaVersion: 1, status: "PENDING", browserProductName: "PENDING", browserFullVersion: "PENDING",
       browserExecutableSha256: "PENDING", runnerImageOS: "PENDING", runnerImageVersion: "PENDING",
     };
-    const openCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8", unexpected: true };
+    const openCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.9", unexpected: true };
     await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
     await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
     await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
@@ -556,7 +556,7 @@ test("the V2 Git observer rejects malformed pending authorities even when all fo
     await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
     git("add", ".");
     git("commit", "-m", "evidence successor");
-    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
     assert.equal(observed.valid, false);
     assert.ok(observed.issues.some((issue) => issue.includes("complete canonical pending evidence authorities")));
   } finally {
@@ -693,7 +693,7 @@ test("the owner-directed host deferral is non-passing and release-eligible only 
 });
 
 test("the Beta 4 canary skip is historical and cannot authorize Beta 8", () => {
-  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.8");
+  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.9");
   assert.equal(BETA4_RELEASE_TAG, "v1.0.0-beta.4");
   assert.deepEqual(BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS, ["EXT-CANARY"]);
   const parsed = parsePublicationClearance(deferredHostClearance({

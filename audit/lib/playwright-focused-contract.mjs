@@ -87,7 +87,7 @@ export async function playwrightFocusedExpectedServerIdentity(root) {
   return {
     schemaVersion: 1,
     identity: "math-quest-local-server:v2",
-    release: "1.0.0-beta.8",
+    release: "1.0.0-beta.9",
     port: 8771,
     rootId: sha256(Buffer.from(normalizedRoot, "utf8")),
     servedPayloadSha256: sha256(Buffer.from(`${records.join("\n")}\n`, "utf8")),

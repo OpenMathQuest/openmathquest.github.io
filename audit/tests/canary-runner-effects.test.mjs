@@ -105,9 +105,9 @@ function assertCanaryRequestAndTlsSource(runnerText) {
 
 function assertCanaryNativeJourneySource(runnerText) {
   assert.match(runnerText, /selectionAnswerSource: beta1GradedSelectionAnswer\.toString\(\)/u);
-  assert.match(runnerText, /waitForCanaryHomeUpdate\(state\.candidatePage, "1\.0\.0-beta\.8"\)/u);
+  assert.match(runnerText, /waitForCanaryHomeUpdate\(state\.candidatePage, "1\.0\.0-beta\.9"\)/u);
   assert.match(runnerText, /activateCanaryHomeUpdate\(state\.candidatePage\)/u);
-  assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(state\.beta1Page, "1\.0\.0-beta\.8"\)/u);
+  assert.match(runnerText, /reloadCanaryCandidateFromBeta1\(state\.beta1Page, "1\.0\.0-beta\.9"\)/u);
   assert.match(runnerText, /RETIRED_BETA1_PRESERVED_FRESH_START/u);
   assert.match(runnerText, /MathQuestEngine\.exportState\(MathQuestEngine\.createInitialState\(state\.maxSeenPlayDay\)\)/u);
   assert.match(runnerText, /assert\.equal\(state\.protectedBytes, state\.expectedFreshBytes/u);

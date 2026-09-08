@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.49.0",
+  "version": "1.50.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -851,6 +851,10 @@
           "relationship": "VALIDATION_EXPECTATION"
         },
         {
+          "path": "audit/tests/release-version-comparison.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
           "path": "audit/tests/trusted-https-canary.test.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },
@@ -921,7 +925,8 @@
       ],
       "validators": [
         "audit/tests/engine-suite.mjs",
-        "audit/tests/pwa-release.test.mjs"
+        "audit/tests/pwa-release.test.mjs",
+        "audit/tests/release-version-comparison.test.mjs"
       ]
     },
     {
@@ -2586,6 +2591,29 @@
       ]
     },
     {
+      "id": "testing.release-version-comparison",
+      "owner": "audit/lib/release-version-comparison.mjs",
+      "owns": [
+        "testing.release-version-comparison.exact-field-projection",
+        "testing.release-version-comparison.version-authority"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/differential-equivalence.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/release-version-comparison.test.mjs"
+      ]
+    },
+    {
       "id": "testing.response-action-contract",
       "owner": "audit/tests/response-action-contract.mjs",
       "owns": [
@@ -3662,6 +3690,54 @@
       "id": "audit-publication-report.successor",
       "source": "audit/lib/release-evidence-successor.mjs",
       "target": "audit/lib/audit-publication-report.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-comparison",
+      "source": "audit/lib/release-version-comparison.mjs",
+      "target": "audit/lib/differential-equivalence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-comparison-git",
+      "source": "audit/lib/repository-code-map.mjs",
+      "target": "audit/lib/release-version-comparison.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-comparison-test",
+      "source": "audit/lib/release-version-comparison.mjs",
+      "target": "audit/tests/release-version-comparison.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "beta9.version-owner",
+      "source": "VERSION",
+      "target": "audit/lib/release-version-comparison.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-test-baseline",
+      "source": "audit/lib/differential-equivalence.mjs",
+      "target": "audit/tests/release-version-comparison.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-test-engine",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/tests/release-version-comparison.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-test-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/tests/release-version-comparison.test.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "beta9.version-test-registration",
+      "source": "audit/tests/release-version-comparison.test.mjs",
+      "target": "audit/tests/differential-equivalence.test.mjs",
       "kind": "CONSUMES"
     },
     {

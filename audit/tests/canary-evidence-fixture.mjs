@@ -75,7 +75,7 @@ function fixtureNetworkProof() {
 
 function fixtureCacheProof() {
   return {
-  physicalCacheName: `math-quest-static-v1.0.0-beta.8-${sha("c")}`,
+  physicalCacheName: `math-quest-static-v1.0.0-beta.9-${sha("c")}`,
   expectedEntryCount: 14,
   waitingEntryCount: 14,
   activeEntryCount: 14,
@@ -96,9 +96,9 @@ function fixtureOfflineProof() {
   originPortClosed: true,
   backendPortClosed: true,
   controllerScriptUrlSha256: sha("a"),
-  readinessRelease: "1.0.0-beta.8",
-  readinessBuildId: "math-quest-pwa-v1.0.0-beta.8",
-  readinessCacheIdentity: "math-quest-static-v1.0.0-beta.8",
+  readinessRelease: "1.0.0-beta.9",
+  readinessBuildId: "math-quest-pwa-v1.0.0-beta.9",
+  readinessCacheIdentity: "math-quest-static-v1.0.0-beta.9",
 };
 }
 

@@ -4,7 +4,7 @@ export const TRUSTED_HTTPS_CANARY_SCHEMA_VERSION = 1;
 export const TRUSTED_HTTPS_CANARY_KIND = "TRUSTED_HTTPS_CANARY_RECONCILIATION_V1";
 export const TRUSTED_HTTPS_CANARY_STATUS = "TECHNICAL_CANARY_NOT_RELEASE_CERTIFICATION";
 export const TRUSTED_HTTPS_CANARY_WORKFLOW = ".github/workflows/trusted-https-canary.yml";
-export const TRUSTED_HTTPS_CANARY_TAG = "v1.0.0-beta.8";
+export const TRUSTED_HTTPS_CANARY_TAG = "v1.0.0-beta.9";
 export const TRUSTED_HTTPS_CANARY_BETA1_TAG = "v1.0.0-beta.1";
 export const TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT = "140693bff04733ce890a0a8be2d7c9499dfa24cc";
 export const TRUSTED_HTTPS_CANARY_BETA1_COMMIT = "f989bf3bfe0c40824c4d2ab6f0ec2fb3450e314e";
@@ -15,7 +15,7 @@ export const PLAYWRIGHT_CORE_VERSION = "1.62.1";
 export const PLAYWRIGHT_CORE_SRI = "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==";
 export const RETAINED_BETA1_COMPLETE_VALUE = "beta1-retained-current-curriculum-v1";
 export const RETAINED_BETA1_COMPLETE_SHA256 = createHash("sha256").update(RETAINED_BETA1_COMPLETE_VALUE, "utf8").digest("hex");
-export const RETAINED_BETA1_FRESH_START_NOTICE = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 8 starts fresh so old mastery is not applied to changed skills.";
+export const RETAINED_BETA1_FRESH_START_NOTICE = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 9 starts fresh so old mastery is not applied to changed skills.";
 export const RETAINED_BETA1_FRESH_START_NOTICE_SHA256 = createHash("sha256").update(RETAINED_BETA1_FRESH_START_NOTICE, "utf8").digest("hex");
 export const EMPTY_PROFILE_PROCESS_SET_SHA256 = createHash("sha256").update("[]\n").digest("hex");
 export const TRUSTED_HTTPS_CANARY_CHECK_IDS = Object.freeze([

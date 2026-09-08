@@ -449,15 +449,15 @@ async function checkSameOriginRuntimeSwitch(state) {
     state.networkProof = await verifyDetachedHttpsResponses({ origin: state.origin, context: state.networkContext, snapshots: state.snapshots, persistentContext: state.context, profilePath: state.profilePath });
     await closeAuxiliaryContext(state.networkContext, state.context, state.profilePath);
     state.networkContext = null;
-  }, "The backend atomically switched Beta 1 to Beta 8 without changing scheme, host, port, or scope.");
+  }, "The backend atomically switched Beta 1 to Beta 9 without changing scheme, host, port, or scope.");
 }
 
 async function openCandidateCanaryPage(state) {
   state.candidatePage = await boundedBrowserOperation(
-    reloadCanaryCandidateFromBeta1(state.beta1Page, "1.0.0-beta.8"),
+    reloadCanaryCandidateFromBeta1(state.beta1Page, "1.0.0-beta.9"),
     state.context,
     state.profilePath,
-    "Playwright same-tab Beta 1 to Beta 8 candidate transition",
+    "Playwright same-tab Beta 1 to Beta 9 candidate transition",
   );
 }
 
@@ -473,7 +473,7 @@ async function checkCandidateWaitingCacheReady(state) {
     const retainedNotice = await observeCanaryRetainedFreshStartNotice(state.candidatePage);
     state.retainedFreshStartNoticeSha256 = sha256Bytes(retainedNotice);
     assert.equal(state.retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256);
-  }, "The original Beta 1 page deliberately reloaded into the exact Beta 8 candidate, visibly explained the fresh start to the grown-up, acquired the modern writer lease, reached Home, and observed a waiting worker only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 with no staging or extra candidate cache.");
+  }, "The original Beta 1 page deliberately reloaded into the exact Beta 9 candidate, visibly explained the fresh start to the grown-up, acquired the modern writer lease, reached Home, and observed a waiting worker only after every detached-manifest cache entry independently matched status, MIME, length, and SHA-256 with no staging or extra candidate cache.");
 }
 
 async function checkCandidateRealUiActivation(state) {
@@ -494,7 +494,7 @@ async function checkCandidateRealUiActivation(state) {
       const registration = await navigator.serviceWorker.getRegistration("./");
       return Boolean(navigator.serviceWorker.controller) && registration?.waiting === null;
     }, null, { timeout: 30_000 });
-    await waitForCanaryHomeUpdate(state.candidatePage, "1.0.0-beta.8");
+    await waitForCanaryHomeUpdate(state.candidatePage, "1.0.0-beta.9");
     await state.candidatePage.waitForFunction((priorTimeOrigin) => performance.timeOrigin !== priorTimeOrigin, initialDocumentIdentity.timeOrigin, { timeout: 30_000 });
     state.candidatePage.off("framenavigated", recordCandidateNavigation);
     assert.deepEqual(state.candidateMainFrameNavigations, [state.expectedCandidateReloadUrl]);
@@ -507,8 +507,8 @@ async function checkRetainedBeta1ExplicitReload(state) {
     assert.deepEqual(state.beta1MainFrameNavigations, []);
     assert.equal(await boundedPageEvaluate(state.retainedBeta1Page, state.context, state.profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.1");
     await state.retainedBeta1Page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-    await state.retainedBeta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.8", null, { timeout: 30_000 });
-    assert.equal(await boundedPageEvaluate(state.retainedBeta1Page, state.context, state.profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.8");
+    await state.retainedBeta1Page.waitForFunction(() => globalThis.MathQuestEngine?.CONSTANTS?.PRODUCT_VERSION === "1.0.0-beta.9", null, { timeout: 30_000 });
+    assert.equal(await boundedPageEvaluate(state.retainedBeta1Page, state.context, state.profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.9");
     assert.deepEqual(state.beta1MainFrameNavigations, [state.origin]);
     state.retainedBeta1Page.removeAllListeners("framenavigated");
   }, "The retained Beta 1 tab remained untouched until an explicit user-equivalent reload, which then opened the verified current shell without a recovery query.");
@@ -517,8 +517,8 @@ async function checkRetainedBeta1ExplicitReload(state) {
 async function checkResponsiveCandidateTabNotForced(state) {
   await checkedStep(state.checks, "RESPONSIVE_CANDIDATE_TAB_NOT_FORCED", async () => {
     assert.equal(new URL(state.candidatePage.url()).searchParams.has("legacy-recovery"), false);
-    assert.equal(await boundedPageEvaluate(state.candidatePage, state.context, state.profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.8");
-  }, "The responsive Beta 8 tab remained on its safe-boundary current route.");
+    assert.equal(await boundedPageEvaluate(state.candidatePage, state.context, state.profilePath, () => MathQuestEngine.CONSTANTS.PRODUCT_VERSION), "1.0.0-beta.9");
+  }, "The responsive Beta 9 tab remained on its safe-boundary current route.");
 }
 
 async function checkBeta1SourceBytesUnchanged(state) {
@@ -540,14 +540,14 @@ async function checkRetiredBeta1PreservedFreshStart(state) {
     state.protectedBytes = fresh.bytes;
     state.expectedFreshBytes = fresh.expectedBytes;
     state.freshProtectedProjection = fresh.projection;
-    assert.equal(state.protectedBytes, state.expectedFreshBytes, "protected Beta 8 progress must be the exact canonical initial state");
+    assert.equal(state.protectedBytes, state.expectedFreshBytes, "protected Beta 9 progress must be the exact canonical initial state");
     assert.equal(fresh.state.schemaVersion, 3);
     assert.equal(fresh.state.earnedLevel, 1);
     assert.equal(Object.values(fresh.state.practiceCountByDay).reduce((sum, count) => sum + count, 0), 0);
     assert.equal(fresh.marker, RETAINED_BETA1_COMPLETE_VALUE);
     assert.equal(state.retainedFreshStartNoticeSha256, RETAINED_BETA1_FRESH_START_NOTICE_SHA256);
     assert.equal(await boundedPageEvaluate(state.candidatePage, state.context, state.profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), state.sourceBytes);
-  }, "The incompatible Beta 1 save remained byte-identical, while Beta 8 committed its exact canonical fresh state, displayed the exact grown-up notice, and wrote a durable retained-source marker without transferring mastery, evidence, settings, logs, or counts.");
+  }, "The incompatible Beta 1 save remained byte-identical, while Beta 9 committed its exact canonical fresh state, displayed the exact grown-up notice, and wrote a durable retained-source marker without transferring mastery, evidence, settings, logs, or counts.");
 }
 
 async function checkCandidateActiveCacheReady(state) {
@@ -560,7 +560,7 @@ async function checkCandidateActiveCacheReady(state) {
     state.activeCacheProof = await inspectExactCandidateCache(state.candidatePage, state.snapshots, { allowBeta1: true, persistentContext: state.context, profilePath: state.profilePath });
     assert.equal(await boundedPageEvaluate(state.candidatePage, state.context, state.profilePath, (key) => localStorage.getItem(key), SOURCE_KEY), state.sourceBytes);
     assert.equal(await boundedPageEvaluate(state.candidatePage, state.context, state.profilePath, (key) => localStorage.getItem(key), PROTECTED_KEY), state.protectedBytes);
-  }, "The activated Beta 8 worker independently matched the exact detached cache and controller identity, retained the Beta 1 cache for the still-open older tab, excluded staging or unrecognized caches, and left both progress records unchanged.");
+  }, "The activated Beta 9 worker independently matched the exact detached cache and controller identity, retained the Beta 1 cache for the still-open older tab, excluded staging or unrecognized caches, and left both progress records unchanged.");
 }
 
 async function stopOnlineCanaryHost(state) {
@@ -596,7 +596,7 @@ async function launchOfflineCanaryPage(state) {
   assert.equal(await portAccepting(state.stoppedBackendPort), false);
   const offlineResponse = await offlinePage.goto(state.origin, { waitUntil: "domcontentloaded", timeout: 20_000 });
   assert.equal(offlineResponse?.fromServiceWorker(), true);
-  await waitForCanaryHomeUpdate(offlinePage, "1.0.0-beta.8");
+  await waitForCanaryHomeUpdate(offlinePage, "1.0.0-beta.9");
   assert.equal(await boundedPageEvaluate(offlinePage, state.context, state.profilePath, () => navigator.serviceWorker.controller?.scriptURL || null), `${state.origin}sw.js`);
   return offlinePage;
 }

@@ -51,7 +51,7 @@ const PROFILE_KEY = "math-quest:child-name:v1";
 
 const BETA1_CACHE = "math-quest-static-v1.0.0-beta.1";
 
-const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.8-";
+const CANDIDATE_CACHE_PREFIX = "math-quest-static-v1.0.0-beta.9-";
 
 const CANDIDATE_STAGING_SUFFIX = "-staging";
 
@@ -188,25 +188,27 @@ function contentType(relativePath) {
   return value;
 }
 
-async function verifyAndMaterializeSnapshots(candidateSha, root) {
+async function verifySnapshotCommitIdentities(candidateSha) {
   assert.equal(await gitText(["cat-file", "-t", TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT]), "tag");
   assert.equal(await gitText(["rev-parse", `refs/tags/${TRUSTED_HTTPS_CANARY_BETA1_TAG}^{tag}`]), TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT);
   assert.equal(await gitText(["rev-parse", `${TRUSTED_HTTPS_CANARY_BETA1_TAG_OBJECT}^{}`]), TRUSTED_HTTPS_CANARY_BETA1_COMMIT);
   assert.equal(await gitText(["cat-file", "-t", candidateSha]), "commit");
   assert.equal(await gitText(["rev-parse", "HEAD"]), candidateSha);
-  assert.equal((await exactGitBlob(candidateSha, "VERSION")).toString("utf8").trim(), "1.0.0-beta.8");
+  assert.equal((await exactGitBlob(candidateSha, "VERSION")).toString("utf8").trim(), "1.0.0-beta.9");
+}
 
-  const manifestBytes = await exactGitBlob(candidateSha, "release-shell-v1.json");
-  const manifest = JSON.parse(manifestBytes.toString("utf8"));
+function verifySnapshotManifest(manifest) {
   assert.deepEqual(Object.keys(manifest), ["schemaVersion", "release", "buildId", "cacheName", "entryPath", "excludedPaths", "entries"]);
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.release, "1.0.0-beta.8");
-  assert.equal(manifest.buildId, "math-quest-pwa-v1.0.0-beta.8");
-  assert.equal(manifest.cacheName, "math-quest-static-v1.0.0-beta.8");
+  assert.equal(manifest.release, "1.0.0-beta.9");
+  assert.equal(manifest.buildId, "math-quest-pwa-v1.0.0-beta.9");
+  assert.equal(manifest.cacheName, "math-quest-static-v1.0.0-beta.9");
   assert.equal(manifest.entryPath, "./index.html");
   assert.deepEqual(manifest.excludedPaths, ["./release-shell-v1.json", "./sw.js"]);
   assert.deepEqual(manifest.entries.map((entry) => [entry.path.slice(2), entry.mime]), EXPECTED_RELEASE_ENTRIES);
+}
 
+async function verifySnapshotEntries(candidateSha, manifest) {
   for (const entry of manifest.entries) {
     assert.deepEqual(Object.keys(entry), ["path", "sha256", "bytes", "mime", "status"]);
     const relativePath = entry.path.slice(2);
@@ -218,6 +220,16 @@ async function verifyAndMaterializeSnapshots(candidateSha, root) {
     assert.equal(bytes.byteLength, entry.bytes, relativePath);
     assert.equal(hashFileBytes(bytes), entry.sha256, relativePath);
   }
+}
+
+async function verifyAndMaterializeSnapshots(candidateSha, root) {
+  await verifySnapshotCommitIdentities(candidateSha);
+
+  const manifestBytes = await exactGitBlob(candidateSha, "release-shell-v1.json");
+  const manifest = JSON.parse(manifestBytes.toString("utf8"));
+  verifySnapshotManifest(manifest);
+
+  await verifySnapshotEntries(candidateSha, manifest);
 
   const candidatePaths = [...manifest.entries.map((entry) => entry.path.slice(2)), "release-shell-v1.json", "sw.js"];
   const [beta1, candidate] = await Promise.all([

@@ -329,7 +329,7 @@ test("browser audit uses only exact physical caches and safe-boundary navigation
   const physicalCacheNames = vm.runInNewContext(
     `(${browserFunction("pwaPhysicalCacheNames")})`,
   );
-  const logicalIdentity = "math-quest-static-v1.0.0-beta.8";
+  const logicalIdentity = "math-quest-static-v1.0.0-beta.9";
   const manifestSha = "a".repeat(64);
   const physicalName = `${logicalIdentity}-${manifestSha}`;
   assert.deepEqual(

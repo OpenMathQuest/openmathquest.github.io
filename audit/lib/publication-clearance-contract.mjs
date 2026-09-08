@@ -2,7 +2,7 @@ import { evidenceSuccessorPolicyForReleaseTag } from "./release-evidence-policy.
 export { evidenceSuccessorPolicyForReleaseTag } from "./release-evidence-policy.mjs";
 
 export const PUBLICATION_CLEARANCE_PATH = "PUBLICATION_CLEARANCE.md";
-export const CURRENT_RELEASE_TAG = "v1.0.0-beta.8";
+export const CURRENT_RELEASE_TAG = "v1.0.0-beta.9";
 export const BETA4_RELEASE_TAG = "v1.0.0-beta.4";
 export const EMERGENCY_BETA3_RELEASE_TAG = "v1.0.0-beta.3";
 export const CURRENT_EVIDENCE_SUCCESSOR_POLICY = evidenceSuccessorPolicyForReleaseTag(CURRENT_RELEASE_TAG);
