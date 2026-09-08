@@ -31,36 +31,20 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS = Object.freeze([
   }),
 ]);
 
+function standardActionFamily(id, allowedDataActions = [id]) {
+  return Object.freeze({
+    id,
+    selector: allowedDataActions.map((action) => `button[data-action="${action}"]`).join(","),
+    allowedDataActions: Object.freeze(allowedDataActions),
+  });
+}
+
 export const PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES = Object.freeze([
-  Object.freeze({
-    id: "world",
-    selector: 'button[data-action="world"]',
-    allowedDataActions: Object.freeze(["world"]),
-  }),
-  Object.freeze({
-    id: "start",
-    selector: 'button[data-action="start"]',
-    allowedDataActions: Object.freeze(["start"]),
-  }),
-  Object.freeze({
-    id: "advance",
-    selector: [
-      'button[data-action="choose-question"]',
-      'button[data-action="practice-token-ready"]',
-      'button[data-action="next"]',
-      'button[data-action="one-more"]',
-      'button[data-action="done-now"]',
-      'button[data-action="finish"]',
-    ].join(","),
-    allowedDataActions: Object.freeze([
-      "choose-question",
-      "practice-token-ready",
-      "next",
-      "one-more",
-      "done-now",
-      "finish",
-    ]),
-  }),
+  standardActionFamily("world"),
+  standardActionFamily("start"),
+  standardActionFamily("advance", [
+    "choose-question", "practice-token-ready", "next", "one-more", "done-now", "finish",
+  ]),
   Object.freeze({
     id: "answer",
     selector: [
@@ -73,31 +57,9 @@ export const PLAYWRIGHT_INTERACTION_FUZZ_ACTION_FAMILIES = Object.freeze([
     ].join(","),
     allowedDataActions: Object.freeze(["select", "response", "model-cell", "line-mark", "key"]),
   }),
-  Object.freeze({
-    id: "confirm",
-    selector: 'button[data-action="confirm"]',
-    allowedDataActions: Object.freeze(["confirm"]),
-  }),
-  Object.freeze({
-    id: "tutorial",
-    selector: [
-      'button[data-action="tutorial"]',
-      'button[data-action="tutorial-next"]',
-      'button[data-action="tutorial-previous"]',
-      'button[data-action="tutorial-back"]',
-    ].join(","),
-    allowedDataActions: Object.freeze([
-      "tutorial",
-      "tutorial-next",
-      "tutorial-previous",
-      "tutorial-back",
-    ]),
-  }),
-  Object.freeze({
-    id: "home",
-    selector: 'button[data-action="home"]',
-    allowedDataActions: Object.freeze(["home"]),
-  }),
+  standardActionFamily("confirm"),
+  standardActionFamily("tutorial", ["tutorial", "tutorial-next", "tutorial-previous", "tutorial-back"]),
+  standardActionFamily("home"),
 ]);
 
 const PLAYWRIGHT_INTERACTION_FUZZ_FORBIDDEN_DATA_ACTIONS = Object.freeze([

@@ -1439,6 +1439,18 @@ passed both profiles and 184 native actions. Every log and report is retained;
 the preceding launcher interruption produced no browser verdict. These local
 observations did not reproduce or resolve hosted run `34223740439` and provide
 no release clearance.
+Hosted repair run `34234323417` likewise passed the browser-fuzz stage (both
+profiles, 184 actions), along with the preceding compiler, architecture, tests,
+and differential checks and subsequent mutation and security checks. It then
+failed the source-size gate because the repaired module had 627 lines against
+the unchanged 600-line limit. The correction removes duplicated action/selector
+declarations by deriving ordinary selectors from their existing action lists.
+The module is 589 lines; all 11 exported constants, including selector bytes,
+action ordering and frozen action records, match the failed candidate exactly.
+Focused verification of the correction passed 26 tests and the quality stage;
+coverage input for that focused stage came from the retained hosted run only
+after its engine SHA-256 matched the unchanged current engine. The original
+browser-failure risk remains pending the owner's release decision.
 
 ### Objective and preserved contracts
 
