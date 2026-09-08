@@ -2470,6 +2470,10 @@
       "copyDiscovery": "NONE",
       "projections": [
         {
+          "path": ".github/workflows/audit.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
           "path": "audit/playwright/interaction-fuzz.spec.mjs",
           "relationship": "VALIDATION_EXPECTATION"
         },

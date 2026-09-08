@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID = "math-quest:playwright-interaction-fuzz:v1";
-export const PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION = 1;
+export const PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION = 2;
 export const PLAYWRIGHT_INTERACTION_FUZZ_CERTIFICATION_CLAIM = "none:diagnostic-only";
 export const PLAYWRIGHT_INTERACTION_FUZZ_RUNS = 12;
 export const PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS = 16;
@@ -358,12 +358,16 @@ function reportSummaryFindings(report, findings) {
   }
 }
 
+function shardArtifactPresenceFindings(shard, names, artifact, findings) {
+  const present = names.has(`${shard.project.id}-${artifact.suffix}`);
+  if (shard.status === "failed" && !present) findings.push(`${shard.project.id}: ${artifact.label} is missing`);
+  if (shard.status === "passed" && present) findings.push(`${shard.project.id}: passing shard retained ${artifact.label}`);
+}
+
 function shardScreenshotFindings(shard, names, findings) {
-  const projectId = shard?.project?.id;
-  if (!projectId) return;
-  const screenshotName = `${projectId}-failure.png`;
-  if (shard.status === "failed" && !names.has(screenshotName)) findings.push(`${projectId}: failure screenshot is missing`);
-  if (shard.status === "passed" && names.has(screenshotName)) findings.push(`${projectId}: passing shard retained a failure screenshot`);
+  if (!shard?.project?.id) return;
+  shardArtifactPresenceFindings(shard, names, { suffix: "failure.png", label: "failure screenshot" }, findings);
+  shardArtifactPresenceFindings(shard, names, { suffix: "original-failure.json", label: "original failure record" }, findings);
 }
 
 export function interactionFuzzAllowedActionFindings(action) {
@@ -432,10 +436,40 @@ export function interactionFuzzSafeError(error) {
   return message.replace(/[A-Za-z]:\\(?:[^\\\r\n]+\\)*[^:\r\n]*/gu, "<local-path>").slice(0, 2_000);
 }
 
-export async function interactionFuzzMinimizedFailureEvidence(details, counterexampleText, execute) {
+export function interactionFuzzFailureRecorder(captureOriginal) {
+  const state = { original: null, latest: null };
+  return {
+    snapshot: () => structuredClone(state),
+    async record(outcome) {
+      if (!outcome.error) return;
+      state.latest = {
+        message: interactionFuzzSafeError(outcome.error),
+        actionTrace: structuredClone(outcome.trace),
+      };
+      if (state.original) return;
+      state.original = { ...structuredClone(state.latest), screenshotPath: null, captureError: null };
+      try { await captureOriginal(state.original); }
+      catch (error) { state.original.captureError = interactionFuzzSafeError(error); }
+    },
+  };
+}
+
+async function executeFailureReplay(execute, commands) {
+  try { return await execute(commands); }
+  catch (error) { return { trace: [], error }; }
+}
+
+function retainedFailureData(retained) {
+  return {
+    minimizedActionTrace: retained?.latest?.actionTrace || [],
+    originalFailure: retained?.original || null,
+  };
+}
+
+export async function interactionFuzzMinimizedFailureEvidence(details, counterexampleText, execute, retained) {
   assertMinimizedCounterexample(details, execute);
   const originalMessage = interactionFuzzSafeError(details.errorInstance);
-  const replay = await execute(details.counterexample[0]);
+  const replay = await executeFailureReplay(execute, details.counterexample[0]);
   const replayMessage = replay?.error
     ? interactionFuzzSafeError(replay.error)
     : "minimized counterexample did not reproduce its failure";
@@ -444,7 +478,8 @@ export async function interactionFuzzMinimizedFailureEvidence(details, counterex
     replayMessage,
     replayVerified: Boolean(replay?.error) && originalMessage === replayMessage,
     counterexample: interactionFuzzSafeError(counterexampleText),
-    minimizedActionTrace: Array.isArray(replay?.trace) ? replay.trace : [],
+    ...retainedFailureData(retained),
+    replayActionTrace: Array.isArray(replay?.trace) ? replay.trace : [],
   };
 }
 
@@ -479,10 +514,46 @@ function traceRecordFindings(record, index) {
   return findings;
 }
 
+function actionTraceFindings(trace, label, requireFailure = true) {
+  const findings = [];
+  if (!Array.isArray(trace) || trace.length < 1 || trace.length > PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS) {
+    return [`failed shard must contain a bounded nonempty ${label} action trace`];
+  }
+  trace.forEach((record, index) => findings.push(...traceRecordFindings(record, index)));
+  if (requireFailure && trace.at(-1)?.outcome !== "failed") findings.push(`${label} action trace does not end at the failure`);
+  return findings;
+}
+
+function originalFailureFindings(original, project) {
+  if (!exactKeys(original, ["message", "actionTrace", "screenshotPath", "captureError"])) {
+    return ["original failure has an unknown or missing field"];
+  }
+  const findings = evidenceTextFindings(original.message, "original failure message");
+  findings.push(...actionTraceFindings(original.actionTrace, "original"));
+  const expectedScreenshotPath = `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`;
+  if (original.screenshotPath !== expectedScreenshotPath) findings.push("original failure screenshot path does not match the closed project path");
+  if (original.captureError !== null) findings.push("original failure capture was incomplete");
+  return findings;
+}
+
+export function interactionFuzzOriginalFailureFindings(record) {
+  if (!exactKeys(record, ["schemaVersion", "contractId", "projectId", "originalFailure"])) {
+    return ["original failure record has an unknown or missing field"];
+  }
+  const findings = [];
+  if (record.schemaVersion !== PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION) findings.push("unexpected original failure schemaVersion");
+  if (record.contractId !== PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID) findings.push("unexpected original failure contractId");
+  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS.find((candidate) => candidate.id === record.projectId);
+  if (!project) findings.push("unknown original failure project");
+  else findings.push(...originalFailureFindings(record.originalFailure, project));
+  return findings;
+}
+
 function failureEvidenceFindings(failure, project) {
   const findings = [];
   const keys = [
     "message", "replayMessage", "replayVerified", "counterexample", "minimizedActionTrace", "screenshotPath",
+    "originalFailure", "replayActionTrace",
   ];
   if (!exactKeys(failure, keys)) return ["failed shard has an unknown or missing failure-evidence field"];
   findings.push(...evidenceTextFindings(failure.message, "failure message"));
@@ -492,15 +563,18 @@ function failureEvidenceFindings(failure, project) {
   if (failure.message !== failure.replayMessage) findings.push("minimized counterexample replay did not reproduce the same failure");
   const expectedScreenshotPath = `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`;
   if (failure.screenshotPath !== expectedScreenshotPath) findings.push("failure screenshot path does not match the closed project path");
-  if (!Array.isArray(failure.minimizedActionTrace)
-      || failure.minimizedActionTrace.length < 1
-      || failure.minimizedActionTrace.length > PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS) {
-    findings.push("failed shard must contain a bounded nonempty minimized action trace");
-  } else {
-    failure.minimizedActionTrace.forEach((record, index) => findings.push(...traceRecordFindings(record, index)));
-    if (failure.minimizedActionTrace.at(-1)?.outcome !== "failed") findings.push("minimized action trace does not end at the failure");
-  }
+  findings.push(...originalFailureFindings(failure.originalFailure, project));
+  findings.push(...actionTraceFindings(failure.minimizedActionTrace, "minimized"));
+  findings.push(...actionTraceFindings(failure.replayActionTrace, "replay", failure.replayVerified === true));
   return findings;
+}
+
+export function interactionFuzzFailureDiagnostic(originalReport, shard, findings) {
+  return [
+    originalReport,
+    `Retained interaction-fuzz failure: ${JSON.stringify(shard.failure)}`,
+    `Interaction-fuzz shard findings: ${JSON.stringify(findings)}`,
+  ].join("\n");
 }
 
 export function playwrightInteractionFuzzShardFindings(shard) {

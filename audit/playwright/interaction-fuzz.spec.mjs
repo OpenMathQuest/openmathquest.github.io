@@ -14,6 +14,8 @@ import {
   PLAYWRIGHT_INTERACTION_FUZZ_WORKERS,
   interactionFuzzAllowedActionFindings,
   interactionFuzzEffectFindings,
+  interactionFuzzFailureDiagnostic,
+  interactionFuzzFailureRecorder,
   interactionFuzzMinimizedFailureEvidence,
   interactionFuzzReplayPath,
   interactionFuzzSafeError,
@@ -280,39 +282,29 @@ function executionTreeCount(nodes) {
   return nodes.reduce((count, node) => count + 1 + executionTreeCount(node?.children), 0);
 }
 
-test("seeded safe interaction sequences preserve state and produce observable effects", async ({ page, mathQuestGuard }, testInfo) => {
-  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS.find((candidate) => candidate.id === testInfo.project.name);
-  expect(project, `closed fuzz profile for ${testInfo.project.name}`).toBeTruthy();
-  const commandArbitrary = fc.nat(127).map((ordinal) => new SafeActivateCommand(ordinal));
-  const commandsArbitrary = fc.commands([commandArbitrary], {
-    maxCommands: PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS,
-    size: "medium",
-  }).filter((commands) => Array.from(commands).length > 0);
-  const browserActionExecutions = { value: 0 };
-  const property = fc.asyncProperty(commandsArbitrary, async (commands) => {
-    const outcome = await executeSequence(page, mathQuestGuard, commands, browserActionExecutions);
-    if (outcome.error) throw outcome.error;
-  });
-  const details = await fc.check(property, {
-    seed: project.seed,
-    numRuns: PLAYWRIGHT_INTERACTION_FUZZ_RUNS,
-    verbose: 2,
-  });
-  const counterexampleText = details.counterexample === null ? null : await fc.asyncStringify(details.counterexample);
-  const minimizedEvidence = details.failed
-    ? await interactionFuzzMinimizedFailureEvidence(
-      details,
-      counterexampleText,
-      (commands) => executeSequence(page, mathQuestGuard, commands, browserActionExecutions),
-    )
-    : null;
-  const relativeFailureScreenshot = details.failed
-    ? `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`
-    : null;
-  if (relativeFailureScreenshot) {
+async function retainOriginalFailure(page, project, originalFailure) {
+  await mkdir(outputDirectory, { recursive: true });
+  originalFailure.screenshotPath = `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`;
+  originalFailure.captureError = "original screenshot capture pending";
+  const record = {
+    schemaVersion: PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION,
+    contractId: PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID,
+    projectId: project.id,
+    originalFailure,
+  };
+  const recordPath = path.join(outputDirectory, `${project.id}-original-failure.json`);
+  await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+  try {
     await page.screenshot({ path: path.join(outputDirectory, `${project.id}-failure.png`), fullPage: true });
+    originalFailure.captureError = null;
+  } catch (error) {
+    originalFailure.captureError = interactionFuzzSafeError(error);
   }
-  const shard = {
+  await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+}
+
+function fuzzShard(project, details, counterexampleText, minimizedEvidence, browserActionExecutions) {
+  return {
     schemaVersion: PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION,
     contractId: PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID,
     certificationClaim: PLAYWRIGHT_INTERACTION_FUZZ_CERTIFICATION_CLAIM,
@@ -338,12 +330,50 @@ test("seeded safe interaction sequences preserve state and produce observable ef
     browserActionExecutions: browserActionExecutions.value,
     failure: details.failed ? {
       ...minimizedEvidence,
-      screenshotPath: relativeFailureScreenshot,
+      screenshotPath: minimizedEvidence.originalFailure?.screenshotPath || null,
     } : null,
   };
+}
+
+async function writeFuzzShard(shard, details) {
   const shardFindings = playwrightInteractionFuzzShardFindings(shard);
   await mkdir(outputDirectory, { recursive: true });
-  await writeFile(path.join(outputDirectory, `${project.id}.json`), `${JSON.stringify(shard, null, 2)}\n`, "utf8");
+  await writeFile(path.join(outputDirectory, `${shard.project.id}.json`), `${JSON.stringify(shard, null, 2)}\n`, "utf8");
+  if (details.failed) {
+    throw new Error(interactionFuzzFailureDiagnostic(await fc.asyncDefaultReportMessage(details), shard, shardFindings));
+  }
   expect(shardFindings, "closed interaction-fuzz shard contract").toEqual([]);
-  if (details.failed) throw new Error(await fc.asyncDefaultReportMessage(details));
+}
+
+test("seeded safe interaction sequences preserve state and produce observable effects", async ({ page, mathQuestGuard }, testInfo) => {
+  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS.find((candidate) => candidate.id === testInfo.project.name);
+  expect(project, `closed fuzz profile for ${testInfo.project.name}`).toBeTruthy();
+  const commandArbitrary = fc.nat(127).map((ordinal) => new SafeActivateCommand(ordinal));
+  const commandsArbitrary = fc.commands([commandArbitrary], {
+    maxCommands: PLAYWRIGHT_INTERACTION_FUZZ_MAX_COMMANDS,
+    size: "medium",
+  }).filter((commands) => Array.from(commands).length > 0);
+  const browserActionExecutions = { value: 0 };
+  const recorder = interactionFuzzFailureRecorder((original) => retainOriginalFailure(page, project, original));
+  const property = fc.asyncProperty(commandsArbitrary, async (commands) => {
+    const outcome = await executeSequence(page, mathQuestGuard, commands, browserActionExecutions);
+    await recorder.record(outcome);
+    if (outcome.error) throw outcome.error;
+  });
+  const details = await fc.check(property, {
+    seed: project.seed,
+    numRuns: PLAYWRIGHT_INTERACTION_FUZZ_RUNS,
+    verbose: 2,
+  });
+  const counterexampleText = details.counterexample === null ? null : await fc.asyncStringify(details.counterexample);
+  const minimizedEvidence = details.failed
+    ? await interactionFuzzMinimizedFailureEvidence(
+      details,
+      counterexampleText,
+      (commands) => executeSequence(page, mathQuestGuard, commands, browserActionExecutions),
+      recorder.snapshot(),
+    )
+    : null;
+  const shard = fuzzShard(project, details, counterexampleText, minimizedEvidence, browserActionExecutions);
+  await writeFuzzShard(shard, details);
 });
