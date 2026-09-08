@@ -7,25 +7,37 @@ them.
 
 ## Dependency and implementation policy
 
-Before designing bespoke code, first inventory the capabilities already
-available: the language standard library, installed Python and other-language
-libraries, existing project dependencies, repository utilities, and
-established open-source tools. Prefer these proven capabilities when they fit
-the requirement. When the existing environment falls short, reasonably search
-for an established, well-maintained open-source library or utility before
-proposing a substantial custom implementation.
+Before writing new code, follow this decision ladder in order:
 
-Before adopting or executing a new third-party library or utility, identify
-its licence and maintenance or provenance status, then ask the project owner
-for approval with a brief justification and the licence named explicitly.
-Always ask before adding a dependency or building a substantial custom
-solution. Do not treat familiarity with a tool, its installation on the
-machine, or an open-source label as approval to use it.
+1. **Reuse an existing suitable implementation or repository utility in the
+   codebase.** Verify that its semantics, ownership, tests, and drift
+   relationships match the current task; do not force reuse of code that is
+   merely similar or would create the wrong abstraction.
+2. **Prefer the language standard library and built-in platform features.**
+   Use them when they satisfy the requirement without weakening browser,
+   offline, security, privacy, accessibility, or reproducibility contracts.
+3. **Use an existing repository-declared and approved dependency if it solves
+   the problem.** A library that merely happens to be installed on the machine
+   is not a project dependency and must not be used as one.
+4. **If none of those fit, evaluate an established, well-maintained open-source
+   dependency or utility.** Before adopting or executing it, identify its
+   licence, provenance, maintenance, security, reproducibility, bundle, and
+   offline implications, then ask the project owner for approval with a brief
+   justification and the licence named explicitly.
+5. **Otherwise write only the smallest task-specific implementation the
+   current task needs.** Small local glue is appropriate when a dependency
+   would be disproportionate. Always obtain owner approval before building a
+   substantial custom solution.
+6. **Run the applicable AI-change assurance and drift checks.** This includes
+   compiler/types, static architecture, tests and coverage, differential
+   equivalence, property/fuzz testing, mutation testing, security and
+   dependency checks, complexity/duplication/size checks, and performance
+   budgets in their governed order.
 
-Custom code is allowed for small local glue when a library would be
-disproportionate, or when the user or project conventions require it. If no
-suitable open-source option turns up after a reasonable search, propose a
-custom approach—do not implement the substantial version until approved.
+Do not treat familiarity with a tool, its installation on the machine, or an
+open-source label as approval to use it. If no suitable approved dependency or
+small local implementation fits, propose the substantial custom approach and
+wait for owner approval before implementing it.
 
 <!-- AI-FIRST-DRIFT-CONTROL-START -->
 ## AI-first drift-control authority
@@ -963,6 +975,29 @@ artifact invalidates the boundary and requires a new qualification commit.
 The one complete certification gauntlet and cadence-required Deep UX Census run
 only on the exact successor. Only that successor may be tagged, released, or
 deployed as Beta 8.
+
+## Owner-authorized Beta 9 release
+
+On 2026-09-08, the project owner requested publication of a new beta for the
+completed refactor. The next unused release line is `v1.0.0-beta.9`. This
+authorizes its ordinary end-to-end release operations under the standing owner
+interaction policy. It does not select the optional physical-device or
+six-reviewer cycles; both remain `OPTIONAL_NOT_RUN`. The prerelease host
+qualification deferral remains visible and is not a host-approval claim.
+
+Beta 9 uses `RELEASE_EVIDENCE_SUCCESSOR_V2`. Its protected-main qualification
+commit contains final product/runtime/PWA bytes and the four pending evidence
+authorities. Fresh hosted-Windows observation and reconciled trusted-HTTPS
+canary evidence must bind that exact qualification commit. The immediate,
+non-merge, sole-child successor changes exactly `PUBLICATION_CLEARANCE.md`,
+`audit/browser-runner-evidence-v1.json`,
+`audit/release-evidence-bundle-v1.json`, and
+`audit/trusted-https-canary-v1.json`; every other byte remains unchanged.
+The final complete certification gauntlet runs once on that frozen successor
+immediately before its tag, release and deployment. Odd-numbered Beta 9 is
+excluded by the existing alternating-beta Deep UX Census cadence, which must
+be recorded as an exclusion rather than a pass. Ordinary bounded independent
+review and all other mandatory release gates remain required.
 
 ## Certification framework entry points
 

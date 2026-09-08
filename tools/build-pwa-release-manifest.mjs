@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(root, "release-shell-v1.json");
 const workerPath = path.join(root, "sw.js");
-const RELEASE = "1.0.0-beta.8";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.8";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.8";
+const RELEASE = "1.0.0-beta.9";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.9";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.9";
 const HASH_MARKER = /const RELEASE_MANIFEST_SHA256 = "[a-f0-9]{64}";/u;
 const ENTRIES = Object.freeze([
   ["./assets/design/math-quest-design-tokens-v1.css", "text/css"],
@@ -16,6 +16,8 @@ const ENTRIES = Object.freeze([
   ["./assets/icons/apple-touch-icon.png", "image/png"],
   ["./assets/icons/icon-192.png", "image/png"],
   ["./assets/icons/icon-512.png", "image/png"],
+  ["./assets/js/math-quest-progress-source.js", "text/javascript"],
+  ["./assets/js/math-quest-pwa-status.js", "text/javascript"],
   ["./assets/sounds/close.wav", "audio/wav"],
   ["./assets/sounds/confirm.wav", "audio/wav"],
   ["./assets/sounds/incorrect.wav", "audio/wav"],

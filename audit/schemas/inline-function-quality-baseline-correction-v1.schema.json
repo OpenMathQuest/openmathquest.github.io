@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/audit/schemas/inline-function-quality-baseline-correction-v1.schema.json",
+  "title": "Math Quest additive inline-function baseline correction v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "artifactKind", "baselineCommit", "captureBoundary",
+    "correctsArtifact", "omissionEvidence", "metricContract",
+    "newOrMateriallyModifiedFunctionLimits", "immutableInlineHtmlBaseline"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "MATH_QUEST_INLINE_FUNCTION_QUALITY_BASELINE_CORRECTION_V1" },
+    "baselineCommit": { "const": "2078625b407d5189f579e94e716c86dce86ae90f" },
+    "captureBoundary": { "const": "ADDITIVE_R0_CORRECTION_FOR_EXECUTABLE_INLINE_HTML" },
+    "correctsArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "immutableUnits", "immutableFunctions"],
+      "properties": {
+        "path": { "const": "audit/function-quality-baseline-v1.json" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "immutableUnits": { "type": "integer", "minimum": 1 },
+        "immutableFunctions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "omissionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "originalInlineHtmlRows", "correctedHtmlPaths"],
+      "properties": {
+        "reason": { "const": "ESLINT_VIRTUAL_HTML_FILENAME_WAS_IGNORED_WITHOUT_A_PARSE_ERROR" },
+        "originalInlineHtmlRows": { "const": 0 },
+        "correctedHtmlPaths": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "audit.html" },
+            { "const": "index.html" }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "metricContract": {
+      "$ref": "https://openmathquest.github.io/audit/schemas/function-quality-baseline-v1.schema.json#/$defs/metricContract"
+    },
+    "newOrMateriallyModifiedFunctionLimits": {
+      "$ref": "https://openmathquest.github.io/audit/schemas/function-quality-baseline-v1.schema.json#/$defs/limits"
+    },
+    "immutableInlineHtmlBaseline": {
+      "$ref": "https://openmathquest.github.io/audit/schemas/function-quality-baseline-v1.schema.json#/$defs/immutableCensus"
+    }
+  }
+}

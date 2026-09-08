@@ -8,6 +8,32 @@ mutation runner separately proves representative families are non-vacuous.
 
 | Test | Protected branch effect |
 |---|---|
+| `CHILD-STRING-VALIDATION` | Five tests in `audit/tests/child-string-validation.test.mjs` protect valid text/template records, unchanged inputs, complete ordered missing-field diagnostics, primitive-entry rejection, separate duplicate ID/slot findings, and nonnegative contiguous positions within each runtime category. The focused engine development entry point explicitly executes this file. |
+| `DRIFT-VALIDATOR-BOUNDARIES` | Existing curriculum, feature, tutorial, ownership-map, and blast-radius tests retain schema-first rejection, exact bindings, declared sole owners, live tutorial obligations, and fail-closed path coverage. Predecessor comparisons retain exact ordered diagnostics for 543 curriculum mutations, 49 child-string cases, 265 feature cases, 281 tutorial cases, and 269 code-map cases. The shared duplicate detector preserves unique sorted results; mathematical oracles remain independent. Five real blast queries preserve complete structured output across all four query kinds and depths 0, 1, 2, 3, and 8. |
+| `RELEASE-EVIDENCE-VALIDATION` | The clearance contract, ordered record schema, and release-successor policy have separate owners. One 50-field mapping drives both record order and public projection. Existing publication and bundle tests protect exact identity binding, historical emergency/owner exceptions, optional cycles, expiry, gate order, and release-readiness decisions across the smaller parser/evaluator/observer helpers. Unsupported internal emergency selectors remain rejected. |
+| `PENDING-CANARY-ROOT` | Malformed non-object JSON, including `null`, produces invalid pending-canary evidence without an uncaught property-access error. The focused regression checks the invalid result, preserved parsed value, and closed-schema finding; it cannot turn malformed evidence into release readiness. |
+| `SHARED-RESPONSE-CONSTRUCTION` | The native core and semantic suites share 22 identical state-building branches in `audit/lib/shared-response-fixtures.mjs`. Each caller still creates and serializes fresh response state; strategy, fraction, route, and clock behavior remains caller-owned. Exact response/error outcomes, outgoing engine arguments, and unchanged input questions match in 2,494 comparisons across all 26 structured methods. The core assertions and independent semantic mathematical/model/facet checks remain byte-identical. |
+| `SORT-RESPONSE-CONSTRUCTION` | `audit/lib/sort-response-fixtures.mjs` shares correct-placement construction across native and exhaustive fixtures and preserves their incorrect-submission transformations. The 7,945 predecessor comparisons cover categorized and predicate sorts, Unicode normalization, malformed descriptors, and extra payload fields. The semantic model validator retains its separate normalization and property/classification oracle. |
+| `SEMANTIC-SAMPLING` | Named question-validation, sampling, task/strategy coverage, and aggregation helpers preserve all 130 semantic checks and 6,048 questions. The normal run retains 124,533 ordered assertion outcomes/messages; three injected failure cases retain the same failed check, exact first-line message, continued later checks, and distinct partial counts for a failed generation versus a generated invalid question. |
+| `RELEASE-PAYLOAD-IDENTITY` | `audit/lib/public-payload.mjs` owns canonical SHA-256 and Git tree hashing shared by the staged public guard and committed-evidence observer. The independent known Git tree calibration and path/mode/blob negative controls remain in the guard; `audit/tests/publication-clearance.test.mjs` exercises the actual Git observer. The 1,332 predecessor comparisons retain SHA-1/SHA-256 ordering, clearance exclusion, merged-stage requirements, and exact error classes/messages for bounded malformed entries. |
+| `PUBLIC-REGISTER-VALIDATION` | Named validation stages preserve the exact ordered findings for rights evidence, original paths, bundled/reference/workflow components, reviewed tool identities, and public-tree classifications. All 17 original licence mutation controls remain active; immutable compiled tool records still compare every field. The 5,765 predecessor comparisons and 10,203 binary/privacy comparisons protect malformed-record handling, missing evidence, metadata boundaries, and runtime-artwork scope. |
+| `VISUAL-MODEL-CONTRACTS` | The five `audit/visual-model-*.mjs` modules retain independent numeric and descriptor calculations behind the existing frozen browser API. The complete predecessor sampling plan preserves 13,699 observations across 806 questions and 4,758 malformed models. `audit/tests/holistic-child-ux-regressions.test.mjs` executes the actual module graph and rejects changed token versions, token kinds, and candidate counts while retaining all five independent token/value mappings. |
+| `VISUAL-SESSION-LIFECYCLE` | The visual audit's session object owns its frame, current document/window, and write instrumentation. Original cleanup and error propagation match in 12 isolated failure cases; 70 actual Edge snapshot comparisons preserve geometry, focus, answer-leak rejection, and temporary-notice removal. The desktop/mobile scroll regression now executes both layout drivers and requires a reset after question selection and another desktop reset after opening a model. `audit/tests/browser-lifecycle-contract.mjs` retains placement nonce replay, writer isolation, and focused-feedback announcement assertions. |
+| `BROWSER-MODULE-ROUTES` | The browser audit reuses the existing Playwright runtime-route list, including both shipped progress/PWA helper scripts, and explicitly adds its mathematical modules. `audit/tests/browser-runner-lifecycle.test.mjs` independently checks the entry pages' external script references against served paths, requires real 200 responses, and verifies executable MIME types. The complete visual shard retains all 36 passing checks with valid local browser identity, unchanged source bindings, and normal cleanup; this is development evidence, not publication certification. |
+| `NATIVE-SAVE-CONTRACTS` | `audit/tests/saved-state-contract.mjs` owns the original fixtures, private assertion context, valid phases, and ordered schema checks. `audit/tests/saved-state-root-contract.mjs` preserves root schemas, history collections, and migration; `audit/tests/saved-state-question-contract.mjs` preserves active UI, question, and attempt fields. Semantic case builders retain every mutation and exact test order. Shared retired-session postconditions independently compare each input snapshot's progress and history. `audit/tests/saved-state-boundary-contract.mjs` retains watermark, due-date, response, scheduler-choice, exact-regeneration, phase, and progress protections. |
+| `NATIVE-API-CONTRACTS` | `audit/tests/public-api-contract.mjs` selects the same witnesses, isolates each API group's local context, and retains rational parsing, blank-versus-zero distinctions, malformed action history, and telemetry/evidence classification. `audit/tests/public-api-progression-contract.mjs` retains spacing, re-teaching, promotion, fatigue, feedback, transactional state effects, and queue obligations. Mathematical expectations and boundary values remain independent of the production implementation. |
+| `NATIVE-GENERATOR-CONTRACTS` | `audit/tests/generator-contract.mjs` retains every visible-source arithmetic check and unique-choice assertion, yields the same complete ordered representation/world requests, and keeps an independent expected structured-method set instantiated once. It preserves public-domain rejection, exact error reasons, objective-specific input rules, and neutral-world fallbacks. Across all nine refactored parent tests, the original stream preserves 421,765 captured assertion outcomes, 92,388 generation requests, and 420 child-test dispatches, including the unsampled matrix. A separate all-method replay of the eight non-matrix groups retains 1,519 assertions and covers the one negative-match observation omitted by the original interceptor; combined evidence covers 421,766 assertion observations. |
+| `RESPONSE-FIXTURES` | `audit/tests/session-fixtures.mjs` owns canonical active slots and saved UI setup; 369 focused predecessor cases preserve exact state outcomes. `audit/tests/response-fixtures.mjs` discovers all 26 structured input methods once per engine, remembers only generation requests, and generates fresh questions for each consumer. Its tests in `audit/tests/response-fixtures.test.mjs`, discovered through the adapter-syntax entry, preserve the qualified witness hash, reduce subsequent generation from 1,873 requests to 26, require independent discovery for another engine, and reject incomplete discovery without caching it. |
+| `RESPONSE-CONTRACT-OWNERS` | The native engine entry executes `audit/tests/response-action-contract.mjs`, `audit/tests/response-persistence-contract.mjs`, `audit/tests/response-completion-contract.mjs`, and `audit/tests/response-predicate-contract.mjs`. Method-owned cases preserve malformed-action rejection, valid-but-wrong grading, transaction identity on rejected imports, explicit legacy route repair, numeric serialization, visible-action completion, and defensive grading predicates. The focused predecessor comparison retains all 1,081 observed/expected assertion outcomes and messages across the same nine named subtests; mathematical answer construction remains in the independent semantic suite. |
+| `SESSION-AND-PLACEMENT-BOUNDARIES` | `audit/tests/session-prefix-contract.mjs` preserves ordinary, unactivated-choice, activated-choice, future-choice, fatigue, re-teach, and capstone served-prefix controls. `audit/tests/placement-api-boundary-contract.mjs` preserves creation isolation, nonce exhaustion, malformed run identity, stale progress, question sequence, rejected-transaction identity, confirmation options, draft-generation exhaustion, and successful low-level placement. Its completed-run setup reuses `audit/lib/placement-fixtures.mjs` with an explicit incorrect-answer policy. Including these groups, the focused predecessor comparison preserves all 1,268 assertion outcomes, expected values, and messages. |
+| `ENGINE-PLACEMENT-REUSE` | Placement ranking reuses only immutable curriculum metadata, preserves every qualified level order and complete public journey, rejects invalid levels, protects cached ordering from mutation, returns fresh question objects, and revalidates every run. Persisted string-list guards retain uniqueness, empty-entry, size, text-length, and property-read behavior. The existing differential gate additionally compares three complete R0 placement journeys and rejects a changed recommendation. Removed generator bindings retain their original preprocessing draws and coercions; the unchanged complete R0 question-corpus hash protects that sequence. |
+| `CSS-FIXTURE` | The child-UX static CSS fixture preserves its existing tag, class, ID, attribute, child, and descendant selector subset and chooses declarations by importance, specificity, and source order. Its 1,620-case extraction comparison matches the preceding fixture; it does not claim browser cascade or layout coverage beyond that bounded subset. |
+| `BROWSER-FIXTURE-CONTRACTS` | The PWA entry imports separate session/layout, runner-lifecycle, frame-lifecycle, and readiness suites. They retain exact session round trips, approved overflow predicates, font and scroll witnesses, deadlines, ordered cleanup, registration/message failures, native keyboard targets, and physical-cache identity assertions. |
+| `PWA-CONFIGURED-ERROR` | The candidate-update fixture must throw the exact configured network error. A missing isolated-context binding previously produced an unrelated ReferenceError; the identity assertion fails for that defective fixture while production error sanitization remains unchanged. |
+| `OPERATION-CLEANUP` | Audit runners await cleanup after success or failure, retain exact successful results and thrown values, reject cleanup failure, and preserve both failures through AggregateError when operation and cleanup fail together. Browser process startup/shutdown ownership remains in its runner. The extracted CDP client retains existing real WebSocket shutdown tests. |
+| `NPM-STARTUP-DEADLINES` | Measured npm version startup has 120 seconds; configuration retains 30 seconds and vulnerability auditing retains 180 seconds. A startup exception prevents later calls without retry; exact npm identity, approved registry, and vulnerability rejection tests remain active. |
+| `EXHAUSTIVE-GENERATOR-CONTRACT` | Generator-audit helpers preserve exception versus missing-result failure behavior, attempted-case counts, distinct ordinary/boundary choice-reference contracts, the 32-offset suppressed-choice search, nested stimulus first-match diagnostics, scalar-bypass rejection, and once-per-method sample-key mutation controls. Shared fixture handlers retain 1,464 pre-extraction states across 26 response methods, original state identity, group history order, and unreachable fraction/route/partition failures. |
+| `SOURCE-EXTRACTION` | Shared audit-test setup parses source without executing it; selects exact unique function/listener bytes, rejects missing or ambiguous declarations and invalid delimiter starts, and handles comments, quoted text, regular expressions, and nested templates without dropping code. HTML extraction reuses the governed executable-script selector, preserves separate script/module scopes, and rejects ambiguous declarations or marker selection while excluding external and non-executable scripts. Consumers retain their independent persistence, placement, accessibility, grading, generator, PWA, and QA assertions. |
 | `CORE-00` | The canonical curriculum manifest parses, validates, and satisfies its declared counts, ordering, references, and acyclic prerequisite graph. |
 | `MANIFEST-CLOSED` | Unknown fields at the manifest root or in localization, licensing, authorship, review, phase, policy, schema, band, level, rationale, source, benchmark, skill, assessment, or constraint records are rejected instead of silently entering the public release contract. |
 | `CORE-01` | Duplicate or moved engine markers, or any change to marked engine bytes, changes extraction or SHA-256. |
@@ -84,12 +110,54 @@ release plan, public inventories, and shared audit entry point consistent.
 | Legacy-plan reconciliation | The optional six-reviewer plan cannot create preliminary and final cohorts, and old three-pass or pre-final complete-audit loops cannot override the single frozen-candidate certification cadence. |
 | Registration and execution | The JSON mirror and regression stay in the component register and both public inventories, and the shared focused/release entry point executes the regression before its development-only return. |
 
+## Audit orchestration effect map
+
+`audit/run-audit.mjs` owns final aggregation, outcome counts, and report identity.
+The closed lane contract in `audit/lib/audit-lane-contract.mjs` rejects foreign,
+duplicate, malformed, or missing lane records and invalid nested limits.
+`audit/lib/audit-process-supervisor.mjs` preserves timeout/output-limit precedence,
+bounded process-tree cleanup, and explicit unverified-cleanup outcomes.
+`audit/lib/bounded-audit-lanes.mjs` retains ordered results, exclusive scheduling
+barriers, bounded concurrency, and withholding after unsafe coverage cleanup.
+`audit/lib/audit-evidence-comparison.mjs` removes only the declared volatile
+fields before comparing canonical gate evidence. Publication binding/reporting
+and Markdown presentation live in `audit/lib/audit-publication-report.mjs` and
+`audit/lib/audit-markdown-report.mjs`; failed, missing, skipped, and accepted
+non-pass states retain their separate meanings. Existing lane, orchestration,
+and publication regressions protect these boundaries. The source-wiring helper
+`audit/tests/publication-runner-contract.mjs` checks the report-module imports
+and preserves the reviewed-versus-live browser evidence assertions.
+
 ## Manifest semantic effect map
+
+The native engine runner preserves its 43 ordered result identities through
+`audit/tests/engine-core-checks.mjs`, `audit/tests/engine-learning-checks.mjs`,
+and `audit/tests/engine-boundary-checks.mjs`. Input-method, transactional-import,
+Free Play, placement-state, and exhaustive placement-route assertions live in
+the corresponding `engine-input-behavior.mjs`, `engine-import-behavior.mjs`,
+`engine-free-play-behavior.mjs`, `engine-placement-behavior.mjs`, and
+`engine-placement-boundaries.mjs` modules under `audit/tests/`. These helpers
+preserve assertion order and pass shared scenario state explicitly. The runner
+retains setup failures, optional result filtering, and harness reporting.
+`audit/tests/engine-ambient-scan.test.mjs` additionally guards comment/quote
+masking, interpolation scanning, nested braces/templates, and direct-reference
+ordering in the engine loader.
 
 The semantic suite contributes exactly 130 result records: one load/binding
 check, one taxonomy check, one check for each of 126 skills, and two
 task-type/mastery checks. A green release run must also reconcile 126 skills,
 166 declared task types, and 6,048 deterministic generated questions.
+
+The runner delegates independent model truth to
+`audit/tests/semantic-model-validation.mjs` and mathematical rules to
+`audit/tests/semantic-math-validation.mjs`. Supplemental input obligations in
+`audit/tests/semantic-input-facets.mjs` run before curriculum obligations in
+`audit/tests/semantic-curriculum-facets.mjs`; overlapping skill identities must
+exercise both groups. Persistence acceptance and hostile-import rejection live
+in `audit/tests/semantic-persistence-validation.mjs`, while ordered phase,
+task-breadth, token, and assisted-evidence scenarios live in
+`audit/tests/semantic-mastery-validation.mjs`. These modules retain independent
+expectations and report through the same suite assertion IDs.
 
 | Test | Protected semantic effect |
 |---|---|
@@ -99,13 +167,13 @@ task-type/mastery checks. A green release run must also reconcile 126 skills,
 | `SEM-MASTERY-COVERAGE` | A skill cannot become `SOLID` until clean, otherwise-qualified evidence witnesses every required task type and every declared CPA phase in the declared order. |
 | `SEM-INVALID-TASK-TYPE` | An undeclared attempt task type is rejected with `REJECTED_ATTEMPT_TASK_TYPE` and cannot append evidence. |
 | `node:test` semantic-module import | Native coverage dynamically imports the semantic suite, verifies its exported runner, and requires the exact 130/126/166/6,048 result totals before accepting the engine coverage run. |
-| `SAVE-VALID` / `SAVE-REJECT` | Native coverage accepts valid question, construction, pick, feedback, capstone, fatigue, legacy, inactive, and placement-provenance snapshots, then independently rejects every malformed root field, skill record, settings field, placement field, placement-confirmation field, active-session field, queue-slot field, question field, attempt field, and resumable-UI discriminator. Placement rejection includes missing or unknown contracts and fields, invalid applied boundaries, duplicate, unknown, or selected-level placed skill IDs, future confirmation days, invalid recommendation/chosen/applied relationships, and question counts outside 10–20. The exact set of `PLACED` skill records must equal `placedSkillIds`; a placed record cannot carry a mastery day, mastery contract, mastery witness, recovery state, or review date beyond its 20-day placement-review horizon. Ordinary skill spacing remains capped at 12 days. A regular queue cannot contain skills above its active level; a preview queue is bound exactly to its selected preview level. Stage practice, planned-question, time, adult-reduction, queue-length, base-slot, served-count, served-ordinal, and maximum-seen-play-day relationships must all remain internally possible. Persisted questions and ordered pick candidates must reproduce byte-for-byte from their session seed, world, queue slot, and special re-teach/capstone context, so another self-consistent seed, swapped labels, altered prompts, or a mismatched one-more capstone cannot retain untouched hidden answers. Active feedback must regrade the saved response, bind the complete attempt and evidence record, and exactly reproduce the latest approved deterministic feedback-history line. Expired active work is discarded before strict current-question validation while progress/history is preserved and the caller's object remains unchanged; same-day corruption rejects. A prior `question-generator-v5` active question is treated as legacy under v6: only the paused session is discarded while progress and histories survive. A nested invalid snapshot also proves transactional import and throwing export without mutating live state. |
+| `SAVE-VALID` / `SAVE-REJECT` | Native coverage accepts valid question, construction, pick, feedback, capstone, fatigue, legacy, inactive, and placement-provenance snapshots, then independently rejects every malformed root field, skill record, settings field, placement field, placement-confirmation field, active-session field, queue-slot field, question field, attempt field, and resumable-UI discriminator. Placement rejection includes missing or unknown contracts and fields, invalid applied boundaries, duplicate, unknown, or selected-level placed skill IDs, future confirmation days, invalid recommendation/chosen/applied relationships, and question counts outside 10–20. The exact set of `PLACED` skill records must equal `placedSkillIds`; a placed record cannot carry a mastery day, mastery contract, mastery witness, recovery state, or review date beyond its 20-day placement-review horizon. Ordinary skill spacing remains capped at 12 days. A regular queue cannot contain skills above its active level; a preview queue is bound exactly to its selected preview level. Stage practice, planned-question, time, adult-reduction, queue-length, base-slot, served-count, served-ordinal, and maximum-seen-play-day relationships must all remain internally possible. Persisted questions and ordered pick candidates must reproduce byte-for-byte from their session seed, world, queue slot, and special re-teach/capstone context, so another self-consistent seed, swapped labels, altered prompts, or a mismatched one-more capstone cannot retain untouched hidden answers. Active feedback must regrade the saved response, bind the complete attempt and evidence record, exactly reproduce the latest approved deterministic feedback-history line, and retain the submitted capstone checkpoint only during capstone feedback. A correct hint-assisted response with invalid telemetry resumes only as `CORRECT_WITH_STRUGGLE`, `NON_EVIDENCE`, guessing-like feedback with zero elapsed time; a nonzero elapsed value rejects. Expired active work is discarded before strict current-question validation while progress/history is preserved and the caller's object remains unchanged; same-day corruption rejects. A prior `question-generator-v5` active question is treated as legacy under v6: only the paused session is discarded while progress and histories survive. A nested invalid snapshot also proves transactional import and throwing export without mutating live state. |
 | `API-PARSE` / `API-GRADE` / `API-SUBMIT` | Public parsing, grading, and submission APIs distinguish malformed, equivalent, wrong, normalized, defaulted, reduced-choice, named-candidate, construction, rapid, and invalid-telemetry inputs by asserting their exact canonical result, evidence class, feedback class, or telemetry status. |
 | `API-PROGRESSION` / `API-FATIGUE` | Public spacing, fast-track, level re-teaching, promotion, repeated-miss, fatigue, stop-classification, feedback, and child-string branches are checked through exact state, signal, target, and returned-text effects. |
 | `API-STATE` | Defensive load/apply/queue paths assert rejected-attempt effects, non-evidentiary isolation, task-type fallback or rejection, cap enforcement, gateway pull-back, restoration, promotion, level re-teach clearing, due-review representation, preview isolation, and empty-session results. |
 | `node:test` cross-CPA/world generator matrix | Every declared skill preserves the same task, answer, option values, and mathematical obligation across its applicable CPA representations and all three worlds over a deterministic multi-seed matrix; each generated contract, model, construction self-grade, and distractor effect remains valid. |
 | `node:test` public generator/contract failure matrix | Missing, unknown, out-of-domain, answer-bearing, duplicate, ambiguous, undeclared, malformed, and method-mismatched questions fail closed with their specific public contract reason; neutral-world prompt fallbacks remain child-readable. |
-| `node:test` structured response grading and persistence matrices | Every structured child input method has a resumable empty state and an exact correct serialization; malformed, boundary, duplicate, out-of-range, forged-history, incomplete, and valid-but-wrong actions remain distinguishable. Invalid persisted responses fail validation and transactional import, except the explicit legacy grid-route migration, which repairs the response and marks the load migrated. |
+| `node:test` structured response grading and persistence matrices | Every structured child input method has a resumable empty state and an exact correct serialization; malformed, boundary, duplicate, out-of-range, forged-history, incomplete, and valid-but-wrong actions remain distinguishable. Hostile unknown method names `toString`, `constructor`, and `__proto__` cannot dispatch inherited policy members and retain the exact frozen scalar fallback. Invalid persisted responses fail validation and transactional import, except the explicit legacy grid-route migration, which repairs the response and marks the load migrated. |
 | `node:test` grid-route geometry matrix | Text, object, coordinate, and default route origins resolve exactly; malformed moves, invalid coordinates, off-board plans, unsafe sizes, excess moves, and traces outside the configured board fail closed. |
 | `node:test` active-session binding matrix | Preview, level, fatigue, ordinary, pick, capstone, and re-teach snapshots remain bound to their exact queue, phase, ordinal, candidate resolution, and progress context; cross-phase or cross-progress snapshots fail validation and cannot be exported. |
 | `node:test` placement failure matrix | Placement creation, validation, answer submission, completion, and application reject malformed, stale, unsupported, exhausted, or non-transactional requests while preserving the exact live state; a valid conservative completed run still applies only its permitted recommendation. |
@@ -325,6 +393,20 @@ conceal a release failure. Traces
 and screenshots are retained only on failure and use anonymous synthetic
 state.
 
+Every focused journey also injects the exact reviewed axe-core 4.13.0 source
+from the local development dependency and scans the visible `#app` subtree
+with the WCAG 2.0, 2.1, and 2.2 A/AA tag sets. A definite violation fails the
+journey. Axe `incomplete` results are retained separately as manual-review
+items and are never counted as automated passes. They retain exact case or
+cell/state identities, node selectors, failure reasons, and rule-help links.
+Absent or malformed scanner result channels and missing scan annotations fail
+closed instead of being converted to empty results. The formatter regression
+`NC-AXE-RESULT-CLASSIFICATION` is unit evidence only. Before product inspection,
+an isolated synthetic page containing one deliberately unnamed button must
+produce the exact `button-name` violation; failure to detect it fails the
+gate. The scanner makes no network request and enters no public runtime or
+service-worker payload.
+
 | Test | Protected direct-user effect |
 |---|---|
 | `PW-F-01` | First use can continue without a nickname, reaches Home, exposes the session start action, and opens a world through visible, enabled, unobscured native controls. |
@@ -378,6 +460,14 @@ fuzzer itself.
 
 ## Playwright Deep UX Census effect map
 
+Risk-signature construction and ordered scenario selection live in
+`audit/lib/playwright-deep-ux-sampling.mjs`. The census retains the plan and
+report contract. `audit/playwright/deep-ux-dom-observations.mjs` captures
+geometry and tutorial effects in one browser evaluation per observation;
+host-side helpers project the same ordered findings. Native-action and
+artifact-boundary source controls scan the importing spec and observation
+module together. The rights negative control binds both extracted modules.
+
 The census is a separate alternating-beta diagnostic owned by
 `audit/lib/playwright-deep-ux-census.mjs`. It is required for Beta 4, 6, 8,
 and later even-numbered semantic-version betas. It never runs completely in
@@ -391,7 +481,7 @@ candidate and must pass before publication.
 | Deterministic source inventory | Exactly 126 skills × 2 tiers × 3 representations × 3 worlds × 32 ordinals produce 72,576 source questions under one exact seed and engine/curriculum identity. Missing or extra source combinations fail plan validation. |
 | Risk-selected plan | Maximum-risk structural signatures plus required skill/tier, method/representation/theme, and model/representation witnesses form a closed, hash-bound scenario and six-viewport cell set. The planner cannot silently hand-pick only favourable examples. |
 | Rendered state census | Every selected cell checks initial and changed-response states, visibly proved expected-answer disclosure, a visibly proved teaching model when one exists, and all three tutorial steps. Tutorial traversal requires the exact source question, a distinct example question, the exact resolution/disclosure contract, answer-free Notice and Plan, the governed Check state, and one declared visual anchor on an actual prompt/stimulus/model. Each anchor must expose its declared cue, visible phase-specific SVG geometry and outline, and accessible instruction relationship; three implementation-authored dataset labels alone cannot pass. The census also requires accessible 44 px actions, unchanged save bytes, and return to the source question. It prefers an enabled, unpressed native response control so an already-selected default cannot create a false no-effect result, then waits for the production render-settled signal before inspecting or continuing. It uses native click/tap/form actions with normal Playwright actionability and `scroll: "none"` where first-screen discoverability matters. Later-grade content on the 844 by 390 short-landscape profile may move only `document.scrollingElement`, prove that it is the outer document element and actually moved, then repeat the same real-control/no-auto-scroll actionability proof. Early levels and all other profiles remain first-screen strict. Unapproved nested vertical scrolling and ancestor-clipped controls fail; only the governed large route-grid scroller is exempt. |
-| UX and accessibility invariants | The rendered question enforces 16 px text, 44 px controls, accessible names, visible response/grade regions, no horizontal clipping or placeholder text, valid question contracts, unchanged child-save bytes, and zero unexpected requests, page errors, or console errors. |
+| UX and accessibility invariants | The rendered question enforces 16 px text, 44 px controls, accessible names, visible response/grade regions, no horizontal clipping or placeholder text, valid question contracts, unchanged child-save bytes, and zero unexpected requests, page errors, or console errors. Every already-selected initial, partial, expected-answer, teaching-model, and tutorial state also runs the exact reviewed axe-core WCAG A/AA rules. Definite violations become evidence-bearing anomalies; uncertain `incomplete` findings remain a separately counted manual-review inventory and never impersonate an automated pass. The deliberately unnamed-button negative control must be detected in every viewport shard. |
 | Anomaly-only evidence | Passing cells create no screenshots, traces, or videos. A failure produces synthetic WebP, AI-mode ARIA-with-boxes, and geometry records plus one compact closed report. The workflow explicitly includes these hidden `.tmp` paths in its failure upload so retained evidence cannot silently disappear. |
 | Cadence and identity | Complete mode requires the exact frozen protected-main candidate on GitHub-hosted Windows, reviewed Edge 1.62.1 toolchain identity, exact server-root and served-payload digests, all six project shards, no retries/skips/unknowns/duplicates, and a matching executed-cell digest. |
 | Claim boundary | The census does not replace the 72-result browser audit, mathematics or grading oracles, human play testing, physical devices, Safari/iOS, assistive-technology speech, pronunciation, or installed-PWA evidence. |
@@ -406,7 +496,15 @@ question cell are brought into view only through the document's outer scrolling
 element, then activated with Playwright auto-scroll disabled; nested scrolling
 remains forbidden and early learning responses remain first-screen strict.
 
-`audit/tests/playwright-deep-ux-census.test.mjs` effect-tests cadence mutants,
+Initial entry waits for a visible anonymous-entry or restored-Home control
+before choosing either route. An immediate zero locator count is not evidence
+that the anonymous-entry screen is absent. The delayed-render regression
+requires readiness before either native action and preserves the existing
+deadline and zero-retry policy.
+
+`audit/tests/axe-accessibility.test.mjs` and
+`audit/tests/playwright-deep-ux-census.test.mjs` effect-test the axe result
+boundary and cadence mutants,
 the exact 72,576 inventory, balanced 100-cell non-certifying mode, closed plan
 and report schemas, missing/duplicate/identity/privacy mutants, native-action
 rules, context-level network observation, and anomaly-only artifact policy.
@@ -562,6 +660,62 @@ only that generation back to its prior value and independently requires an
 exact `+1` generation transition. `BEH-27` additionally proves
 baseline-identical reset/import staleness, advancement beyond either local or
 imported generations, and transactional preservation on rejected imports.
+
+## AI-change-loop slice and candidate effect map
+
+`audit/quality-gate-policy-v1.json` declares the refactor slice lifecycle, and
+`audit/tests/quality-gate-policy.test.mjs` protects its closed ordering.
+Required review clearance remains an `AGENTS.md` and caller obligation; it is
+not reported as an automated runner PASS. `audit/tests/ai-change-loop.test.mjs`
+protects the exact candidate and ordered stages consumed after that handoff.
+Focused checks are selected through the canonical blast-radius and Code Map
+authorities; unknown effects fail safe to the broad development suite. They
+never replace the complete ordered loop on a final reviewed slice.
+
+| Check | Protected slice or candidate effect |
+|---|---|
+| Review-before-loop lifecycle | The machine policy fixes focused development, complete staging, required independent review, correction verification, exact freeze, the complete nine-stage loop, and only then advancement. The caller must satisfy review clearance; the runner does not claim to observe it. A post-loop edit invalidates the seal. |
+| Exact candidate preflight | The real runner uses an exact-root, ambient-`GIT_*`-scrubbed, replacement-disabled Git helper; refuses unstaged tracked paths or nonignored untracked paths before Stage 1; and records the staged Git tree oid, immutable R0 commit, quality-policy hash, gate-policy hash, package-lock hash, reviewed Node version, and Node executable hash. |
+| Exact candidate postflight | The same identities and clean candidate state are measured again after the last executed stage. Changed tree, policy, lockfile, executable, tracked bytes, or nonignored untracked material makes the report fail even when every stage reported PASS. |
+| Loop failure evidence | V2 reports retain executed component reports by value. Coverage timeouts and process, calibration, or aggregation failures produce actionable findings. A PASS label with unresolved or malformed findings fails both execution and serialized validation; no later stage runs. |
+| Placement fixture reuse | Three fixture regressions require one current-question lookup per prefix, preserve ordered question/answer identity and all three response kinds, and retain early completion, maximum overflow, and duplicate Not sure rejection. The real engine audit retains all 42 threshold routes, 36 deviation routes, deterministic reruns, and validation assertions; reuse removes redundant fixture computation, not runtime validation or test cases. |
+| Shared browser-server helpers | Focused journeys, Deep UX Census, and interaction fuzz share exact health classification, 20-second readiness polling, bounded exit waiting, and runner-result handling. Tests cover the fixed loopback URL, root/payload identity, HTTP/transport/JSON failures, readiness ordering, child exit/signal/error outcomes, absent exit status, polling, exact 1,000/200/20,000/5,000 ms defaults, exit-timer clearing, and no process killing by a wait helper. Each runner retains its original spawn/kill ownership and teardown failure check; all new tests run through the existing focused-contract entry. |
+| Candidate mutation controls | `NC-AI-CHANGE-LOOP-CANDIDATE-DRIFT` independently changes a tree oid, policy digest, unstaged tracked path, and nonignored untracked path; each must be rejected. `NC-AI-CHANGE-LOOP-AMBIENT-GIT-REDIRECTION` and `NC-DIFFERENTIAL-HERMETIC-R0` redirect ambient repository, worktree, index, and replacement state and must still read the exact Math Quest candidate and R0 bytes. Automatic retries remain prohibited. |
+| Performance evidence boundary | Shipped bytes and engine-scenario runtime hard-fail everywhere. Aggregate quality-run wall time hard-fails at the unchanged 120-second budget only with explicit calibrated-environment evidence; otherwise it remains labelled harness telemetry and cannot prove product performance. |
+| Gate-admission boundary | A new tool, baseline, schema, gate, or evidence family requires a demonstrated escape not covered by an existing effect-sensitive control. This prevents verification volume from becoming a substitute for product simplification. |
+| Approved historical lint evidence | Exactly three owner-approved local review scripts retain their recorded 53 warnings as historical non-passes. The closed policy binds paths and hashes; altered or unreadable present files fail configuration loading. Absence on CI is permitted, while live files and new paths remain linted. |
+| Dependency-audit completeness | npm must match the reviewed version and return an accepted exit status. Its version-2 report must contain six explicit nonnegative integer counts, a consistent severity total, and an agreeing vulnerability dictionary. Missing, partial, malformed, hidden, or contradictory findings cannot become zero. The existing npm negative control also exercises rejected missing/partial reports. The command pins this repository, non-global mode, and the approved registry; it rejects any conflicting effective registry, audit-registry, or scoped-registry setting before sending an audit. Configuration contents are not retained in the report. |
+| Validator URI security regression | Ajv's actual installed URI resolver must canonicalize a scheme-relative international hostname to its expected ASCII form. The regression fails with fast-uri 3.1.5 and passes with reviewed 3.1.6, without making a network request. |
+
+## AI-change-loop differential-equivalence effect map
+
+The quality policy's `ART_DEC_013_TUTORIAL_METADATA_V1` transition is the only
+approved metadata difference. The comparison validates both complete tutorial
+manifest fingerprints, the exact approved art-register bytes and decision,
+and equality of every manifest field except `/artDesignBinding/sha256` before
+translating the corresponding `/manifestSha256` in comparison-only tutorial
+plans. Runtime objects remain unchanged; altered plan fingerprints and teaching
+fields remain observable. Reports retain the verified old/new bindings and
+decision identity. `NC-TUTORIAL-METADATA-TRANSITION` exercises unknown hashes,
+changed manifest semantics, altered approval bytes, and changed plan hash/copy,
+including a stale baseline hash that would otherwise collide with normalization;
+the closed policy rejects missing or broadened transition records.
+
+`audit/tests/differential-equivalence.test.mjs` compares the shipped engine with
+the exact engine bytes at immutable commit
+`2078625b407d5189f579e94e716c86dce86ae90f`. Semantic witness selection is made
+only by that immutable engine, so a candidate cannot hide a changed branch by
+shrinking or redirecting its own generated prompt set. The differential stage
+is the fourth step of the closed nine-stage AI-change loop.
+
+| Check | Protected differential effect |
+|---|---|
+| Exact immutable anchor | Engine extraction and evaluation use the configured full baseline commit rather than a mutable file, branch, generated fixture, or candidate-owned snapshot. |
+| Closed semantic discovery | The baseline engine evaluates exactly 48,384 requests across every skill, tier, declared representation, ordinal 0 through 31, ordinary/capstone state, and all three theme worlds. The resulting 103 generated semantic prompt ids are bound to SHA-256 `a76df68903736830ff73179ddf5ee63b65b0e27089fb41001ae807489d113de8`. Every complete `{request, question}` result also contributes to immutable corpus SHA-256 `8aaea3a5dab0d50afd6dc16b912a135cfd4f8563d5e050cfbbc416190ddcc703`; both engines emit one exact digest for each of the 126 skills. |
+| Baseline-owned facet witnesses | The discovery matrix contracts to the exact 2,304 distinct baseline keys formed from skill, task type, semantic prompt, model type, representation, tier, capstone state, and theme. A canonically sorted registry of every full `{id, request}` witness record is bound to SHA-256 `f30730884cb0ea5a9b125c95534d6f1bbc238489180d89d70e0bad522993af4b`. Both engines receive those same requests; question and complete teaching-support descriptors are compared for every key. |
+| Changed semantic branches | Direct public `makeTeachingSupport` fixtures independently cover `hiddenPart`, `integerOrderList`, `numberLeast`, `patternUnit`, `remainderInterpret`, and `timeReadDigital`. The first, third, fifth, and sixth also occur in generated witnesses; the two legacy support-only ids cannot silently disappear merely because ordinary generation does not emit them. |
+| Calibrated negative controls | Independent mutants must be detected for witness representative selection, stage routing, fraction parsing, grid routing, generated question identity, exhaustive late-ordinal question corpus, later-facet hidden-part semantic support, strategy governance/work, and response creation/serialization/completeness. The registry mutant substitutes a later ordinal without changing its witness key/count; the corpus mutant changes only ordinal-31 space/capstone questions and must alter a per-skill digest; and the semantic mutant must prove it reached at least one hidden-part support witness before its rejection can count. |
+| Independence boundary | Differential equality protects observable compatibility with R0; it does not replace mathematical oracles, effect-sensitive tests, property/fuzz testing, mutation testing, release certification, rendered-browser evidence, real-device evidence, or human play review. |
 
 ## Private QA Tour effect map
 
@@ -859,7 +1013,7 @@ request's observed status instead of assuming every allowed request returned
 | `EXT-ADJUDICATION` | Independent adjudication must be `APPROVED`, recommend `RELEASE`, and carry its exact digest. Pending, missing, contrary, or malformed adjudication blocks. |
 | `EXT-FINDINGS` | Disposition must be `COMPLETE`, with zero open Critical/High, zero unaccepted Medium, and zero unrecorded Low findings. Each nonzero-count mutant blocks independently. |
 | `EXT-HOSTED-WINDOWS` | The state must be `REVIEWED`, and its digest and clearance fields must equal the canonical qualification browser/runner evidence bytes. The final audit independently requires a complete exact GitHub-hosted tuple; because `windows-latest` floats, equality between the two valid tuples is diagnostic rather than a gate. Local, malformed, pending, stale, falsely labelled, or digest-mismatched evidence blocks. |
-| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.8`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
+| `EXT-OWNER` | Only exact project-owner `PR_PUSH_AUTHORIZED` evidence, a valid review-bundle digest, tag `v1.0.0-beta.9`, and protected ref `refs/heads/main` can pass. Missing, reordered, duplicated, blocked, wrong-tag, or wrong-ref decision inputs cannot compute a ship decision. |
 
 The suite preserves the historical Beta 4 effect test for
 `DIRECT_EVIDENCE_SUCCESSOR_V1`: the final Beta 4
@@ -926,6 +1080,24 @@ residual-risk statement, technical result, or gate ordering blocks release.
 
 ## Representative mutation proof
 
+The focused browser journeys retain their 18 case identities across desktop
+and phone. Shared DOM observations capture one atomic browser snapshot before
+projecting shell, zone, counting, and frame facts. The journeys exercise
+`NC-ART-DOM-DUPLICATE-RAIL`, `NC-ART-DOM-MISSING-ZONE`,
+`NC-ART-DOM-MISSING-COUNTING-ID`, and
+`NC-ART-DOM-WRAPPED-FRAME-CELL`: each temporarily changes the rendered DOM,
+requires the existing semantic or geometry assertion to reject it, and restores
+the original DOM in a finally block. These controls protect rail cardinality,
+zone identity, independently expected response IDs, and direct-child five-by-two
+frame structure. Tutorial, parent-lab, design-token, and functional-art helpers
+remain exercised through the same native-action journeys.
+
+`NC-PLAYWRIGHT-HELPER-RIGHTS-BINDING` independently names all eight extracted
+browser modules, changes each module's bytes in a disposable fixture, and
+requires the rights-evidence digest to change and then return to its baseline
+after restoration. Removing a helper from the digest's declared inputs makes
+this control fail.
+
 `audit/mutation-runner.mjs` creates disposable copies under the operating
 system's temporary directory. It alters one effect in each required family and
 runs only the protecting test. The mastery/promotion family also contains a
@@ -940,3 +1112,40 @@ when the selected multi-task skill requires it; the baseline must remain
 `SOLID`. This prevents a shared unmet mastery condition from letting both
 versions remain `PRACTISING` and falsely appear protected. The shipped
 `index.html` is never edited.
+
+The canary evidence parser uses the ordered field contract in
+`audit/lib/trusted-https-canary-contract.mjs` and the domain validators in
+`audit/lib/trusted-https-canary-evidence.mjs`. Its independent valid-evidence
+fixture remains in the test layer.
+`NC-CANARY-EVIDENCE-RIGHTS-BINDING` mutates each production module separately
+and requires the rights digest to change and return to baseline on restoration.
+The shared rights fixture supplies setup and cleanup while each caller names
+its protected paths independently. Development-routing controls require both
+new canary modules and both test fixtures to select their protecting suites.
+
+The refactored QA, page, placement, visual-stimulus, and service-worker fixtures
+retain independent VM/browser/cache effects; their original test assertions
+remain the primary oracles. Closed question-option iteration preserves the
+exact skill, tier, representation, theme, ordinal, eligibility, and seed order.
+The worker nonce test includes the shipped hexadecimal helper and independently
+requires distinct correctly formed staging names. The manifest check traverses
+the closed dense shell inventory and therefore rejects sparse entry arrays.
+
+Canary runner effect checks execute the active-cache phase with isolated browser
+observations and reject foreign controllers or changed source/protected records.
+Runner source checks include all three imported production modules. Eight direct-call
+mutations require rejection of unbounded page evaluation, page creation, offline
+switching, and auxiliary closure through local and per-run references. Supply-
+chain controls reject missing imported modules and insecure flags inside each
+module. The canary rights control mutates all three runner modules independently;
+the focused canary command includes the runner-effect test file. Routing checks
+require every extracted fixture/module to select its protecting suite.
+
+Release-version comparison executes both immutable R0 and shipped engines.
+It verifies CONSTANTS.PRODUCT_VERSION, initial-state productVersion and the
+single canonical exported productVersion against each revision's VERSION.
+Only those three fields are compared using the baseline version; other
+constants, progress and serialized bytes retain exact comparisons. Negative
+controls reject wrong, missing and duplicate version fields, and changes to
+schema, earned level and export formatting remain observable. Actual baseline
+saves must load into the current engine with all other state unchanged.

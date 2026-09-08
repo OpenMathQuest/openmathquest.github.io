@@ -149,20 +149,6 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.aiReaderContract.commandOutputPolicy, "MACHINE_READABLE_BY_DEFAULT");
   assert.equal(map.aiReaderContract.ambiguityPolicy, "FAIL_CLOSED");
   assert.deepEqual(map.aiReaderContract.governedSystems, ["OWNERS", "CODE_MAP", "FEATURE_MAP", "TUTORIAL_MANIFEST", "ART_DESIGN", "BLAST_RADIUS", "GATES"]);
-  assert.equal(map.factFamilies.find((family) => family.id === "art-design.source-decisions")?.owner, "audit/art-design-decision-register-v1.json");
-  assert.equal(map.factFamilies.find((family) => family.id === "art-design.asset-acceptance")?.owner, "audit/art-asset-register-v1.json");
-  assert.equal(map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.owner, "assets/design/math-quest-design-tokens-v1.json");
-  assert.deepEqual(
-    map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.projections,
-    [
-      { path: "assets/design/math-quest-design-tokens-v1.css", relationship: "GENERATED" },
-      { path: "audit.html", relationship: "VALIDATION_EXPECTATION" },
-      { path: "index.html", relationship: "DOCUMENTED_REFERENCE" },
-      { path: "release-shell-v1.json", relationship: "GENERATED_METADATA" },
-    ],
-  );
-  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.generator"), true);
-  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.runtime"), true);
   assert.equal(map.relationKindSemantics.CONSUMES, "TARGET_READS_SOURCE");
   assert.equal(map.relationKindSemantics.GENERATES, "SOURCE_WRITES_TARGET");
   assert.equal(map.relationKindSemantics.TESTS, "TARGET_TESTS_SOURCE");
@@ -171,6 +157,9 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   assert.equal(map.projectionRelationshipSemantics.STATE_DEPENDENT_DOCUMENTED_REFERENCE, "PROJECTION_STORES_OWNER_FACT_ONLY_WHEN_ITS_EVIDENCE_STATE_REQUIRES_THAT_FACT");
   assert.equal(aiReaderAuthoritySha256(authority, map.aiReaderContract), map.aiReaderContract.authority.sha256);
 
+});
+
+test("ambiguous authority, stale hashes, unordered facts, and false mirrors fail closed", async () => {
   const weakened = clone(map);
   weakened.aiReaderContract.prosePolicy = "HUMAN_PROSE_MAY_DEFINE_BEHAVIOR";
   assert.notDeepEqual(await validateRepositoryCodeMapSchema(weakened, REPOSITORY_CODE_MAP_SCHEMA_PATH), []);
@@ -183,6 +172,9 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   ambiguousDirection.relationKindSemantics.CONSUMES = "SOURCE_OR_TARGET_CONSUMES";
   assert.notDeepEqual(await validateRepositoryCodeMapSchema(ambiguousDirection, REPOSITORY_CODE_MAP_SCHEMA_PATH), []);
 
+});
+
+test("unordered ownership and false mirror relationships fail closed", async () => {
   const unordered = clone(map);
   unordered.factFamilies.reverse();
   assert.match((await validateRepositoryCodeMap(unordered)).join("\n"), /factFamilies must be sorted/u);
@@ -195,20 +187,13 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   falseMirror.factFamilies.find((family) => family.id === "tutorial.linkage").projections[1].relationship = "EXACT_MIRROR";
   assert.match((await validateRepositoryCodeMap(falseMirror)).join("\n"), /may use EXACT_MIRROR only with SECTION_MIRROR/u);
 
+});
+
+test("version projections follow exact owner literals and evidence-dependent clearance", async () => {
   const missingVersionProjection = clone(map);
   const productVersion = missingVersionProjection.factFamilies.find((family) => family.id === "product.version");
   productVersion.projections = productVersion.projections.filter((projection) => projection.path !== "Serve-MathQuest.ps1");
   assert.match((await validateRepositoryCodeMap(missingVersionProjection)).join("\n"), /undeclared exact owner-literal projection Serve-MathQuest\.ps1/u);
-
-  const clearanceProductVersion = clone(map.factFamilies.find((family) => family.id === "product.version"));
-  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path === "PUBLICATION_CLEARANCE.md");
-  const versionLiteral = (await readFile("VERSION", "utf8")).trim();
-  const pendingClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: "Authorized release tag: PENDING\n" }];
-  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, pendingClearance), []);
-  const approvedClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: `Authorized release tag: v${versionLiteral}\n` }];
-  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance), []);
-  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path !== "PUBLICATION_CLEARANCE.md");
-  assert.match(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance).join("\n"), /undeclared exact owner-literal projection PUBLICATION_CLEARANCE\.md/u);
 
   const falseVersionProjection = clone(map);
   falseVersionProjection.factFamilies.find((family) => family.id === "product.version").projections.push({
@@ -218,6 +203,9 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   falseVersionProjection.factFamilies.find((family) => family.id === "product.version").projections.sort((left, right) => left.path.localeCompare(right.path, "en"));
   assert.match((await validateRepositoryCodeMap(falseVersionProjection)).join("\n"), /manifest\.webmanifest but it does not contain the exact owner literal/u);
 
+});
+
+test("narrative facts and incomplete Tutorial V2 ownership fail closed", async () => {
   const narrativeFact = clone(map);
   narrativeFact.factFamilies[0].owns = ["reviewed hosted browser identity"];
   assert.notDeepEqual(await validateRepositoryCodeMapSchema(narrativeFact, REPOSITORY_CODE_MAP_SCHEMA_PATH), []);
@@ -233,4 +221,41 @@ test("AI-first drift-control contract is exact, hash-bound, machine-default, and
   const missingTutorialRelation = clone(map);
   missingTutorialRelation.artifactRelations = missingTutorialRelation.artifactRelations.filter((relation) => relation.id !== "tutorial.build-spec");
   assert.match((await validateRepositoryCodeMap(missingTutorialRelation)).join("\n"), /requires artifact relation tutorial\.build-spec/u);
+});
+
+test("historical art reconstruction has one owner and connects engine extraction to baseline validation", () => {
+  const owner = "audit/lib/art-migration-source.mjs";
+  assert.equal(map.factFamilies.find((record) => record.id === "testing.art-migration-source").owner, owner);
+  assert.equal(map.artifactRelations.find((record) => record.id === "art-migration.engine-loader").target, owner);
+  assert.ok(map.artifactRelations.some((record) => record.source === owner && record.target === "audit/lib/art-migration-baseline.mjs" && record.kind === "CONSUMES"));
+});
+
+test("art governance names sole owners and generated token projections", () => {
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.source-decisions")?.owner, "audit/art-design-decision-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.asset-acceptance")?.owner, "audit/art-asset-register-v1.json");
+  assert.equal(map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.owner, "assets/design/math-quest-design-tokens-v1.json");
+  assert.deepEqual(
+    map.factFamilies.find((family) => family.id === "art-design.runtime-tokens")?.projections,
+    [
+      { path: "assets/design/math-quest-design-tokens-v1.css", relationship: "GENERATED" },
+      { path: "audit.html", relationship: "VALIDATION_EXPECTATION" },
+      { path: "index.html", relationship: "DOCUMENTED_REFERENCE" },
+      { path: "release-shell-v1.json", relationship: "GENERATED_METADATA" },
+    ],
+  );
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.generator"), true);
+  assert.equal(map.artifactRelations.some((relation) => relation.id === "art-token-projection.runtime"), true);
+});
+
+test("clearance version references depend on its evidence state", async () => {
+  const clearanceProductVersion = clone(map.factFamilies.find((family) => family.id === "product.version"));
+  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path === "PUBLICATION_CLEARANCE.md");
+  const versionLiteral = (await readFile("VERSION", "utf8")).trim();
+  const pendingClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: "Authorized release tag: PENDING\n" }];
+  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, pendingClearance), []);
+  const approvedClearance = [{ path: "PUBLICATION_CLEARANCE.md", text: `Authorized release tag: v${versionLiteral}\n` }];
+  assert.deepEqual(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance), []);
+  clearanceProductVersion.projections = clearanceProductVersion.projections.filter((projection) => projection.path !== "PUBLICATION_CLEARANCE.md");
+  assert.match(exactOwnerLiteralProjectionIssues(clearanceProductVersion, versionLiteral, approvedClearance).join("\n"), /undeclared exact owner-literal projection PUBLICATION_CLEARANCE\.md/u);
+
 });

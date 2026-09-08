@@ -6,10 +6,32 @@
   "engines": {
     "node": "24.14.0"
   },
+  "scripts": {
+    "ai:check": "node audit/run-ai-change-loop.mjs",
+    "lint:css": "stylelint \"assets/**/*.css\"",
+    "lint:dead-code": "knip",
+    "lint:js": "eslint .",
+    "lint:markdown": "markdownlint-cli2",
+    "quality": "node audit/run-quality-gates.mjs",
+    "size:bundlewatch": "node audit/run-bundlewatch-budgets.mjs"
+  },
   "devDependencies": {
+    "@oxc-parser/binding-win32-x64-msvc": "0.143.0",
+    "@oxc-resolver/binding-win32-x64-msvc": "11.24.2",
     "@playwright/test": "1.62.1",
     "ajv": "8.20.0",
+    "axe-core": "4.13.0",
+    "bundlewatch": "0.4.2",
+    "eslint": "10.9.0",
     "fast-check": "4.9.0",
-    "playwright-core": "1.62.1"
+    "knip": "6.32.2",
+    "markdownlint-cli2": "0.23.2",
+    "playwright-core": "1.62.1",
+    "stylelint": "17.14.1"
+  },
+  "overrides": {
+    "bundlewatch": {
+      "axios": "1.20.0"
+    }
   }
 }

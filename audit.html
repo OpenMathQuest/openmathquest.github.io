@@ -28,8 +28,8 @@
     <tbody id="results"></tbody>
   </table>
   <details><summary>Shipped game under test</summary><iframe id="game" title="Math Quest under browser audit"></iframe></details>
-  <script src="audit/approved-visual-regression.js"></script>
-  <script>
+  <script type="module" src="audit/approved-visual-regression.js"></script>
+  <script type="module">
   (() => {
     "use strict";
 
@@ -581,7 +581,7 @@
 
     function pwaPhysicalCacheNames(logicalIdentity, cacheNames) {
       if (
-        logicalIdentity !== "math-quest-static-v1.0.0-beta.8"
+        logicalIdentity !== "math-quest-static-v1.0.0-beta.9"
         || !Array.isArray(cacheNames)
       ) return [];
       const prefix = `${logicalIdentity}-`;
@@ -1022,7 +1022,6 @@
     function placementDraftBytes(engine, run, {
       phase = "question",
       question = phase === "question" ? engine.placementCurrentQuestion(run) : null,
-      correct = null,
       feedbackKind = null,
       state = null,
     } = {}) {
@@ -2208,7 +2207,6 @@
         const previewCase = previewCandidates.find((entry) => entry.question.inputClass === "SELECTION")
           || previewCandidates.find((entry) => STRUCTURED_RESPONSE_METHODS.has(entry.question.inputMethod))
           || previewCandidates[0];
-        const previewSkill = previewCase.skill;
         const previewQuestion = previewCase.question;
         const previewState = activeStateFor(engine, playDay, previewQuestion, { previewLevel });
         const activePreviewQuestion = previewState.activeSession.uiState.question;
@@ -8014,7 +8012,7 @@
             "./assets/fonts/Inter-Variable.ttf",
             "./assets/icons/apple-touch-icon.png",
             "./assets/icons/icon-192.png",
-            "./assets/icons/icon-512.png",
+            "./assets/icons/icon-512.png", "./assets/js/math-quest-progress-source.js", "./assets/js/math-quest-pwa-status.js",
             "./assets/sounds/close.wav",
             "./assets/sounds/confirm.wav",
             "./assets/sounds/incorrect.wav",
@@ -8074,16 +8072,16 @@
           const expectedPaths = [shellManifestRelative, ...expectedShellEntryPaths];
           const readinessValid = Boolean(
             readiness?.type === "MATH_QUEST_READINESS_V1"
-            && readiness?.release === "1.0.0-beta.8"
-            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.8"
-            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.8"
+            && readiness?.release === "1.0.0-beta.9"
+            && readiness?.buildId === "math-quest-pwa-v1.0.0-beta.9"
+            && readiness?.cacheIdentity === "math-quest-static-v1.0.0-beta.9"
             && readiness?.ready === true
             && requiredPaths.length === expectedPaths.length
             && requiredPaths.every((entry) => entry?.ready === true)
             && JSON.stringify(requiredPaths.map((entry) => entry.path).sort()) === JSON.stringify([...expectedPaths].sort())
           );
           const shellManifestValid = Boolean(shellManifest?.schemaVersion === 1
-            && shellManifest?.release === "1.0.0-beta.8"
+            && shellManifest?.release === "1.0.0-beta.9"
             && shellManifest?.buildId === readiness?.buildId
             && shellManifest?.cacheName === readiness?.cacheIdentity
             && shellManifest?.entryPath === "./index.html"

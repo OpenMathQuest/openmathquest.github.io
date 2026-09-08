@@ -7,8 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
 
-test("agent collaboration policy is closed and bounded", async () => {
-  const policy = JSON.parse(await read("audit/agent-collaboration-policy-v1.json"));
+function assertCollaborationPolicyBoundary(policy) {
   assert.deepEqual(Object.keys(policy), [
     "schemaVersion",
     "policyId",
@@ -49,6 +48,9 @@ test("agent collaboration policy is closed and bounded", async () => {
     "BROAD_CHILD_UX_OR_ACCESSIBILITY",
     "OWNER_REQUESTED",
   ]);
+}
+
+function assertCollaborationPeerContract(policy) {
   assert.deepEqual(policy.taskPacketRequiredFields, [
     "REQUIREMENTS",
     "RELEVANT_TASK_RECORDS_AND_REPORTS",
@@ -71,6 +73,9 @@ test("agent collaboration policy is closed and bounded", async () => {
     conclusionPrimingPermitted: false,
     codeRequirementsAndObjectiveEvidenceProvided: true,
   });
+}
+
+function assertCollaborationDurableEvidence(policy) {
   assert.deepEqual(policy.durableCommunication, {
     ordinaryCoordinationCreatesRepositoryRecord: false,
     materialFacts: [
@@ -95,6 +100,9 @@ test("agent collaboration policy is closed and bounded", async () => {
     "FILE_OWNERSHIP",
     "UNRESOLVED_PROBLEMS",
   ]);
+}
+
+function assertCollaborationReviewWorkflow(policy) {
   assert.deepEqual(policy.optionalSixReviewerException, {
     ownerOptInRequired: true,
     reviewerCount: 6,
@@ -114,6 +122,14 @@ test("agent collaboration policy is closed and bounded", async () => {
     "SAME_REVIEWER_VERIFY",
     "INTEGRATE",
   ]);
+}
+
+test("agent collaboration policy is closed and bounded", async () => {
+  const policy = JSON.parse(await read("audit/agent-collaboration-policy-v1.json"));
+  assertCollaborationPolicyBoundary(policy);
+  assertCollaborationPeerContract(policy);
+  assertCollaborationDurableEvidence(policy);
+  assertCollaborationReviewWorkflow(policy);
 });
 
 test("human authority preserves caps, ownership, handoff, and termination", async () => {

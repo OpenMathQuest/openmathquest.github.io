@@ -1,266 +1,26 @@
-import { spawn, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+export { canonicalAuditEvidenceBytes, compareAuditExecutionReports } from "./audit-evidence-comparison.mjs";
+import { runTreeSupervisedProcess } from "./audit-process-supervisor.mjs";
+export { processTreeCleanupVerified, runTreeSupervisedProcess } from "./audit-process-supervisor.mjs";
+import { AUDIT_LANE_IDS, failedAuditLaneResult, createAuditLaneEnvelope, auditLaneEnvelopeIssues, nestedProcessTimeoutForLane, nestedConcurrencyMaximumForLane, exactKeys, roundMs } from "./audit-lane-contract.mjs";
+export { AUDIT_LANE_IDS, failedAuditLaneResult, createAuditLaneEnvelope, auditLaneEnvelopeIssues, auditCandidateStabilityIssues, interpretJsonChildCompletion, nestedProcessTimeoutForLane, nestedConcurrencyMaximumForLane } from "./audit-lane-contract.mjs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
-import { canonicalBrowserRequestSignatures } from "./browser-smoke.mjs";
 
-export const AUDIT_LANE_IDS = Object.freeze([
-  "coverage",
-  "browser",
-  "playwright",
-  "mutation",
-  "generator",
-]);
-
-const ENVELOPE_KEYS = Object.freeze([
-  "candidateId",
-  "durationMs",
-  "error",
-  "executionStatus",
-  "laneId",
-  "result",
-  "resultType",
-  "runId",
-  "schemaVersion",
-]);
-
-const exactKeys = (value, expected) => value
-  && typeof value === "object"
-  && !Array.isArray(value)
-  && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...expected].sort());
-
-const roundMs = (value) => Math.max(0, Math.round(Number(value) || 0));
-
-export function failedAuditLaneResult(laneId, message, executionStatus = "ERROR") {
-  const reason = `${executionStatus}: ${message}`;
-  const resultStatus = executionStatus === "NOT_RUN" ? "NOT_RUN" : "FAIL";
-  if (laneId === "coverage") {
-    return {
-      status: resultStatus,
-      calibrated: false,
-      calibration: { reasons: [reason], fullBranchPct: null, partialBranchPct: null, aggregateBranchPct: null },
-      exactBytes: false,
-      branchPct: null,
-      engineSha256: null,
-      structuredAuditValid: false,
-      structuredAudit: null,
-    };
-  }
-  if (laneId === "mutation") return { status: resultStatus, engineSha256: null, families: [], error: reason };
-  if (laneId === "generator") return { status: resultStatus, engineSha256: null, issues: [reason], processStatus: null, error: reason };
-  if (laneId === "browser") {
-    return {
-      status: resultStatus,
-      results: [],
-      reason,
-      process: { status: null, signal: executionStatus === "TIMEOUT" ? "TIMEOUT" : null, error: reason, timedOut: executionStatus === "TIMEOUT" },
-    };
-  }
-  return {
-    status: resultStatus,
-    findings: [reason],
-    summary: { expected: 0, actual: 0, passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 },
-    results: [],
-    process: { status: "FAIL", stdout: "", stderr: reason },
-  };
+function timedOutLaneMessage(processResult, timeoutMs) {
+  const cleanup = processResult.cleanupVerified ? "descendant cleanup verified" : `descendant cleanup unverified (${processResult.cleanupDetail})`;
+  return `lane exceeded ${timeoutMs} ms; ${cleanup}`;
 }
 
-export function createAuditLaneEnvelope({
-  candidateId,
-  durationMs,
-  error = null,
-  executionStatus = "COMPLETED",
-  laneId,
-  result,
-  runId,
-}) {
-  return {
-    schemaVersion: 1,
-    resultType: "MATH_QUEST_AUDIT_LANE",
-    laneId,
-    runId,
-    candidateId,
-    executionStatus,
-    durationMs: roundMs(durationMs),
-    result,
-    error,
-  };
+function failedLaneExitMessage(processResult) {
+  return `lane process ended with code ${processResult.exitCode ?? "null"} and signal ${processResult.signal ?? "null"}; descendant cleanup verified=${String(processResult.cleanupVerified)}: ${processResult.stderr.slice(-4_000)}`;
 }
 
-export function auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds = AUDIT_LANE_IDS } = {}) {
-  const issues = [];
-  const expected = new Set(laneIds);
-  const seen = new Set();
-  if (!Array.isArray(envelopes)) return ["lane envelopes are not an array"];
-  for (const envelope of envelopes) {
-    if (!exactKeys(envelope, ENVELOPE_KEYS)) issues.push("lane envelope root is not closed");
-    if (envelope?.schemaVersion !== 1 || envelope?.resultType !== "MATH_QUEST_AUDIT_LANE") issues.push("lane envelope identity is invalid");
-    if (!expected.has(envelope?.laneId)) issues.push(`unknown lane ${String(envelope?.laneId)}`);
-    else if (seen.has(envelope.laneId)) issues.push(`duplicate lane ${envelope.laneId}`);
-    else seen.add(envelope.laneId);
-    if (envelope?.runId !== runId) issues.push(`${String(envelope?.laneId)} carries a foreign run id`);
-    if (envelope?.candidateId !== candidateId) issues.push(`${String(envelope?.laneId)} carries a foreign candidate id`);
-    if (!Number.isSafeInteger(envelope?.durationMs) || envelope.durationMs < 0) issues.push(`${String(envelope?.laneId)} duration is invalid`);
-    if (!new Set(["COMPLETED", "ERROR", "NOT_RUN", "TIMEOUT"]).has(envelope?.executionStatus)) issues.push(`${String(envelope?.laneId)} execution status is invalid`);
-    if (!envelope?.result || typeof envelope.result !== "object" || Array.isArray(envelope.result)) issues.push(`${String(envelope?.laneId)} result is absent`);
-  }
-  for (const laneId of laneIds) if (!seen.has(laneId)) issues.push(`missing lane ${laneId}`);
-  return [...new Set(issues)];
-}
-
-export function auditCandidateStabilityIssues({ before, after, revisionBefore, revisionAfter } = {}) {
-  const issues = [];
-  if (before?.status !== "PASS" || after?.status !== "PASS") issues.push("public-candidate guard did not pass twice");
-  if (!/^[a-f0-9]{40}$/u.test(String(revisionBefore || ""))) issues.push("starting repository revision is invalid");
-  if (revisionBefore !== revisionAfter) issues.push("repository revision changed during audit");
-  if (!before?.payloadSha256 || before.payloadSha256 !== after?.payloadSha256) issues.push("public payload changed during audit");
-  if (!before?.payloadTreeOid || before.payloadTreeOid !== after?.payloadTreeOid) issues.push("public payload tree changed during audit");
-  return issues;
-}
-
-const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-function processExists(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error?.code === "EPERM";
-  }
-}
-
-export function processTreeCleanupVerified({ treeTerminationSucceeded, parentAlive } = {}) {
-  return treeTerminationSucceeded === true && parentAlive === false;
-}
-
-async function terminateProcessTree(child, closePromise, graceMs = 2_000) {
-  if (!Number.isInteger(child.pid) || child.pid <= 0) {
-    return { attempted: false, cleanupVerified: true, detail: "process did not start" };
-  }
-  let detail;
-  let treeTerminationSucceeded = false;
-  if (process.platform === "win32") {
-    const systemRoot = process.env.SystemRoot || "C:\\Windows";
-    const killed = spawnSync(path.join(systemRoot, "System32", "taskkill.exe"), ["/PID", String(child.pid), "/T", "/F"], {
-      windowsHide: true,
-      encoding: "utf8",
-      timeout: 5_000,
-    });
-    treeTerminationSucceeded = killed.status === 0 && !killed.signal && !killed.error;
-    const taskkillDetail = `${killed.stdout || ""} ${killed.stderr || ""}`.trim().replace(/\s+/gu, " ").slice(-1_000);
-    detail = `taskkill status=${String(killed.status)} signal=${String(killed.signal || "none")}${taskkillDetail ? ` output=${taskkillDetail}` : ""}`;
-  } else {
-    try {
-      process.kill(-child.pid, "SIGKILL");
-      treeTerminationSucceeded = true;
-      detail = "SIGKILL sent to process group";
-    } catch {
-      try { child.kill("SIGKILL"); } catch {}
-      detail = "SIGKILL sent to direct process";
-    }
-  }
-  if (processExists(child.pid)) await Promise.race([closePromise, wait(graceMs)]);
-  if (processExists(child.pid)) {
-    try { child.kill("SIGKILL"); } catch {}
-    await Promise.race([closePromise, wait(1_000)]);
-  }
-  const parentAlive = processExists(child.pid);
-  return {
-    attempted: true,
-    cleanupVerified: processTreeCleanupVerified({ treeTerminationSucceeded, parentAlive }),
-    detail,
-    treeTerminationSucceeded,
-  };
-}
-
-export async function runTreeSupervisedProcess({
-  args = [], command, cwd, env = process.env,
-  maximumOutputBytes = 32 * 1024 * 1024, timeoutMs,
-} = {}) {
-  const startedAt = performance.now();
-  const child = spawn(command, args, {
-    cwd,
-    detached: process.platform !== "win32",
-    env,
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  let stdout = "";
-  let stderr = "";
-  let outputBytes = 0;
-  let spawnError = null;
-  let terminationRequested = false;
-  let requestTermination;
-  const terminationPromise = new Promise((resolve) => { requestTermination = resolve; });
-  const triggerTermination = (record) => {
-    if (terminationRequested) return;
-    terminationRequested = true;
-    requestTermination(record);
-  };
-  const append = (current, chunk) => {
-    const text = String(chunk);
-    outputBytes += Buffer.byteLength(text, "utf8");
-    if (outputBytes > maximumOutputBytes) {
-      triggerTermination({ kind: "OUTPUT_LIMIT", message: `process output exceeded ${maximumOutputBytes} bytes` });
-    }
-    return `${current}${text}`.slice(-maximumOutputBytes);
-  };
-  child.stdout?.setEncoding("utf8");
-  child.stderr?.setEncoding("utf8");
-  child.stdout?.on("data", (chunk) => { stdout = append(stdout, chunk); });
-  child.stderr?.on("data", (chunk) => { stderr = append(stderr, chunk); });
-  child.once("error", (error) => { spawnError = error; });
-  const closePromise = new Promise((resolve) => {
-    child.once("close", (exitCode, signal) => resolve({ exitCode, signal }));
-  });
-  const timer = setTimeout(() => triggerTermination({ kind: "TIMEOUT", message: `process exceeded ${timeoutMs} ms` }), timeoutMs);
-  const first = await Promise.race([
-    closePromise.then((closed) => ({ kind: "CLOSED", closed })),
-    terminationPromise,
-  ]);
-  clearTimeout(timer);
-  let cleanup = { attempted: false, cleanupVerified: null, detail: "not required" };
-  let closed = first.closed ?? null;
-  if (first.kind !== "CLOSED") {
-    cleanup = await terminateProcessTree(child, closePromise);
-    closed ??= await Promise.race([closePromise, wait(100).then(() => ({ exitCode: null, signal: null }))]);
-  } else if (spawnError || first.closed.exitCode !== 0 || first.closed.signal) {
-    cleanup = await terminateProcessTree(child, closePromise);
-  }
-  return {
-    stdout,
-    stderr,
-    exitCode: closed?.exitCode ?? null,
-    signal: closed?.signal ?? null,
-    spawnError: spawnError ? String(spawnError.stack || spawnError) : null,
-    timedOut: first.kind === "TIMEOUT",
-    outputOverflow: first.kind === "OUTPUT_LIMIT",
-    cleanupVerified: cleanup.cleanupVerified,
-    cleanupDetail: cleanup.detail,
-    durationMs: roundMs(performance.now() - startedAt),
-  };
-}
-
-export function interpretJsonChildCompletion({ stdout = "", stderr = "", exitCode = 0, signal = null, timedOut = false } = {}) {
-  let parsed = null;
-  try { parsed = JSON.parse(String(stdout || "")); } catch {}
-  if (timedOut) {
-    const error = new Error(`JSON child timed out${parsed ? " after emitting diagnostic JSON" : ""}: ${String(stderr || "").slice(-4_000)}`);
-    error.executionStatus = "TIMEOUT";
-    throw error;
-  }
-  if (exitCode !== 0 || signal) {
-    const error = new Error(`JSON child ended with code ${String(exitCode)} and signal ${String(signal || "none")}${parsed ? " after emitting diagnostic JSON" : ""}: ${String(stderr || "").slice(-4_000)}`);
-    error.executionStatus = "ERROR";
-    throw error;
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    const error = new Error("JSON child emitted no valid object report.");
-    error.executionStatus = "ERROR";
-    throw error;
-  }
-  return parsed;
+function laneExecutionFailure(processResult, timeoutMs) {
+  if (processResult.timedOut) return { status: "TIMEOUT", message: timedOutLaneMessage(processResult, timeoutMs) };
+  if (processResult.outputOverflow) return { status: "ERROR", message: `lane output exceeded 32 MiB; cleanup verified=${String(processResult.cleanupVerified)}` };
+  if (processResult.spawnError) return { status: "ERROR", message: `${processResult.spawnError}; descendant cleanup verified=${String(processResult.cleanupVerified)}` };
+  if (processResult.exitCode !== 0 || processResult.signal) return { status: "ERROR", message: failedLaneExitMessage(processResult) };
+  return null;
 }
 
 async function executeLaneProcess({
@@ -291,46 +51,13 @@ async function executeLaneProcess({
     result: failedAuditLaneResult(laneId, message, executionStatus),
     runId,
   });
-  if (processResult.timedOut) {
-    const cleanup = processResult.cleanupVerified ? "descendant cleanup verified" : `descendant cleanup unverified (${processResult.cleanupDetail})`;
-    return fail("TIMEOUT", `lane exceeded ${timeoutMs} ms; ${cleanup}`);
-  }
-  if (processResult.outputOverflow) return fail("ERROR", `lane output exceeded 32 MiB; cleanup verified=${String(processResult.cleanupVerified)}`);
-  if (processResult.spawnError) return fail("ERROR", `${processResult.spawnError}; descendant cleanup verified=${String(processResult.cleanupVerified)}`);
-  if (processResult.exitCode !== 0 || processResult.signal) {
-    return fail("ERROR", `lane process ended with code ${processResult.exitCode ?? "null"} and signal ${processResult.signal ?? "null"}; descendant cleanup verified=${String(processResult.cleanupVerified)}: ${processResult.stderr.slice(-4_000)}`);
-  }
+  const failure = laneExecutionFailure(processResult, timeoutMs);
+  if (failure) return fail(failure.status, failure.message);
   try {
     return JSON.parse(processResult.stdout);
   } catch (error) {
     return fail("ERROR", `lane emitted invalid JSON: ${String(error)}; stderr: ${processResult.stderr.slice(-4_000)}`);
   }
-}
-
-export function nestedProcessTimeoutForLane(policy, laneId) {
-  const reserve = policy?.nestedProcessFinalizationReserveMs?.[laneId];
-  if (reserve === undefined) return null;
-  const timeout = policy?.laneTimeoutMs?.[laneId];
-  if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new RangeError(`${laneId} lane timeout is invalid`);
-  if (!Number.isSafeInteger(reserve) || reserve <= 0 || reserve >= timeout) throw new RangeError(`${laneId} nested-process finalization reserve is invalid`);
-  return timeout - reserve;
-}
-
-export function nestedConcurrencyMaximumForLane(policy, laneId, executionMode) {
-  const nested = policy?.nestedConcurrency;
-  if (laneId === "browser") {
-    const value = executionMode === policy?.githubHosted?.mode
-      ? nested?.browserShardMaximumWhenTopLevelParallel
-      : nested?.browserShardMaximum;
-    if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError("browser nested-concurrency maximum is invalid");
-    return value;
-  }
-  if (laneId === "playwright") {
-    const value = nested?.playwrightWorkers;
-    if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError("playwright nested-concurrency maximum is invalid");
-    return value;
-  }
-  return null;
 }
 
 function executionConfiguration(policy, environment) {
@@ -363,17 +90,7 @@ function crossLaneIdentityIssues(results) {
   return issues;
 }
 
-export async function runBoundedAuditLanes({
-  browserPath = null,
-  candidateId,
-  environment = process.env,
-  execute = executeLaneProcess,
-  indexPath,
-  nodePath = process.execPath,
-  policy,
-  root,
-  runId,
-} = {}) {
+function validateLanePolicy(policy) {
   const laneIds = policy.laneOrder;
   if (JSON.stringify(laneIds) !== JSON.stringify(AUDIT_LANE_IDS)) throw new TypeError("Gate policy lane order does not match the closed executable lane set.");
   if (new Set(policy.boundedExecutionStartOrder).size !== laneIds.length
@@ -384,11 +101,10 @@ export async function runBoundedAuditLanes({
   for (const laneId of laneIds) {
     if (!new Set(["BOUNDED", "EXCLUSIVE"]).has(policy.laneSchedulingClass[laneId])) throw new TypeError(`Unknown scheduling class for ${laneId}.`);
   }
-  const configuration = executionConfiguration(policy, environment);
-  const envelopes = new Array(laneIds.length);
-  let active = 0;
-  let maximumObservedConcurrency = 0;
-  const startedAt = performance.now();
+  return laneIds;
+}
+
+function createLaneRunner({ envelopes, laneIds, configuration, execute, browserPath, candidateId, indexPath, policy, nodePath, environment, root, runId }, tracking) {
   const runIndexes = async (indexes, maximumConcurrent) => {
     let cursor = 0;
     const worker = async () => {
@@ -398,8 +114,8 @@ export async function runBoundedAuditLanes({
         if (localIndex >= indexes.length) return;
         const index = indexes[localIndex];
         const laneId = laneIds[index];
-        active += 1;
-        maximumObservedConcurrency = Math.max(maximumObservedConcurrency, active);
+        tracking.active += 1;
+        tracking.maximumObservedConcurrency = Math.max(tracking.maximumObservedConcurrency, tracking.active);
         try {
           envelopes[index] = await execute({
             browserPath,
@@ -425,13 +141,16 @@ export async function runBoundedAuditLanes({
             runId,
           });
         } finally {
-          active -= 1;
+          tracking.active -= 1;
         }
       }
     };
     await Promise.all(Array.from({ length: Math.min(maximumConcurrent, indexes.length) }, worker));
   };
-  const allIndexes = laneIds.map((_, index) => index);
+  return runIndexes;
+}
+
+function createLaneCleanup({ envelopes, allIndexes, laneIds, candidateId, runId }) {
   const cleanupBlockerFor = (index) => {
     const result = envelopes[index]?.result;
     if (result?.testProcessCleanupVerified === false) return "coverage test process-tree cleanup was not verified";
@@ -453,6 +172,11 @@ export async function runBoundedAuditLanes({
       });
     }
   };
+  return { cleanupBlockerFor, withholdUnstartedLanes };
+}
+
+async function runScheduledLanes(context) {
+  const { configuration, policy, allIndexes, runIndexes, cleanupBlockerFor, withholdUnstartedLanes } = context;
   if (configuration.mode === policy.local.mode) {
     for (const index of allIndexes) {
       await runIndexes([index], 1);
@@ -463,28 +187,11 @@ export async function runBoundedAuditLanes({
       }
     }
   } else {
-    const boundedIndexes = policy.boundedExecutionStartOrder.map((laneId) => laneIds.indexOf(laneId));
-    let boundedSegment = [];
-    let cleanupBlocked = false;
-    for (const index of boundedIndexes) {
-      const laneId = laneIds[index];
-      if (policy.laneSchedulingClass[laneId] === "EXCLUSIVE") {
-        await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
-        boundedSegment = [];
-        await runIndexes([index], 1);
-        const cleanupBlocker = cleanupBlockerFor(index);
-        if (cleanupBlocker) {
-          withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
-          cleanupBlocked = true;
-          break;
-        }
-      } else {
-        boundedSegment.push(index);
-      }
-    }
-    if (!cleanupBlocked) await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
+    await runParallelLanes(context);
   }
-  const wallDurationMs = roundMs(performance.now() - startedAt);
+}
+
+function assembleLaneReport({ envelopes, candidateId, runId, laneIds, configuration, policy, wallDurationMs, maximumObservedConcurrency }) {
   const envelopeIssues = auditLaneEnvelopeIssues(envelopes, { candidateId, runId, laneIds });
   if (envelopeIssues.length) throw new Error(`Audit lane envelope integrity failed: ${envelopeIssues.join("; ")}`);
   const ordered = laneIds.map((laneId) => envelopes.find((envelope) => envelope.laneId === laneId));
@@ -533,152 +240,51 @@ export async function runBoundedAuditLanes({
   };
 }
 
-const removeKeys = (record, keys) => {
-  if (!record || typeof record !== "object" || Array.isArray(record)) return;
-  for (const key of keys) delete record[key];
-};
+export async function runBoundedAuditLanes({
+  browserPath = null,
+  candidateId,
+  environment = process.env,
+  execute = executeLaneProcess,
+  indexPath,
+  nodePath = process.execPath,
+  policy,
+  root,
+  runId,
+} = {}) {
+  const laneIds = validateLanePolicy(policy);
+  const configuration = executionConfiguration(policy, environment);
+  const envelopes = new Array(laneIds.length);
+  const tracking = { active: 0, maximumObservedConcurrency: 0 };
+  const startedAt = performance.now();
+  const runIndexes = createLaneRunner({ envelopes, laneIds, configuration, execute, browserPath, candidateId, indexPath, policy, nodePath, environment, root, runId }, tracking);
+  const allIndexes = laneIds.map((_, index) => index);
+  const { cleanupBlockerFor, withholdUnstartedLanes } = createLaneCleanup({ envelopes, allIndexes, laneIds, candidateId, runId });
+  await runScheduledLanes({ configuration, policy, allIndexes, laneIds, runIndexes, cleanupBlockerFor, withholdUnstartedLanes });
+  const wallDurationMs = roundMs(performance.now() - startedAt);
+  return assembleLaneReport({ envelopes, candidateId, runId, laneIds, configuration, policy, wallDurationMs, maximumObservedConcurrency: tracking.maximumObservedConcurrency });
 
-const VOLATILE_BROWSER_DETAIL_KEYS = new Set([
-  "checkedAt",
-  "completedRouteElapsedMs",
-  "reloadElapsedMs",
-  "reloadedRouteElapsedMs",
-  "volumeElapsedMs",
-]);
-
-function timingFreeLoopbackScope(value) {
-  if (typeof value !== "string") return value;
-  try {
-    const parsed = new URL(value);
-    if (parsed.hostname !== "127.0.0.1") return value;
-  } catch { return value; }
-  const match = value.match(/^([A-Za-z][A-Za-z0-9+.-]*:\/\/127\.0\.0\.1):([0-9]{1,5})(.*)$/u);
-  return match ? `${match[1]}:0${match[3]}` : value;
 }
 
-function timingFreeCoverageVirtualUrl(value) {
-  if (typeof value !== "string") return value;
-  try {
-    if (new URL(value).protocol !== "file:") return value;
-  } catch { return value; }
-  const queryIndex = value.indexOf("?");
-  const hashIndex = value.indexOf("#");
-  const boundaries = [queryIndex, hashIndex].filter((index) => index >= 0);
-  const pathBoundary = boundaries.length ? Math.min(...boundaries) : value.length;
-  const pathPart = value.slice(0, pathBoundary);
-  const matches = [...pathPart.matchAll(/\/\.tmp-engine-coverage-[^/?#]+(?=\/)/gu)];
-  if (matches.length !== 1) return value;
-  const match = matches[0];
-  return `${value.slice(0, match.index)}/.tmp-engine-coverage-VOLATILE${value.slice(match.index + match[0].length)}`;
-}
 
-function timingFreeBrowserDetailValue(value, key = "") {
-  if (VOLATILE_BROWSER_DETAIL_KEYS.has(key)) return undefined;
-  if (Array.isArray(value)) return value.map((item) => timingFreeBrowserDetailValue(item));
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).flatMap(([name, item]) => {
-      const normalized = timingFreeBrowserDetailValue(item, name);
-      return normalized === undefined ? [] : [[name, normalized]];
-    }));
-  }
-  if (key === "registrationScope") return timingFreeLoopbackScope(value);
-  return value;
-}
-
-function timingFreeBrowserDetails(details) {
-  if (typeof details !== "string" || !details.trim()) return details;
-  try { return JSON.stringify(timingFreeBrowserDetailValue(JSON.parse(details))); }
-  catch { return details; }
-}
-
-function timingFreeProjection(report) {
-  const projected = structuredClone(report);
-  removeKeys(projected, ["auditOrchestration", "generatedAt"]);
-  removeKeys(projected.outcomeSummary, ["runId"]);
-  removeKeys(projected.coverage, ["structuredAuditSha256", "testOutput"]);
-  if (projected.coverage && Object.hasOwn(projected.coverage, "rawVirtualUrl")) {
-    projected.coverage.rawVirtualUrl = timingFreeCoverageVirtualUrl(projected.coverage.rawVirtualUrl);
-  }
-  removeKeys(projected.coverage?.calibration, ["output"]);
-  for (const result of projected.coverage?.structuredAudit?.engine?.results ?? []) removeKeys(result, ["durationMs"]);
-  for (const result of projected.engine?.results ?? []) removeKeys(result, ["durationMs"]);
-  for (const family of projected.mutation?.families ?? []) {
-    removeKeys(family.target, ["durationMs"]);
-    for (const item of family.cases ?? []) removeKeys(item.target, ["durationMs"]);
-  }
-  removeKeys(projected.generator, ["stderr"]);
-  removeKeys(projected.browser, ["dumpTail"]);
-  removeKeys(projected.browser?.process, ["browserPath", "debugPort", "durationMs", "stderr", "stdout"]);
-  for (const result of projected.browser?.results ?? []) result.details = timingFreeBrowserDetails(result.details);
-  if (Array.isArray(projected.browser?.requests)) {
-    projected.browser.requests = canonicalBrowserRequestSignatures(projected.browser.requests, { includeShard: true });
-  }
-  if (Array.isArray(projected.browser?.unexpectedRequests)) {
-    projected.browser.unexpectedRequests = canonicalBrowserRequestSignatures(projected.browser.unexpectedRequests, { includeShard: true });
-  }
-  for (const evidence of projected.browser?.shardEvidence ?? []) {
-    removeKeys(evidence, ["canonicalEvidenceSha256"]);
-    const shard = evidence?.projection?.shard ?? null;
-    const payload = evidence?.projection?.payload;
-    removeKeys(payload, ["requestCount", "unexpectedRequestCount"]);
-    if (payload) {
-      payload.requestSignatures = canonicalBrowserRequestSignatures(
-        (projected.browser?.requests ?? []).filter((request) => request.shard === shard),
-      );
-      payload.unexpectedRequestSignatures = canonicalBrowserRequestSignatures(
-        (projected.browser?.unexpectedRequests ?? []).filter((request) => request.shard === shard),
-      );
+async function runParallelLanes({ policy, laneIds, configuration, runIndexes, cleanupBlockerFor, withholdUnstartedLanes }) {
+  const boundedIndexes = policy.boundedExecutionStartOrder.map((laneId) => laneIds.indexOf(laneId));
+  let boundedSegment = [];
+  let cleanupBlocked = false;
+  for (const index of boundedIndexes) {
+    const laneId = laneIds[index];
+    if (policy.laneSchedulingClass[laneId] === "EXCLUSIVE") {
+      await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
+      boundedSegment = [];
+      await runIndexes([index], 1);
+      const cleanupBlocker = cleanupBlockerFor(index);
+      if (cleanupBlocker) {
+        withholdUnstartedLanes(`${cleanupBlocker}; subsequent lanes were not started`);
+        cleanupBlocked = true;
+        break;
+      }
+    } else {
+      boundedSegment.push(index);
     }
   }
-  removeKeys(projected.playwright?.process, ["durationMs", "stderr", "stdout"]);
-  removeKeys(projected.playwright, ["generatedAt"]);
-  for (const result of projected.playwright?.results ?? []) removeKeys(result, ["durationMs"]);
-  removeKeys(projected.publicCandidate?.before, ["stderr"]);
-  removeKeys(projected.publicCandidate?.after, ["stderr"]);
-  return projected;
-}
-
-export function canonicalAuditEvidenceBytes(report) {
-  return Buffer.from(`${JSON.stringify(timingFreeProjection(report))}\n`, "utf8");
-}
-
-export function canonicalAuditEvidenceSha256(report) {
-  return createHash("sha256").update(canonicalAuditEvidenceBytes(report)).digest("hex");
-}
-
-export function compareAuditExecutionReports(serialReport, parallelReport, { minimumReductionPercent = 20 } = {}) {
-  const serialOrchestration = serialReport?.auditOrchestration;
-  const parallelOrchestration = parallelReport?.auditOrchestration;
-  const issues = [];
-  if (serialOrchestration?.executionMode !== "SERIAL_REFERENCE") issues.push("serial report execution mode is not SERIAL_REFERENCE");
-  if (parallelOrchestration?.executionMode !== "BOUNDED_PARALLEL") issues.push("parallel report execution mode is not BOUNDED_PARALLEL");
-  if (serialOrchestration?.status !== "PASS") issues.push("serial orchestration did not pass");
-  if (parallelOrchestration?.status !== "PASS") issues.push("parallel orchestration did not pass");
-  if (!serialOrchestration?.candidateId || serialOrchestration.candidateId !== parallelOrchestration?.candidateId) issues.push("reports do not bind the same public candidate");
-  const serialBytes = canonicalAuditEvidenceBytes(serialReport);
-  const parallelBytes = canonicalAuditEvidenceBytes(parallelReport);
-  const evidenceEquivalent = serialBytes.equals(parallelBytes);
-  if (!evidenceEquivalent) issues.push("timing-free canonical gate evidence differs");
-  const serialWallDurationMs = roundMs(serialOrchestration?.wallDurationMs);
-  const parallelWallDurationMs = roundMs(parallelOrchestration?.wallDurationMs);
-  const measuredWallTimeReductionPercent = serialWallDurationMs > 0
-    ? Math.round((1 - (parallelWallDurationMs / serialWallDurationMs)) * 10_000) / 100
-    : 0;
-  if (measuredWallTimeReductionPercent < minimumReductionPercent) {
-    issues.push(`measured wall-time reduction ${measuredWallTimeReductionPercent}% is below ${minimumReductionPercent}%`);
-  }
-  return {
-    schemaVersion: 1,
-    resultType: "MATH_QUEST_AUDIT_EXECUTION_COMPARISON",
-    status: issues.length ? "FAIL" : "PASS",
-    candidateId: serialOrchestration?.candidateId || null,
-    serialCanonicalEvidenceSha256: createHash("sha256").update(serialBytes).digest("hex"),
-    parallelCanonicalEvidenceSha256: createHash("sha256").update(parallelBytes).digest("hex"),
-    evidenceEquivalent,
-    serialWallDurationMs,
-    parallelWallDurationMs,
-    measuredWallTimeReductionPercent,
-    minimumReductionPercent,
-    issues,
-  };
+  if (!cleanupBlocked) await runIndexes(boundedSegment, configuration.maximumConcurrentLanes);
 }

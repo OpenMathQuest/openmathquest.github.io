@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "1.0.0-beta.8",
-  "buildId": "math-quest-pwa-v1.0.0-beta.8",
-  "cacheName": "math-quest-static-v1.0.0-beta.8",
+  "release": "1.0.0-beta.9",
+  "buildId": "math-quest-pwa-v1.0.0-beta.9",
+  "cacheName": "math-quest-static-v1.0.0-beta.9",
   "entryPath": "./index.html",
   "excludedPaths": [
     "./release-shell-v1.json",
@@ -45,6 +45,20 @@
       "status": 200
     },
     {
+      "path": "./assets/js/math-quest-progress-source.js",
+      "sha256": "6b6fdd45fc3ba5ebc47db1f5e353a622331c089e8e5aac3596ce6df3ac9c8d7d",
+      "bytes": 3413,
+      "mime": "text/javascript",
+      "status": 200
+    },
+    {
+      "path": "./assets/js/math-quest-pwa-status.js",
+      "sha256": "1f9f18d24d7c79bd819a394d0cd71a43acce5a6a85fa8f467d06da6e5a4062f2",
+      "bytes": 3391,
+      "mime": "text/javascript",
+      "status": 200
+    },
+    {
       "path": "./assets/sounds/close.wav",
       "sha256": "cb059c9481fc88c3c97598e205f2c91d68e8ac459bb91e68d65d33a639d07a16",
       "bytes": 11068,
@@ -74,8 +88,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "c56d7455824b6a8c4e5664e6019f2b3565c329260078923880673f6c8a9bda22",
-      "bytes": 1274131,
+      "sha256": "a4b0a8c66d5de3316998838bc562a072b8b1243c30b5aab2038e7f6575764146",
+      "bytes": 1260291,
       "mime": "text/html",
       "status": 200
     },
@@ -88,7 +102,7 @@
     },
     {
       "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
-      "sha256": "dd7428f79bcc901601c13248a4dd87bc0d13e5222590a8bb6dd54922678d4c4b",
+      "sha256": "87e25e20206b133869a7107c6ffe7f2841d00b67328bce621d656f5a53289f9a",
       "bytes": 73387,
       "mime": "application/json",
       "status": 200

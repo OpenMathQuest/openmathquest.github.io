@@ -24,7 +24,7 @@
     "scope": "COMPLETE_CERTIFICATION_SYSTEM",
     "qualificationEvidenceSuccessor": {
       "policy": "RELEASE_EVIDENCE_SUCCESSOR_V2",
-      "releaseTag": "v1.0.0-beta.8",
+      "releaseTag": "v1.0.0-beta.9",
       "parentCount": 1,
       "parentMustEqualQualificationCommit": true,
       "exactChangedPaths": [

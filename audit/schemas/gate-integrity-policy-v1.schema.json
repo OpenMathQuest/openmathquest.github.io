@@ -81,7 +81,7 @@
         "engineBranchCoverage": {
           "type": "object", "additionalProperties": false,
           "required": ["version", "minimumPercent", "numerator", "denominator", "changePolicy"],
-          "properties": { "version": { "const": 1 }, "minimumPercent": { "const": 88 }, "numerator": { "type": "string", "minLength": 1 }, "denominator": { "type": "string", "minLength": 1 }, "changePolicy": { "type": "string", "minLength": 1 } }
+          "properties": { "version": { "const": 1 }, "minimumPercent": { "const": 89.33 }, "numerator": { "type": "string", "minLength": 1 }, "denominator": { "type": "string", "minLength": 1 }, "changePolicy": { "type": "string", "minLength": 1 } }
         },
         "representativeMutationFamilies": {
           "type": "object", "additionalProperties": false,

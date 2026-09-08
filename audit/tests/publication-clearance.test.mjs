@@ -1,3 +1,4 @@
+import { assertPublicationRunnerWiring } from "./publication-runner-contract.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -161,7 +162,7 @@ function pendingClearance() {
 async function beta8PendingBundle() {
   const bundle = JSON.parse(await readFile(path.join(root, "audit", "release-evidence-bundle-v1.json"), "utf8"));
   bundle.lifecycleState = "QUALIFICATION_PENDING";
-  bundle.releaseTag = "v1.0.0-beta.8";
+  bundle.releaseTag = "v1.0.0-beta.9";
   bundle.qualificationCommitSha = "PENDING";
   bundle.reviewedAtUtc = "PENDING";
   bundle.expiresAtUtc = "PENDING";
@@ -444,7 +445,7 @@ test("the Git observer proves an actual immediate Beta 7 runtime-equivalent evid
   }
 });
 
-test("the Beta 8 release evidence successor changes the four closed evidence authorities and no runtime path", () => {
+test("the current beta release evidence successor changes the four closed evidence authorities and no runtime path", () => {
   const candidateCommitSha = "1".repeat(40);
   const qualificationCommitSha = "2".repeat(40);
   const baseline = {
@@ -457,8 +458,8 @@ test("the Beta 8 release evidence successor changes the four closed evidence aut
     qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
     qualificationCanaryEvidenceStatus: "PENDING",
     qualificationAuthoritiesValid: true,
-    qualificationReleaseTag: "v1.0.0-beta.8",
-    expectedReleaseTag: "v1.0.0-beta.8",
+    qualificationReleaseTag: "v1.0.0-beta.9",
+    expectedReleaseTag: "v1.0.0-beta.9",
   };
   const exact = evaluateReleaseEvidenceSuccessorV2(baseline);
   assert.equal(exact.valid, true, exact.issues.join("; "));
@@ -473,7 +474,7 @@ test("the Beta 8 release evidence successor changes the four closed evidence aut
     ["bundle already reviewed", { qualificationBundleLifecycleState: "EVIDENCE_REVIEWED" }],
     ["canary already reconciled", { qualificationCanaryEvidenceStatus: "RECONCILED" }],
     ["malformed qualification authority", { qualificationAuthoritiesValid: false }],
-    ["wrong release tag", { qualificationReleaseTag: "v1.0.0-beta.9" }],
+    ["wrong release tag", { qualificationReleaseTag: "v1.0.0-beta.10" }],
   ]) {
     const result = evaluateReleaseEvidenceSuccessorV2({ ...baseline, ...mutation });
     assert.equal(result.valid, false, label);
@@ -501,7 +502,7 @@ test("the V2 Git observer proves an actual four-file immediate evidence successo
       runnerImageOS: "PENDING",
       runnerImageVersion: "PENDING",
     };
-    const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8" };
+    const pendingCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.9" };
     await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
     await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
     await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
@@ -515,13 +516,13 @@ test("the V2 Git observer proves an actual four-file immediate evidence successo
     await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
     git("add", ".");
     git("commit", "-m", "evidence successor");
-    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
     assert.equal(observed.valid, true, observed.issues.join("; "));
     assert.equal(observed.policy, RELEASE_EVIDENCE_SUCCESSOR_POLICY_V2);
     assert.deepEqual(observed.changedPaths, RELEASE_EVIDENCE_SUCCESSOR_PATHS_V2);
     assert.match(observed.qualificationPayloadSha256, /^[a-f0-9]{64}$/u);
     assert.match(observed.qualificationPayloadTreeOid, /^[a-f0-9]{40}$/u);
-    const wrongRelease = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
+    const wrongRelease = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.10");
     assert.equal(wrongRelease.valid, false);
     assert.ok(wrongRelease.issues.some((issue) => issue.includes("expected release tag")));
   } finally {
@@ -541,7 +542,7 @@ test("the V2 Git observer rejects malformed pending authorities even when all fo
       schemaVersion: 1, status: "PENDING", browserProductName: "PENDING", browserFullVersion: "PENDING",
       browserExecutableSha256: "PENDING", runnerImageOS: "PENDING", runnerImageVersion: "PENDING",
     };
-    const openCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.8", unexpected: true };
+    const openCanary = { schemaVersion: 1, status: "PENDING", intendedReleaseTag: "v1.0.0-beta.9", unexpected: true };
     await writeFile(path.join(repository, "PUBLICATION_CLEARANCE.md"), pendingClearance(), "utf8");
     await writeFile(path.join(repository, "audit", "browser-runner-evidence-v1.json"), `${JSON.stringify(pendingBrowser, null, 2)}\n`, "utf8");
     await writeFile(path.join(repository, "audit", "release-evidence-bundle-v1.json"), `${JSON.stringify(await beta8PendingBundle(), null, 2)}\n`, "utf8");
@@ -555,7 +556,7 @@ test("the V2 Git observer rejects malformed pending authorities even when all fo
     await writeFile(path.join(repository, "audit", "trusted-https-canary-v1.json"), '{"status":"RECONCILED"}\n', "utf8");
     git("add", ".");
     git("commit", "-m", "evidence successor");
-    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.8");
+    const observed = await observeReleaseEvidenceSuccessorV2(repository, qualificationCommitSha, "v1.0.0-beta.9");
     assert.equal(observed.valid, false);
     assert.ok(observed.issues.some((issue) => issue.includes("complete canonical pending evidence authorities")));
   } finally {
@@ -692,7 +693,7 @@ test("the owner-directed host deferral is non-passing and release-eligible only 
 });
 
 test("the Beta 4 canary skip is historical and cannot authorize Beta 8", () => {
-  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.8");
+  assert.equal(CURRENT_RELEASE_TAG, "v1.0.0-beta.9");
   assert.equal(BETA4_RELEASE_TAG, "v1.0.0-beta.4");
   assert.deepEqual(BETA4_OWNER_SKIPPED_EXTERNAL_GATE_IDS, ["EXT-CANARY"]);
   const parsed = parsePublicationClearance(deferredHostClearance({
@@ -728,17 +729,14 @@ test("declining the offered six-reviewer cycle is nonblocking but cannot conceal
     ["Required independent-reviewer reports", "6"],
     ["Sealed independent-reviewer reports", "1"],
     ["Independent-reviewer evidence state", "PENDING"],
+    ["Independent-reviewer evidence state", "EMERGENCY"],
   ]) {
-    const mutant = parsePublicationClearance(optionalReviewerClearance({ [field]: value }));
-    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
-    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+    assertBlockedClearance(optionalReviewerClearance({ [field]: value }), `${field} must preserve the exact optional-not-run state`);
   }
 
-  const incompleteSelected = parsePublicationClearance(approvedClearance({
+  assertBlockedClearance(approvedClearance({
     "Sealed independent-reviewer reports": "5",
   }));
-  assert.equal(incompleteSelected.valid, false);
-  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
 });
 
 test("declining the offered six-lane device cycle is nonblocking but cannot conceal malformed or partial device evidence", () => {
@@ -763,17 +761,14 @@ test("declining the offered six-lane device cycle is nonblocking but cannot conc
     ["Passed physical-device lanes", "1"],
     ["Primary iPad journey result", "PASS"],
     ["Physical-device evidence state", "PENDING"],
+    ["Physical-device evidence state", "EMERGENCY"],
   ]) {
-    const mutant = parsePublicationClearance(optionalDeviceClearance({ [field]: value }));
-    assert.equal(mutant.valid, false, `${field} must preserve the exact optional-not-run state`);
-    assert.equal(evaluateExternalReleaseEvidence(mutant, expected, expected.now).status, "BLOCKED");
+    assertBlockedClearance(optionalDeviceClearance({ [field]: value }), `${field} must preserve the exact optional-not-run state`);
   }
 
-  const incompleteSelected = parsePublicationClearance(approvedClearance({
+  assertBlockedClearance(approvedClearance({
     "Passed physical-device lanes": "5",
   }));
-  assert.equal(incompleteSelected.valid, false);
-  assert.equal(evaluateExternalReleaseEvidence(incompleteSelected, expected, expected.now).status, "BLOCKED");
 });
 
 test("external evidence rejects missing, stale, future, and mismatched records", () => {
@@ -977,15 +972,7 @@ test("qualification review and final hosted observation are exact without requir
   assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceReviewed: pending.valid }), false);
   assert.equal(clearanceMatches(parsed, { ...composedExpected, browserRunnerEvidenceSha256: "0".repeat(64) }), false);
 
-  const runner = await readFile(path.join(root, "audit", "run-audit.mjs"), "utf8");
-  const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
-  assert.match(runner, /publicationBrowserEvidenceState\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
-  assert.match(runner, /browserProductName:\s*reviewedBrowserTuple\.browserProductName/u);
-  assert.match(runner, /reviewed qualification record is invalid or pending/u);
-  assert.match(runner, /final hosted tuple is invalid or unavailable/u);
-  assert.doesNotMatch(runner, /browserRunnerTuplesMatch\(liveBrowserEvidence, reviewedBrowserEvidence\)/u);
-  assert.match(workflow, /clearance or its independently required hosted evidence is invalid/u);
-  assert.doesNotMatch(workflow, /clearance does not match this exact browser\/runner audit tuple/u);
+  await assertPublicationRunnerWiring(root);
 });
 
 test("live browser evidence binds the selected bytes and exact hosted image tuple", async () => {
@@ -1046,3 +1033,9 @@ test("live browser evidence binds the selected bytes and exact hosted image tupl
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+function assertBlockedClearance(source, message) {
+  const parsed = parsePublicationClearance(source);
+  assert.equal(parsed.valid, false, message);
+  assert.equal(evaluateExternalReleaseEvidence(parsed, expected, expected.now).status, "BLOCKED");
+}

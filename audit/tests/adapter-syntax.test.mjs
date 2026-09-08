@@ -1,10 +1,12 @@
+import "./placement-engine-reuse.test.mjs";
+import "./response-fixtures.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
 const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
+const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)]
   .map((match) => match[1]);
 
 test("every shipped inline script parses as JavaScript", () => {

@@ -198,12 +198,7 @@ export function conditionalCountPrediction(kind, query, matchedRows) {
   });
 }
 
-export async function blastRadiusLookup({ kind, query, maximumDepth = DEFAULT_BLAST_RADIUS_DEPTH } = {}) {
-  if (!new Set(["exact", "word", "symbol", "count"]).has(kind)) throw new TypeError("kind must be exact, word, symbol, or count.");
-  if (!String(query || "").trim()) throw new TypeError("query must not be blank.");
-  maximumDepth = normalizeMaximumDepth(maximumDepth);
-  const map = await loadRepositoryCodeMap();
-  const tracked = trackedRepositoryPaths(root);
+async function scanTrackedMatches(map, tracked, kind, query) {
   const direct = [];
   const binarySkipped = [];
 
@@ -226,11 +221,15 @@ export async function blastRadiusLookup({ kind, query, maximumDepth = DEFAULT_BL
       ...classificationFor(map, file),
     }));
   }
+  return { direct, binarySkipped };
+}
 
+function matchingDependencies(map, direct, maximumDepth) {
   const graph = graphNeighbours(map);
+  const directPaths = new Set(direct.map((row) => row.file));
   const chased = chaseGraph(graph, direct.map((row) => row.file), maximumDepth);
   const dependencies = [...chased.entries()]
-    .filter(([file, observation]) => observation.depth > 0 && !direct.some((row) => row.file === file))
+    .filter(([file, observation]) => observation.depth > 0 && !directPaths.has(file))
     .map(([file, observation]) => Object.freeze({
       file,
       depth: observation.depth,
@@ -243,12 +242,19 @@ export async function blastRadiusLookup({ kind, query, maximumDepth = DEFAULT_BL
       dependencyRole: observation.edge.dependencyRole,
     }))
     .sort((left, right) => left.depth - right.depth || left.file.localeCompare(right.file, "en"));
-  const touched = [...new Set([...direct.map((row) => row.file), ...dependencies.map((row) => row.file)])].sort();
+  return dependencies;
+}
+
+function affectedFactFamilies(map, touched) {
+  const touchedPaths = new Set(touched);
   const factFamilies = map.factFamilies
-    .filter((family) => [family.owner, ...family.projections.map((item) => item.path), ...family.validators].some((file) => touched.includes(file)))
+    .filter((family) => [family.owner, ...family.projections.map((item) => item.path), ...family.validators].some((file) => touchedPaths.has(file)))
     .map((family) => Object.freeze({ id: family.id, owner: family.owner, owns: family.owns }))
     .sort((left, right) => left.id.localeCompare(right.id, "en"));
+  return factFamilies;
+}
 
+function blastRadiusResult({ kind, query, maximumDepth }, { tracked, direct, dependencies, factFamilies, touched, binarySkipped }) {
   const result = Object.freeze({
     schemaVersion: 2,
     resultType: "BLAST_RADIUS_LOOKUP",
@@ -281,6 +287,21 @@ export async function blastRadiusLookup({ kind, query, maximumDepth = DEFAULT_BL
       Object.freeze({ id: "HUMAN_JUDGMENT", effect: "OUT_OF_SCOPE", description: "Human-legibility and product-correctness decisions remain outside this lookup." }),
     ]),
   });
+  return result;
+}
+
+export async function blastRadiusLookup({ kind, query, maximumDepth = DEFAULT_BLAST_RADIUS_DEPTH } = {}) {
+  if (!new Set(["exact", "word", "symbol", "count"]).has(kind)) throw new TypeError("kind must be exact, word, symbol, or count.");
+  if (!String(query || "").trim()) throw new TypeError("query must not be blank.");
+  maximumDepth = normalizeMaximumDepth(maximumDepth);
+  const map = await loadRepositoryCodeMap();
+  const tracked = trackedRepositoryPaths(root);
+  const { direct, binarySkipped } = await scanTrackedMatches(map, tracked, kind, query);
+  const dependencies = matchingDependencies(map, direct, maximumDepth);
+  const touched = [...new Set([...direct.map((row) => row.file), ...dependencies.map((row) => row.file)])].sort();
+  const factFamilies = affectedFactFamilies(map, touched);
+
+  const result = blastRadiusResult({ kind, query, maximumDepth }, { tracked, direct, dependencies, factFamilies, touched, binarySkipped });
   const schemaIssues = await validateBlastRadiusResultSchema(result);
   if (schemaIssues.length) throw new Error(`Blast-radius result violates its closed schema:\n- ${schemaIssues.join("\n- ")}`);
   return result;

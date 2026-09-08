@@ -1,0 +1,114 @@
+{
+  "policyId": "math-quest-security-dependency-gate",
+  "version": "1.1.0",
+  "schemaVersion": 1,
+  "status": "ACTIVE",
+  "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
+  "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+  "artifactCacheEnvironmentVariable": "MQ_SECURITY_TOOL_CACHE",
+  "defaultArtifactCacheDirectoryName": "math-quest-security-tools",
+  "tools": [
+    {
+      "id": "semgrep-core-1.164.0-win-amd64",
+      "name": "Semgrep",
+      "kind": "ci-only-static-security-analyzer",
+      "version": "1.164.0",
+      "licenceExpression": "LGPL-2.1-or-later",
+      "sourceUrl": "https://github.com/semgrep/semgrep/tree/887f1f48a6f35e692870e68651100db7496036cf",
+      "sourceCommit": "887f1f48a6f35e692870e68651100db7496036cf",
+      "licenceEvidence": "https://github.com/semgrep/semgrep/blob/887f1f48a6f35e692870e68651100db7496036cf/LICENSE",
+      "scope": "unmodified local static-security analysis in the AI-change gate",
+      "artifact": {
+        "filename": "semgrep-1.164.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-win_amd64.whl",
+        "url": "https://files.pythonhosted.org/packages/f5/09/9fcb561fae64b7ba7dcb98139739e9208d7c6ad14b731669bd796fbc3ee3/semgrep-1.164.0-cp310.cp311.cp312.cp313.cp314.py310.py311.py312.py313.py314-none-win_amd64.whl",
+        "bytes": 56482229,
+        "sha256": "f0fc972bd0e33893ef73e8144c2c2293f7acafa86c00cca4e22673bc1b6c35ca",
+        "packaging": "ZIP_WHEEL",
+        "executableRelativePath": "semgrep-1.164.0.data/purelib/semgrep/bin/semgrep-core.exe"
+      }
+    },
+    {
+      "id": "trufflehog-3.97.0-win-amd64",
+      "name": "TruffleHog",
+      "kind": "ci-only-secret-scanner",
+      "version": "3.97.0",
+      "licenceExpression": "AGPL-3.0-only",
+      "sourceUrl": "https://github.com/trufflesecurity/trufflehog/tree/bcfcf73aaf4759d4dadc2783177c245a02792318",
+      "sourceCommit": "bcfcf73aaf4759d4dadc2783177c245a02792318",
+      "licenceEvidence": "https://github.com/trufflesecurity/trufflehog/blob/bcfcf73aaf4759d4dadc2783177c245a02792318/LICENSE",
+      "scope": "unmodified local tracked, untracked, and post-baseline history secret scanning",
+      "artifact": {
+        "filename": "trufflehog_3.97.0_windows_amd64.tar.gz",
+        "url": "https://github.com/trufflesecurity/trufflehog/releases/download/v3.97.0/trufflehog_3.97.0_windows_amd64.tar.gz",
+        "bytes": 71055813,
+        "sha256": "2a8208e6e5be8d6cd855322480eda4790a437f805dbd6538ad7495c27f40d4e5",
+        "packaging": "TAR_GZIP",
+        "executableRelativePath": "trufflehog.exe",
+        "upstreamChecksumManifest": {
+          "filename": "trufflehog_3.97.0_checksums.txt",
+          "sha256": "b5bddf7cd07fd1ef0aac56c4a5707d713dbe4154b2215ec6e914d8921488f5dd",
+          "declaredArtifactSha256": "2a8208e6e5be8d6cd855322480eda4790a437f805dbd6538ad7495c27f40d4e5"
+        }
+      }
+    }
+  ],
+  "semgrep": {
+    "rulesPath": "audit/security/semgrep-high-confidence-v1.json",
+    "rulesSha256": "05f5b514fc81cafa374f04163afc50cde7e79e2721eb7f320df58e3ee160dac1",
+    "rulesBytes": 2962,
+    "requiredRuleIds": [
+      "math-quest.security.no-child-process-shell",
+      "math-quest.security.no-disabled-tls-verification",
+      "math-quest.security.no-document-write",
+      "math-quest.security.no-eval",
+      "math-quest.security.no-function-constructor",
+      "math-quest.security.no-location-html-injection",
+      "math-quest.security.no-node-tls-bypass",
+      "math-quest.security.no-weak-crypto-hash"
+    ],
+    "sourceExtensions": [".js", ".mjs"],
+    "executableInlineHtml": true,
+    "maximumFindings": 0,
+    "maximumErrors": 0
+  },
+  "truffleHog": {
+    "sourceScope": "GIT_TRACKED_PLUS_UNTRACKED_NONIGNORED",
+    "historyStartCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+    "verificationMode": "OFFLINE_UNVERIFIED_DETECTION",
+    "filterEntropy": 3.0,
+    "maximumWorktreeFindings": 0,
+    "maximumHistoryFindings": 0,
+    "failOnScanErrors": true
+  },
+  "dependencyAudit": {
+    "tool": "npm",
+    "version": "11.9.0",
+    "registry": "https://registry.npmjs.org/",
+    "packageLockOnly": true,
+    "ignoreScripts": true,
+    "omitOptional": true,
+    "auditLevel": "low",
+    "temporaryDirectoryEnvironmentVariable": "MQ_NPM_AUDIT_TEMP",
+    "maximumVulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "markers": {
+    "tokens": ["TODO", "FIXME", "HACK"],
+    "trackingReferencePattern": "(?:https://[^\\s]+|#[1-9]\\d*|[A-Z][A-Z0-9]+-[1-9]\\d*)",
+    "explanationPattern": "(?::|-)\\s*\\S",
+    "maximumUntrackedMarkers": 0
+  },
+  "negativeControls": [
+    "NC-SEMGREP-EACH-RULE-MATCHES",
+    "NC-TRUFFLEHOG-DETECTS-DISPOSABLE-FIXTURE",
+    "NC-NPM-AUDIT-NONZERO-OR-VULNERABILITY-FAILS",
+    "NC-UNTRACKED-TODO-FIXME-HACK-FAILS",
+    "NC-TOOL-ARTIFACT-HASH-MISMATCH-FAILS"
+  ]
+}

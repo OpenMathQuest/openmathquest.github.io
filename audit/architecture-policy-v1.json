@@ -1,0 +1,184 @@
+{
+  "policyId": "math-quest-static-architecture",
+  "version": "1.4.0",
+  "schemaVersion": 1,
+  "status": "ACTIVE",
+  "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
+  "zones": [
+    {
+      "id": "audit-library",
+      "pattern": "^audit/lib/.*\\.(?:js|mjs)$",
+      "mayImport": ["audit-library"]
+    },
+    {
+      "id": "audit-orchestrator",
+      "pattern": "^audit/(?!fixtures/|lib/|playwright/|tests/).*\\.(?:js|mjs)$",
+      "mayImport": ["audit-library", "audit-orchestrator"]
+    },
+    {
+      "id": "audit-test",
+      "pattern": "^audit/(?:fixtures|playwright|tests)/.*\\.(?:js|mjs)$",
+      "mayImport": ["audit-library", "audit-orchestrator", "audit-test", "tool"]
+    },
+    {
+      "id": "config",
+      "pattern": "^(?:eslint|playwright(?:\\.[a-z-]+)?|stylelint)\\.config\\.mjs$",
+      "mayImport": ["audit-library"]
+    },
+    {
+      "id": "runtime",
+      "pattern": "^(?:assets/js/.*\\.js|sw\\.js)$",
+      "mayImport": ["runtime"]
+    },
+    {
+      "id": "tool",
+      "pattern": "^tools/.*\\.(?:js|mjs)$",
+      "mayImport": ["audit-library", "tool"]
+    }
+  ],
+  "legacyImportEdgeRatchets": [
+    {
+      "source": "audit/exhaustive-generator-audit.mjs",
+      "target": "audit/tests/strategy-build-oracle.mjs"
+    },
+    {
+      "source": "audit/mutation-runner.mjs",
+      "target": "audit/tests/engine-suite.mjs"
+    }
+  ],
+  "sourceContracts": [
+    {
+      "id": "runtime.child-data-no-network",
+      "path": "index.html",
+      "pattern": "\\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\\b",
+      "expectedCount": 0,
+      "claim": "The child runtime has no automatic network or telemetry API."
+    },
+    {
+      "id": "runtime.progress-remove-single-owner",
+      "path": "index.html",
+      "pattern": "localStorage\\.removeItem\\(",
+      "expectedCount": 1,
+      "claim": "Only storageRemove owns persistent progress removal."
+    },
+    {
+      "id": "runtime.progress-source-audit-inclusion",
+      "path": "audit/run-audit.ps1",
+      "pattern": "progress-source\\.test\\.mjs",
+      "expectedCount": 1,
+      "claim": "The canonical audit invokes the protected-progress source policy tests exactly once."
+    },
+    {
+      "id": "runtime.progress-source-delegation",
+      "path": "index.html",
+      "pattern": "MathQuestProgressSource\\.selectProgressSource\\(\\{",
+      "expectedCount": 1,
+      "claim": "The page adapter delegates protected-progress source selection to its single runtime policy owner."
+    },
+    {
+      "id": "runtime.progress-source-launcher-fixture-route",
+      "path": "audit/test-launcher-identity.ps1",
+      "pattern": "@\\('/assets/js/math-quest-progress-source\\.js', 'assets/js/math-quest-progress-source\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The isolated launcher identity fixture copies and binds the extracted protected-progress source policy."
+    },
+    {
+      "id": "runtime.progress-source-launcher-route",
+      "path": "Serve-MathQuest.ps1",
+      "pattern": "@\\('/assets/js/math-quest-progress-source\\.js', 'assets/js/math-quest-progress-source\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The local launcher serves the protected-progress source policy from its immutable startup snapshot."
+    },
+    {
+      "id": "runtime.progress-source-no-browser-state",
+      "path": "assets/js/math-quest-progress-source.js",
+      "pattern": "\\b(?:document|localStorage|navigator|window)\\b",
+      "expectedCount": 0,
+      "claim": "Protected-progress source selection remains a pure policy without direct browser-state access."
+    },
+    {
+      "id": "runtime.progress-source-playwright-identity-route",
+      "path": "audit/lib/playwright-focused-contract.mjs",
+      "pattern": "\\[\"/assets/js/math-quest-progress-source\\.js\", \"assets/js/math-quest-progress-source\\.js\"\\]",
+      "expectedCount": 1,
+      "claim": "Focused browser journeys bind their expected server identity to the protected-progress source policy bytes."
+    },
+    {
+      "id": "runtime.progress-write-single-owner",
+      "path": "index.html",
+      "pattern": "localStorage\\.setItem\\(",
+      "expectedCount": 1,
+      "claim": "Only storageWrite owns persistent progress writes."
+    },
+    {
+      "id": "runtime.pwa-readiness-status-delegation",
+      "path": "index.html",
+      "pattern": "MathQuestPwaStatus\\.readinessStatusText\\(pwa\\.phase\\)",
+      "expectedCount": 2,
+      "claim": "Both PWA readiness displays delegate wording to the single runtime policy owner."
+    },
+    {
+      "id": "runtime.pwa-readiness-validation-delegation",
+      "path": "index.html",
+      "pattern": "MathQuestPwaStatus\\.validateReadiness\\(payload,\\{",
+      "expectedCount": 1,
+      "claim": "The page adapter delegates exact PWA readiness-reply validation to its single runtime policy owner."
+    },
+    {
+      "id": "runtime.pwa-status-audit-inclusion",
+      "path": "audit/run-audit.ps1",
+      "pattern": "pwa-status\\.test\\.mjs",
+      "expectedCount": 1,
+      "claim": "The canonical audit invokes the PWA status and readiness policy tests exactly once."
+    },
+    {
+      "id": "runtime.pwa-status-launcher-fixture-route",
+      "path": "audit/test-launcher-identity.ps1",
+      "pattern": "@\\('/assets/js/math-quest-pwa-status\\.js', 'assets/js/math-quest-pwa-status\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The isolated launcher identity fixture copies and binds the extracted PWA status policy."
+    },
+    {
+      "id": "runtime.pwa-status-launcher-route",
+      "path": "Serve-MathQuest.ps1",
+      "pattern": "@\\('/assets/js/math-quest-pwa-status\\.js', 'assets/js/math-quest-pwa-status\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The local launcher serves the extracted PWA status policy from its immutable startup snapshot."
+    },
+    {
+      "id": "runtime.pwa-status-no-browser-state",
+      "path": "assets/js/math-quest-pwa-status.js",
+      "pattern": "\\b(?:document|localStorage|navigator|window)\\b",
+      "expectedCount": 0,
+      "claim": "The PWA status and readiness policy remains a pure state projection without browser-state access."
+    },
+    {
+      "id": "runtime.pwa-status-playwright-identity-route",
+      "path": "audit/lib/playwright-focused-contract.mjs",
+      "pattern": "\\[\"/assets/js/math-quest-pwa-status\\.js\", \"assets/js/math-quest-pwa-status\\.js\"\\]",
+      "expectedCount": 1,
+      "claim": "Focused browser journeys bind their expected server identity to the extracted PWA status policy bytes."
+    },
+    {
+      "id": "runtime.pwa-status-playwright-request-inventory",
+      "path": "audit/playwright/fixtures.mjs",
+      "pattern": "PLAYWRIGHT_FOCUSED_SERVER_ROUTES\\.map\\(\\(\\[route\\]\\) => route\\)",
+      "expectedCount": 1,
+      "claim": "Focused browser request filtering derives from the exact server route identity instead of a duplicate allowlist."
+    },
+    {
+      "id": "runtime.pwa-update-status-delegation",
+      "path": "index.html",
+      "pattern": "MathQuestPwaStatus\\.updateStatusText\\(\\{",
+      "expectedCount": 1,
+      "claim": "The page adapter delegates PWA update wording to its single runtime policy owner."
+    },
+    {
+      "id": "runtime.validation-before-persistence",
+      "path": "index.html",
+      "pattern": "function save\\(\\)\\{const bytes=prepareProgressBytes\\(\\);return bytes!==null&&persistProgressBytes\\(bytes\\);\\}",
+      "expectedCount": 1,
+      "claim": "Canonical validation and serialization precede the persistent write."
+    }
+  ]
+}

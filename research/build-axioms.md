@@ -1,14 +1,14 @@
 # Math Quest — Public Beta Decision Register
 
-- **Register revision:** `AR-PUBLIC-22`
+- **Register revision:** `AR-PUBLIC-23`
 - **Contract:** `docs/development/build-spec.md` version `3.7`
 - **Contract SHA-256:** `b09bd01bf7015511111e8f25282231989c5f285ce676da03b52f68bc5404a94c`
 - **Curriculum manifest:** `math-quest-curriculum` version `1.0.0` (schema `1`)
 - **Manifest SHA-256:** `14ef82f104a113f07f98c7593b3b8d3dc35a5d16bf75b7c307fc6bb6303355ad`
-- **Engine SHA-256:** `389da3e1da0106c58dca8df7ed372ff772e73ef3601995297302e866b997c2d4`
+- **Engine SHA-256:** `7caf1353035f1881eaf0cbd902d8d07647ecf5589812ce66496d76555bc30b58`
 - **Approved child-string table:** `child-strings-v1`, 441 records, SHA-256 `a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`; approved by the project owner on 2026-08-20
 - **State schema:** `3`
-- **Date:** `2026-08-25`
+- **Date:** `2026-09-08`
 
 ## Confirmed decisions
 
@@ -69,11 +69,13 @@
 | PB-053 | Screen-native Concrete flow | On 2026-08-24 the project owner removed every mandatory generic “make this with real objects” acknowledgement from ordinary child play. Ordinary Concrete questions now begin directly with their on-screen task and response controls. Off-screen physical play remains optional grown-up-led enrichment and never blocks play or adds evidence. MQ-048 retains one materially different, answer-free, nonphysical first-use legend that teaches the five arbitrary practice-token/value mappings before the assessed question; it uses persisted phase `practice-token-guide` and action `practice-token-ready`. Active-UI version 3 migrates legitimate version-2 MQ-048 `physical` checkpoints to that legend and every other version-2 `physical` checkpoint to `question`, preserving the exact active session. The three obsolete approved child-string records remain unreachable legacy records so the owner-approved 441-record table and digest do not change. |
 | PB-054 | Beta 8 release-cycle authorization and four-authority evidence successor | On 2026-08-25 the project owner authorized end-to-end protected-main publication of `v1.0.0-beta.8`. The instruction did not select either optional cycle, so physical-device and six-reviewer evidence remain exact `OPTIONAL_NOT_RUN` absence records and make no pass or qualification claim. Beta 8 uses `RELEASE_EVIDENCE_SUCCESSOR_V2`: the protected-main qualification contains pending clearance, browser-runner evidence, release-evidence bundle, and canonical canary record; its immediate non-merge sole child changes exactly those four evidence authorities after the hosted observation and canary bind the qualification SHA. The bundle's `QUALIFICATION_PENDING` lifecycle is structurally valid but never release-ready; only `EVIDENCE_REVIEWED` can bind publication. Every game/runtime/PWA byte remains identical across the successor. The final complete gauntlet and even-beta Deep UX Census run only on that successor. |
 
+| PB-055 | Beta 9 refactor release authorization | On 2026-09-08 the project owner requested a new beta for the completed refactor. The next unused tag is `v1.0.0-beta.9`; ordinary end-to-end publication is authorized. The existing `RELEASE_EVIDENCE_SUCCESSOR_V2` four-authority qualification/successor boundary remains mandatory. Fresh reconciled canary and hosted-Windows evidence bind the qualification commit; the one full certification run binds its immediate evidence-only successor. Beta 9 is excluded by the alternating-beta Deep UX Census cadence. Optional device/reviewer cycles remain `OPTIONAL_NOT_RUN`, and prerelease host qualification remains `DEFERRED_PRERELEASE`. |
+
 ## Frozen release identifiers
 
 The contract digest above binds this register to the exact current contract.
 The manifest, engine, and approved child-string identities above bind
-this register to the current Beta 8 work before its immutable release freeze.
+this register to the current Beta 9 work before its immutable release freeze.
 The exact 441-record child-string identity is approved as recorded in the
 release checklist.
 Changing the curriculum manifest, contract, engine, state contract, or governed

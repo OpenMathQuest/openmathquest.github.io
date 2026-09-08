@@ -71,7 +71,7 @@ test("bounded execution preserves declared result order and never exceeds two to
     observed = Math.max(observed, active);
     nestedBudgets.set(laneId, nestedProcessTimeoutMs);
     nestedBudgets.set(`${laneId}:concurrency`, nestedConcurrencyMaximum);
-    await new Promise((resolve) => setTimeout(resolve, laneId === "coverage" ? 20 : 2));
+    await new Promise((resolve) => { setTimeout(resolve, laneId === "coverage" ? 20 : 2); });
     active -= 1;
     activeLaneIds.delete(laneId);
     return envelopeFor(laneId);
@@ -281,8 +281,8 @@ test("serial and parallel timing-free evidence is byte-for-byte identical and se
   assert.notDeepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
 });
 
-test("timing-free equivalence removes measured volatility but keeps request and rendered-geometry semantics", () => {
-  const baseline = {
+function timingAndGeometryBaseline() {
+  return {
     generatedAt: "one",
     auditOrchestration: { executionMode: "SERIAL_REFERENCE", wallDurationMs: 410_960 },
     outcomeSummary: { runId: "serial", passedCount: 2 },
@@ -319,6 +319,9 @@ test("timing-free equivalence removes measured volatility but keeps request and 
       }],
     },
   };
+}
+
+function measuredVolatilityVariant(baseline) {
   const parallel = structuredClone(baseline);
   parallel.generatedAt = "two";
   parallel.auditOrchestration = { executionMode: "BOUNDED_PARALLEL", wallDurationMs: 331_017 };
@@ -341,6 +344,12 @@ test("timing-free equivalence removes measured volatility but keeps request and 
   });
   parallel.browser.shardEvidence[0].canonicalEvidenceSha256 = "4".repeat(64);
   parallel.browser.shardEvidence[0].projection.payload.requestCount = 2;
+  return parallel;
+}
+
+test("timing-free equivalence removes measured volatility but keeps request and rendered-geometry semantics", () => {
+  const baseline = timingAndGeometryBaseline();
+  const parallel = measuredVolatilityVariant(baseline);
   assert.deepEqual(canonicalAuditEvidenceBytes(parallel), canonicalAuditEvidenceBytes(baseline));
 
   const withBrowserDetails = (mutate) => {
@@ -474,4 +483,15 @@ test("hosted bounded execution has one explicit non-release qualification path a
   assert.doesNotMatch(qualificationJob, /(?:Destination|--serial=|--parallel=|Set-Content -LiteralPath) ['"]?audit\/execution-qualification-/u);
   assert.equal(policy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
   assert.equal(policy.githubHosted.defaultBeforeQualification, "SERIAL_REFERENCE");
+});
+
+test("audit comparison preserves the distinct canonical evidence fingerprints", () => {
+  const serial = { gate: { status: "PASS" } };
+  const parallel = { gate: { status: "FAIL" } };
+  const result = compareAuditExecutionReports(serial, parallel);
+  assert.equal(canonicalAuditEvidenceBytes(serial).toString(), '{"gate":{"status":"PASS"}}\n');
+  assert.equal(canonicalAuditEvidenceBytes(parallel).toString(), '{"gate":{"status":"FAIL"}}\n');
+  assert.equal(result.serialCanonicalEvidenceSha256, "1d39ef349868188daf427b34d7d36abd5fa0a927ddd0fdcc968f3044dc7eda8a");
+  assert.equal(result.parallelCanonicalEvidenceSha256, "b254f641adb0f0dfd84eb1bacd2ca6944feff9baa0565cd27a1ebc78632292f1");
+  assert.equal(result.evidenceEquivalent, false);
 });

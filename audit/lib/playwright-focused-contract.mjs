@@ -3,9 +3,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GATE_INTEGRITY_POLICY } from "./gate-integrity-policy.mjs";
+import { axeReportFindings } from "./axe-accessibility.mjs";
 
-export const PLAYWRIGHT_FOCUSED_SCHEMA_VERSION = 1;
-export const PLAYWRIGHT_FOCUSED_CONTRACT_ID = "math-quest-playwright-focused-v1";
+export const PLAYWRIGHT_FOCUSED_SCHEMA_VERSION = 2;
+export const PLAYWRIGHT_FOCUSED_CONTRACT_ID = "math-quest-playwright-focused-v2";
 export const PLAYWRIGHT_FOCUSED_WORKERS = GATE_INTEGRITY_POLICY.executionPolicy.nestedConcurrency.playwrightWorkers;
 export const PLAYWRIGHT_FOCUSED_TEST_TIMEOUT_MS = GATE_INTEGRITY_POLICY.executionPolicy.focusedPlaywright.testTimeoutMs;
 export const PLAYWRIGHT_FOCUSED_EXPECT_TIMEOUT_MS = GATE_INTEGRITY_POLICY.executionPolicy.focusedPlaywright.expectTimeoutMs;
@@ -48,6 +49,8 @@ export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
   ["/assets/icons/apple-touch-icon.png", "assets/icons/apple-touch-icon.png"],
   ["/assets/icons/icon-192.png", "assets/icons/icon-192.png"],
   ["/assets/icons/icon-512.png", "assets/icons/icon-512.png"],
+  ["/assets/js/math-quest-progress-source.js", "assets/js/math-quest-progress-source.js"],
+  ["/assets/js/math-quest-pwa-status.js", "assets/js/math-quest-pwa-status.js"],
   ["/assets/sounds/close.wav", "assets/sounds/close.wav"],
   ["/assets/sounds/confirm.wav", "assets/sounds/confirm.wav"],
   ["/assets/sounds/incorrect.wav", "assets/sounds/incorrect.wav"],
@@ -84,7 +87,7 @@ export async function playwrightFocusedExpectedServerIdentity(root) {
   return {
     schemaVersion: 1,
     identity: "math-quest-local-server:v2",
-    release: "1.0.0-beta.8",
+    release: "1.0.0-beta.9",
     port: 8771,
     rootId: sha256(Buffer.from(normalizedRoot, "utf8")),
     servedPayloadSha256: sha256(Buffer.from(`${records.join("\n")}\n`, "utf8")),
@@ -108,80 +111,88 @@ const exactKeys = (value, expected) => Boolean(
 
 const isSha256 = (value) => /^[a-f0-9]{64}$/u.test(String(value));
 
-export function playwrightFocusedReportFindings(report, { expectedExecutableSha256 = null, expectedRootId = null, expectedServedPayloadSha256 = null } = {}) {
-  const findings = [];
-  if (!exactKeys(report, ["schemaVersion", "contractId", "generatedAt", "toolchain", "privacy", "summary", "results"])) {
-    findings.push("report must use the exact closed schema");
-    return findings;
+function focusedIdentityFindings(report) {
+  const valid = report.schemaVersion === PLAYWRIGHT_FOCUSED_SCHEMA_VERSION
+    && report.contractId === PLAYWRIGHT_FOCUSED_CONTRACT_ID && Number.isFinite(Date.parse(report.generatedAt));
+  return valid ? [] : ["report identity or timestamp is invalid"];
+}
+
+function focusedToolchainFindings(value) {
+  const keys = ["runnerPackage", "runnerVersion", "browserProduct", "browserVersion", "browserExecutableSha256", "serverRootId", "servedPayloadSha256"];
+  if (!exactKeys(value, keys)) return ["toolchain identity is invalid"];
+  const valid = value.runnerPackage === "@playwright/test" && value.runnerVersion === PLAYWRIGHT_TEST_VERSION
+    && value.browserProduct === "Microsoft Edge" && /^\d+\.\d+\.\d+\.\d+$/u.test(String(value.browserVersion))
+    && [value.browserExecutableSha256, value.serverRootId, value.servedPayloadSha256].every(isSha256);
+  return valid ? [] : ["toolchain identity is invalid"];
+}
+
+function focusedBindingFindings(report, expected) {
+  const bindings = [
+    ["expectedExecutableSha256", "browserExecutableSha256", "browser executable digest does not match the observed executable"],
+    ["expectedRootId", "serverRootId", "server root digest does not match the reviewed checkout"],
+    ["expectedServedPayloadSha256", "servedPayloadSha256", "served payload digest does not match the reviewed checkout"],
+  ];
+  return bindings.filter(([key, observed]) => expected[key] != null && report.toolchain?.[observed] !== expected[key]).map(([, , message]) => message);
+}
+
+function focusedPrivacyFindings(value) {
+  const keys = ["usesSyntheticStateOnly", "includesChildName", "includesChildProgress", "includesTraceOnPass", "includesScreenshotOnPass", "uploadsFailureArtifacts"];
+  if (!exactKeys(value, keys)) return ["privacy declaration is invalid"];
+  const valid = value.usesSyntheticStateOnly === true && keys.slice(1).every((key) => value[key] === false);
+  return valid ? [] : ["privacy declaration is invalid"];
+}
+
+function validFocusedSummary(report) {
+  return exactKeys(report.summary, ["expected", "actual", "passed", "failed", "skipped", "unknown", "duplicates"])
+    && report.summary.expected === PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length
+    && Array.isArray(report.results) && report.summary.actual === report.results.length;
+}
+
+function countFocusedRow(row, state) {
+  const key = row.projectId + ":" + row.caseId;
+  if (row.key !== key || !PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.includes(key)) state.counts.unknown += 1;
+  if (state.seen.has(key)) state.counts.duplicates += 1;
+  state.seen.add(key);
+  const statusKey = row.status === "passed" ? "passed" : row.status === "skipped" ? "skipped" : "failed";
+  state.counts[statusKey] += 1;
+  if (!Number.isFinite(row.durationMs) || row.durationMs < 0 || row.attempts !== 1) {
+    state.findings.push("result timing or retry count is invalid: " + key);
   }
-  if (report.schemaVersion !== PLAYWRIGHT_FOCUSED_SCHEMA_VERSION
-      || report.contractId !== PLAYWRIGHT_FOCUSED_CONTRACT_ID
-      || !Number.isFinite(Date.parse(report.generatedAt))) {
-    findings.push("report identity or timestamp is invalid");
-  }
-  if (!exactKeys(report.toolchain, ["runnerPackage", "runnerVersion", "browserProduct", "browserVersion", "browserExecutableSha256", "serverRootId", "servedPayloadSha256"])
-      || report.toolchain.runnerPackage !== "@playwright/test"
-      || report.toolchain.runnerVersion !== PLAYWRIGHT_TEST_VERSION
-      || report.toolchain.browserProduct !== "Microsoft Edge"
-      || !/^\d+\.\d+\.\d+\.\d+$/u.test(String(report.toolchain.browserVersion))
-      || !isSha256(report.toolchain.browserExecutableSha256)
-      || !isSha256(report.toolchain.serverRootId)
-      || !isSha256(report.toolchain.servedPayloadSha256)) {
-    findings.push("toolchain identity is invalid");
-  }
-  if (expectedExecutableSha256 !== null && report.toolchain?.browserExecutableSha256 !== expectedExecutableSha256) {
-    findings.push("browser executable digest does not match the observed executable");
-  }
-  if (expectedRootId !== null && report.toolchain?.serverRootId !== expectedRootId) findings.push("server root digest does not match the reviewed checkout");
-  if (expectedServedPayloadSha256 !== null && report.toolchain?.servedPayloadSha256 !== expectedServedPayloadSha256) findings.push("served payload digest does not match the reviewed checkout");
-  if (!exactKeys(report.privacy, ["usesSyntheticStateOnly", "includesChildName", "includesChildProgress", "includesTraceOnPass", "includesScreenshotOnPass", "uploadsFailureArtifacts"])
-      || report.privacy.usesSyntheticStateOnly !== true
-      || Object.entries(report.privacy).some(([key, value]) => key !== "usesSyntheticStateOnly" && value !== false)) {
-    findings.push("privacy declaration is invalid");
-  }
-  if (!exactKeys(report.summary, ["expected", "actual", "passed", "failed", "skipped", "unknown", "duplicates"])
-      || report.summary.expected !== PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length
-      || report.summary.actual !== report.results?.length
-      || !Array.isArray(report.results)) {
-    findings.push("summary counts are invalid");
-    return findings;
-  }
-  const seen = new Set();
-  let passed = 0;
-  let failed = 0;
-  let skipped = 0;
-  let unknown = 0;
-  let duplicates = 0;
-  for (const row of report.results) {
+}
+
+function focusedResultState(results) {
+  const state = { seen: new Set(), counts: { passed: 0, failed: 0, skipped: 0, unknown: 0, duplicates: 0 }, findings: [] };
+  for (const row of results) {
     if (!exactKeys(row, ["key", "projectId", "caseId", "status", "durationMs", "attempts"])) {
-      findings.push("a result row does not use the exact closed schema");
-      continue;
-    }
-    const key = `${row.projectId}:${row.caseId}`;
-    if (row.key !== key || !PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.includes(key)) unknown += 1;
-    if (seen.has(key)) duplicates += 1;
-    seen.add(key);
-    if (row.status === "passed") passed += 1;
-    else if (row.status === "skipped") skipped += 1;
-    else failed += 1;
-    if (!Number.isFinite(row.durationMs) || row.durationMs < 0 || row.attempts !== 1) {
-      findings.push(`result timing or retry count is invalid: ${key}`);
-    }
+      state.findings.push("a result row does not use the exact closed schema");
+    } else countFocusedRow(row, state);
   }
-  if (seen.size !== PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length
-      || PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.some((key) => !seen.has(key))) {
-    findings.push("result set is missing one or more required project/case pairs");
+  return state;
+}
+
+function focusedResultFindings(report) {
+  if (!validFocusedSummary(report)) return ["summary counts are invalid"];
+  const state = focusedResultState(report.results);
+  const expected = PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS;
+  if (state.seen.size !== expected.length || expected.some((key) => !state.seen.has(key))) {
+    state.findings.push("result set is missing one or more required project/case pairs");
   }
-  if (passed !== report.summary.passed
-      || failed !== report.summary.failed
-      || skipped !== report.summary.skipped
-      || unknown !== report.summary.unknown
-      || duplicates !== report.summary.duplicates) {
-    findings.push("summary does not match the result rows");
+  if (Object.entries(state.counts).some(([key, count]) => report.summary[key] !== count)) state.findings.push("summary does not match the result rows");
+  const clean = state.counts.passed === expected.length && ["failed", "skipped", "unknown", "duplicates"].every((key) => state.counts[key] === 0);
+  if (!clean) state.findings.push("focused Playwright result set is not a clean pass");
+  return state.findings;
+}
+
+export function playwrightFocusedReportFindings(report, expected = {}) {
+  if (!exactKeys(report, ["schemaVersion", "contractId", "generatedAt", "toolchain", "privacy", "accessibility", "summary", "results"])) {
+    return ["report must use the exact closed schema"];
   }
-  if (failed !== 0 || skipped !== 0 || unknown !== 0 || duplicates !== 0 || passed !== PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length) {
-    findings.push("focused Playwright result set is not a clean pass");
-  }
+  const findings = [
+    ...focusedIdentityFindings(report), ...focusedToolchainFindings(report.toolchain),
+    ...focusedBindingFindings(report, expected), ...focusedPrivacyFindings(report.privacy),
+    ...axeReportFindings(report.accessibility, { violationCount: 0, locationKeys: ["key"], validLocation: (row) => PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.includes(row.key) }),
+    ...focusedResultFindings(report),
+  ];
   return [...new Set(findings)];
 }
 

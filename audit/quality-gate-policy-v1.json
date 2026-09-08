@@ -1,0 +1,579 @@
+{
+  "policyId": "math-quest-refactor-quality-gates",
+  "version": "1.3.0",
+  "schemaVersion": 1,
+  "status": "ACTIVE",
+  "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
+  "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+  "approvedTutorialMetadataTransition": {
+    "contractId": "ART_DEC_013_TUTORIAL_METADATA_V1",
+    "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+    "decisionRegisterPath": "audit/art-design-decision-register-v1.json",
+    "decisionId": "ART-DEC-013",
+    "baselineArtDesignSha256": "f0092420a3cfbe9564f16161523cf62b34680f0144d0a1f8ee6dc7eaf15ec70b",
+    "candidateArtDesignSha256": "57f3ba9df84ffe9aa89297b4cc85fa8df97f4f198ff233a8ceddbe6772d32c83",
+    "baselineTutorialSha256": "42993421ce2020d0a2cba0405cf34462d55053f804a7e33620330f52d07b50e8",
+    "candidateTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
+    "manifestChangedPointer": "/artDesignBinding/sha256",
+    "planChangedPointer": "/manifestSha256"
+  },
+  "runtime": {
+    "nodeVersion": "24.14.0",
+    "installCommand": "npm.cmd ci --ignore-scripts --omit=optional --no-audit --no-fund"
+  },
+  "sliceLifecycle": {
+    "order": [
+      "FOCUSED_DEVELOPMENT",
+      "STAGE_COMPLETE_SLICE",
+      "INDEPENDENT_REVIEW_IF_REQUIRED",
+      "CORRECT_AND_REVERIFY",
+      "FREEZE_EXACT_STAGED_TREE",
+      "FULL_NINE_STAGE_LOOP",
+      "ADVANCE"
+    ],
+    "focusedSelectionAuthority": "tools/blast-radius-lookup.mjs",
+    "unknownEffectPolicy": "BROAD_DEVELOPMENT_SUITE",
+    "fullLoopCallerEntryCondition": "CALLER_MUST_SUPPLY_A_REVIEW_CLEAR_COMPLETE_SLICE_WITH_ZERO_UNSTAGED_TRACKED_OR_NONIGNORED_UNTRACKED_PATHS",
+    "fullLoopInvalidation": "ANY_CANDIDATE_CHANGE_REQUIRES_A_NEW_TREE_AND_COMPLETE_LOOP",
+    "releaseCertificationBoundary": "SEPARATE_EXACT_FROZEN_RELEASE_CANDIDATE",
+    "gateAdmissionPolicy": "DEMONSTRATED_UNCOVERED_ESCAPE_REQUIRES_AN_EFFECT_SENSITIVE_CONTROL"
+  },
+  "candidateBinding": {
+    "contractId": "STAGED_TREE_CANDIDATE_V1",
+    "fileHashAlgorithm": "SHA-256",
+    "requiredReportFields": [
+      "baselineCommit",
+      "candidateTreeOid",
+      "gateIntegrityPolicySha256",
+      "nodeExecutableSha256",
+      "nodeVersion",
+      "packageLockSha256",
+      "qualityPolicySha256"
+    ],
+    "preconditions": [
+      "ZERO_UNSTAGED_TRACKED_PATHS",
+      "ZERO_NONIGNORED_UNTRACKED_PATHS"
+    ],
+    "postconditions": [
+      "UNCHANGED_STAGED_TREE_OID",
+      "ZERO_UNSTAGED_TRACKED_PATHS",
+      "ZERO_NONIGNORED_UNTRACKED_PATHS"
+    ],
+    "automaticRetryPolicy": "PROHIBITED"
+  },
+  "aiChangeLoop": {
+    "order": [
+      "compiler-types",
+      "static-architecture",
+      "tests",
+      "differential-equivalence",
+      "property-fuzz",
+      "mutation",
+      "security-dependencies",
+      "complexity-duplication-size",
+      "performance-budgets"
+    ],
+    "passSemantics": "EVERY_STAGE_MUST_RUN_IN_ORDER_AND_REPORT_PASS_BEFORE_THE_CHANGE_OR_SLICE_MAY_ADVANCE",
+    "stages": [
+      {
+        "id": "compiler-types",
+        "claim": "SOURCE_PARSES_AND_DECLARED_DATA_CONTRACTS_VALIDATE"
+      },
+      {
+        "id": "static-architecture",
+        "claim": "MODULE_DIRECTION_WRITER_OWNERSHIP_AND_PRIVACY_BOUNDARIES_HOLD"
+      },
+      {
+        "id": "tests",
+        "claim": "UNIT_INTEGRATION_AND_EFFECT_SENSITIVE_BEHAVIOUR_PASS"
+      },
+      {
+        "id": "differential-equivalence",
+        "claim": "PRE_REFACTOR_AND_REFACTORED_OBSERVABLE_RESULTS_ARE_EQUIVALENT"
+      },
+      {
+        "id": "property-fuzz",
+        "claim": "BOUNDED_SEEDED_GENERATION_FINDS_NO_INVARIANT_OR_INTERACTION_FAILURE"
+      },
+      {
+        "id": "mutation",
+        "claim": "CURATED_CRITICAL_MUTANTS_ARE_KILLED_BY_INDEPENDENT_ORACLES"
+      },
+      {
+        "id": "security-dependencies",
+        "claim": "SECRETS_STATIC_SECURITY_DEPENDENCY_INTEGRITY_LICENCES_AND_VULNERABILITIES_PASS"
+      },
+      {
+        "id": "complexity-duplication-size",
+        "claim": "COMPLEXITY_DUPLICATION_DEAD_CODE_FUNCTION_AND_FILE_RATCHETS_DO_NOT_WORSEN"
+      },
+      {
+        "id": "performance-budgets",
+        "claim": "SHIPPED_BYTES_AND_MEASURED_RUNTIME_BUDGETS_DO_NOT_REGRESS"
+      }
+    ]
+  },
+  "qualityToolComponents": [
+    {
+      "id": "axe-core-4.13.0",
+      "kind": "ci-only-accessibility-analyzer",
+      "packageName": "axe-core",
+      "sourceUrl": "https://github.com/dequelabs/axe-core/tree/1cc54b900413660610180d631feb73c9e74f4dc9",
+      "sourceCommit": "1cc54b900413660610180d631feb73c9e74f4dc9",
+      "licenceEvidence": "https://github.com/dequelabs/axe-core/blob/1cc54b900413660610180d631feb73c9e74f4dc9/LICENSE",
+      "scope": "focused and Deep UX rendered-state WCAG accessibility analysis only"
+    },
+    {
+      "id": "bundlewatch-0.4.2",
+      "kind": "ci-only-bundle-size-budget-analyzer",
+      "packageName": "bundlewatch",
+      "sourceUrl": "https://github.com/bundlewatch/bundlewatch/tree/95997ac3bdf7ff1e3ec75bf123a2b06051e39b7d",
+      "sourceCommit": "95997ac3bdf7ff1e3ec75bf123a2b06051e39b7d",
+      "licenceEvidence": "https://github.com/bundlewatch/bundlewatch/blob/95997ac3bdf7ff1e3ec75bf123a2b06051e39b7d/LICENSE",
+      "scope": "AI-change raw-byte bundle budgets with local-only reporting disabled"
+    },
+    {
+      "id": "eslint-10.9.0",
+      "kind": "ci-only-javascript-static-analyzer",
+      "packageName": "eslint",
+      "sourceUrl": "https://github.com/eslint/eslint/tree/c27bc926e496985eb7911c09eb60914b2e4b5d0f",
+      "sourceCommit": "c27bc926e496985eb7911c09eb60914b2e4b5d0f",
+      "licenceEvidence": "https://github.com/eslint/eslint/blob/c27bc926e496985eb7911c09eb60914b2e4b5d0f/LICENSE",
+      "scope": "AI-change JavaScript correctness and maintainability ratchets only"
+    },
+    {
+      "id": "stylelint-17.14.1",
+      "kind": "ci-only-css-static-analyzer",
+      "packageName": "stylelint",
+      "sourceUrl": "https://github.com/stylelint/stylelint/tree/cd66b035087270dd62d33542154463266cc5e81a",
+      "sourceCommit": "cd66b035087270dd62d33542154463266cc5e81a",
+      "licenceEvidence": "https://github.com/stylelint/stylelint/blob/cd66b035087270dd62d33542154463266cc5e81a/LICENSE",
+      "scope": "AI-change CSS correctness and maintainability ratchets only"
+    },
+    {
+      "id": "markdownlint-cli2-0.23.2",
+      "kind": "ci-only-markdown-static-analyzer",
+      "packageName": "markdownlint-cli2",
+      "sourceUrl": "https://github.com/DavidAnson/markdownlint-cli2/tree/b82a6c8896e491b9cb377a99ff3412131920681b",
+      "sourceCommit": "b82a6c8896e491b9cb377a99ff3412131920681b",
+      "licenceEvidence": "https://github.com/DavidAnson/markdownlint-cli2/blob/b82a6c8896e491b9cb377a99ff3412131920681b/LICENSE",
+      "scope": "AI-change Markdown correctness checks only"
+    },
+    {
+      "id": "knip-6.32.2",
+      "kind": "ci-only-dead-code-and-dependency-analyzer",
+      "packageName": "knip",
+      "sourceUrl": "https://github.com/webpro-nl/knip/tree/7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950/packages/knip",
+      "sourceCommit": "7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950",
+      "licenceEvidence": "https://github.com/webpro-nl/knip/blob/7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950/LICENSE",
+      "scope": "AI-change dead-code, duplicate-export, and dependency ratchets only"
+    },
+    {
+      "id": "oxc-parser-binding-win32-x64-msvc-0.143.0",
+      "kind": "ci-only-knip-native-parser-binding",
+      "packageName": "@oxc-parser/binding-win32-x64-msvc",
+      "sourceUrl": "https://github.com/oxc-project/oxc/tree/45a17c25d188bf1b289638483e2bc61adbadd364/napi/parser",
+      "sourceCommit": "45a17c25d188bf1b289638483e2bc61adbadd364",
+      "licenceEvidence": "https://github.com/oxc-project/oxc/blob/45a17c25d188bf1b289638483e2bc61adbadd364/LICENSE",
+      "scope": "reviewed Windows parser binding dynamically loaded by Knip"
+    },
+    {
+      "id": "oxc-resolver-binding-win32-x64-msvc-11.24.2",
+      "kind": "ci-only-knip-native-resolver-binding",
+      "packageName": "@oxc-resolver/binding-win32-x64-msvc",
+      "sourceUrl": "https://github.com/oxc-project/oxc-resolver/tree/7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950",
+      "sourceCommit": "7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950",
+      "licenceEvidence": "https://github.com/oxc-project/oxc-resolver/blob/7ba4ae692c1f55d5b20bcb0e06ad1f13ad338950/LICENSE",
+      "scope": "reviewed Windows resolver binding dynamically loaded by Knip"
+    }
+  ],
+  "supplyChain": {
+    "packageLockSha256": "3a1f416e0bea3951567b180085f17da8d79f0747bc2187dbf7a586c5582c5a3e",
+    "packageCountIncludingRoot": 375,
+    "allowedClosureLicences": [
+      "(MIT OR CC0-1.0)",
+      "0BSD",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "BlueOak-1.0.0",
+      "CC-BY-3.0",
+      "CC0-1.0",
+      "ISC",
+      "MIT",
+      "MIT-0",
+      "MPL-2.0",
+      "Python-2.0"
+    ],
+    "licenceMetadataExceptions": [
+      {
+        "path": "node_modules/jsonpack",
+        "version": "1.1.5",
+        "licence": "MIT",
+        "reason": "The lock entry omits license, but the reviewed package manifest uses the legacy licenses field and its bundled LICENSE.md is MIT."
+      },
+      {
+        "path": "node_modules/svg-tags",
+        "version": "1.0.0",
+        "licence": "MIT",
+        "reason": "The lock entry omits license, but the reviewed package manifest uses the legacy licenses field and its bundled LICENSE is MIT."
+      }
+    ],
+    "lifecycleScriptExceptions": [
+      {
+        "path": "node_modules/fsevents",
+        "version": "2.3.2",
+        "optional": true,
+        "os": [
+          "darwin"
+        ],
+        "reason": "Playwright's macOS-only optional dependency is retained in the lockfile and omitted by the reviewed Windows install."
+      }
+    ],
+    "dependencyOverrides": [
+      {
+        "requester": "bundlewatch",
+        "dependency": "axios",
+        "declaredRange": "^0.31.1",
+        "version": "1.20.0",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz",
+        "integrity": "sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==",
+        "reason": "BundleWatch 0.4.2 declares a vulnerable Axios 0.x range; this exact audited override keeps local-only size analysis while preserving the zero-vulnerability gate."
+      }
+    ],
+    "directDependencies": [
+      {
+        "name": "@oxc-parser/binding-win32-x64-msvc",
+        "version": "0.143.0",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/@oxc-parser/binding-win32-x64-msvc/-/binding-win32-x64-msvc-0.143.0.tgz",
+        "integrity": "sha512-ORMh3JE1s6V7ySicdRK7vgaDQnn5o+UHg9ct989PlWHbel8O9ARrmWXM6kZjrBMtNucxNayQ8g69G0VfWzhANw=="
+      },
+      {
+        "name": "@oxc-resolver/binding-win32-x64-msvc",
+        "version": "11.24.2",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/@oxc-resolver/binding-win32-x64-msvc/-/binding-win32-x64-msvc-11.24.2.tgz",
+        "integrity": "sha512-UqGPmo56KDfLlfXFAFIrNflHT8tFxWGEivWg3Zeyp4Uy2NlKN1FGPr6/BxcLGG3+kZ6Wp14g5Uj+n71boqZfiw=="
+      },
+      {
+        "name": "@playwright/test",
+        "version": "1.62.1",
+        "licence": "Apache-2.0",
+        "resolved": "https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz",
+        "integrity": "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ=="
+      },
+      {
+        "name": "ajv",
+        "version": "8.20.0",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+        "integrity": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="
+      },
+      {
+        "name": "axe-core",
+        "version": "4.13.0",
+        "licence": "MPL-2.0",
+        "resolved": "https://registry.npmjs.org/axe-core/-/axe-core-4.13.0.tgz",
+        "integrity": "sha512-UzGt8zg7Ny8djbYMhxl2zuEevVa7r2gJjYY5Lwr1xM7+XU2nd6CkIWFTVcCIbAP63vSz71NaVyyuSk9lHKcy0A=="
+      },
+      {
+        "name": "bundlewatch",
+        "version": "0.4.2",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/bundlewatch/-/bundlewatch-0.4.2.tgz",
+        "integrity": "sha512-67hWKEbLZyokB07wF4TFJ8X1TL/bcZWipbTQBAf9wwcc4fHe31vFk8m2CMwByMZa5DcK4ZzeRIn6Ldt8Q9f9aw=="
+      },
+      {
+        "name": "eslint",
+        "version": "10.9.0",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/eslint/-/eslint-10.9.0.tgz",
+        "integrity": "sha512-5KeEOJZBfEVA47boFiBsf+6MmmJpffM7qEBg4pLla2e4nlKgdKlqCW0oSLOGsT8Wl5uCGJptLV1bkaiShj90Gw=="
+      },
+      {
+        "name": "fast-check",
+        "version": "4.9.0",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/fast-check/-/fast-check-4.9.0.tgz",
+        "integrity": "sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg=="
+      },
+      {
+        "name": "knip",
+        "version": "6.32.2",
+        "licence": "ISC",
+        "resolved": "https://registry.npmjs.org/knip/-/knip-6.32.2.tgz",
+        "integrity": "sha512-WXTXbmocrw7gqm1A1TQvFN0OgJ7hUSU6E1g6SPRIzzHFogUBhXByc7cYeOFVtJ2uODg7DP4VbESYBYnfbtBYsg=="
+      },
+      {
+        "name": "markdownlint-cli2",
+        "version": "0.23.2",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/markdownlint-cli2/-/markdownlint-cli2-0.23.2.tgz",
+        "integrity": "sha512-eUhcnkSpzURo/o4htSqc7LPDszgOOTknhU4eY/sPHvMCLxnTCYscv1gw1/js/idmaZPisv9ECVEIORcllqjTUw=="
+      },
+      {
+        "name": "playwright-core",
+        "version": "1.62.1",
+        "licence": "Apache-2.0",
+        "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
+        "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw=="
+      },
+      {
+        "name": "stylelint",
+        "version": "17.14.1",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/stylelint/-/stylelint-17.14.1.tgz",
+        "integrity": "sha512-xVQwyiuxALUBNB2fBe0tmNemg9KqLtdj3T64mioFDar79B2cU8LIyz+3KL6LdiHs9NkeNfwxpKSaIVOY8f112g=="
+      }
+    ]
+  },
+  "analysisRatchets": {
+    "historicalLintEvidence": {
+      "status": "OWNER_EXCLUDED_HISTORICAL_EVIDENCE",
+      "approvedDate": "2026-09-04",
+      "missingLocalFile": "ALLOWED_NOT_A_PASS",
+      "changedLocalFile": "FAIL_CLOSED",
+      "recordedWarnings": 53,
+      "records": [
+        {
+          "path": "qa/reviews/visual-interaction/agent-3/run-independent-visual-audit.mjs",
+          "sha256": "bb75d301bb9f27cdf6c4ab320db2b1056fc0cd79a2c9b81a2cb2bf898ce2081d",
+          "warnings": 19
+        },
+        {
+          "path": "qa/reviews/visual-interaction/post-remediation/2026-07-29-blind-child-ui/edge-review.mjs",
+          "sha256": "2bc6584b3e86053a7b46eb161578f7c23c2999c0261b81be9673ec3efe04e91d",
+          "warnings": 15
+        },
+        {
+          "path": "qa/reviews/visual-interaction/post-remediation/final-blind-child-ui/review.mjs",
+          "sha256": "0a52bc9579340826ed90d1c5e695fa58d3fbd81887baff43fb68deeb902df1ad",
+          "warnings": 19
+        }
+      ]
+    },
+    "eslintWarningsByRule": {
+      "complexity": 0,
+      "max-depth": 0,
+      "max-lines-per-function": 0,
+      "max-params": 0,
+      "max-statements": 0,
+      "no-promise-executor-return": 0,
+      "no-unsafe-finally": 0,
+      "no-unused-vars": 0,
+      "no-useless-escape": 0
+    },
+    "functionQuality": {
+      "baselineArtifacts": {
+        "primary": {
+          "path": "audit/function-quality-baseline-v1.json",
+          "sha256": "903a6934fc13086515e3e5d3ed46fd8956f78369ca8380db2b1cbe3863af4049"
+        },
+        "inlineHtmlCorrection": {
+          "path": "audit/inline-function-quality-baseline-correction-v1.json",
+          "sha256": "2ac9a34594339c0324237c9abb97d4c487d61012f16f5ad0db592af0da5dbe9d"
+        }
+      },
+      "newOrMateriallyModifiedLimits": {
+        "cyclomatic": 10,
+        "abcMagnitude": 30,
+        "cognitive": 15,
+        "functionLines": 80,
+        "maxNesting": 4
+      },
+      "legacyViolationCeilings": {
+        "javascript": {
+          "cyclomatic": 0,
+          "abcMagnitude": 56,
+          "cognitive": 4,
+          "functionLines": 3,
+          "maxNesting": 0
+        },
+        "javascriptInlineHtml": {
+          "cyclomatic": 175,
+          "abcMagnitude": 92,
+          "cognitive": 84,
+          "functionLines": 13,
+          "maxNesting": 3
+        },
+        "powershell": {
+          "cyclomatic": 6,
+          "abcMagnitude": 3,
+          "cognitive": 4,
+          "functionLines": 0,
+          "maxNesting": 0
+        }
+      }
+    },
+    "knip": {
+      "unusedFiles": 0,
+      "unusedDependencies": 0,
+      "unusedExports": 0,
+      "duplicateExportGroups": 0
+    },
+    "markdownlintFindings": 0,
+    "stylelintFindings": 0,
+    "engineBranchCoverageMinimumPercent": 90.5,
+    "changePolicy": "COUNTS_MUST_NOT_INCREASE_AND_RATCHETS_MUST_DECREASE_WITH_EACH_COMPLETED_REFACTOR_SLICE"
+  },
+  "sourceBudgets": {
+    "lineCountContract": "UTF8_TEXT_LINES_WITH_CRLF_OR_LF_AND_NO_SYNTHETIC_TRAILING_EMPTY_LINE",
+    "strictMaximumLinesByExtension": {
+      ".css": 500,
+      ".html": 600,
+      ".js": 600,
+      ".mjs": 600,
+      ".ps1": 500
+    },
+    "legacyLineRatchets": [
+      {
+        "path": "Serve-MathQuest.ps1",
+        "maximumLines": 523
+      },
+      {
+        "path": "audit.html",
+        "maximumLines": 8226
+      },
+      {
+        "path": "audit/approved-visual-regression.js",
+        "maximumLines": 3142
+      },
+      {
+        "path": "audit/exhaustive-generator-audit.mjs",
+        "maximumLines": 630
+      },
+      {
+        "path": "audit/lib/bounded-audit-lanes.mjs",
+        "maximumLines": 290
+      },
+      {
+        "path": "audit/lib/browser-smoke.mjs",
+        "maximumLines": 965
+      },
+      {
+        "path": "audit/lib/publication-clearance.mjs",
+        "maximumLines": 546
+      },
+      {
+        "path": "audit/lib/trusted-https-canary.mjs",
+        "maximumLines": 522
+      },
+      {
+        "path": "audit/playwright/critical-journeys.spec.mjs",
+        "maximumLines": 426
+      },
+      {
+        "path": "audit/public-candidate-guard.mjs",
+        "maximumLines": 1250
+      },
+      {
+        "path": "audit/run-audit.mjs",
+        "maximumLines": 538
+      },
+      {
+        "path": "audit/run-audit.ps1",
+        "maximumLines": 614
+      },
+      {
+        "path": "audit/run-trusted-https-canary.mjs",
+        "maximumLines": 807
+      },
+      {
+        "path": "audit/tests/engine-suite.mjs",
+        "maximumLines": 407
+      },
+      {
+        "path": "audit/tests/holistic-child-ux-regressions.test.mjs",
+        "maximumLines": 1530
+      },
+      {
+        "path": "audit/tests/holistic-functional-regressions.test.mjs",
+        "maximumLines": 1101
+      },
+      {
+        "path": "audit/tests/manifest-semantic-suite.mjs",
+        "maximumLines": 510
+      },
+      {
+        "path": "audit/tests/node-engine.test.mjs",
+        "maximumLines": 747
+      },
+      {
+        "path": "audit/tests/page-adapter-effects.test.mjs",
+        "maximumLines": 1549
+      },
+      {
+        "path": "audit/tests/placement-adapter-effects.test.mjs",
+        "maximumLines": 1115
+      },
+      {
+        "path": "audit/tests/publication-clearance.test.mjs",
+        "maximumLines": 1041
+      },
+      {
+        "path": "audit/tests/pwa-release.test.mjs",
+        "maximumLines": 1909
+      },
+      {
+        "path": "audit/tests/qa-tour.test.mjs",
+        "maximumLines": 512
+      },
+      {
+        "path": "audit/tests/trusted-https-canary.test.mjs",
+        "maximumLines": 670
+      },
+      {
+        "path": "index.html",
+        "maximumLines": 4562
+      }
+    ]
+  },
+  "performanceBudgets": {
+    "stylesheetMaximumBytes": 234769,
+    "javascriptMaximumBytes": 1044928,
+    "compiledAssetMaximumBytes": 932443,
+    "productionPayloadMaximumBytes": 2701427,
+    "engineScenarioMaximumWallTimeMs": 12000,
+    "qualityGateMaximumWallTimeMs": 120000
+  },
+  "performanceEvidence": {
+    "applicationMetricsPolicy": "HARD_FAIL_IN_EVERY_ENVIRONMENT",
+    "qualityGateWallTimeMetric": "qualityGateWallTimeMs",
+    "calibratedEnvironmentVariable": "MQ_CALIBRATED_QUALITY_GATE_RUNTIME",
+    "calibratedRequiredValue": "1",
+    "calibratedPolicy": "HARD_FAIL_AT_THE_EXISTING_BUDGET",
+    "uncalibratedPolicy": "MEASURE_AND_REPORT_AS_UNCALIBRATED_ENVIRONMENT_TELEMETRY",
+    "automaticRetryPolicy": "PROHIBITED"
+  },
+  "finishLine": {
+    "requiredCheckpointOrder": [
+      "R0",
+      "R1",
+      "R2",
+      "R3",
+      "R4"
+    ],
+    "zeroFindingTargets": [
+      "eslintWarnings",
+      "knipUnusedExports",
+      "knipDuplicateExports",
+      "markdownlintFindings",
+      "stylelintFindings",
+      "sourceBudgetFindings",
+      "performanceBudgetFindings"
+    ],
+    "driftChain": [
+      "Owners",
+      "Code Map",
+      "Feature Map",
+      "Tutorial Manifest",
+      "Art Design",
+      "Blast Radius",
+      "Gates"
+    ],
+    "releaseCertificationBoundary": "DEVELOPMENT_CHECKS_ONLY_UNTIL_A_SEPARATELY_FROZEN_RELEASE_CANDIDATE",
+    "legacyEslintCompletion": "RATCHET_DURING_R2_AND_R3_ZERO_WARNINGS_REQUIRED_AT_R4"
+  }
+}

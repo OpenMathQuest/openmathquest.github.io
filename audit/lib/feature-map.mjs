@@ -1,3 +1,4 @@
+import { duplicateValues } from "./manifest-collection-checks.mjs";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -17,16 +18,6 @@ function sha256(value) {
   return createHash("sha256").update(canonicalizeJson(value), "utf8").digest("hex");
 }
 
-function duplicateValues(values) {
-  const seen = new Set();
-  const duplicates = new Set();
-  for (const value of values) {
-    if (seen.has(value)) duplicates.add(value);
-    seen.add(value);
-  }
-  return [...duplicates].sort();
-}
-
 function schemaIssue(error) {
   return `${error.instancePath || "/"} ${error.message || "is invalid"}`;
 }
@@ -39,11 +30,7 @@ export async function validateFeatureMapSchema(map, schemaPathOrUrl = new URL(".
   return Object.freeze(valid ? [] : (validate.errors || []).map(schemaIssue));
 }
 
-export async function validateFeatureMap(map, { curriculum, tutorial, artDesign, schemaPathOrUrl } = {}) {
-  const issues = [...await validateFeatureMapSchema(map, schemaPathOrUrl)];
-  if (issues.length) return Object.freeze(issues);
-  if (!curriculum || !tutorial || !artDesign) return Object.freeze(["Validated curriculum, tutorial, and art-design decision manifests are required."]);
-
+function validateFeatureBindings(map, { curriculum, tutorial, artDesign }, issues) {
   if (canonicalizeJson(map.aiReaderContractRef) !== canonicalizeJson(AI_READER_CONTRACT_REF)) issues.push("aiReaderContractRef does not match the repository AI-reader authority.");
 
   if (map.curriculumBinding.path !== "curriculum/math-quest-manifest-v1.json") issues.push("curriculumBinding.path is not canonical.");
@@ -54,22 +41,34 @@ export async function validateFeatureMap(map, { curriculum, tutorial, artDesign,
   if (map.artDesignBinding.sha256 !== sha256(artDesign)) issues.push("artDesignBinding.sha256 does not match the canonical art-design decision bytes.");
   if (artDesign.themePolicy?.worldIdentity !== "MATHEMATICAL_CONSERVATORY_AND_WORKSHOP") issues.push("artDesignBinding does not resolve to the adopted Conservatory identity.");
 
+}
+
+function validateInvariantCatalog(map, issues) {
   const invariantIds = map.invariants.map((record) => record.id);
   for (const duplicate of duplicateValues(invariantIds)) issues.push(`invariants repeats ${duplicate}.`);
   for (const duplicate of duplicateValues(map.invariants.map((record) => record.predicate))) issues.push(`invariant predicate repeats ${duplicate}.`);
-  const invariantSet = new Set(invariantIds);
+  return invariantIds;
+}
+
+function validateProofKindCatalog(map, issues) {
   const proofKinds = map.proofKindCatalog.map((record) => record.kind);
   for (const duplicate of duplicateValues(proofKinds)) issues.push(`proofKindCatalog repeats ${duplicate}.`);
   if (canonicalizeJson(proofKinds) !== canonicalizeJson([...proofKinds].sort())) issues.push("proofKindCatalog must be sorted lexicographically by kind.");
-  const proofKindSet = new Set(proofKinds);
   const tutorialPredicate = "TUTORIAL_V2_RESOLUTION_DISCLOSURE_PHASE_VISUAL_AND_RETURN_CONTRACT_HOLDS";
   if (map.proofKindCatalog.find((record) => record.kind === "tutorial")?.predicate !== tutorialPredicate) issues.push("tutorial proof kind must own the complete Tutorial V2 resolution, disclosure, phase-visual, and return contract.");
   if (map.invariants.find((record) => record.id === "LEG-08")?.predicate !== tutorialPredicate) issues.push("LEG-08 must own the complete Tutorial V2 resolution, disclosure, phase-visual, and return contract.");
+  return new Set(proofKinds);
+}
+
+function validateProofGateCatalog(map, invariantIds, issues) {
   const proofGateIds = map.proofGateOwners.map((record) => record.gate);
   for (const duplicate of duplicateValues(proofGateIds)) issues.push(`proofGateOwners repeats ${duplicate}.`);
   if (canonicalizeJson(proofGateIds) !== canonicalizeJson([...proofGateIds].sort())) issues.push("proofGateOwners must be sorted lexicographically by gate.");
   if (canonicalizeJson(invariantIds) !== canonicalizeJson([...invariantIds].sort())) issues.push("invariants must be sorted lexicographically by id.");
-  const proofGateSet = new Set(proofGateIds);
+  return new Set(proofGateIds);
+}
+
+async function validateProofGateOwnership(map, proofGateSet, issues) {
   const usedProofGates = new Set(map.features.flatMap((feature) => feature.proofs.map((proof) => proof.gate)));
   for (const gate of [...usedProofGates].sort()) if (!proofGateSet.has(gate)) issues.push(`proof gate ${gate} has no declared owner.`);
   for (const gate of [...proofGateSet].sort()) if (!usedProofGates.has(gate)) issues.push(`proof gate owner ${gate} is unused.`);
@@ -81,6 +80,10 @@ export async function validateFeatureMap(map, { curriculum, tutorial, artDesign,
       issues.push(`proof gate ${owner.gate} owner path is unreadable: ${owner.path}.`);
     }
   }
+
+}
+
+function validateFeatureCoverage(map, tutorial, issues) {
   const featureIds = map.features.map((record) => record.id);
   const methods = map.features.map((record) => record.inputMethod);
   for (const duplicate of duplicateValues(featureIds)) issues.push(`features repeats id ${duplicate}.`);
@@ -92,34 +95,53 @@ export async function validateFeatureMap(map, { curriculum, tutorial, artDesign,
   if (canonicalizeJson(featureIds) !== canonicalizeJson(tutorialFeatureIds)) issues.push("features must exactly cover the tutorial feature-id set in canonical order.");
   const tutorialByMethod = new Map(tutorial.methodBindings.map((record) => [record.inputMethod, record]));
 
-  for (const feature of map.features) {
-    const expectedId = featureIdForInputMethod(feature.inputMethod);
-    if (feature.id !== expectedId) issues.push(`${feature.inputMethod} feature id must be ${expectedId}.`);
-    const tutorialMethod = tutorialByMethod.get(feature.inputMethod);
-    if (!tutorialMethod) continue;
-    if (feature.tutorialFamilyId !== tutorialMethod.familyId) issues.push(`${feature.inputMethod} tutorialFamilyId does not match the tutorial manifest.`);
-    if (feature.profileDrivenTutorial !== tutorialMethod.profileDriven) issues.push(`${feature.inputMethod} profileDrivenTutorial does not match the tutorial manifest.`);
-    for (const invariant of feature.legibilityInvariants) if (!invariantSet.has(invariant)) issues.push(`${feature.inputMethod} references missing invariant ${invariant}.`);
-    const featureProofKinds = feature.proofs.map((proof) => proof.kind);
-    for (const duplicate of duplicateValues(featureProofKinds)) issues.push(`${feature.inputMethod} repeats proof kind ${duplicate}; proof keys must be unique.`);
-    for (const proofKind of featureProofKinds) if (!proofKindSet.has(proofKind)) issues.push(`${feature.inputMethod} references unknown proof kind ${proofKind}.`);
-    if (!feature.legibilityInvariants.includes("LEG-03")) issues.push(`${feature.inputMethod} must require reachable correct and incorrect responses through LEG-03.`);
-    if (!feature.legibilityInvariants.includes("LEG-08")) issues.push(`${feature.inputMethod} must require tutorial linkage through LEG-08.`);
-    if (!feature.proofs.some((proof) => proof.kind === "response_space")) issues.push(`${feature.inputMethod} requires an observable response_space proof.`);
-    if (!feature.proofs.some((proof) => proof.kind === "human_legibility")) issues.push(`${feature.inputMethod} requires a human_legibility proof.`);
-  }
+  return tutorialByMethod;
+}
 
+function validateFeatureProofs(feature, { invariantSet, proofKindSet }, issues) {
+  for (const invariant of feature.legibilityInvariants) if (!invariantSet.has(invariant)) issues.push(`${feature.inputMethod} references missing invariant ${invariant}.`);
+  const featureProofKinds = feature.proofs.map((proof) => proof.kind);
+  for (const duplicate of duplicateValues(featureProofKinds)) issues.push(`${feature.inputMethod} repeats proof kind ${duplicate}; proof keys must be unique.`);
+  for (const proofKind of featureProofKinds) if (!proofKindSet.has(proofKind)) issues.push(`${feature.inputMethod} references unknown proof kind ${proofKind}.`);
+  if (!feature.legibilityInvariants.includes("LEG-03")) issues.push(`${feature.inputMethod} must require reachable correct and incorrect responses through LEG-03.`);
+  if (!feature.legibilityInvariants.includes("LEG-08")) issues.push(`${feature.inputMethod} must require tutorial linkage through LEG-08.`);
+  if (!feature.proofs.some((proof) => proof.kind === "response_space")) issues.push(`${feature.inputMethod} requires an observable response_space proof.`);
+  if (!feature.proofs.some((proof) => proof.kind === "human_legibility")) issues.push(`${feature.inputMethod} requires a human_legibility proof.`);
+
+}
+
+function validateFeatureRecord(feature, context, issues) {
+  const { tutorialByMethod } = context;
+  const expectedId = featureIdForInputMethod(feature.inputMethod);
+  if (feature.id !== expectedId) issues.push(`${feature.inputMethod} feature id must be ${expectedId}.`);
+  const tutorialMethod = tutorialByMethod.get(feature.inputMethod);
+  if (!tutorialMethod) return;
+  if (feature.tutorialFamilyId !== tutorialMethod.familyId) issues.push(`${feature.inputMethod} tutorialFamilyId does not match the tutorial manifest.`);
+  if (feature.profileDrivenTutorial !== tutorialMethod.profileDriven) issues.push(`${feature.inputMethod} profileDrivenTutorial does not match the tutorial manifest.`);
+  validateFeatureProofs(feature, context, issues);
+
+}
+
+function validateSpecialFeatureInvariants(map, issues) {
   const special = new Map(map.features.map((record) => [record.inputMethod, new Set(record.legibilityInvariants)]));
   for (const invariant of ["LEG-01", "LEG-05", "LEG-09"]) if (!special.get("ACTION_SCENE")?.has(invariant)) issues.push(`ACTION_SCENE must require ${invariant}.`);
   if (!special.get("PATTERN_BUILD")?.has("LEG-02")) issues.push("PATTERN_BUILD must require LEG-02 representation alignment.");
   if (!special.get("SHARE_DEAL")?.has("LEG-06")) issues.push("SHARE_DEAL must require LEG-06 balanced sharing layout.");
 
-  return Object.freeze(issues);
 }
 
-export async function loadFeatureMap(pathOrUrl, options = {}) {
-  const map = JSON.parse(await readFile(pathOrUrl, "utf8"));
-  const issues = await validateFeatureMap(map, options);
-  if (issues.length) throw new Error(`Invalid feature map:\n- ${issues.join("\n- ")}`);
-  return Object.freeze(map);
+export async function validateFeatureMap(map, { curriculum, tutorial, artDesign, schemaPathOrUrl } = {}) {
+  const issues = [...await validateFeatureMapSchema(map, schemaPathOrUrl)];
+  if (issues.length) return Object.freeze(issues);
+  if (!curriculum || !tutorial || !artDesign) return Object.freeze(["Validated curriculum, tutorial, and art-design decision manifests are required."]);
+  validateFeatureBindings(map, { curriculum, tutorial, artDesign }, issues);
+  const invariantIds = validateInvariantCatalog(map, issues);
+  const proofKindSet = validateProofKindCatalog(map, issues);
+  const proofGateSet = validateProofGateCatalog(map, invariantIds, issues);
+  await validateProofGateOwnership(map, proofGateSet, issues);
+  const tutorialByMethod = validateFeatureCoverage(map, tutorial, issues);
+  const context = { invariantSet: new Set(invariantIds), proofKindSet, tutorialByMethod };
+  for (const feature of map.features) validateFeatureRecord(feature, context, issues);
+  validateSpecialFeatureInvariants(map, issues);
+  return Object.freeze(issues);
 }

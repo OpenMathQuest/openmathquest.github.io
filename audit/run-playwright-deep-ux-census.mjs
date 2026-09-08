@@ -1,10 +1,13 @@
 import { spawn } from "node:child_process";
+import { runWithCleanup } from "./lib/operation-cleanup.mjs";
+import { observePlaywrightServer, waitForPlaywrightServer, waitForPlaywrightServerExit as waitForExit, waitForPlaywrightResult } from "./lib/playwright-server-lifecycle.mjs";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadShippedEngine } from "./lib/engine-loader.mjs";
+import { AXE_CORE_VERSION, AXE_NEGATIVE_CONTROL_ID, AXE_RUN_TAGS, validAxeShard } from "./lib/axe-accessibility.mjs";
 import {
   DEEP_UX_BETA_CADENCE,
   DEEP_UX_CENSUS_REPORT_ID,
@@ -21,7 +24,6 @@ import {
 import {
   playwrightChildProcessRunning,
   playwrightFocusedExpectedServerIdentity,
-  playwrightFocusedServerIdentityMatches,
   reviewedEdgeExecutable,
 } from "./lib/playwright-focused-contract.mjs";
 
@@ -33,7 +35,6 @@ const shardDirectory = path.join(tempRoot, "shards");
 const artifactDirectory = path.join(root, "audit", ".tmp-playwright-deep-ux-artifacts");
 const outputPath = path.join(root, "audit", ".tmp-playwright-deep-ux-report.json");
 const serverScript = path.join(root, "Serve-MathQuest.ps1");
-const healthUrl = "http://127.0.0.1:8771/__math_quest_health__";
 const systemCandidatePaths = [
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
@@ -78,48 +79,17 @@ await rm(outputPath, { force: true });
 await mkdir(shardDirectory, { recursive: true });
 await writeFile(planPath, canonicalDeepUxJson(plan), "utf8");
 
-async function observedHealth() {
-  try {
-    const response = await fetch(healthUrl, { cache: "no-store", signal: AbortSignal.timeout(1_000) });
-    if (!response.ok) return { reachable: true, valid: false, reason: `HTTP ${response.status}` };
-    const value = await response.json();
-    const valid = playwrightFocusedServerIdentityMatches(value, expectedHealth);
-    return { reachable: true, valid, reason: valid ? null : "identity mismatch" };
-  } catch {
-    return { reachable: false, valid: false, reason: "unreachable" };
-  }
-}
-
-async function waitForHealth(server, deadlineMs = 20_000) {
-  const deadline = Date.now() + deadlineMs;
-  while (Date.now() < deadline) {
-    const health = await observedHealth();
-    if (health.valid) return;
-    if (health.reachable) throw new Error(`Port 8771 answered with an unexpected server (${health.reason}).`);
-    if (server && !playwrightChildProcessRunning(server)) throw new Error(`Math Quest test server exited with status ${server.exitCode ?? server.signalCode}.`);
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error("Math Quest test server did not become healthy within 20 seconds.");
-}
-
-async function waitForExit(child, timeoutMs = 5_000) {
-  if (!playwrightChildProcessRunning(child)) return;
-  let timer;
-  const exited = new Promise((resolve) => child.once("exit", resolve));
-  const timeout = new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); });
-  await Promise.race([exited, timeout]);
-  clearTimeout(timer);
-}
+const observedHealth = () => observePlaywrightServer(expectedHealth);
 
 let ownedServer = null;
 let playwrightExitCode = 1;
 const initialHealth = await observedHealth();
 if (initialHealth.reachable && !initialHealth.valid) throw new Error(`Port 8771 is occupied by an unexpected server (${initialHealth.reason}).`);
 const startedAt = Date.now();
-try {
+await runWithCleanup(async () => {
   if (!initialHealth.valid) {
     ownedServer = spawn("powershell.exe", ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", serverScript, "-NoBrowser"], { cwd: root, stdio: "ignore", windowsHide: true });
-    await waitForHealth(ownedServer);
+    await waitForPlaywrightServer(ownedServer, observedHealth);
   }
   const child = spawn(process.execPath, [cli, "test", "--config=playwright.deep-ux.config.mjs"], {
     cwd: root,
@@ -139,15 +109,12 @@ try {
     stdio: "inherit",
     windowsHide: true,
   });
-  playwrightExitCode = await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("exit", (code, signal) => signal ? reject(new Error(`Playwright Test ended with signal ${signal}.`)) : resolve(code ?? 1));
-  });
-} finally {
+  playwrightExitCode = await waitForPlaywrightResult(child);
+}, async () => {
   if (playwrightChildProcessRunning(ownedServer)) ownedServer.kill();
   await waitForExit(ownedServer);
   if (playwrightChildProcessRunning(ownedServer)) throw new Error("The Deep UX Census could not stop its disposable Math Quest server.");
-}
+});
 
 const expectedIds = [...plan.cells.map((cell) => cell.cellId)].sort();
 const expectedIdSet = new Set(expectedIds);
@@ -159,6 +126,8 @@ for (const viewport of DEEP_UX_CENSUS_VIEWPORTS) {
 const executedRows = shards.flatMap((shard) => Array.isArray(shard.executed) ? shard.executed : []);
 const executedIds = executedRows.map((row) => row.cellId);
 const anomalies = shards.flatMap((shard) => Array.isArray(shard.anomalies) ? shard.anomalies : []);
+const axeShardsValid = shards.length === DEEP_UX_CENSUS_VIEWPORTS.length && shards.every((shard) => validAxeShard(shard.axe));
+const axeManualReviewItems = shards.flatMap((shard) => (shard.axe?.manualReviewItems || []).map((record) => ({ projectId: shard.projectId, ...record })));
 const seen = new Set();
 let duplicates = 0;
 for (const id of executedIds) { if (seen.has(id)) duplicates += 1; seen.add(id); }
@@ -177,6 +146,7 @@ const clean = playwrightExitCode === 0
   && unknown === 0
   && duplicates === 0
   && sha256([...executedIds].sort()) === sha256(expectedIds)
+  && axeShardsValid
   && anomalies.length === 0;
 const report = {
   schemaVersion: DEEP_UX_CENSUS_REPORT_SCHEMA_VERSION,
@@ -238,6 +208,14 @@ const report = {
     executedCellSetSha256: sha256([...executedIds].sort()),
     durationMs: Date.now() - startedAt,
     projectCounts,
+  },
+  axe: {
+    enginePackage: "axe-core",
+    engineVersion: AXE_CORE_VERSION,
+    runTags: AXE_RUN_TAGS,
+    negativeControl: { id: AXE_NEGATIVE_CONTROL_ID, status: axeShardsValid ? "PASS" : "FAIL" },
+    violationCount: anomalies.filter((row) => String(row.code || "").startsWith("AXE_")).length,
+    manualReviewItems: axeManualReviewItems,
   },
   anomalies,
 };

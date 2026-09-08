@@ -1,0 +1,76 @@
+{
+  "rules": [
+    {
+      "id": "math-quest.security.no-eval",
+      "languages": ["javascript", "typescript"],
+      "message": "Dynamic eval bypasses the reviewed source and content-security boundaries.",
+      "severity": "ERROR",
+      "pattern-either": [
+        { "pattern": "eval(...)" },
+        { "pattern": "window.eval(...)" }
+      ]
+    },
+    {
+      "id": "math-quest.security.no-function-constructor",
+      "languages": ["javascript", "typescript"],
+      "message": "The Function constructor executes unreviewed text as code.",
+      "severity": "ERROR",
+      "pattern": "new Function(...)"
+    },
+    {
+      "id": "math-quest.security.no-document-write",
+      "languages": ["javascript", "typescript"],
+      "message": "document.write is an unsafe HTML injection sink.",
+      "severity": "ERROR",
+      "pattern": "document.write(...)"
+    },
+    {
+      "id": "math-quest.security.no-child-process-shell",
+      "languages": ["javascript", "typescript"],
+      "message": "Shell-enabled child processes create a command-injection boundary.",
+      "severity": "ERROR",
+      "pattern": "$FUNCTION(..., { ..., shell: true, ... }, ...)"
+    },
+    {
+      "id": "math-quest.security.no-disabled-tls-verification",
+      "languages": ["javascript", "typescript"],
+      "message": "TLS certificate verification must not be disabled.",
+      "severity": "ERROR",
+      "pattern": "{ ..., rejectUnauthorized: false, ... }"
+    },
+    {
+      "id": "math-quest.security.no-node-tls-bypass",
+      "languages": ["javascript", "typescript"],
+      "message": "NODE_TLS_REJECT_UNAUTHORIZED must not disable certificate verification.",
+      "severity": "ERROR",
+      "pattern-either": [
+        { "pattern": "process.env.NODE_TLS_REJECT_UNAUTHORIZED = \"0\"" },
+        { "pattern": "process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0" }
+      ]
+    },
+    {
+      "id": "math-quest.security.no-weak-crypto-hash",
+      "languages": ["javascript", "typescript"],
+      "message": "MD5 and SHA-1 are not permitted for security-sensitive hashing.",
+      "severity": "ERROR",
+      "pattern-either": [
+        { "pattern": "$CRYPTO.createHash(\"md5\")" },
+        { "pattern": "$CRYPTO.createHash(\"sha1\")" }
+      ]
+    },
+    {
+      "id": "math-quest.security.no-location-html-injection",
+      "languages": ["javascript", "typescript"],
+      "message": "Location-derived input must not flow directly into an HTML injection sink.",
+      "severity": "ERROR",
+      "pattern-either": [
+        { "pattern": "$ELEMENT.innerHTML = location.$PROPERTY" },
+        { "pattern": "$ELEMENT.innerHTML = window.location.$PROPERTY" },
+        { "pattern": "$ELEMENT.outerHTML = location.$PROPERTY" },
+        { "pattern": "$ELEMENT.outerHTML = window.location.$PROPERTY" },
+        { "pattern": "$ELEMENT.insertAdjacentHTML(..., location.$PROPERTY)" },
+        { "pattern": "$ELEMENT.insertAdjacentHTML(..., window.location.$PROPERTY)" }
+      ]
+    }
+  ]
+}

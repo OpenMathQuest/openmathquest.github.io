@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-gate-integrity",
-  "version": "1.13.0",
+  "version": "1.16.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "primaryConsumer": "AI_AGENT",
@@ -11,12 +11,30 @@
     "originalWork": true
   },
   "orderingContract": [
-    { "jsonPointer": "/rules", "policy": "LEXICOGRAPHIC_BY_ID" },
-    { "jsonPointer": "/gateFamilies", "policy": "LEXICOGRAPHIC_BY_ID" },
-    { "jsonPointer": "/gateFamilies/*/negativeControl", "policy": "CLOSED_EXECUTABLE_BINDING" },
-    { "jsonPointer": "/gateFamilies/*/implementationPaths", "policy": "LEXICOGRAPHIC" },
-    { "jsonPointer": "/gateFamilies/*/validatorPaths", "policy": "LEXICOGRAPHIC" },
-    { "jsonPointer": "/acceptanceCriteria", "policy": "LEXICOGRAPHIC_BY_ID" }
+    {
+      "jsonPointer": "/rules",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/gateFamilies",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    },
+    {
+      "jsonPointer": "/gateFamilies/*/negativeControl",
+      "policy": "CLOSED_EXECUTABLE_BINDING"
+    },
+    {
+      "jsonPointer": "/gateFamilies/*/implementationPaths",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/gateFamilies/*/validatorPaths",
+      "policy": "LEXICOGRAPHIC"
+    },
+    {
+      "jsonPointer": "/acceptanceCriteria",
+      "policy": "LEXICOGRAPHIC_BY_ID"
+    }
   ],
   "statusSemantics": {
     "PASS": "RAN_COMPLETE_AND_ORACLE_ASSERTED_TRUE",
@@ -111,7 +129,7 @@
   "metricFloors": {
     "engineBranchCoverage": {
       "version": 1,
-      "minimumPercent": 88,
+      "minimumPercent": 89.33,
       "numerator": "COVERED_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
       "denominator": "ALL_NATIVE_V8_BRANCH_RANGES_FOR_EXACT_STAGED_ENGINE_BYTES",
       "changePolicy": "OWNER_APPROVAL_ONLY_WHEN_MEASUREMENT_SEMANTICS_OR_PRODUCT_CONTRACT_CHANGES"
@@ -127,9 +145,14 @@
     "repository": "OpenMathQuest/openmathquest.github.io",
     "protectedBranch": "main",
     "requiredPullRequestCheck": "development-checks",
-    "prohibitedRequiredPullRequestChecks": ["full-audit"],
+    "prohibitedRequiredPullRequestChecks": [
+      "full-audit"
+    ],
     "requiredTagPattern": "refs/tags/v*",
-    "requiredTagRules": ["DELETION_PROHIBITED", "UPDATE_PROHIBITED"],
+    "requiredTagRules": [
+      "DELETION_PROHIBITED",
+      "UPDATE_PROHIBITED"
+    ],
     "codeOwnerReview": "NOT_PRIMARY_CONTROL_FOR_SINGLE_OPERATIONAL_ACTOR",
     "protectedPathWeakeningPolicy": "EXPLICIT_OWNER_APPROVAL_REQUIRED",
     "protectedPathStrengtheningPolicy": "AUTHORIZED_WITH_EXECUTED_NEGATIVE_CONTROL",
@@ -145,8 +168,20 @@
   },
   "executionPolicy": {
     "schemaVersion": 1,
-    "laneOrder": ["coverage", "browser", "playwright", "mutation", "generator"],
-    "boundedExecutionStartOrder": ["coverage", "generator", "browser", "playwright", "mutation"],
+    "laneOrder": [
+      "coverage",
+      "browser",
+      "playwright",
+      "mutation",
+      "generator"
+    ],
+    "boundedExecutionStartOrder": [
+      "coverage",
+      "generator",
+      "browser",
+      "playwright",
+      "mutation"
+    ],
     "laneSchedulingClass": {
       "browser": "BOUNDED",
       "coverage": "EXCLUSIVE",
@@ -296,25 +331,145 @@
       "skippedCount"
     ],
     "inventoryMatchMayBeCalledPass": false,
-    "acceptedNonPassStates": ["DEFERRED", "NOT_REQUIRED_BY_CADENCE", "OPTIONAL_NOT_RUN", "OWNER_SKIPPED", "WAIVED"],
+    "acceptedNonPassStates": [
+      "DEFERRED",
+      "NOT_REQUIRED_BY_CADENCE",
+      "OPTIONAL_NOT_RUN",
+      "OWNER_SKIPPED",
+      "WAIVED"
+    ],
     "statusClasses": {
-      "passed": ["PASS"],
-      "failed": ["BLOCKED", "CANCELLED", "ERROR", "FAIL", "TIMEOUT"],
-      "missing": ["MISSING_ARTIFACT"],
-      "notRun": ["NOT_RUN"],
-      "skipped": ["SKIPPED"]
+      "passed": [
+        "PASS"
+      ],
+      "failed": [
+        "BLOCKED",
+        "CANCELLED",
+        "ERROR",
+        "FAIL",
+        "TIMEOUT"
+      ],
+      "missing": [
+        "MISSING_ARTIFACT"
+      ],
+      "notRun": [
+        "NOT_RUN"
+      ],
+      "skipped": [
+        "SKIPPED"
+      ]
     }
   },
   "gateFamilies": [
+    {
+      "id": "gate.accessibility-automation",
+      "claim": "AXE_CORE_SCANS_EVERY_FOCUSED_FINAL_STATE_AND_EVERY_SELECTED_DEEP_UX_STATE_WITH_DEFINITE_VIOLATIONS_FAILING_AND_INCOMPLETE_RESULTS_RETAINED_FOR_MANUAL_REVIEW",
+      "proofClass": "EFFECT_SENSITIVE_BROWSER",
+      "independenceBoundary": "AUTOMATED_AXE_RESULTS_DO_NOT_REPLACE_HUMAN_CHILD_SCREEN_READER_REAL_DEVICE_OR_COMPREHENSION_REVIEW",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": {
+        "id": "NC-AXE-UNNAMED-BUTTON-DETECTED",
+        "executionMode": "SELF_TEST",
+        "executionPath": "audit/lib/axe-accessibility.mjs",
+        "passEvidence": "STDOUT:NEGATIVE_CONTROL=NC-AXE-UNNAMED-BUTTON-DETECTED:PASS"
+      },
+      "implementationPaths": [
+        "audit/lib/axe-accessibility.mjs",
+        "audit/lib/playwright-deep-ux-census.mjs",
+        "audit/lib/playwright-focused-contract.mjs",
+        "audit/playwright/compact-reporter.mjs",
+        "audit/playwright/deep-ux-census.spec.mjs",
+        "audit/playwright/fixtures.mjs",
+        "audit/run-playwright-deep-ux-census.mjs",
+        "licenses/ci-toolchain.md",
+        "package-lock.json",
+        "package.json"
+      ],
+      "validatorPaths": [
+        "audit/tests/axe-accessibility.test.mjs",
+        "audit/tests/playwright-deep-ux-census.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "gate.ai-change-loop",
+      "claim": "EVERY_AI_CHANGE_ADVANCES_ONLY_AFTER_EXACT_STAGED_TREE_BINDING_AND_THE_CLOSED_NINE_STAGE_LOOP_IN_ORDER_WITH_FIRST_FAILURE_RETENTION_ZERO_RETRIES_EXPLICIT_FUNCTION_COMPLEXITY_RATCHETS_COMPLETE_EXECUTABLE_INLINE_HTML_COVERAGE_AND_NO_OMITTED_COVERAGE",
+      "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
+      "independenceBoundary": "THE_ORDERED_DEVELOPMENT_LOOP_DOES_NOT_REPLACE_RELEASE_CERTIFICATION_HUMAN_PLAY_REVIEW_OR_REAL_DEVICE_EVIDENCE",
+      "nonRunPolicy": "FAIL",
+      "negativeControl": {
+        "id": "NC-AI-CHANGE-LOOP-FIRST-FAILURE",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/ai-change-loop.test.mjs",
+        "testName": "[NC-AI-CHANGE-LOOP-FIRST-FAILURE] the first failure stops all later stages without retry"
+      },
+      "implementationPaths": [
+        ".github/workflows/audit.yml",
+        "audit/ai-change-loop-operations.mjs",
+        "audit/capture-inline-function-quality-correction.mjs",
+        "audit/inline-function-quality-baseline-correction-v1.json",
+        "audit/lib/ci-dependency-policy.mjs",
+        "audit/lib/differential-equivalence.mjs",
+        "audit/lib/function-quality-metrics.mjs",
+        "audit/lib/inline-function-quality-baseline.mjs",
+        "audit/lib/powershell-function-quality.mjs",
+        "audit/lib/quality-gate-policy.mjs",
+        "audit/lib/release-version-comparison.mjs",
+        "audit/lib/repository-code-map.mjs",
+        "audit/quality-gate-policy-v1.json",
+        "audit/run-ai-change-loop.mjs",
+        "audit/run-compiler-contracts.mjs",
+        "audit/run-differential-equivalence.mjs",
+        "audit/run-function-quality-gate.mjs",
+        "audit/run-quality-gates.mjs",
+        "audit/schemas/function-quality-baseline-v1.schema.json",
+        "audit/schemas/inline-function-quality-baseline-correction-v1.schema.json",
+        "audit/schemas/quality-gate-policy-v1.schema.json",
+        "package.json"
+      ],
+      "validatorPaths": [
+        "audit/tests/ai-change-loop.test.mjs",
+        "audit/tests/compiler-contracts.test.mjs",
+        "audit/tests/differential-equivalence.test.mjs",
+        "audit/tests/function-quality-gate.test.mjs",
+        "audit/tests/function-quality-metrics.test.mjs",
+        "audit/tests/inline-function-quality-baseline.test.mjs",
+        "audit/tests/quality-gate-policy.test.mjs",
+        "audit/tests/release-version-comparison.test.mjs",
+        "audit/tests/repository-code-map.test.mjs",
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
+    },
     {
       "id": "gate.art-design-governance",
       "claim": "ART_DESIGN_CONTRACTS_REJECT_UNRESOLVED_REJECTED_UNREGISTERED_STALE_CONFLICTING_UNAUTHORIZED_INCOMPLETE_RIGHTS_UNBOUND_MATHEMATICALLY_UNPROVED_OR_HAND_EDITED_PROJECTIONS",
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "STRUCTURAL_SEMANTIC_AND_CONTRAST_ORACLES_DO_NOT_REPLACE_RENDERED_VISUAL_OR_HUMAN_PLAY_REVIEW",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-DESIGN-UNRESOLVED-PROJECTION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-design-governance.test.mjs", "testName": "[NC-ART-DESIGN-UNRESOLVED-PROJECTION] unresolved, rejected, unregistered, stale, and mathematically unproved art fails closed" },
-      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-asset-register-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-design-governance.mjs", "audit/lib/design-token-projection.mjs", "audit/schemas/art-asset-register-v1.schema.json", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/schemas/design-tokens-v1.schema.json", "licenses/component-register-v1.json", "licenses/evidence-paths-v1.json", "release-shell-v1.json"],
-      "validatorPaths": ["audit/tests/art-design-governance.test.mjs", "audit/tests/design-token-projection.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-DESIGN-UNRESOLVED-PROJECTION",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/art-design-governance.test.mjs",
+        "testName": "[NC-ART-DESIGN-UNRESOLVED-PROJECTION] unresolved, rejected, unregistered, stale, and mathematically unproved art fails closed"
+      },
+      "implementationPaths": [
+        "assets/design/math-quest-design-tokens-v1.css",
+        "assets/design/math-quest-design-tokens-v1.json",
+        "audit/art-asset-register-v1.json",
+        "audit/art-design-decision-register-v1.json",
+        "audit/lib/art-design-governance.mjs",
+        "audit/lib/design-token-projection.mjs",
+        "audit/schemas/art-asset-register-v1.schema.json",
+        "audit/schemas/art-design-decision-register-v1.schema.json",
+        "audit/schemas/design-tokens-v1.schema.json",
+        "licenses/component-register-v1.json",
+        "licenses/evidence-paths-v1.json",
+        "release-shell-v1.json"
+      ],
+      "validatorPaths": [
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
     },
     {
       "id": "gate.art-functional-vertical-slice",
@@ -322,9 +477,26 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "AUTOMATED_RENDERING_ACCESSIBILITY_AND_SPEECH_CALLBACK_PROOFS_DO_NOT_CLAIM_CHILD_COMPREHENSION_REAL_DEVICE_AUDIO_QUALITY_OR_HUMAN_VISUAL_APPROVAL",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-FUNCTIONAL-SLICE-DRIFT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-FUNCTIONAL-SLICE-DRIFT] unlisted, retargeted, literal, and dynamic runtime consumers fail closed" },
-      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/design-token-projection.mjs", "audit/playwright/critical-journeys.spec.mjs", "audit/schemas/design-tokens-v1.schema.json", "audit/tests/design-token-projection.test.mjs", "index.html"],
-      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/design-token-projection.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-FUNCTIONAL-SLICE-DRIFT",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/design-token-projection.test.mjs",
+        "testName": "[NC-ART-FUNCTIONAL-SLICE-DRIFT] unlisted, retargeted, literal, and dynamic runtime consumers fail closed"
+      },
+      "implementationPaths": [
+        "assets/design/math-quest-design-tokens-v1.css",
+        "assets/design/math-quest-design-tokens-v1.json",
+        "audit/art-design-decision-register-v1.json",
+        "audit/lib/design-token-projection.mjs",
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/schemas/design-tokens-v1.schema.json",
+        "audit/tests/design-token-projection.test.mjs",
+        "index.html"
+      ],
+      "validatorPaths": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
     },
     {
       "id": "gate.art-migration-baseline",
@@ -332,9 +504,24 @@
       "proofClass": "BOUND_EVIDENCE_AND_EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "HISTORICAL_BASELINE_EVIDENCE_IS_NOT_ART_APPROVAL_HUMAN_LEGIBILITY_PROOF_REAL_DEVICE_PROOF_OR_RELEASE_CERTIFICATION",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-migration-baseline.test.mjs", "testName": "[NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE] stale, foreign, incomplete, retried, private, or arbitrary baseline evidence fails closed" },
-      "implementationPaths": ["audit/art-migration-baseline-v1.json", "audit/art-migration-browser-evidence-v1.json", "audit/lib/art-migration-baseline.mjs", "audit/schemas/art-migration-baseline-v1.schema.json", "audit/schemas/art-migration-browser-evidence-v1.schema.json", "audit/validate-art-migration-baseline.mjs", "index.html"],
-      "validatorPaths": ["audit/tests/art-migration-baseline.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/art-migration-baseline.test.mjs",
+        "testName": "[NC-ART-MIG-01-STALE-OR-INCOMPLETE-BASELINE] stale, foreign, incomplete, retried, private, or arbitrary baseline evidence fails closed"
+      },
+      "implementationPaths": [
+        "audit/art-migration-baseline-v1.json",
+        "audit/art-migration-browser-evidence-v1.json",
+        "audit/lib/art-migration-baseline.mjs",
+        "audit/schemas/art-migration-baseline-v1.schema.json",
+        "audit/schemas/art-migration-browser-evidence-v1.schema.json",
+        "audit/validate-art-migration-baseline.mjs",
+        "index.html"
+      ],
+      "validatorPaths": [
+        "audit/tests/art-migration-baseline.test.mjs"
+      ]
     },
     {
       "id": "gate.art-question-shell",
@@ -342,9 +529,27 @@
       "proofClass": "BOUND_EVIDENCE_AND_EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "RENDERED_DOM_GEOMETRY_AND_MUTATION_PROOFS_DO_NOT_CLAIM_CHILD_COMPREHENSION_REAL_DEVICE_BROWSER_BEHAVIOUR_OR_HUMAN_VISUAL_APPROVAL",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-QUESTION-SHELL-ORDER-DUPLICATION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-question-shell.test.mjs", "testName": "[NC-ART-QUESTION-SHELL-ORDER-DUPLICATION] duplicated, reordered, hidden, undersized, and overflowing shell states fail closed" },
-      "implementationPaths": ["assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-question-shell.mjs", "audit/playwright/critical-journeys.spec.mjs", "audit/schemas/art-design-decision-register-v1.schema.json", "audit/tests/art-question-shell.test.mjs", "index.html"],
-      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-question-shell.test.mjs", "audit/tests/design-token-projection.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-QUESTION-SHELL-ORDER-DUPLICATION",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/art-question-shell.test.mjs",
+        "testName": "[NC-ART-QUESTION-SHELL-ORDER-DUPLICATION] duplicated, reordered, hidden, undersized, and overflowing shell states fail closed"
+      },
+      "implementationPaths": [
+        "assets/design/math-quest-design-tokens-v1.css",
+        "assets/design/math-quest-design-tokens-v1.json",
+        "audit/art-design-decision-register-v1.json",
+        "audit/lib/art-question-shell.mjs",
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/schemas/art-design-decision-register-v1.schema.json",
+        "audit/tests/art-question-shell.test.mjs",
+        "index.html"
+      ],
+      "validatorPaths": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-question-shell.test.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
     },
     {
       "id": "gate.art-question-zones",
@@ -352,9 +557,28 @@
       "proofClass": "BOUND_EVIDENCE_AND_EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "SEMANTIC_DOM_GEOMETRY_TOKEN_AND_MUTATION_PROOFS_DO_NOT_CLAIM_CHILD_COMPREHENSION_HUMAN_LEGIBILITY_REAL_DEVICE_BEHAVIOUR_OR_OWNER_VISUAL_APPROVAL",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-QUESTION-ZONES-SEMANTIC-GEOMETRY", "executionMode": "NODE_TEST", "executionPath": "audit/tests/art-question-shell.test.mjs", "testName": "[NC-ART-QUESTION-ZONES-SEMANTIC-GEOMETRY] missing, reversed, misplaced, compressed, overlapping, scrolling, and colour-only zones fail closed" },
-      "implementationPaths": ["AGENTS.md", "assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit/art-design-decision-register-v1.json", "audit/lib/art-question-shell.mjs", "audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-question-shell.test.mjs", "index.html"],
-      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/art-design-governance.test.mjs", "audit/tests/art-question-shell.test.mjs", "audit/tests/design-token-projection.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-QUESTION-ZONES-SEMANTIC-GEOMETRY",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/art-question-shell.test.mjs",
+        "testName": "[NC-ART-QUESTION-ZONES-SEMANTIC-GEOMETRY] missing, reversed, misplaced, compressed, overlapping, scrolling, and colour-only zones fail closed"
+      },
+      "implementationPaths": [
+        "AGENTS.md",
+        "assets/design/math-quest-design-tokens-v1.css",
+        "assets/design/math-quest-design-tokens-v1.json",
+        "audit/art-design-decision-register-v1.json",
+        "audit/lib/art-question-shell.mjs",
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-question-shell.test.mjs",
+        "index.html"
+      ],
+      "validatorPaths": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/art-question-shell.test.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
     },
     {
       "id": "gate.art-token-projection",
@@ -362,9 +586,32 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "EXACT_PROJECTION_AND_CONSUMER_BINDING_DO_NOT_CLAIM_HUMAN_PLAY_APPROVAL_AND_STATIC_SOURCE_PLUS_FOCUSED_BROWSER_ORACLES_DO_NOT_PROVE_ABSENCE_OF_INTENTIONALLY_OBFUSCATED_UNEXECUTED_JAVASCRIPT",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ART-TOKEN-PROJECTION-DRIFT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/design-token-projection.test.mjs", "testName": "[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed" },
-      "implementationPaths": [".github/workflows/pages.yml", "Serve-MathQuest.ps1", "assets/design/math-quest-design-tokens-v1.css", "assets/design/math-quest-design-tokens-v1.json", "audit.html", "audit/lib/design-token-projection.mjs", "audit/run-audit.ps1", "audit/run-trusted-https-canary.mjs", "audit/test-launcher-identity.ps1", "index.html", "release-shell-v1.json", "sw.js", "tools/build-design-token-projection.mjs", "tools/build-pwa-release-manifest.mjs"],
-      "validatorPaths": ["audit/playwright/critical-journeys.spec.mjs", "audit/tests/design-token-projection.test.mjs"]
+      "negativeControl": {
+        "id": "NC-ART-TOKEN-PROJECTION-DRIFT",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/design-token-projection.test.mjs",
+        "testName": "[NC-ART-TOKEN-PROJECTION-DRIFT] stale bytes, unlisted consumers, literal regressions, broken loading, and shell drift fail closed"
+      },
+      "implementationPaths": [
+        ".github/workflows/pages.yml",
+        "Serve-MathQuest.ps1",
+        "assets/design/math-quest-design-tokens-v1.css",
+        "assets/design/math-quest-design-tokens-v1.json",
+        "audit.html",
+        "audit/lib/design-token-projection.mjs",
+        "audit/run-audit.ps1",
+        "audit/run-trusted-https-canary.mjs",
+        "audit/test-launcher-identity.ps1",
+        "index.html",
+        "release-shell-v1.json",
+        "sw.js",
+        "tools/build-design-token-projection.mjs",
+        "tools/build-pwa-release-manifest.mjs"
+      ],
+      "validatorPaths": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/design-token-projection.test.mjs"
+      ]
     },
     {
       "id": "gate.audit-orchestration",
@@ -372,9 +619,20 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "TOP_LEVEL_LANE_BOUND_DOES_NOT_CLAIM_AN_OS_WIDE_PROCESS_COUNT",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-AUDIT-LANE-FOREIGN-CANDIDATE", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-lane-orchestration.test.mjs", "testName": "[NC-AUDIT-LANE-FOREIGN-CANDIDATE] aggregation rejects missing, duplicate, unknown, and foreign-candidate lane evidence" },
-      "implementationPaths": ["audit/lib/bounded-audit-lanes.mjs", "audit/run-audit-lane.mjs", "audit/run-audit.mjs"],
-      "validatorPaths": ["audit/tests/audit-lane-orchestration.test.mjs"]
+      "negativeControl": {
+        "id": "NC-AUDIT-LANE-FOREIGN-CANDIDATE",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/audit-lane-orchestration.test.mjs",
+        "testName": "[NC-AUDIT-LANE-FOREIGN-CANDIDATE] aggregation rejects missing, duplicate, unknown, and foreign-candidate lane evidence"
+      },
+      "implementationPaths": [
+        "audit/lib/bounded-audit-lanes.mjs",
+        "audit/run-audit-lane.mjs",
+        "audit/run-audit.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/audit-lane-orchestration.test.mjs"
+      ]
     },
     {
       "id": "gate.browser",
@@ -382,9 +640,19 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "DOES_NOT_PROVE_CHILD_COMPREHENSION_OR_REAL_DEVICE_BEHAVIOR",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-BROWSER-MISSING_OR_SKIPPED_RESULT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-orchestration.test.mjs", "testName": "[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence" },
-      "implementationPaths": ["audit/lib/browser-smoke.mjs", "audit/run-browser-smoke.mjs"],
-      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+      "negativeControl": {
+        "id": "NC-BROWSER-MISSING_OR_SKIPPED_RESULT",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/audit-orchestration.test.mjs",
+        "testName": "[NC-BROWSER-MISSING_OR_SKIPPED_RESULT] browser aggregation rejects missing, duplicate, mixed-identity, failed, and unexpected-request evidence"
+      },
+      "implementationPaths": [
+        "audit/lib/browser-smoke.mjs",
+        "audit/run-browser-smoke.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/audit-orchestration.test.mjs"
+      ]
     },
     {
       "id": "gate.canary",
@@ -392,9 +660,20 @@
       "proofClass": "EFFECT_SENSITIVE_HOSTED_BROWSER",
       "independenceBoundary": "TECHNICAL_LOOPBACK_CANARY_NOT_HOST_PRIVACY_OR_RELEASE_CERTIFICATION",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN", "executionMode": "NODE_TEST", "executionPath": "audit/tests/trusted-https-canary.test.mjs", "testName": "[NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN] FAILED canary evidence cannot disguise an all-green result" },
-      "implementationPaths": [".github/workflows/trusted-https-canary.yml", "audit/lib/trusted-https-canary.mjs", "audit/validate-trusted-https-canary.mjs"],
-      "validatorPaths": ["audit/tests/trusted-https-canary.test.mjs"]
+      "negativeControl": {
+        "id": "NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/trusted-https-canary.test.mjs",
+        "testName": "[NC-CANARY-CONTINUE_ERROR_CANNOT_GREEN] FAILED canary evidence cannot disguise an all-green result"
+      },
+      "implementationPaths": [
+        ".github/workflows/trusted-https-canary.yml",
+        "audit/lib/trusted-https-canary.mjs",
+        "audit/validate-trusted-https-canary.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/trusted-https-canary.test.mjs"
+      ]
     },
     {
       "id": "gate.coverage",
@@ -402,9 +681,19 @@
       "proofClass": "INSTRUMENTED_MEASUREMENT",
       "independenceBoundary": "COVERAGE_IS_EXECUTION_EVIDENCE_NOT_CORRECTNESS",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL", "executionMode": "NODE_TEST", "executionPath": "audit/tests/audit-orchestration.test.mjs", "testName": "[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence" },
-      "implementationPaths": ["audit/lib/native-coverage.mjs", "audit/run-coverage.mjs"],
-      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+      "negativeControl": {
+        "id": "NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/audit-orchestration.test.mjs",
+        "testName": "[NC-COVERAGE-PARTIAL-FIXTURE-BELOW-FULL] canonical coverage artifact rejects count-correct but internally failed evidence"
+      },
+      "implementationPaths": [
+        "audit/lib/native-coverage.mjs",
+        "audit/run-coverage.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/audit-orchestration.test.mjs"
+      ]
     },
     {
       "id": "gate.deep-ux",
@@ -412,9 +701,20 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "NOT_REQUIRED_BY_CADENCE_IS_VISIBLE_AND_NOT_A_PASS",
       "nonRunPolicy": "CADENCE_ENUM",
-      "negativeControl": { "id": "NC-DEEP-UX-MISSING-CELL-OR-RETRY", "executionMode": "NODE_TEST", "executionPath": "audit/tests/playwright-deep-ux-census.test.mjs", "testName": "[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing cells, retries-by-proxy, forged identity, pass artifacts, or cadence claims" },
-      "implementationPaths": ["audit/lib/playwright-deep-ux-census.mjs", "audit/run-playwright-deep-ux-census.mjs", "playwright.deep-ux.config.mjs"],
-      "validatorPaths": ["audit/tests/playwright-deep-ux-census.test.mjs"]
+      "negativeControl": {
+        "id": "NC-DEEP-UX-MISSING-CELL-OR-RETRY",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/playwright-deep-ux-census.test.mjs",
+        "testName": "[NC-DEEP-UX-MISSING-CELL-OR-RETRY] compact report fails closed on missing cells, retries-by-proxy, forged identity, pass artifacts, or cadence claims"
+      },
+      "implementationPaths": [
+        "audit/lib/playwright-deep-ux-census.mjs",
+        "audit/run-playwright-deep-ux-census.mjs",
+        "playwright.deep-ux.config.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/playwright-deep-ux-census.test.mjs"
+      ]
     },
     {
       "id": "gate.engine",
@@ -422,9 +722,19 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "SELECTED_CRITICAL_BEHAVIORS_HAVE_MUTATION_WITNESSES_NOT_EVERY_ASSERTION",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-ENGINE-REPRESENTATIVE-MUTANTS", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-ENGINE-REPRESENTATIVE-MUTANTS.status=PASS" },
-      "implementationPaths": ["audit/tests/engine-suite.mjs", "audit/tests/node-engine.test.mjs"],
-      "validatorPaths": ["audit/mutation-runner.mjs"]
+      "negativeControl": {
+        "id": "NC-ENGINE-REPRESENTATIVE-MUTANTS",
+        "executionMode": "SELF_TEST",
+        "executionPath": "audit/mutation-runner.mjs",
+        "passEvidence": "REPORT_FIELD:negativeControls.NC-ENGINE-REPRESENTATIVE-MUTANTS.status=PASS"
+      },
+      "implementationPaths": [
+        "audit/tests/engine-suite.mjs",
+        "audit/tests/node-engine.test.mjs"
+      ],
+      "validatorPaths": [
+        "audit/mutation-runner.mjs"
+      ]
     },
     {
       "id": "gate.generator",
@@ -432,9 +742,19 @@
       "proofClass": "EXHAUSTIVE_INTERNAL_CONSISTENCY",
       "independenceBoundary": "SELF_GRADING_DOES_NOT_INDEPENDENTLY_PROVE_MATHEMATICAL_TRUTH",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS", "executionMode": "NODE_TEST", "executionPath": "audit/tests/node-engine.test.mjs", "testName": "[NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS] question generation and contract APIs fail closed with effect-specific reasons" },
-      "implementationPaths": ["audit/exhaustive-generator-audit.mjs"],
-      "validatorPaths": ["audit/tests/manifest-semantic-suite.mjs", "audit/tests/node-engine.test.mjs"]
+      "negativeControl": {
+        "id": "NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/node-engine.test.mjs",
+        "testName": "[NC-GENERATOR-CONTRACT-AND-STIMULUS-MUTATIONS] question generation and contract APIs fail closed with effect-specific reasons"
+      },
+      "implementationPaths": [
+        "audit/exhaustive-generator-audit.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/manifest-semantic-suite.mjs",
+        "audit/tests/node-engine.test.mjs"
+      ]
     },
     {
       "id": "gate.github-pr",
@@ -442,9 +762,20 @@
       "proofClass": "EXTERNAL_ENFORCEMENT",
       "independenceBoundary": "REMOTE_SETTINGS_REQUIRE_READ_ONLY_GITHUB_PREFLIGHT_BECAUSE_REPOSITORY_BYTES_CANNOT_ENFORCE_THEM",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK", "executionMode": "NODE_TEST", "executionPath": "audit/tests/gate-integrity-policy.test.mjs", "testName": "[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration" },
-      "implementationPaths": [".github/workflows/audit.yml", "audit/gate-integrity-policy-v1.json", "audit/verify-github-gate-enforcement.mjs"],
-      "validatorPaths": ["audit/tests/gate-integrity-policy.test.mjs"]
+      "negativeControl": {
+        "id": "NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/gate-integrity-policy.test.mjs",
+        "testName": "[NC-GITHUB-CONDITIONALLY-SKIPPED-REQUIRED-CHECK] external GitHub enforcement oracle rejects the formerly vacuous configuration"
+      },
+      "implementationPaths": [
+        ".github/workflows/audit.yml",
+        "audit/gate-integrity-policy-v1.json",
+        "audit/verify-github-gate-enforcement.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/gate-integrity-policy.test.mjs"
+      ]
     },
     {
       "id": "gate.launcher",
@@ -452,9 +783,19 @@
       "proofClass": "EFFECT_SENSITIVE_UNIT_AND_INTEGRATION",
       "independenceBoundary": "LOCAL_LAUNCHER_PREFLIGHT_DOES_NOT_PROVE_HOSTED_DEPLOYMENT",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-LAUNCHER-FOREIGN-HOST", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed runtime and rejects a foreign Host" },
-      "implementationPaths": ["Serve-MathQuest.ps1", "audit/test-launcher-identity.ps1"],
-      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
+      "negativeControl": {
+        "id": "NC-LAUNCHER-FOREIGN-HOST",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/pwa-release.test.mjs",
+        "testName": "[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed runtime and rejects a foreign Host"
+      },
+      "implementationPaths": [
+        "Serve-MathQuest.ps1",
+        "audit/test-launcher-identity.ps1"
+      ],
+      "validatorPaths": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
     },
     {
       "id": "gate.mutation",
@@ -462,9 +803,18 @@
       "proofClass": "REPRESENTATIVE_MUTATION",
       "independenceBoundary": "NOT_A_GLOBAL_MUTATION_SCORE_AND_NOT_PROOF_FOR_BROWSER_OR_INFRASTRUCTURE_GATES",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS.status=PASS" },
-      "implementationPaths": ["audit/mutation-runner.mjs"],
-      "validatorPaths": ["audit/tests/audit-orchestration.test.mjs"]
+      "negativeControl": {
+        "id": "NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS",
+        "executionMode": "SELF_TEST",
+        "executionPath": "audit/mutation-runner.mjs",
+        "passEvidence": "REPORT_FIELD:negativeControls.NC-MUTATION-EACH-FAMILY-SURVIVAL-FAILS.status=PASS"
+      },
+      "implementationPaths": [
+        "audit/mutation-runner.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/audit-orchestration.test.mjs"
+      ]
     },
     {
       "id": "gate.pages",
@@ -472,9 +822,19 @@
       "proofClass": "EXTERNAL_ENFORCEMENT",
       "independenceBoundary": "DOES_NOT_PREVENT_A_SEPARATE_GITHUB_RELEASE_FROM_BEING_CREATED_OUTSIDE_THE_DEPLOYMENT_WORKFLOW",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION", "executionMode": "NODE_TEST", "executionPath": "audit/tests/pwa-release.test.mjs", "testName": "[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit" },
-      "implementationPaths": [".github/workflows/pages.yml", "audit/lib/gate-integrity-policy.mjs"],
-      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
+      "negativeControl": {
+        "id": "NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/pwa-release.test.mjs",
+        "testName": "[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit"
+      },
+      "implementationPaths": [
+        ".github/workflows/pages.yml",
+        "audit/lib/gate-integrity-policy.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
     },
     {
       "id": "gate.playwright",
@@ -482,9 +842,20 @@
       "proofClass": "EFFECT_SENSITIVE_BROWSER",
       "independenceBoundary": "DOES_NOT_REPLACE_HUMAN_PLAY_TESTING_REAL_DEVICE_OR_SCREEN_READER_EVIDENCE",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT", "executionMode": "NODE_TEST", "executionPath": "audit/tests/playwright-focused-contract.test.mjs", "testName": "[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report accepts only the exact clean project/case matrix" },
-      "implementationPaths": ["audit/lib/playwright-focused-contract.mjs", "audit/run-playwright-focused.mjs", "playwright.config.mjs"],
-      "validatorPaths": ["audit/tests/playwright-focused-contract.test.mjs"]
+      "negativeControl": {
+        "id": "NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/playwright-focused-contract.test.mjs",
+        "testName": "[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report accepts only the exact clean project/case matrix"
+      },
+      "implementationPaths": [
+        "audit/lib/playwright-focused-contract.mjs",
+        "audit/run-playwright-focused.mjs",
+        "playwright.config.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
     },
     {
       "id": "gate.public-candidate",
@@ -492,9 +863,18 @@
       "proofClass": "STATIC_AND_BYTE_IDENTITY",
       "independenceBoundary": "STATIC_SCANS_DO_NOT_PROVE_ABSENCE_OF_EVERY_SEMANTIC_PRIVACY_DEFECT",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL", "executionMode": "SELF_TEST", "executionPath": "audit/public-candidate-guard.mjs", "passEvidence": "STDOUT:NEGATIVE_CONTROL=NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL:PASS" },
-      "implementationPaths": ["audit/public-candidate-guard.mjs"],
-      "validatorPaths": ["audit/tests/pwa-release.test.mjs"]
+      "negativeControl": {
+        "id": "NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL",
+        "executionMode": "SELF_TEST",
+        "executionPath": "audit/public-candidate-guard.mjs",
+        "passEvidence": "STDOUT:NEGATIVE_CONTROL=NC-PUBLIC-CANDIDATE-CALIBRATED-FORBIDDEN-MATERIAL:PASS"
+      },
+      "implementationPaths": [
+        "audit/public-candidate-guard.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/pwa-release.test.mjs"
+      ]
     },
     {
       "id": "gate.publication-evidence",
@@ -502,9 +882,24 @@
       "proofClass": "BOUND_EVIDENCE",
       "independenceBoundary": "STRUCTURED_ASSERTIONS_BIND_THE_DECISION_RECORD_BUT_DO_NOT_IMPERSONATE_EXTERNAL_OBSERVATION",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST", "executionMode": "NODE_TEST", "executionPath": "audit/tests/release-evidence-bundle.test.mjs", "testName": "[NC-PUBLICATION-ARBITRARY-HEX-DIGEST] a syntactically valid arbitrary digest cannot satisfy publication evidence" },
-      "implementationPaths": ["PUBLICATION_CLEARANCE.md", "audit/lib/publication-clearance.mjs", "audit/lib/release-evidence-bundle.mjs", "audit/lib/release-evidence-successor.mjs", "audit/release-evidence-bundle-v1.json", "audit/schemas/release-evidence-bundle-v1.schema.json"],
-      "validatorPaths": ["audit/tests/publication-clearance.test.mjs", "audit/tests/release-evidence-bundle.test.mjs"]
+      "negativeControl": {
+        "id": "NC-PUBLICATION-ARBITRARY-HEX-DIGEST",
+        "executionMode": "NODE_TEST",
+        "executionPath": "audit/tests/release-evidence-bundle.test.mjs",
+        "testName": "[NC-PUBLICATION-ARBITRARY-HEX-DIGEST] a syntactically valid arbitrary digest cannot satisfy publication evidence"
+      },
+      "implementationPaths": [
+        "PUBLICATION_CLEARANCE.md",
+        "audit/lib/publication-clearance.mjs",
+        "audit/lib/release-evidence-bundle.mjs",
+        "audit/lib/release-evidence-successor.mjs",
+        "audit/release-evidence-bundle-v1.json",
+        "audit/schemas/release-evidence-bundle-v1.schema.json"
+      ],
+      "validatorPaths": [
+        "audit/tests/publication-clearance.test.mjs",
+        "audit/tests/release-evidence-bundle.test.mjs"
+      ]
     },
     {
       "id": "gate.semantic",
@@ -512,20 +907,58 @@
       "proofClass": "INDEPENDENT_SEMANTIC_ORACLE",
       "independenceBoundary": "REPRESENTATIVE_DETERMINISTIC_QUESTIONS_NOT_EVERY_POSSIBLE_RANDOM_SEED",
       "nonRunPolicy": "FAIL",
-      "negativeControl": { "id": "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION", "executionMode": "SELF_TEST", "executionPath": "audit/mutation-runner.mjs", "passEvidence": "REPORT_FIELD:negativeControls.NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION.status=PASS" },
-      "implementationPaths": ["audit/mutation-runner.mjs", "audit/tests/manifest-semantic-suite.mjs", "audit/tests/strategy-build-oracle.mjs"],
-      "validatorPaths": ["audit/tests/node-engine.test.mjs"]
+      "negativeControl": {
+        "id": "NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION",
+        "executionMode": "SELF_TEST",
+        "executionPath": "audit/mutation-runner.mjs",
+        "passEvidence": "REPORT_FIELD:negativeControls.NC-SEMANTIC-INDEPENDENT-RECONSTRUCTION.status=PASS"
+      },
+      "implementationPaths": [
+        "audit/mutation-runner.mjs",
+        "audit/tests/manifest-semantic-suite.mjs",
+        "audit/tests/strategy-build-oracle.mjs"
+      ],
+      "validatorPaths": [
+        "audit/tests/node-engine.test.mjs"
+      ]
     }
   ],
   "acceptanceCriteria": [
-    { "id": "GI-A01", "predicate": "POLICY_SCHEMA_VALID_AND_CLOSED" },
-    { "id": "GI-A02", "predicate": "EVERY_GATE_FAMILY_HAS_EXECUTED_NEGATIVE_CONTROL" },
-    { "id": "GI-A03", "predicate": "PUBLICATION_ARBITRARY_HEX_MUTATION_BLOCKS" },
-    { "id": "GI-A04", "predicate": "REQUIRED_PULL_REQUEST_CHECK_RUNS_ON_PULL_REQUEST_EVENT" },
-    { "id": "GI-A05", "predicate": "REMOTE_MAIN_PROTECTION_REQUIRES_DEVELOPMENT_CHECKS_NOT_FULL_AUDIT" },
-    { "id": "GI-A06", "predicate": "REMOTE_TAG_RULE_PROTECTS_ALL_VERSION_TAGS_FROM_UPDATE_AND_DELETION" },
-    { "id": "GI-A07", "predicate": "REPORT_SEPARATES_INVENTORY_PASS_FAIL_AND_ACCEPTED_NON_PASS_COUNTS" },
-    { "id": "GI-A08", "predicate": "FOCUSED_ART_DESIGN_GOVERNANCE_DRIFTLESS_CANARY_PWA_PLAYWRIGHT_AND_GUARD_CHECKS_PASS" },
-    { "id": "GI-A09", "predicate": "ONE_INDEPENDENT_REVIEW_AND_CORRECTION_VERIFICATION_COMPLETE" }
+    {
+      "id": "GI-A01",
+      "predicate": "POLICY_SCHEMA_VALID_AND_CLOSED"
+    },
+    {
+      "id": "GI-A02",
+      "predicate": "EVERY_GATE_FAMILY_HAS_EXECUTED_NEGATIVE_CONTROL"
+    },
+    {
+      "id": "GI-A03",
+      "predicate": "PUBLICATION_ARBITRARY_HEX_MUTATION_BLOCKS"
+    },
+    {
+      "id": "GI-A04",
+      "predicate": "REQUIRED_PULL_REQUEST_CHECK_RUNS_ON_PULL_REQUEST_EVENT"
+    },
+    {
+      "id": "GI-A05",
+      "predicate": "REMOTE_MAIN_PROTECTION_REQUIRES_DEVELOPMENT_CHECKS_NOT_FULL_AUDIT"
+    },
+    {
+      "id": "GI-A06",
+      "predicate": "REMOTE_TAG_RULE_PROTECTS_ALL_VERSION_TAGS_FROM_UPDATE_AND_DELETION"
+    },
+    {
+      "id": "GI-A07",
+      "predicate": "REPORT_SEPARATES_INVENTORY_PASS_FAIL_AND_ACCEPTED_NON_PASS_COUNTS"
+    },
+    {
+      "id": "GI-A08",
+      "predicate": "FOCUSED_ART_DESIGN_GOVERNANCE_DRIFTLESS_CANARY_PWA_PLAYWRIGHT_AND_GUARD_CHECKS_PASS"
+    },
+    {
+      "id": "GI-A09",
+      "predicate": "ONE_INDEPENDENT_REVIEW_AND_CORRECTION_VERIFICATION_COMPLETE"
+    }
   ]
 }

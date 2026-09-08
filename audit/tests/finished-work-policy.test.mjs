@@ -131,19 +131,23 @@ function extractAuthority(bytes, authority) {
   return bytes.subarray(start + Buffer.byteLength(authority.startMarker, "utf8"), end);
 }
 
+function validHumanAuthority(authority, sectionSha256) {
+  if (!exactKeys(authority, [...Object.keys(EXPECTED_AUTHORITY), "sectionSha256"])) return false;
+  if (!assertSafeDeepEqual(
+    Object.fromEntries(Object.keys(EXPECTED_AUTHORITY).map((key) => [key, authority[key]])),
+    EXPECTED_AUTHORITY,
+  )) return false;
+  return /^[a-f0-9]{64}$/u.test(authority.sectionSha256)
+    && authority.sectionSha256 === sectionSha256;
+}
+
 function validPolicy(policy, sectionSha256) {
   if (!exactKeys(policy, ["schemaVersion", "policyId", "approvedOn", "scope", "completionStates", "clauses", "humanAuthority"])) return false;
   if (policy.schemaVersion !== 1 || policy.policyId !== "finished-work-policy-v1" || policy.approvedOn !== "2026-08-02") return false;
   if (!assertSafeDeepEqual(policy.scope, EXPECTED_SCOPE)) return false;
   if (!assertSafeDeepEqual(policy.completionStates, EXPECTED_STATES)) return false;
   if (!assertSafeDeepEqual(policy.clauses, EXPECTED_CLAUSES)) return false;
-  if (!exactKeys(policy.humanAuthority, [...Object.keys(EXPECTED_AUTHORITY), "sectionSha256"])) return false;
-  if (!assertSafeDeepEqual(
-    Object.fromEntries(Object.keys(EXPECTED_AUTHORITY).map((key) => [key, policy.humanAuthority[key]])),
-    EXPECTED_AUTHORITY,
-  )) return false;
-  return /^[a-f0-9]{64}$/u.test(policy.humanAuthority.sectionSha256)
-    && policy.humanAuthority.sectionSha256 === sectionSha256;
+  return validHumanAuthority(policy.humanAuthority, sectionSha256);
 }
 
 function assertSafeDeepEqual(actual, expected) {

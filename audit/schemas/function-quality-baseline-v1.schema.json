@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/audit/schemas/function-quality-baseline-v1.schema.json",
+  "title": "Math Quest function quality baseline v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "artifactKind", "baselineCommit", "captureBoundary", "metricContract",
+    "newOrMateriallyModifiedFunctionLimits", "immutableBaseline", "currentCheckpoint"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "MATH_QUEST_FUNCTION_QUALITY_BASELINE_V1" },
+    "baselineCommit": { "$ref": "#/$defs/sha1" },
+    "captureBoundary": { "const": "IMMUTABLE_BASELINE_COMMIT_PLUS_PRE_PRODUCTION_REFACTOR_WORKTREE" },
+    "metricContract": { "$ref": "#/$defs/metricContract" },
+    "newOrMateriallyModifiedFunctionLimits": { "$ref": "#/$defs/limits" },
+    "immutableBaseline": { "$ref": "#/$defs/immutableCensus" },
+    "currentCheckpoint": { "$ref": "#/$defs/currentCheckpoint" }
+  },
+  "$defs": {
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nonnegative": { "type": "integer", "minimum": 0 },
+    "metricContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "cyclomatic", "abc", "cognitive", "functionLoc", "nesting"],
+      "properties": {
+        "id": { "const": "MATH_QUEST_FUNCTION_QUALITY_V1" },
+        "cyclomatic": { "const": "ESLINT_CLASSIC_V10_CODE_PATH_BRANCHES" },
+        "abc": { "const": "ASSIGNMENTS_CALL_BRANCHES_AND_BOOLEAN_CONDITIONS_EUCLIDEAN_MAGNITUDE" },
+        "cognitive": { "const": "MQ_COGNITIVE_V1_NESTED_CONTROL_FLOW_LOGICAL_CHAINS_AND_RECURSION" },
+        "functionLoc": { "const": "PHYSICAL_INCLUSIVE_SOURCE_LINES" },
+        "nesting": { "const": "ESLINT_MAX_DEPTH_CONTROL_BLOCKS" }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "const": 10 },
+        "abcMagnitude": { "const": 30 },
+        "cognitive": { "const": 15 },
+        "functionLines": { "const": 80 },
+        "maxNesting": { "const": 4 }
+      }
+    },
+    "maxima": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "type": "number", "minimum": 0 },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "functionLines": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "violationCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "$ref": "#/$defs/nonnegative" },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "functionLines": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "parseError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "line", "column", "message"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1 },
+        "line": { "$ref": "#/$defs/nonnegative" },
+        "column": { "$ref": "#/$defs/nonnegative" },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "thresholdViolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "observed", "maximum"],
+      "properties": {
+        "metric": { "enum": ["abcMagnitude", "cognitive", "cyclomatic", "functionLines", "maxNesting"] },
+        "observed": { "type": "number", "minimum": 0 },
+        "maximum": { "type": "number", "minimum": 0 }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "functionId", "path", "unit", "name", "kind", "startLine", "endLine",
+        "functionLines", "parameters", "sourceSha256", "cyclomatic", "assignments",
+        "branches", "conditions", "abcMagnitude", "cognitive", "maxNesting",
+        "statements", "thresholdViolations"
+      ],
+      "properties": {
+        "functionId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "unit": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["ArrowFunctionExpression", "FunctionDeclaration", "FunctionExpression"] },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "functionLines": { "type": "integer", "minimum": 1 },
+        "parameters": { "$ref": "#/$defs/nonnegative" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "cyclomatic": { "type": "integer", "minimum": 1 },
+        "assignments": { "$ref": "#/$defs/nonnegative" },
+        "branches": { "$ref": "#/$defs/nonnegative" },
+        "conditions": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "type": "number", "minimum": 0 },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" },
+        "statements": { "$ref": "#/$defs/nonnegative" },
+        "thresholdViolations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/thresholdViolation" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units", "functions", "parseErrors", "maxima", "violationFunctions", "violationCounts"],
+      "properties": {
+        "units": { "$ref": "#/$defs/nonnegative" },
+        "functions": { "$ref": "#/$defs/nonnegative" },
+        "parseErrors": { "type": "array", "items": { "$ref": "#/$defs/parseError" } },
+        "maxima": { "$ref": "#/$defs/maxima" },
+        "violationFunctions": { "$ref": "#/$defs/nonnegative" },
+        "violationCounts": { "$ref": "#/$defs/violationCounts" }
+      }
+    },
+    "immutableCensus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "units", "functions", "parseErrors", "maxima", "violationFunctions",
+        "violationCounts", "rows"
+      ],
+      "properties": {
+        "units": { "$ref": "#/$defs/nonnegative" },
+        "functions": { "$ref": "#/$defs/nonnegative" },
+        "parseErrors": { "type": "array", "items": { "$ref": "#/$defs/parseError" } },
+        "maxima": { "$ref": "#/$defs/maxima" },
+        "violationFunctions": { "$ref": "#/$defs/nonnegative" },
+        "violationCounts": { "$ref": "#/$defs/violationCounts" },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/row" } }
+      }
+    },
+    "sourceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "sha256"],
+      "properties": {
+        "files": { "$ref": "#/$defs/nonnegative" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unchanged", "added", "modified", "deleted", "newOrModified",
+        "newOrModifiedViolations", "violatingRows"
+      ],
+      "properties": {
+        "unchanged": { "$ref": "#/$defs/nonnegative" },
+        "added": { "$ref": "#/$defs/nonnegative" },
+        "modified": { "$ref": "#/$defs/nonnegative" },
+        "deleted": { "$ref": "#/$defs/nonnegative" },
+        "newOrModified": { "$ref": "#/$defs/nonnegative" },
+        "newOrModifiedViolations": { "$ref": "#/$defs/nonnegative" },
+        "violatingRows": { "type": "array", "items": { "$ref": "#/$defs/row" } }
+      }
+    },
+    "currentCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceSnapshot", "summary", "classificationAgainstImmutableBaseline"],
+      "properties": {
+        "sourceSnapshot": { "$ref": "#/$defs/sourceSnapshot" },
+        "summary": { "$ref": "#/$defs/summary" },
+        "classificationAgainstImmutableBaseline": { "$ref": "#/$defs/classification" }
+      }
+    }
+  }
+}

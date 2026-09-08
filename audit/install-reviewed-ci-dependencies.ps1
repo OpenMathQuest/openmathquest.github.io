@@ -9,26 +9,14 @@ if ($LASTEXITCODE -ne 0) {
     throw "The exact reviewed CI dependency closure could not be installed."
 }
 
-$manifestPath = Join-Path $PSScriptRoot '..\node_modules\@playwright\test\package.json'
-$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-if ($manifest.name -cne '@playwright/test' -or $manifest.version -cne '1.62.1') {
-    throw 'The installed Playwright Test package does not match the reviewed 1.62.1 pin.'
-}
-
-$ajvManifestPath = Join-Path $PSScriptRoot '..\node_modules\ajv\package.json'
-$ajvManifest = Get-Content -LiteralPath $ajvManifestPath -Raw | ConvertFrom-Json
-if ($ajvManifest.name -cne 'ajv' -or $ajvManifest.version -cne '8.20.0') {
-    throw 'The installed Ajv package does not match the reviewed 8.20.0 pin.'
-}
-
-$fastCheckManifestPath = Join-Path $PSScriptRoot '..\node_modules\fast-check\package.json'
-$fastCheckManifest = Get-Content -LiteralPath $fastCheckManifestPath -Raw | ConvertFrom-Json
-if ($fastCheckManifest.name -cne 'fast-check' -or $fastCheckManifest.version -cne '4.9.0') {
-    throw 'The installed fast-check package does not match the reviewed 4.9.0 pin.'
-}
-
-$pureRandManifestPath = Join-Path $PSScriptRoot '..\node_modules\pure-rand\package.json'
-$pureRandManifest = Get-Content -LiteralPath $pureRandManifestPath -Raw | ConvertFrom-Json
-if ($pureRandManifest.name -cne 'pure-rand' -or $pureRandManifest.version -cne '8.4.2') {
-    throw 'The installed pure-rand package does not match the reviewed 8.4.2 pin.'
+$policyPath = Join-Path $PSScriptRoot 'quality-gate-policy-v1.json'
+$policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
+foreach ($dependency in $policy.supplyChain.directDependencies) {
+    $manifestPath = Join-Path $PSScriptRoot "..\node_modules\$($dependency.name)\package.json"
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if ($manifest.name -cne $dependency.name -or
+        $manifest.version -cne $dependency.version -or
+        $manifest.license -cne $dependency.licence) {
+        throw "The installed $($dependency.name) package does not match the reviewed quality-gate policy."
+    }
 }

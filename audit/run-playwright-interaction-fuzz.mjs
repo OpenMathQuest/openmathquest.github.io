@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { runWithCleanup } from "./lib/operation-cleanup.mjs";
+import { observePlaywrightServer, waitForPlaywrightServer, waitForPlaywrightServerExit as waitForExit, waitForPlaywrightResult } from "./lib/playwright-server-lifecycle.mjs";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -14,7 +16,6 @@ import {
 import {
   playwrightChildProcessRunning,
   playwrightFocusedExpectedServerIdentity,
-  playwrightFocusedServerIdentityMatches,
   reviewedEdgeExecutable,
 } from "./lib/playwright-focused-contract.mjs";
 
@@ -32,7 +33,6 @@ if (requestedExecutable && !reviewedEdgeExecutable(requestedExecutable)) {
 }
 const executablePath = (requestedExecutable ? [requestedExecutable] : systemCandidatePaths).find((candidate) => existsSync(candidate));
 const serverScript = path.join(root, "Serve-MathQuest.ps1");
-const healthUrl = "http://127.0.0.1:8771/__math_quest_health__";
 const expectedHealth = Object.freeze(await playwrightFocusedExpectedServerIdentity(root));
 
 const manifests = Object.freeze([
@@ -56,40 +56,7 @@ await rm(outputDirectory, { recursive: true, force: true });
 await rm(reportPath, { force: true });
 await mkdir(outputDirectory, { recursive: true });
 
-async function observedHealth() {
-  try {
-    const response = await fetch(healthUrl, { cache: "no-store", signal: AbortSignal.timeout(1_000) });
-    if (!response.ok) return { reachable: true, valid: false, reason: `HTTP ${response.status}` };
-    const value = await response.json();
-    const valid = playwrightFocusedServerIdentityMatches(value, expectedHealth);
-    return { reachable: true, valid, reason: valid ? null : "identity mismatch" };
-  } catch {
-    return { reachable: false, valid: false, reason: "unreachable" };
-  }
-}
-
-async function waitForHealth(server, deadlineMs = 20_000) {
-  const deadline = Date.now() + deadlineMs;
-  while (Date.now() < deadline) {
-    const health = await observedHealth();
-    if (health.valid) return;
-    if (health.reachable) throw new Error(`Port 8771 answered with an unexpected server (${health.reason}).`);
-    if (server && !playwrightChildProcessRunning(server)) {
-      throw new Error(`Math Quest test server exited with status ${server.exitCode ?? server.signalCode}.`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error("Math Quest test server did not become healthy within 20 seconds.");
-}
-
-async function waitForExit(child, timeoutMs = 5_000) {
-  if (!playwrightChildProcessRunning(child)) return;
-  let timer;
-  const exited = new Promise((resolve) => child.once("exit", resolve));
-  const timeout = new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); });
-  await Promise.race([exited, timeout]);
-  clearTimeout(timer);
-}
+const observedHealth = () => observePlaywrightServer(expectedHealth);
 
 let ownedServer = null;
 const initialHealth = await observedHealth();
@@ -97,7 +64,7 @@ if (initialHealth.reachable && !initialHealth.valid) {
   throw new Error(`Port 8771 is occupied by an unexpected server (${initialHealth.reason}).`);
 }
 let exitCode = 1;
-try {
+await runWithCleanup(async () => {
   if (!initialHealth.valid) {
     ownedServer = spawn("powershell.exe", [
       "-NoLogo",
@@ -108,7 +75,7 @@ try {
       serverScript,
       "-NoBrowser",
     ], { cwd: root, stdio: "ignore", windowsHide: true });
-    await waitForHealth(ownedServer);
+    await waitForPlaywrightServer(ownedServer, observedHealth);
   }
   const child = spawn(process.execPath, [
     cli,
@@ -130,19 +97,14 @@ try {
     stdio: "inherit",
     windowsHide: true,
   });
-  exitCode = await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("exit", (code, signal) => signal
-      ? reject(new Error(`Playwright Test ended with signal ${signal}.`))
-      : resolve(code ?? 1));
-  });
-} finally {
+  exitCode = await waitForPlaywrightResult(child);
+}, async () => {
   if (playwrightChildProcessRunning(ownedServer)) ownedServer.kill();
   await waitForExit(ownedServer);
   if (playwrightChildProcessRunning(ownedServer)) {
     throw new Error("The interaction-fuzz lane could not stop its disposable Math Quest server.");
   }
-}
+});
 
 const outputNames = new Set(await readdir(outputDirectory));
 const missingProjects = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS

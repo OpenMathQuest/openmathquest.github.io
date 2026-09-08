@@ -42,8 +42,7 @@ async function runJsonChild(script, args = []) {
   }
 }
 
-async function runPlaywrightFocusedAudit() {
-  const reportPath = path.join(root, "audit", ".tmp-playwright-focused-report.json");
+async function runFocusedPlaywrightProcess() {
   let processFailure = null;
   let stdout = "";
   let stderr = "";
@@ -61,6 +60,12 @@ async function runPlaywrightFocusedAudit() {
     stdout = String(error.stdout || "");
     stderr = String(error.stderr || "");
   }
+  return { processFailure, stdout, stderr };
+}
+
+async function runPlaywrightFocusedAudit() {
+  const reportPath = path.join(root, "audit", ".tmp-playwright-focused-report.json");
+  const { processFailure, stdout, stderr } = await runFocusedPlaywrightProcess();
   try {
     const report = JSON.parse(await readFile(reportPath, "utf8"));
     const findings = playwrightFocusedReportFindings(report);

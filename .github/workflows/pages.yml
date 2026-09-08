@@ -7,7 +7,7 @@ on:
         description: Exact annotated beta tag to deploy
         required: true
         type: string
-        default: v1.0.0-beta.8
+        default: v1.0.0-beta.9
 
 permissions:
   contents: read
@@ -38,9 +38,9 @@ jobs:
              [[ "$GITHUB_REF" != "refs/heads/main" ]] ||
              [[ "$GITHUB_REF_TYPE" != "branch" ]] ||
              [[ "$GITHUB_REF_NAME" != "main" ]] ||
-             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.8" ]]
+             [[ "$RELEASE_TAG_INPUT" != "v1.0.0-beta.9" ]]
           then
-            echo "::error::Deploy only OpenMathQuest Public Beta 8 from the protected main branch."
+            echo "::error::Deploy only OpenMathQuest Public Beta 9 from the protected main branch."
             exit 1
           fi
 
@@ -307,6 +307,8 @@ jobs:
             ["assets/icons/apple-touch-icon.png", "image/png", true],
             ["assets/icons/icon-192.png", "image/png", true],
             ["assets/icons/icon-512.png", "image/png", true],
+            ["assets/js/math-quest-progress-source.js", "text/javascript", true],
+            ["assets/js/math-quest-pwa-status.js", "text/javascript", true],
             ["assets/sounds/close.wav", "audio/wav", true],
             ["assets/sounds/confirm.wav", "audio/wav", true],
             ["assets/sounds/incorrect.wav", "audio/wav", true],
@@ -333,6 +335,8 @@ jobs:
             ["assets/icons/apple-touch-icon.png", "image/png"],
             ["assets/icons/icon-192.png", "image/png"],
             ["assets/icons/icon-512.png", "image/png"],
+            ["assets/js/math-quest-progress-source.js", "text/javascript"],
+            ["assets/js/math-quest-pwa-status.js", "text/javascript"],
             ["assets/sounds/close.wav", "audio/wav"],
             ["assets/sounds/confirm.wav", "audio/wav"],
             ["assets/sounds/incorrect.wav", "audio/wav"],
@@ -463,7 +467,7 @@ jobs:
               `${snapshotFiles.get("index.html").toString("utf8")}\n${
                 snapshotFiles.get("manifest.webmanifest").toString("utf8")
               }`.match(
-                /assets\/[A-Za-z0-9._/-]+\.(?:css|ttf|otf|woff2?|wav|mp3|ogg|png|svg|jpe?g|gif|webp|json|webmanifest)/gu,
+                /assets\/[A-Za-z0-9._/-]+\.(?:css|js|ttf|otf|woff2?|wav|mp3|ogg|png|svg|jpe?g|gif|webp|json|webmanifest)/gu,
               ) || [],
             ),
           ].sort();
@@ -594,9 +598,9 @@ jobs:
           fi
           if [[ -z "$RELEASE_COMMIT" ]] ||
              [[ ! "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]] ||
-             [[ "$RELEASE_TAG" != "v1.0.0-beta.8" ]] ||
+             [[ "$RELEASE_TAG" != "v1.0.0-beta.9" ]] ||
              [[ ! "$SNAPSHOT_SHA256" =~ ^[a-f0-9]{64}$ ]]
           then
-            echo "::error::The deployment is not bound to the verified Public Beta 8 tag, commit, and immutable snapshot."
+            echo "::error::The deployment is not bound to the verified Public Beta 9 tag, commit, and immutable snapshot."
             exit 1
           fi

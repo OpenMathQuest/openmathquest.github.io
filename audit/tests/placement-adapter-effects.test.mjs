@@ -1,3 +1,5 @@
+import { realPlacementPrelude, PLACEMENT_SPEECH_PRELUDE, PLACEMENT_START_SPEECH_PRELUDE, PLACEMENT_NEXT_SPEECH_PRELUDE, PLACEMENT_RECOVERY_RESET_PRELUDE, PLACEMENT_RECOVERY_APPLY_PRELUDE } from "./placement-adapter-fixture.mjs";
+import { createSourceExtractor } from "./source-extraction.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -5,94 +7,28 @@ import vm from "node:vm";
 import { extractEngine, evaluateEngine } from "../lib/engine-loader.mjs";
 
 const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)].map((match) => match[1]);
+const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)].map((match) => match[1]);
 assert.equal(scripts.length, 2);
 const adapter = scripts[1];
 const shippedEngine = evaluateEngine((await extractEngine(new URL("../../index.html", import.meta.url))).source, {
   filename: "math-quest-placement-adapter-public-engine.js",
 });
 
-function matchingDelimiter(source, openIndex, open, close) {
-  let depth = 0;
-  let quote = null;
-  let lineComment = false;
-  let blockComment = false;
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    if (lineComment) {
-      if (character === "\n") lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (character === "*" && next === "/") {
-        blockComment = false;
-        index += 1;
-      }
-      continue;
-    }
-    if (quote) {
-      if (character === "\\") index += 1;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === "/" && next === "/") {
-      lineComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "/" && next === "*") {
-      blockComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    if (character === close && --depth === 0) return index;
-  }
-  throw new Error(`unclosed ${open}${close}`);
-}
-
-function extractFunction(name) {
-  const matches = [...adapter.matchAll(new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu"))];
-  assert.equal(matches.length, 1, `${name} must have exactly one adapter declaration`);
-  const start = matches[0].index;
-  const parametersStart = adapter.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(start, bodyEnd + 1);
-}
+const extraction = createSourceExtractor(adapter);
+const extractFunction = (name) => extraction.functionDeclaration(name);
 
 function extractSetDeclaration(name) {
   const matches = [...adapter.matchAll(new RegExp(`const\\s+${name}\\s*=\\s*new\\s+Set\\s*\\(`, "gu"))];
   assert.equal(matches.length, 1, `${name} must have exactly one adapter declaration`);
   const start = matches[0].index;
   const open = adapter.indexOf("(", start);
-  const close = matchingDelimiter(adapter, open, "(", ")");
+  const close = extraction.matchingDelimiter(open, "(", ")");
   const semicolon = adapter.indexOf(";", close);
   assert.ok(semicolon >= 0, `${name} declaration must end with a semicolon`);
   return adapter.slice(start, semicolon + 1);
 }
 
-function extractListenerStatement(target, eventName, marker) {
-  const token = `${target}.addEventListener("${eventName}",`;
-  const matches = [];
-  for (let from = 0; ; ) {
-    const start = adapter.indexOf(token, from);
-    if (start < 0) break;
-    const open = adapter.indexOf("(", start);
-    const close = matchingDelimiter(adapter, open, "(", ")");
-    const statement = `${adapter.slice(start, close + 1)};`;
-    if (statement.includes(marker)) matches.push(statement);
-    from = close + 1;
-  }
-  assert.equal(matches.length, 1, `${target} ${eventName} listener containing ${marker} must be unique`);
-  return matches[0];
-}
+const extractListenerStatement = (target, eventName, marker) => extraction.listenerStatement(target, eventName, marker);
 
 function evaluate({ prelude = "", functions = [], body = "", exposed = "", context = {} }) {
   return new vm.Script(`(()=>{"use strict";${prelude}${functions.map(extractFunction).join("\n")}${body}return {${exposed}};})()`, {
@@ -186,8 +122,8 @@ function placementConstructionFixture() {
   };
 }
 
-function realPlacementHarness({ state, run = null, question = null, responseState, bytes = null } = {}) {
-  const effects = {
+function placementHarnessEffects({ state, run, question, responseState, bytes }) {
+  return {
     engine: shippedEngine,
     state: jsonClone(state),
     run: run ? jsonClone(run) : null,
@@ -208,55 +144,12 @@ function realPlacementHarness({ state, run = null, question = null, responseStat
     mainWrites: 0,
     removals: 0,
   };
+}
+
+function realPlacementHarness({ state, run = null, question = null, responseState, bytes = null } = {}) {
+  const effects = placementHarnessEffects({ state, run, question, responseState, bytes });
   const harness = evaluate({
-    prelude: `
-      const PLACEMENT_DRAFT_SCHEMA=4,PLACEMENT_DRAFT_MAX_CHARACTERS=262144;
-      const placementDraftUiKeys=Object.freeze(["world","phase","questionId","selected","entry","fractionParts","modelCells","responseState","responseKind","feedbackKind"]);
-      ${extractSetDeclaration("SEMANTIC_RESPONSE_METHODS")}
-      function realmClone(value){return value===undefined?undefined:JSON.parse(JSON.stringify(value));}
-      const engine=effects.engine;
-      const E=new Proxy({},{get(_target,key){
-        if(key==="createResponseState")return question=>realmClone(engine.createResponseState(question));
-        if(key==="serializeResponse")return (question,responseState)=>{const payload=realmClone(engine.serializeResponse(question,responseState));effects.serialized.push(structuredClone(payload));return payload;};
-        if(key==="submitPlacementAnswer")return (run,answer)=>{effects.submitted.push(structuredClone(answer));return engine.submitPlacementAnswer(run,answer);};
-        const value=Reflect.get(engine,key,engine);return typeof value==="function"?value.bind(engine):value;
-      }});
-      const state=realmClone(effects.state);
-      const initialRun=effects.run?realmClone(effects.run):null,initialQuestion=effects.question?realmClone(effects.question):null;
-      let persistedPlacementDraftBytes=effects.bytes,placementNotice="";
-      let ui=initialRun?{
-        screen:"placement",world:initialRun.theme,session:null,grownTab:"placement",phase:"question",placementRun:initialRun,
-        question:initialQuestion,placementCorrect:null,placementFeedbackKind:null,placementRecommendation:null,selected:null,entry:"",
-        fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],
-        responseState:effects.responseState===undefined?E.createResponseState(initialQuestion):realmClone(effects.responseState),
-        modelTouched:false,hintUsed:false,selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null
-      }:{
-        screen:"grown",world:"ocean",session:null,grownTab:"placement",phase:"question",placementRun:null,question:null,
-        placementCorrect:null,placementFeedbackKind:null,placementRecommendation:null,selected:null,entry:"",
-        fractionParts:{whole:"",numerator:"",denominator:""},modelCells:[],responseState:{},modelTouched:false,hintUsed:false,
-        selectionEvents:[],selectionRestored:false,feedback:null,lastAttempt:null
-      };
-      const app={querySelector(){return {focus(){effects.outcomeFocuses+=1;}};}};
-      function savePlacementDraft(){const bytes=placementDraftBytes();if(bytes===null)return false;persistedPlacementDraftBytes=bytes;effects.saved.push(bytes);placementNotice="";return true;}
-      function removePlacementDraft(){effects.removals+=1;persistedPlacementDraftBytes=null;return true;}
-      function cancelSpeech(){effects.cancelledSpeech+=1;}
-      function stopSounds(){effects.stoppedSounds+=1;}
-      function playSound(name){effects.sounds.push(name);}
-      function render(){effects.renders+=1;}
-      function focusColdStartTarget(){effects.coldFocuses+=1;}
-      function speak(value){effects.spoken.push(value);}
-      function questionSpeechText(){return "Question "+String(ui.question?.questionId||"");}
-      function announce(value){effects.announcements.push(value);}
-      function focusFeedbackOutcome(){effects.outcomeFocuses+=1;return true;}
-      function placementFeedbackText(){return ui.placementFeedbackKind==="correct"?"Correct.":"Not correct.";}
-      function save(){effects.mainWrites+=1;return true;}
-      function setResponse(value){
-        if(ui.question.inputClass==="SELECTION")ui.selected=String(value.optionId);
-        else if(SEMANTIC_RESPONSE_METHODS.has(ui.question.inputMethod))ui.responseState=realmClone(value);
-        else ui.entry=String(value);
-      }
-      function status(){return {ui:structuredClone(ui),state:structuredClone(state),bytes:persistedPlacementDraftBytes,notice:placementNotice};}
-    `,
+    prelude: realPlacementPrelude(extractSetDeclaration("SEMANTIC_RESPONSE_METHODS")),
     functions: [
       "safePlacementDraftValue",
       "placementDraftUiSnapshot",
@@ -472,112 +365,145 @@ test("correct placement construction reaches public grading and persists one cor
   assert.equal(validation.valid, true, validation.error);
 });
 
-test("placement answers remain an exact monotone prefix through pause resume and feedback or question reload", () => {
-  const fixture = placementConstructionFixture();
-  assert.equal(fixture.question.inputMethod, "PLACE_VALUE_BUILD");
-  const baselineState = shippedEngine.canonical(fixture.state);
-  const expectedThree = [
-    ...placementAnswers(fixture.run),
-    { questionId: fixture.question.questionId, responseKind: "correct" },
+function placementPrefixTrace() {
+  const trace = {};
+  trace.fixture = placementConstructionFixture();
+  assert.equal(trace.fixture.question.inputMethod, "PLACE_VALUE_BUILD");
+  trace.baselineState = shippedEngine.canonical(trace.fixture.state);
+  trace.expectedThree = [
+    ...placementAnswers(trace.fixture.run),
+    { questionId: trace.fixture.question.questionId, responseKind: "correct" },
   ];
-  const active = realPlacementHarness({
-    ...fixture,
-    responseState: { action: "trade", value: String(fixture.question.answer.value) },
+  trace.active = realPlacementHarness({
+    ...trace.fixture,
+    responseState: { action: "trade", value: String(trace.fixture.question.answer.value) },
   });
+  return trace;
+}
 
-  active.harness.submitPlacement();
-  let status = active.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedThree, "third-answer feedback");
+function assertThirdFeedbackPause(trace) {
+  let status;
+  trace.active.harness.submitPlacement();
+  status = trace.active.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedThree, "third-answer feedback");
   assert.equal(status.ui.phase, "feedback");
 
-  assert.equal(active.harness.pausePlacement(), true);
-  status = active.harness.status();
+  assert.equal(trace.active.harness.pausePlacement(), true);
+  status = trace.active.harness.status();
   assert.equal(status.ui.screen, "grown");
-  assertPlacementPrefix(status.ui.placementRun, expectedThree, "paused third-answer feedback");
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedThree, "paused third-answer feedback");
   const pausedFeedback = JSON.parse(status.bytes);
   assert.equal(pausedFeedback.ui.phase, "feedback");
-  assert.equal(pausedFeedback.ui.questionId, fixture.question.questionId);
-  assert.deepEqual(pausedFeedback.run.answers, expectedThree);
+  assert.equal(pausedFeedback.ui.questionId, trace.fixture.question.questionId);
+  assert.deepEqual(pausedFeedback.run.answers, trace.expectedThree);
+}
 
-  assert.equal(active.harness.resumePlacement(), true);
-  status = active.harness.status();
+function assertFourthAnswerAfterResume(trace) {
+  let status;
+  assert.equal(trace.active.harness.resumePlacement(), true);
+  status = trace.active.harness.status();
   assert.equal(status.ui.screen, "placement");
   assert.equal(status.ui.phase, "question", "same-tab resume advances committed feedback exactly once");
-  assertPlacementPrefix(status.ui.placementRun, expectedThree, "resumed fourth question");
-  const fourth = jsonClone(status.ui.question);
-  assert.equal(fourth.inputMethod, "NUMBER_PAD");
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedThree, "resumed fourth question");
+  trace.fourth = jsonClone(status.ui.question);
+  assert.equal(trace.fourth.inputMethod, "NUMBER_PAD");
   assert.equal(
-    fourth.questionId,
+    trace.fourth.questionId,
     shippedEngine.placementCurrentQuestion(status.ui.placementRun).questionId,
   );
   assert.equal(JSON.parse(status.bytes).ui.phase, "feedback", "resume does not rewrite the committed draft");
 
-  active.harness.setResponse(fourth.answer.value);
-  active.harness.submitPlacement();
-  status = active.harness.status();
-  const expectedFour = [
-    ...expectedThree,
-    { questionId: fourth.questionId, responseKind: "correct" },
+  trace.active.harness.setResponse(trace.fourth.answer.value);
+  trace.active.harness.submitPlacement();
+  status = trace.active.harness.status();
+  trace.expectedFour = [
+    ...trace.expectedThree,
+    { questionId: trace.fourth.questionId, responseKind: "correct" },
   ];
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "fourth-answer feedback");
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "fourth-answer feedback");
   assert.equal(status.ui.phase, "feedback");
-  assert.equal(status.ui.question.questionId, fourth.questionId);
+  assert.equal(status.ui.question.questionId, trace.fourth.questionId);
   assert.equal(status.ui.placementCorrect, true);
-  const fourthFeedbackBytes = status.bytes;
-  assert.deepEqual(JSON.parse(fourthFeedbackBytes).run.answers, expectedFour);
+  trace.fourthFeedbackBytes = status.bytes;
+  assert.deepEqual(JSON.parse(trace.fourthFeedbackBytes).run.answers, trace.expectedFour);
+}
 
-  const feedbackReload = realPlacementHarness({ state: fixture.state, bytes: fourthFeedbackBytes });
-  assert.equal(feedbackReload.harness.restorePlacementDraft(), true);
-  status = feedbackReload.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "reloaded fourth-answer feedback");
+function assertFourthFeedbackReload(trace) {
+  let status;
+  trace.feedbackReload = realPlacementHarness({ state: trace.fixture.state, bytes: trace.fourthFeedbackBytes });
+  assert.equal(trace.feedbackReload.harness.restorePlacementDraft(), true);
+  status = trace.feedbackReload.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "reloaded fourth-answer feedback");
   assert.equal(status.ui.phase, "feedback");
-  assert.equal(status.ui.question.questionId, fourth.questionId);
+  assert.equal(status.ui.question.questionId, trace.fourth.questionId);
   assert.equal(status.ui.placementCorrect, true);
   assert.equal(status.ui.placementFeedbackKind, "correct");
+}
 
-  feedbackReload.harness.nextPlacement();
-  status = feedbackReload.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "fifth question after feedback reload");
+function assertFifthQuestionPause(trace) {
+  let status;
+  trace.feedbackReload.harness.nextPlacement();
+  status = trace.feedbackReload.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "fifth question after feedback reload");
   assert.equal(status.ui.phase, "question");
-  const fifth = jsonClone(status.ui.question);
-  assert.equal(fifth.inputClass, "SELECTION");
+  trace.fifth = jsonClone(status.ui.question);
+  assert.equal(trace.fifth.inputClass, "SELECTION");
   assert.equal(
-    fifth.questionId,
+    trace.fifth.questionId,
     shippedEngine.placementCurrentQuestion(status.ui.placementRun).questionId,
   );
-  feedbackReload.harness.setResponse({ optionId: fifth.options[fifth.correctIndex].optionId });
+  trace.feedbackReload.harness.setResponse({ optionId: trace.fifth.options[trace.fifth.correctIndex].optionId });
 
-  assert.equal(feedbackReload.harness.pausePlacement(), true);
-  status = feedbackReload.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "paused fifth question");
-  assert.equal(status.ui.selected, fifth.options[fifth.correctIndex].optionId);
-  const fifthQuestionBytes = status.bytes;
-  assert.equal(JSON.parse(fifthQuestionBytes).ui.phase, "question");
-  assert.deepEqual(JSON.parse(fifthQuestionBytes).run.answers, expectedFour);
+  assert.equal(trace.feedbackReload.harness.pausePlacement(), true);
+  status = trace.feedbackReload.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "paused fifth question");
+  assert.equal(status.ui.selected, trace.fifth.options[trace.fifth.correctIndex].optionId);
+  trace.fifthQuestionBytes = status.bytes;
+  assert.equal(JSON.parse(trace.fifthQuestionBytes).ui.phase, "question");
+  assert.deepEqual(JSON.parse(trace.fifthQuestionBytes).run.answers, trace.expectedFour);
+}
 
-  assert.equal(feedbackReload.harness.resumePlacement(), true);
-  status = feedbackReload.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "same-tab resumed fifth question");
+function assertFifthQuestionResume(trace) {
+  let status;
+  assert.equal(trace.feedbackReload.harness.resumePlacement(), true);
+  status = trace.feedbackReload.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "same-tab resumed fifth question");
   assert.equal(status.ui.phase, "question");
-  assert.equal(status.ui.question.questionId, fifth.questionId);
-  assert.equal(status.ui.selected, fifth.options[fifth.correctIndex].optionId);
+  assert.equal(status.ui.question.questionId, trace.fifth.questionId);
+  assert.equal(status.ui.selected, trace.fifth.options[trace.fifth.correctIndex].optionId);
+}
 
-  const questionReload = realPlacementHarness({ state: fixture.state, bytes: fifthQuestionBytes });
-  assert.equal(questionReload.harness.restorePlacementDraft(), true);
-  status = questionReload.harness.status();
-  assertPlacementPrefix(status.ui.placementRun, expectedFour, "reloaded fifth question");
+function assertFifthQuestionReload(trace) {
+  let status;
+  trace.questionReload = realPlacementHarness({ state: trace.fixture.state, bytes: trace.fifthQuestionBytes });
+  assert.equal(trace.questionReload.harness.restorePlacementDraft(), true);
+  status = trace.questionReload.harness.status();
+  assertPlacementPrefix(status.ui.placementRun, trace.expectedFour, "reloaded fifth question");
   assert.equal(status.ui.phase, "question");
-  assert.equal(status.ui.question.questionId, fifth.questionId);
-  assert.equal(status.ui.selected, fifth.options[fifth.correctIndex].optionId);
+  assert.equal(status.ui.question.questionId, trace.fifth.questionId);
+  assert.equal(status.ui.selected, trace.fifth.options[trace.fifth.correctIndex].optionId);
   assert.equal(
     status.ui.question.questionId,
     shippedEngine.placementCurrentQuestion(status.ui.placementRun).questionId,
   );
+}
 
-  for (const current of [active, feedbackReload, questionReload]) {
+function assertPlacementMainStatePreserved(trace) {
+  for (const current of [trace.active, trace.feedbackReload, trace.questionReload]) {
     assert.equal(current.effects.mainWrites, 0);
-    assert.equal(shippedEngine.canonical(current.harness.status().state), baselineState);
+    assert.equal(shippedEngine.canonical(current.harness.status().state), trace.baselineState);
   }
+}
+
+test("placement answers remain an exact monotone prefix through pause resume and feedback or question reload", () => {
+  const trace = placementPrefixTrace();
+  assertThirdFeedbackPause(trace);
+  assertFourthAnswerAfterResume(trace);
+  assertFourthFeedbackReload(trace);
+  assertFifthQuestionPause(trace);
+  assertFifthQuestionResume(trace);
+  assertFifthQuestionReload(trace);
+  assertPlacementMainStatePreserved(trace);
 });
 
 test("Not sure records a valid non-correct placement response without grading fabricated input", () => {
@@ -658,45 +584,7 @@ test("Not sure restores and renders as a distinct neutral outcome", () => {
 
 test("placement speech uses evidence-rich prompts, visible option positions, and exact feedback outcomes", async () => {
   const harness = evaluate({
-    prelude: `
-      let ui={
-        screen:"placement",
-        phase:"question",
-        hintUsed:false,
-        isReteach:false,
-        placementCorrect:false,
-        placementFeedbackKind:null,
-        question:{
-          inputClass:"SELECTION",
-          prompt:"Which lasts longer?",
-          modelDescriptor:{
-            type:"visualPrompt",
-            instruction:"Compare the time cards.",
-            values:{kind:"durationPair",items:[
-              {event:"jumping",magnitude:2},
-              {event:"drawing",magnitude:5}
-            ]}
-          },
-          options:[
-            {optionId:"o0",label:"jumping",value:"jumping"},
-            {optionId:"o1",label:"drawing",value:"drawing"}
-          ]
-        }
-      };
-      function accessibleOptionLabel(option){return option.label;}
-      function s(id,slots={}){
-        if(id==="instruction.selectionOption")return "Option "+slots.position+": "+slots.label+".";
-        return ({
-          "instruction.capstone":"Show what you did today.",
-          "instruction.reteach":"Watch one complete step.",
-          "feedback.placementNotSureStatus":"Not sure. Let’s try another.",
-          "feedback.placementIncorrectStatus":"Not correct.",
-          "feedback.correctStatus":"Correct."
-        })[id]||id;
-      }
-      function setFeedback(kind){ui.phase="feedback";ui.placementFeedbackKind=kind;return replayText();}
-      function setQuestion(){ui.phase="question";ui.placementFeedbackKind=null;return replayText();}
-    `,
+    prelude: PLACEMENT_SPEECH_PRELUDE,
     functions: [
       "modelOperandDescription",
       "repeatedStimulusItems",
@@ -721,26 +609,7 @@ test("placement speech uses evidence-rich prompts, visible option positions, and
 
   const startEffects = { spoken: [] };
   const start = evaluate({
-    prelude: `
-      let placementNotice="";
-      let state={activeSession:null,previewLevel:null,maxSeenPlayDay:5,seed:9,placement:{runNonce:0}};
-      let ui={screen:"grown",world:"ocean",grownTab:"placement",placementRun:null};
-      let placementStartBusy=false;
-      const question={questionId:"q1"};
-      const E={
-        beginPlacementRun(){return {state:{...state,placement:{runNonce:1}},run:{answers:[],nonce:1,seed:123}};},
-        placementCurrentQuestion(){return question;},
-        createResponseState(){return {};},
-        exportState(){return "COMMITTED-NONCE";}
-      };
-      function dayNow(){return 5;}
-      async function persistProgressBytesCommitted(bytes){startEffects.committed=bytes;return true;}
-      function savePlacementDraft(){return true;}
-      function render(){}
-      function focusColdStartTarget(){}
-      function speak(text){startEffects.spoken.push(text);}
-      function questionSpeechText(){return "EVIDENCE-RICH START";}
-    `,
+    prelude: PLACEMENT_START_SPEECH_PRELUDE,
     functions: ["resetPlacementResponse", "startPlacement"],
     exposed: "startPlacement",
     context: { startEffects, structuredClone },
@@ -751,22 +620,7 @@ test("placement speech uses evidence-rich prompts, visible option positions, and
 
   const nextEffects = { spoken: [] };
   const next = evaluate({
-    prelude: `
-      let placementNotice="";
-      const state={identity:"MAIN"};
-      let ui={screen:"placement",phase:"feedback",placementRun:{answers:[{questionId:"q1",responseKind:"correct"}]},question:{questionId:"q1"},placementCorrect:true,placementFeedbackKind:"correct",placementRecommendation:null};
-      const nextQuestion={questionId:"q2"};
-      const E={
-        validatePlacementRun(){return {valid:true,complete:false};},
-        placementCurrentQuestion(){return nextQuestion;},
-        createResponseState(){return {};}
-      };
-      function savePlacementDraft(){return true;}
-      function render(){}
-      function focusColdStartTarget(){}
-      function speak(text){nextEffects.spoken.push(text);}
-      function questionSpeechText(){return "EVIDENCE-RICH NEXT";}
-    `,
+    prelude: PLACEMENT_NEXT_SPEECH_PRELUDE,
     functions: ["resetPlacementResponse", "nextPlacement"],
     exposed: "nextPlacement",
     context: { nextEffects, structuredClone },
@@ -1057,27 +911,10 @@ test("reset and import remove a paused placement draft only after main-state com
   assert.equal(importEffects.removals, 1);
 });
 
-test("recovery reset, import, and apply advance beyond a surviving generation-one draft when removeItem throws", async () => {
-  const priorDraft = draft({
-    run: { answers: [], complete: false },
-    generation: 1,
-  });
+async function assertRecoveryResetRejectsSurvivingDraft(priorDraft) {
   const resetEffects = { bytes: priorDraft, removeAttempts: 0, commits: 0 };
   const reset = evaluate({
-    prelude: `
-      const PLACEMENT_DRAFT_KEY="math-quest:placement-draft:v1",PLACEMENT_DRAFT_MAX_CHARACTERS=262144;
-      let destructiveDialog={kind:"reset-recovery",enableAt:0},state={identity:"RECOVERY-FALLBACK",placementDraftGeneration:0},profileChosen=true,warning="",backupNotice="",storageAvailable=true;
-      let persistedPlacementDraftBytes=resetEffects.bytes,placementDraftReadable=true,placementDraftConflict=false,placementNotice="";
-      let ui={screen:"saveRecovery",grownTab:"backup",placementRun:{answers:[]},placementCorrect:false,placementRecommendation:{}};
-      const localStorage={removeItem(){resetEffects.removeAttempts+=1;throw new Error("remove denied");}};
-      const E={createResetState(current,day,floor){return {identity:"RESET",placementDraftGeneration:Math.max(current.placementDraftGeneration,floor)+1};},exportState(candidate){return JSON.stringify(candidate);}};
-      function raiseWarning(){}
-      async function persistProgressBytesCommitted(){resetEffects.commits+=1;return true;}
-      function closeDestructiveDialog(){destructiveDialog=null;}
-      function render(){}
-      function dayNow(){return 1;}
-      function status(){return {state:structuredClone(state),ui:structuredClone(ui),draftBytes:persistedPlacementDraftBytes,placementDraftReadable,warning};}
-    `,
+    prelude: PLACEMENT_RECOVERY_RESET_PRELUDE,
     functions: ["persistedPlacementDraftGenerationFloor", "storageRemove", "purgePlacementDraftAfterMainCommit", "confirmDestructiveDialog"],
     exposed: "confirmDestructiveDialog,status",
     context: { resetEffects, structuredClone },
@@ -1094,7 +931,9 @@ test("recovery reset, import, and apply advance beyond a surviving generation-on
   assert.equal(resetReload.restorePlacementDraft(), false);
   assert.equal(resetReload.status().ui.placementRun, null);
   assert.equal(resetReload.status().state.identity, "MAIN-UNCHANGED");
+}
 
+async function assertRecoveryImportRejectsSurvivingDraft(priorDraft) {
   const change = extractListenerStatement("app", "change", 'el.id==="importFile"');
   const importEffects = { handlers: {}, bytes: priorDraft, removeAttempts: 0, commits: 0 };
   const imported = new vm.Script(`(()=>{"use strict";
@@ -1138,24 +977,12 @@ test("recovery reset, import, and apply advance beyond a surviving generation-on
   const importReload = restoreHarness(importStatus.draftBytes, { stateGeneration: importStatus.state.placementDraftGeneration });
   assert.equal(importReload.restorePlacementDraft(), false);
   assert.equal(importReload.status().ui.placementRun, null);
+}
 
+async function assertRecoveryApplyRejectsSurvivingDraft(priorDraft) {
   const applyEffects = { bytes: priorDraft, removeAttempts: 0, commits: 0, floor: null };
   const apply = evaluate({
-    prelude: `
-      const PLACEMENT_DRAFT_KEY="math-quest:placement-draft:v1",PLACEMENT_DRAFT_MAX_CHARACTERS=262144;
-      let state={identity:"RECOVERY-FALLBACK",placementDraftGeneration:0,maxSeenPlayDay:1},placementNotice="",warning="",storageAvailable=true;
-      let persistedPlacementDraftBytes=applyEffects.bytes,placementDraftReadable=true,placementDraftConflict=false;
-      let ui={screen:"placement",phase:"result",placementRun:{answers:[]},placementCorrect:null,placementRecommendation:{recommendedLevel:2},question:null};
-      const localStorage={removeItem(){applyEffects.removeAttempts+=1;throw new Error("remove denied");}};
-      const E={
-        applyPlacementRecommendation(current,run,options){applyEffects.floor=options.placementDraftGenerationFloor;return {ok:true,state:{identity:"APPLIED",placementDraftGeneration:Math.max(current.placementDraftGeneration,options.placementDraftGenerationFloor)+1,maxSeenPlayDay:1}};},
-        exportState(candidate){return JSON.stringify(candidate);}
-      };
-      function dayNow(){return 1;}
-      async function persistProgressBytesCommitted(){applyEffects.commits+=1;return true;}
-      function render(){}
-      function status(){return {state:structuredClone(state),ui:structuredClone(ui),draftBytes:persistedPlacementDraftBytes,placementDraftReadable};}
-    `,
+    prelude: PLACEMENT_RECOVERY_APPLY_PRELUDE,
     functions: ["persistedPlacementDraftGenerationFloor", "storageRemove", "purgePlacementDraftAfterMainCommit", "confirmPlacement"],
     exposed: "confirmPlacement,status",
     context: { applyEffects, structuredClone },
@@ -1172,6 +999,16 @@ test("recovery reset, import, and apply advance beyond a surviving generation-on
   const applyReload = restoreHarness(applyStatus.draftBytes, { stateGeneration: applyStatus.state.placementDraftGeneration });
   assert.equal(applyReload.restorePlacementDraft(), false);
   assert.equal(applyReload.status().ui.placementRun, null);
+}
+
+test("recovery reset, import, and apply advance beyond a surviving generation-one draft when removeItem throws", async () => {
+  const priorDraft = draft({
+    run: { answers: [], complete: false },
+    generation: 1,
+  });
+  await assertRecoveryResetRejectsSurvivingDraft(priorDraft);
+  await assertRecoveryImportRejectsSurvivingDraft(priorDraft);
+  await assertRecoveryApplyRejectsSurvivingDraft(priorDraft);
 });
 
 test("failed reset and import main writes preserve the prior generation and recoverable draft", async () => {

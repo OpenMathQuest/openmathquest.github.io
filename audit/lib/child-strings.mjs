@@ -19,14 +19,14 @@ function normalize(value, key = "") {
   return value;
 }
 
-export function canonicalChildRecords(table) {
+function canonicalChildRecords(table) {
   const records = Array.isArray(table)
     ? table.map((record) => ({ ...record }))
     : Object.entries(table || {}).map(([id, record]) => ({ id, ...record }));
   return records.map((record) => normalize(record)).sort((a, b) => compareCodeUnits(a.id, b.id));
 }
 
-export function jcsSerialize(value) {
+function jcsSerialize(value) {
   if (value === null) return "null";
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") {
@@ -54,30 +54,32 @@ export function childStringArtifact(table) {
   });
 }
 
-export function validateChildStringRecords(records) {
-  const errors = [];
-  const ids = new Set();
-  const poolPositions = new Map();
-  for (const [index, record] of records.entries()) {
-    const label = record?.id || `record[${index}]`;
-    if (!record || typeof record !== "object") { errors.push(`${label}: not an object`); continue; }
-    if (typeof record.id !== "string" || !record.id) errors.push(`${label}: stable id missing`);
-    else if (ids.has(record.id)) errors.push(`${label}: duplicate stable id`);
-    else ids.add(record.id);
-    if (!Number.isInteger(record.poolPosition) || record.poolPosition < 0) errors.push(`${label}: ordered runtime pool position missing`);
-    if (!record.category) errors.push(`${label}: category missing`);
-    if (record.category && Number.isInteger(record.poolPosition) && record.poolPosition >= 0) {
-      const poolKey = `${record.category}\u0000${record.poolPosition}`;
-      if (poolPositions.has(poolKey)) errors.push(`${label}: duplicate ${record.category} pool position ${record.poolPosition} (also ${poolPositions.get(poolKey)})`);
-      else poolPositions.set(poolKey, label);
-    }
-    if (typeof record.text !== "string" && typeof record.template !== "string") errors.push(`${label}: text/template missing`);
-    if (!("slotDefinitions" in record)) errors.push(`${label}: slotDefinitions missing (use an empty object when there are no slots)`);
-    if (!("allowedLiteralVocabulary" in record)) errors.push(`${label}: allowedLiteralVocabulary missing (use an empty array when not applicable)`);
-    if (!("numericRange" in record)) errors.push(`${label}: numericRange missing (use null when not applicable)`);
-    if (!("formatterRule" in record)) errors.push(`${label}: formatterRule missing (use null when not applicable)`);
-    if (!("ritualSetMembership" in record)) errors.push(`${label}: ritualSetMembership missing (use an empty array when not applicable)`);
+function validateChildStringId(record, label, ids, errors) {
+  if (typeof record.id !== "string" || !record.id) errors.push(`${label}: stable id missing`);
+  else if (ids.has(record.id)) errors.push(`${label}: duplicate stable id`);
+  else ids.add(record.id);
+}
+
+function validateChildStringPoolEntry(record, label, poolPositions, errors) {
+  if (!Number.isInteger(record.poolPosition) || record.poolPosition < 0) errors.push(`${label}: ordered runtime pool position missing`);
+  if (!record.category) errors.push(`${label}: category missing`);
+  if (record.category && Number.isInteger(record.poolPosition) && record.poolPosition >= 0) {
+    const poolKey = `${record.category}\u0000${record.poolPosition}`;
+    if (poolPositions.has(poolKey)) errors.push(`${label}: duplicate ${record.category} pool position ${record.poolPosition} (also ${poolPositions.get(poolKey)})`);
+    else poolPositions.set(poolKey, label);
   }
+}
+
+function validateChildStringMetadata(record, label, errors) {
+  if (typeof record.text !== "string" && typeof record.template !== "string") errors.push(`${label}: text/template missing`);
+  if (!("slotDefinitions" in record)) errors.push(`${label}: slotDefinitions missing (use an empty object when there are no slots)`);
+  if (!("allowedLiteralVocabulary" in record)) errors.push(`${label}: allowedLiteralVocabulary missing (use an empty array when not applicable)`);
+  if (!("numericRange" in record)) errors.push(`${label}: numericRange missing (use null when not applicable)`);
+  if (!("formatterRule" in record)) errors.push(`${label}: formatterRule missing (use null when not applicable)`);
+  if (!("ritualSetMembership" in record)) errors.push(`${label}: ritualSetMembership missing (use an empty array when not applicable)`);
+}
+
+function validateChildPoolSequences(poolPositions, errors) {
   const positionsByCategory = new Map();
   for (const poolKey of poolPositions.keys()) {
     const [category, position] = poolKey.split("\u0000");
@@ -90,5 +92,19 @@ export function validateChildStringRecords(records) {
       if (ordered[expected] !== expected) { errors.push(`${category}: pool positions must be contiguous from 0; expected ${expected}, found ${ordered[expected]}`); break; }
     }
   }
+}
+
+export function validateChildStringRecords(records) {
+  const errors = [];
+  const ids = new Set();
+  const poolPositions = new Map();
+  for (const [index, record] of records.entries()) {
+    const label = record?.id || `record[${index}]`;
+    if (!record || typeof record !== "object") { errors.push(`${label}: not an object`); continue; }
+    validateChildStringId(record, label, ids, errors);
+    validateChildStringPoolEntry(record, label, poolPositions, errors);
+    validateChildStringMetadata(record, label, errors);
+  }
+  validateChildPoolSequences(poolPositions, errors);
   return errors;
 }

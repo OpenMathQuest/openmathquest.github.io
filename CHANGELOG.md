@@ -2,7 +2,20 @@
 
 All notable public changes to Math Quest are recorded here.
 
-## 1.0.0-beta.8 — Unreleased
+## 1.0.0-beta.9 — 2026-09-08
+
+- Refactored the engine adapters, browser and offline checks, release tooling,
+  and test fixtures into clearer modules with explicit ownership.
+- Preserved the curriculum, grading, teaching behavior, saved progress,
+  accessibility and offline operation through independent regression checks.
+- Eliminated live lint warnings and errors, reduced repeated implementations,
+  and added strict checks for ownership drift, security and code quality.
+- Reduced the offline payload while expanding effect-sensitive tests and
+  preserving independent mathematical oracles.
+- Requires fresh hosted browser and trusted-HTTPS update evidence for this beta,
+  followed by exact-candidate release certification before publication.
+
+## 1.0.0-beta.8 — 2026-08-26
 
 - Adopted the Mathematical Conservatory and Workshop visual system with
   governed, first-party design tokens and code-drawn functional art.

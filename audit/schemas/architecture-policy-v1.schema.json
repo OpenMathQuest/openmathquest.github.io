@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/architecture-policy-v1.schema.json",
+  "title": "Math Quest static architecture policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyId", "version", "schemaVersion", "status", "authority", "zones", "legacyImportEdgeRatchets", "sourceContracts"],
+  "properties": {
+    "policyId": { "const": "math-quest-static-architecture" },
+    "version": { "const": "1.4.0" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "authority": { "const": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates" },
+    "zones": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "pattern", "mayImport"],
+        "properties": {
+          "id": { "enum": ["audit-library", "audit-orchestrator", "audit-test", "config", "runtime", "tool"] },
+          "pattern": { "type": "string", "minLength": 8 },
+          "mayImport": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["audit-library", "audit-orchestrator", "audit-test", "config", "runtime", "tool"] }
+          }
+        }
+      }
+    },
+    "legacyImportEdgeRatchets": {
+      "type": "array",
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "target"],
+        "properties": {
+          "source": { "type": "string", "pattern": "^audit/[A-Za-z0-9._/-]+\\.mjs$" },
+          "target": { "type": "string", "pattern": "^audit/tests/[A-Za-z0-9._/-]+\\.mjs$" }
+        }
+      }
+    },
+    "sourceContracts": {
+      "type": "array",
+      "minItems": 19,
+      "maxItems": 19,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "pattern", "expectedCount", "claim"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^runtime\\.[a-z0-9-]+$" },
+          "path": { "enum": ["Serve-MathQuest.ps1", "assets/js/math-quest-progress-source.js", "assets/js/math-quest-pwa-status.js", "audit/lib/playwright-focused-contract.mjs", "audit/playwright/fixtures.mjs", "audit/run-audit.ps1", "audit/test-launcher-identity.ps1", "index.html"] },
+          "pattern": { "type": "string", "minLength": 8 },
+          "expectedCount": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "claim": { "type": "string", "minLength": 40 }
+        }
+      }
+    }
+  }
+}

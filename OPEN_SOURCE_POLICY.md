@@ -16,15 +16,28 @@ no-derivatives, personal use, educational use only, permission only, or
 royalty-free use is not eligible. An available paid licence is not a substitute
 for an open licence under this policy.
 
-The initial approved licence identifiers are:
+The approved licence identifiers are:
 
+- `0BSD`
+- `AGPL-3.0-only` for unmodified, CI-only tools that are not linked into or
+  distributed with the application
 - `Apache-2.0`
+- `BSD-2-Clause`
 - `BSD-3-Clause`
+- `BlueOak-1.0.0`
+- `CC-BY-3.0` for CI-only licence-metadata data
+- `ISC`
+- `LGPL-2.1-or-later` for unmodified, CI-only tools that are not linked into
+  or distributed with the application
 - `MIT`
+- `MIT-0`
+- `MPL-2.0` for the CI-only axe-core accessibility analyzer
 - `OFL-1.1`
 - `OGL-UK-3.0`
 - `CC-BY-4.0`
 - `CC0-1.0`
+- `Python-2.0`
+- `(MIT OR CC0-1.0)`
 - `LicenseRef-Public-Domain` with specific provenance evidence
 
 A new identifier may not be added merely because it is described as free.

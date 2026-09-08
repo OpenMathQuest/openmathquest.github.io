@@ -11,6 +11,61 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
+const expectedReleaseCadence = Object.freeze({
+  explicitPublicationInstructionAuthorizesFinalRun: true,
+  freezeRequired: true,
+  candidateIdentity: "EXACT_COMMIT_AND_PUBLIC_PAYLOAD",
+  scheduledFullRunsPerUnchangedCandidate: 1,
+  timing: "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
+  scope: "COMPLETE_CERTIFICATION_SYSTEM",
+  qualificationEvidenceSuccessor: {
+    policy: "RELEASE_EVIDENCE_SUCCESSOR_V2",
+    releaseTag: "v1.0.0-beta.9",
+    parentCount: 1,
+    parentMustEqualQualificationCommit: true,
+    exactChangedPaths: [
+      "PUBLICATION_CLEARANCE.md",
+      "audit/browser-runner-evidence-v1.json",
+      "audit/release-evidence-bundle-v1.json",
+      "audit/trusted-https-canary-v1.json",
+    ],
+    qualificationClearanceStatus: "PENDING",
+    qualificationBrowserEvidenceStatus: "PENDING",
+    qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
+    qualificationCanaryEvidenceStatus: "PENDING",
+    requiredQualificationEvidence: [
+      "RECONCILED_CANARY",
+      "REVIEWED_HOSTED_WINDOWS",
+    ],
+    finalCertificationTarget: "RELEASE_EVIDENCE_SUCCESSOR_V2",
+  },
+  deepUxCensus: {
+    policy: "ALTERNATING_BETA_V1",
+    firstRequiredBetaOrdinal: 4,
+    interval: 2,
+    requiredVersionExamples: [
+      "1.0.0-beta.4",
+      "1.0.0-beta.6",
+      "1.0.0-beta.8",
+    ],
+    inventoryQuestions: 72576,
+    viewports: 6,
+    renderedStates: [
+      "INITIAL",
+      "PARTIAL_RESPONSE",
+      "EXPECTED_REVEALED",
+      "TEACHING_MODEL_WHEN_AVAILABLE",
+    ],
+    localBenchmarkCells: 100,
+    routineDevelopmentRunsCompleteCensus: false,
+    completeRunEnvironment: "GITHUB_HOSTED_WINDOWS",
+    failureEvidence: "ANOMALY_ONLY",
+    replacesExistingCertificationOrHumanEvidence: false,
+    publicationRequiresPassWhenScheduled: true,
+  },
+  postCertificationChange: "INVALIDATE_REFREEZE_RERUN_FULL",
+  publicationRequiresPass: true,
+});
 
 test("certification cadence has a closed machine-readable contract", async () => {
   const policy = JSON.parse(await read("audit/certification-cadence-v1.json"));
@@ -36,61 +91,7 @@ test("certification cadence has a closed machine-readable contract", async () =>
     ownerApprovalRequired: true,
     diagnosticOnly: true,
   });
-  assert.deepEqual(policy.release, {
-    explicitPublicationInstructionAuthorizesFinalRun: true,
-    freezeRequired: true,
-    candidateIdentity: "EXACT_COMMIT_AND_PUBLIC_PAYLOAD",
-    scheduledFullRunsPerUnchangedCandidate: 1,
-    timing: "AFTER_FREEZE_IMMEDIATELY_BEFORE_PUBLICATION",
-    scope: "COMPLETE_CERTIFICATION_SYSTEM",
-    qualificationEvidenceSuccessor: {
-      policy: "RELEASE_EVIDENCE_SUCCESSOR_V2",
-      releaseTag: "v1.0.0-beta.8",
-      parentCount: 1,
-      parentMustEqualQualificationCommit: true,
-      exactChangedPaths: [
-        "PUBLICATION_CLEARANCE.md",
-        "audit/browser-runner-evidence-v1.json",
-        "audit/release-evidence-bundle-v1.json",
-        "audit/trusted-https-canary-v1.json",
-      ],
-      qualificationClearanceStatus: "PENDING",
-      qualificationBrowserEvidenceStatus: "PENDING",
-      qualificationBundleLifecycleState: "QUALIFICATION_PENDING",
-      qualificationCanaryEvidenceStatus: "PENDING",
-      requiredQualificationEvidence: [
-        "RECONCILED_CANARY",
-        "REVIEWED_HOSTED_WINDOWS",
-      ],
-      finalCertificationTarget: "RELEASE_EVIDENCE_SUCCESSOR_V2",
-    },
-    deepUxCensus: {
-      policy: "ALTERNATING_BETA_V1",
-      firstRequiredBetaOrdinal: 4,
-      interval: 2,
-      requiredVersionExamples: [
-        "1.0.0-beta.4",
-        "1.0.0-beta.6",
-        "1.0.0-beta.8",
-      ],
-      inventoryQuestions: 72576,
-      viewports: 6,
-      renderedStates: [
-        "INITIAL",
-        "PARTIAL_RESPONSE",
-        "EXPECTED_REVEALED",
-        "TEACHING_MODEL_WHEN_AVAILABLE",
-      ],
-      localBenchmarkCells: 100,
-      routineDevelopmentRunsCompleteCensus: false,
-      completeRunEnvironment: "GITHUB_HOSTED_WINDOWS",
-      failureEvidence: "ANOMALY_ONLY",
-      replacesExistingCertificationOrHumanEvidence: false,
-      publicationRequiresPassWhenScheduled: true,
-    },
-    postCertificationChange: "INVALIDATE_REFREEZE_RERUN_FULL",
-    publicationRequiresPass: true,
-  });
+  assert.deepEqual(policy.release, expectedReleaseCadence);
   assert.deepEqual(policy.entryPoints, {
     development: "audit/run-audit.ps1 -DevelopmentOnly",
     release: "audit.bat",
@@ -118,21 +119,26 @@ test("cadence policy and regression are registered in every public inventory", a
   }
 });
 
-test("ordinary automation cannot invoke complete certification", async () => {
-  const [workflow, watcher] = await Promise.all([
-    read(".github/workflows/audit.yml"),
-    read("audit/on-change-audit.ps1"),
-  ]);
-  const developmentJob = workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "";
-  const releaseJob = workflow.split(/^  full-audit:\s*$/mu)[1]?.split(/^  deep-ux-census:\s*$/mu)[0] || "";
-  const deepUxJob = workflow.split(/^  deep-ux-census:\s*$/mu)[1]?.split(/^  audit-execution-qualification:\s*$/mu)[0] || "";
-  const qualificationJob = workflow.split(/^  audit-execution-qualification:\s*$/mu)[1] || "";
+function workflowSections(workflow) {
+  return Object.freeze({
+    development: workflow.split(/^  development-checks:\s*$/mu)[1]?.split(/^  full-audit:\s*$/mu)[0] || "",
+    release: workflow.split(/^  full-audit:\s*$/mu)[1]?.split(/^  deep-ux-census:\s*$/mu)[0] || "",
+    deepUx: workflow.split(/^  deep-ux-census:\s*$/mu)[1]?.split(/^  audit-execution-qualification:\s*$/mu)[0] || "",
+    qualification: workflow.split(/^  audit-execution-qualification:\s*$/mu)[1] || "",
+  });
+}
+
+function assertDevelopmentAutomation(workflow, developmentJob) {
   assert.match(workflow, /^\s{2}pull_request:\s*$/mu);
   assert.match(workflow, /^\s{2}push:\s*[\r\n]+\s{4}branches:\s*[\r\n]+\s{6}- main\s*$/mu);
   assert.match(developmentJob, /if:\s*github\.event_name != 'workflow_dispatch'/u);
-  assert.match(developmentJob, /git diff --name-only --diff-filter=ACDMRTUXB/iu);
-  assert.match(developmentJob, /run-audit\.ps1 -NodePath \$nodePath -DevelopmentOnly -ChangedPath \$changedPaths/u);
+  assert.match(developmentJob, /install-reviewed-security-tools\.ps1/u);
+  assert.match(developmentJob, /run-ai-change-loop\.mjs --progress/u);
+  assert.doesNotMatch(developmentJob, /run-audit\.ps1/u);
   assert.doesNotMatch(developmentJob, /run-audit\.mjs|run-coverage|mutation-runner|exhaustive-generator|run-browser-smoke/iu);
+}
+
+function assertReleaseAutomation(releaseJob, qualificationJob) {
   assert.match(releaseJob, /if:\s*github\.event_name == 'workflow_dispatch'/u);
   assert.match(releaseJob, /candidate_sha must exactly equal the frozen commit/iu);
   assert.match(releaseJob, /actions\/checkout@[a-f0-9]{40}[\s\S]*fetch-depth:\s*0/iu);
@@ -141,6 +147,9 @@ test("ordinary automation cannot invoke complete certification", async () => {
   assert.match(qualificationJob, /if:\s*github\.event_name == 'workflow_dispatch' && inputs\.execution_qualification == true/u);
   assert.match(qualificationJob, /audit-execution-qualification sentinel/iu);
   assert.equal((qualificationJob.match(/run-audit\.ps1[^\r\n]*-TechnicalOnly/giu) || []).length, 2);
+}
+
+function assertLocalAndCensusAutomation(workflow, watcher, developmentJob, deepUxJob) {
   assert.match(watcher, /Invoke-DevelopmentChecks/iu);
   assert.match(watcher, /\$runner[^\r\n]*-DevelopmentOnly/iu);
   assert.doesNotMatch(watcher, /Invoke-FullAudit|-TechnicalOnly/iu);
@@ -150,6 +159,17 @@ test("ordinary automation cannot invoke complete certification", async () => {
   assert.match(deepUxJob, /timeout-minutes:\s*240/u);
   assert.match(workflow, /NON_CERTIFYING|alternating-beta|alternating beta/iu);
   assert.doesNotMatch(developmentJob, /run-playwright-deep-ux-census\.mjs/iu);
+}
+
+test("ordinary automation cannot invoke complete certification", async () => {
+  const [workflow, watcher] = await Promise.all([
+    read(".github/workflows/audit.yml"),
+    read("audit/on-change-audit.ps1"),
+  ]);
+  const jobs = workflowSections(workflow);
+  assertDevelopmentAutomation(workflow, jobs.development);
+  assertReleaseAutomation(jobs.release, jobs.qualification);
+  assertLocalAndCensusAutomation(workflow, watcher, jobs.development, jobs.deepUx);
 });
 
 test("deployment requires exact-commit certification and does not repeat the gauntlet", async () => {

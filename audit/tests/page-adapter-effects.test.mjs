@@ -1,3 +1,6 @@
+import { BETA1_MIGRATION_PRELUDE, UPDATE_APPLY_PRELUDE, updateBoundaryPrelude, backupExportBrowser } from "./page-adapter-fixture.mjs";
+import { createSourceExtractor } from "./source-extraction.mjs";
+import "./source-extraction.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -5,73 +8,14 @@ import vm from "node:vm";
 import { loadShippedEngine } from "../lib/engine-loader.mjs";
 
 const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
+const progressSourceSource = readFileSync(new URL("../../assets/js/math-quest-progress-source.js", import.meta.url), "utf8"), pwaStatusSource = readFileSync(new URL("../../assets/js/math-quest-pwa-status.js", import.meta.url), "utf8");
+const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
   .map((match) => match[1]);
 assert.equal(scripts.length, 2, "the shipped page must retain its engine and adapter scripts");
 const adapter = scripts[1];
 
-function matchingDelimiter(source, openIndex, open, close) {
-  assert.equal(source[openIndex], open);
-  let depth = 0;
-  let quote = null;
-  let lineComment = false;
-  let blockComment = false;
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    if (lineComment) {
-      if (character === "\n") lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (character === "*" && next === "/") {
-        blockComment = false;
-        index += 1;
-      }
-      continue;
-    }
-    if (quote) {
-      if (character === "\\") {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-    if (character === "/" && next === "/") {
-      lineComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "/" && next === "*") {
-      blockComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    if (character === close) {
-      depth -= 1;
-      if (depth === 0) return index;
-    }
-  }
-  throw new Error(`unclosed ${open}${close} delimiter`);
-}
-
-function extractFunction(name) {
-  const expression = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu");
-  const matches = [...adapter.matchAll(expression)];
-  assert.equal(matches.length, 1, `${name} must have one shipped declaration`);
-  const start = matches[0].index;
-  const parametersStart = adapter.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(start, bodyEnd + 1);
-}
+const extraction = createSourceExtractor(adapter);
+const extractFunction = (name) => extraction.functionDeclaration(name);
 
 function extractActionBranch(action) {
   const expression = new RegExp(
@@ -81,28 +25,14 @@ function extractActionBranch(action) {
   const matches = [...adapter.matchAll(expression)];
   assert.equal(matches.length, 1, `${action} must have one shipped action branch`);
   const bodyStart = adapter.indexOf("{", matches[0].index);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
+  const bodyEnd = extraction.matchingDelimiter(bodyStart, "{", "}");
   return adapter.slice(bodyStart + 1, bodyEnd);
 }
 
-function extractListenerStatement(target, eventName, marker) {
-  const token = `${target}.addEventListener("${eventName}",`;
-  const matches = [];
-  for (let from = 0; ;) {
-    const start = adapter.indexOf(token, from);
-    if (start < 0) break;
-    const open = adapter.indexOf("(", start);
-    const close = matchingDelimiter(adapter, open, "(", ")");
-    const statement = `${adapter.slice(start, close + 1)};`;
-    if (statement.includes(marker)) matches.push(statement);
-    from = close + 1;
-  }
-  assert.equal(matches.length, 1, `${target} ${eventName} listener containing ${marker} must be unique`);
-  return matches[0];
-}
+const extractListenerStatement = (target, eventName, marker) => extraction.listenerStatement(target, eventName, marker);
 
 function evaluateHarness({ prelude, functions, body, exposed, context = {} }) {
-  const source = `(()=>{
+  const source = `${progressSourceSource}\n${pwaStatusSource}\n(()=>{
     "use strict";
     ${prelude}
     ${functions.map(extractFunction).join("\n")}
@@ -284,6 +214,17 @@ test("an unreadable initial save fails closed before requesting the writer lease
   assert.equal(harness.status().progressLeaseFailure, "UNAVAILABLE");
 });
 
+const BETA1_MIGRATION_FUNCTIONS = Object.freeze([
+  "selectProgressSource", "abortBeta1MigrationCutover", "abortBeta1LateArrival", "cutoverPending",
+  "storageValueChanged", "activeCutoverStorageChanged", "postCutoverStorageChanged", "handleBeta1StorageChange",
+  "ensureBeta1GuardValue", "ensureBeta1MigrationGuard", "ensureBeta1EmptyCutoverGuard", "ensureBeta1RetainedCutoverGuard",
+  "clearBeta1MigrationGuard", "verifyBeta1MigrationSourceUnchanged", "readBeta1CutoverStorage", "verifyNoLateBeta1MigrationInput",
+  "verifyBeta1CutoverUnchanged", "verifyBeta1EmptyCutoverUnchanged", "finalizeBeta1EmptyCutover", "verifyBeta1RetainedCutoverUnchanged",
+  "finalizeBeta1RetainedCutover", "initializeProgressPersistence",
+]);
+const BETA1_STORAGE_EVENT_FUNCTIONS = Object.freeze(BETA1_MIGRATION_FUNCTIONS.slice(2, 8));
+const BETA1_STORAGE_EVENT_SOURCE = BETA1_STORAGE_EVENT_FUNCTIONS.map(extractFunction).join("\n");
+
 function createBeta1MigrationHarness(mode, values = new Map([
   ["math-quest:progress:v2", null],
   ["math-quest:v2", "BETA1-A"],
@@ -302,146 +243,10 @@ function createBeta1MigrationHarness(mode, values = new Map([
     handlers: {},
     pendingStorageEvent: null,
   };
-  const storageListener = extractListenerStatement("window", "storage", "BETA1_MIGRATION_GUARD_KEY");
+  const storageListener = extractListenerStatement("window", "storage", "handleBeta1StorageChange");
   const harness = evaluateHarness({
-    prelude: `
-      const KEY="math-quest:progress:v2";
-      const BETA1_PROGRESS_KEY="math-quest:v2";
-      const BETA1_MIGRATION_GUARD_KEY=\`\${KEY}:beta1-migration-guard:v1\`;
-      const BETA1_MIGRATION_GUARD_VALUE="beta1-to-protected-v1";
-      const BETA1_EMPTY_CUTOVER_GUARD_VALUE="empty-to-protected-v1";
-      const BETA1_RETAINED_CUTOVER_GUARD_VALUE="beta1-retained-to-protected-v1";
-      const BETA1_RETAINED_COMPLETE_VALUE="beta1-retained-current-curriculum-v1";
-      const PLACEMENT_DRAFT_KEY="math-quest:placement-draft:v1";
-      const currentRead={ok:true,value:effects.values.get(KEY)??null};
-      const guardRead={ok:true,value:effects.values.get(BETA1_MIGRATION_GUARD_KEY)??null};
-      const beta1Read={ok:true,value:effects.values.get(BETA1_PROGRESS_KEY)??null};
-      const selected=selectProgressSource(currentRead,guardRead,beta1Read,effects.values.get(KEY)==="PROTECTED-BLANK");
-      const beta1Save=selected.beta1Save;
-      const progressSourceReadOk=selected.prerequisitesOk;
-      const progressSourceFailureText="Beta 1 source unavailable.";
-      const retainedMode=effects.mode.startsWith("retained");
-      let beta1MigrationPending=selected.beta1Selected&&!retainedMode;
-      let beta1EmptyCutoverPending=selected.emptyCutoverSelected&&selected.prerequisitesOk;
-      let beta1RetainedCutoverPending=selected.beta1Selected&&retainedMode;
-      let persistedSaveBytes=currentRead.value;
-      let persistedBeta1MigrationGuardBytes=guardRead.value;
-      let progressConflict=false;
-      let progressLeaseStatus="PENDING";
-      let progressLeaseFailure="";
-      let beta1ProtectedWriteAttempted=false;
-      let persistedPlacementDraftBytes=null;
-      let saveRecoveryRequired=false;
-      let backupImportBusy=false;
-      let pwaControllerChangeBusy=false;
-      const progressLockUnavailableText="Reliable progress protection is unavailable.";
-      const beta1MigrationConflictText="Beta 1 progress changed while Beta 2 was opening. The migration guard remains.";
-      const beta1MigrationGuardFailureText="Beta 1 migration guard could not be completed.";
-      const beta1LateArrivalText="Beta 1 progress or its migration guard changed while Beta 2 was preparing protected storage. Protected progress was not accepted; any partial copy remains guarded and will not be opened.";
-      const app={
-        inert:true,
-        setAttribute(){},
-        removeAttribute(){}
-      };
-      const window={addEventListener(name,handler){effects.handlers[name]=handler;}};
-      const localStorage={
-        getItem(key){effects.storageOperations.push({type:"read",key});if(effects.storageReadLost)throw new Error("storage access lost");return effects.values.get(key)??null;},
-        setItem(key,value){
-          effects.storageOperations.push({type:"write",key,value});
-          effects.writes.push({key,value});
-          if(effects.mode==="retained-complete-write-fail"&&key===BETA1_MIGRATION_GUARD_KEY&&value===BETA1_RETAINED_COMPLETE_VALUE)throw new Error("terminal marker denied");
-          effects.values.set(key,value);
-          if(effects.mode==="retained-post-commit-read-loss"&&key===BETA1_MIGRATION_GUARD_KEY&&value===BETA1_RETAINED_COMPLETE_VALUE)effects.storageReadLost=true;
-        },
-        removeItem(key){
-          effects.removals.push(key);
-          if(["across-remove-fail","empty-after-beta1-remove-fail","retained-across-remove-fail"].includes(effects.mode)&&key===KEY)throw new Error("protected remove denied");
-          if(effects.mode==="guard-clear-fail"&&key===BETA1_MIGRATION_GUARD_KEY)throw new Error("guard remove denied");
-          if(effects.mode==="empty-clear-read-loss"&&key===BETA1_MIGRATION_GUARD_KEY){
-            effects.values.set(key,null);
-            effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
-            effects.storageReadLost=true;
-            return;
-          }
-          effects.values.set(key,null);
-          if(effects.mode==="empty-clear-beta1"&&key===BETA1_MIGRATION_GUARD_KEY)effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
-          if(effects.mode==="empty-clear-guard"&&key===BETA1_MIGRATION_GUARD_KEY)effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
-        }
-      };
-      function storageWrite(key,value){
-        try{localStorage.setItem(key,value);return true;}catch{return false;}
-      }
-      function storageRemove(key){
-        try{localStorage.removeItem(key);return true;}catch{return false;}
-      }
-      function raiseWarning(message){effects.warnings.push(String(message));}
-      function scheduleProgressProtectionScreen(){effects.protectionScreens+=1;}
-      function markProgressConflict(){progressConflict=true;progressLeaseFailure="CONFLICT";}
-      function markPlacementDraftConflict(){}
-      function releaseProgressWriterLease(){progressLeaseStatus="RELEASED";}
-      async function acquireProgressWriterLease(){
-        effects.acquireCalls+=1;
-        progressLeaseStatus="HELD";
-        if(effects.mode==="before")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
-        if(effects.mode==="retained-before")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
-        if(effects.mode==="late-beta1"){
-          await Promise.resolve();
-          effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
-          effects.pendingStorageEvent={key:BETA1_PROGRESS_KEY,newValue:"BETA1-NEW"};
-        }
-        if(effects.mode==="late-guard"){
-          await Promise.resolve();
-          effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
-          effects.pendingStorageEvent={key:BETA1_MIGRATION_GUARD_KEY,newValue:BETA1_MIGRATION_GUARD_VALUE};
-        }
-        return true;
-      }
-      function save(){
-        effects.saveCalls+=1;
-        if(effects.mode==="empty-entry-beta1")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
-        if(effects.mode==="empty-entry-guard")effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
-        persistedSaveBytes=beta1Save===null||beta1RetainedCutoverPending?"PROTECTED-BLANK":\`MIGRATED-\${String(beta1Save).at(-1)}\`;
-        effects.values.set(KEY,persistedSaveBytes);
-        effects.protectedWrites+=1;
-        if(["empty-after-beta1","empty-after-beta1-remove-fail"].includes(effects.mode))effects.values.set(BETA1_PROGRESS_KEY,"BETA1-NEW");
-        if(effects.mode==="empty-after-guard")effects.values.set(BETA1_MIGRATION_GUARD_KEY,BETA1_MIGRATION_GUARD_VALUE);
-        if(["across","across-remove-fail"].includes(effects.mode))effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
-        if(effects.mode==="retained-across")effects.values.set(BETA1_PROGRESS_KEY,"BETA1-B");
-        return true;
-      }
-      function status(){return {
-        selectedSource:selected.sourceSave,
-        beta1MigrationPending,
-        beta1EmptyCutoverPending,
-        beta1RetainedCutoverPending,
-        persistedSaveBytes,
-        persistedBeta1MigrationGuardBytes,
-        guardBytes:effects.values.get(BETA1_MIGRATION_GUARD_KEY)??null,
-        progressConflict,
-        progressLeaseStatus,
-        progressLeaseFailure
-      };}
-      function dispatchPendingStorageEvent(){
-        if(!effects.pendingStorageEvent)return;
-        effects.handlers.storage({storageArea:localStorage,...effects.pendingStorageEvent});
-        effects.pendingStorageEvent=null;
-      }
-    `,
-    functions: [
-      "selectProgressSource",
-      "abortBeta1MigrationCutover",
-      "ensureBeta1MigrationGuard",
-      "ensureBeta1EmptyCutoverGuard",
-      "ensureBeta1RetainedCutoverGuard",
-      "clearBeta1MigrationGuard",
-      "verifyBeta1MigrationSourceUnchanged",
-      "verifyNoLateBeta1MigrationInput",
-      "verifyBeta1EmptyCutoverUnchanged",
-      "finalizeBeta1EmptyCutover",
-      "verifyBeta1RetainedCutoverUnchanged",
-      "finalizeBeta1RetainedCutover",
-      "initializeProgressPersistence",
-    ],
+    prelude: BETA1_MIGRATION_PRELUDE,
+    functions: BETA1_MIGRATION_FUNCTIONS,
     body: storageListener,
     exposed: "initializeProgressPersistence,verifyNoLateBeta1MigrationInput,status,dispatchPendingStorageEvent",
     context: { effects: Object.assign(effects, { mode }) },
@@ -534,8 +339,8 @@ test("only a fully valid exact immutable retired Beta 1 envelope is eligible for
   assert.equal(harness.isRetainedRetiredBeta1Save(null), false);
 });
 
-test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 8 save commits transactionally", async () => {
-  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 8 starts fresh so old mastery is not applied to changed skills.";
+test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 9 save commits transactionally", async () => {
+  const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 9 starts fresh so old mastery is not applied to changed skills.";
   const successful = createBeta1MigrationHarness("retained-success");
   assert.equal(successful.harness.status().selectedSource, "BETA1-A");
   assert.equal(successful.harness.status().beta1RetainedCutoverPending, true);
@@ -607,11 +412,6 @@ test("Beta 1 migration never copies a source that changed before or across the p
 });
 
 test("an initially empty protected store rechecks late Beta 1 source and guard arrivals before any blank write", async () => {
-  const initiallyEmpty = () => new Map([
-    ["math-quest:progress:v2", null],
-    ["math-quest:v2", null],
-    ["math-quest:progress:v2:beta1-migration-guard:v1", null],
-  ]);
 
   for (const mode of ["late-beta1", "late-guard"]) {
     const run = createBeta1MigrationHarness(mode, initiallyEmpty());
@@ -631,13 +431,13 @@ test("an initially empty protected store rechecks late Beta 1 source and guard a
   }
 });
 
-test("a durable empty-cutover guard encloses the blank write and controls interrupted reload selection without storage events", async () => {
-  const initiallyEmpty = () => new Map([
+const initiallyEmpty = () => new Map([
     ["math-quest:progress:v2", null],
     ["math-quest:v2", null],
     ["math-quest:progress:v2:beta1-migration-guard:v1", null],
   ]);
 
+async function assertEmptyCutoverLateSource() {
   for (const mode of ["empty-entry-beta1", "empty-after-beta1"]) {
     const run = createBeta1MigrationHarness(mode, initiallyEmpty());
     assert.equal(await run.harness.initializeProgressPersistence(), false, `${mode} must reject its guarded partial write`);
@@ -654,7 +454,9 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
     assert.equal(reloaded.effects.values.get("math-quest:progress:v2"), "MIGRATED-W");
     assert.equal(reloaded.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), null);
   }
+}
 
+async function assertEmptyCutoverRollbackFailure() {
   const rollbackFailure = createBeta1MigrationHarness("empty-after-beta1-remove-fail", initiallyEmpty());
   assert.equal(await rollbackFailure.harness.initializeProgressPersistence(), false);
   assert.equal(rollbackFailure.effects.values.get("math-quest:progress:v2"), "PROTECTED-BLANK");
@@ -665,7 +467,9 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
   assert.equal(await recovered.harness.initializeProgressPersistence(), true);
   assert.equal(recovered.effects.values.get("math-quest:progress:v2"), "MIGRATED-W");
   assert.equal(recovered.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), null);
+}
 
+async function assertEmptyCutoverChangedGuard() {
   for (const mode of ["empty-entry-guard", "empty-after-guard"]) {
     const run = createBeta1MigrationHarness(mode, initiallyEmpty());
     assert.equal(await run.harness.initializeProgressPersistence(), false, `${mode} must reject a changed guard`);
@@ -680,7 +484,9 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
     assert.equal(reloaded.effects.protectedWrites, 0);
     assert.equal(reloaded.effects.values.get("math-quest:progress:v2"), null);
   }
+}
 
+async function assertEmptyCutoverClosingSource() {
   const closingSource = createBeta1MigrationHarness("empty-clear-beta1", initiallyEmpty());
   assert.equal(await closingSource.harness.initializeProgressPersistence(), false);
   assert.equal(closingSource.effects.protectedWrites, 1);
@@ -691,7 +497,9 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
   assert.equal(closingReload.harness.status().selectedSource, "BETA1-NEW");
   assert.equal(await closingReload.harness.initializeProgressPersistence(), true);
   assert.equal(closingReload.effects.values.get("math-quest:progress:v2"), "MIGRATED-W");
+}
 
+async function assertEmptyCutoverClosingGuard() {
   const closingGuard = createBeta1MigrationHarness("empty-clear-guard", initiallyEmpty());
   assert.equal(await closingGuard.harness.initializeProgressPersistence(), false);
   assert.equal(closingGuard.effects.values.get("math-quest:progress:v2"), null);
@@ -699,7 +507,9 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
   const closingGuardReload = createBeta1MigrationHarness("success", closingGuard.effects.values);
   assert.equal(await closingGuardReload.harness.initializeProgressPersistence(), false);
   assert.equal(closingGuardReload.effects.protectedWrites, 0);
+}
 
+async function assertEmptyCutoverStorageLoss() {
   const accessLoss = createBeta1MigrationHarness("empty-clear-read-loss", initiallyEmpty());
   assert.equal(await accessLoss.harness.initializeProgressPersistence(), false);
   assert.equal(accessLoss.effects.protectedWrites, 1);
@@ -717,12 +527,24 @@ test("a durable empty-cutover guard encloses the blank write and controls interr
   assert.equal(await accessRestoredReload.harness.initializeProgressPersistence(), true);
   assert.equal(accessRestoredReload.effects.values.get("math-quest:progress:v2"), "MIGRATED-W");
   assert.equal(accessRestoredReload.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), null);
+}
 
+async function assertCleanEmptyCutover() {
   const clean = createBeta1MigrationHarness("success", initiallyEmpty());
   assert.equal(await clean.harness.initializeProgressPersistence(), true);
   assert.equal(clean.effects.values.get("math-quest:progress:v2"), "PROTECTED-BLANK");
   assert.equal(clean.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), null);
   assert.equal(clean.harness.status().beta1EmptyCutoverPending, false);
+}
+
+test("a durable empty-cutover guard encloses the blank write and controls interrupted reload selection without storage events", async () => {
+  await assertEmptyCutoverLateSource();
+  await assertEmptyCutoverRollbackFailure();
+  await assertEmptyCutoverChangedGuard();
+  await assertEmptyCutoverClosingSource();
+  await assertEmptyCutoverClosingGuard();
+  await assertEmptyCutoverStorageLoss();
+  await assertCleanEmptyCutover();
 });
 
 test("a failed protected rollback leaves a durable guard and reload reconciles from the newest Beta 1 bytes", async () => {
@@ -753,7 +575,7 @@ test("migration remains fail-closed when the durable guard cannot be cleared", a
 });
 
 test("storage events observe the Beta 1 source and every active cutover guard", () => {
-  const storageListener = extractListenerStatement("window", "storage", "BETA1_MIGRATION_GUARD_KEY");
+  const storageListener = extractListenerStatement("window", "storage", "handleBeta1StorageChange");
   const createHarness = ({ pending = true, emptyPending = false, retainedPending = false } = {}) => {
     const effects = { handlers: {}, aborts: [], conflicts: 0, draftConflicts: 0 };
     const localStorage = {};
@@ -762,7 +584,7 @@ test("storage events observe the Beta 1 source and every active cutover guard", 
       const window={addEventListener(name,handler){effects.handlers[name]=handler;}};
       const beta1LateArrivalText="Late Beta 1 cutover input.";
       let beta1MigrationPending=${pending},beta1EmptyCutoverPending=${emptyPending},beta1RetainedCutoverPending=${retainedPending},beta1ProtectedWriteAttempted=true,beta1Save=${emptyPending ? "null" : '"BETA1-A"'},persistedBeta1MigrationGuardBytes=${retainedPending ? '"beta1-retained-to-protected-v1"' : emptyPending ? '"empty-to-protected-v1"' : '"beta1-to-protected-v1"'},persistedSaveBytes="PROTECTED",persistedPlacementDraftBytes=null;
-      function abortBeta1MigrationCutover(options){effects.aborts.push(options);beta1MigrationPending=false;beta1EmptyCutoverPending=false;beta1RetainedCutoverPending=false;return false;}
+      function abortBeta1MigrationCutover(options){effects.aborts.push(options);beta1MigrationPending=false;beta1EmptyCutoverPending=false;beta1RetainedCutoverPending=false;return false;} ${BETA1_STORAGE_EVENT_SOURCE}
       function markProgressConflict(){effects.conflicts+=1;}
       function markPlacementDraftConflict(){effects.draftConflicts+=1;}
       ${storageListener}
@@ -945,52 +767,7 @@ test("MQ-048 Ready opens the unchanged question and rolls back cleanly when savi
   assert.equal(adapter.includes('data-action="practice-token-ready"'), true);
 });
 
-test("safe-boundary checks include name gate, home, and grown-ups; explicit Home and Retry checks bypass debounce", async () => {
-  const effects = {
-    now: 120_000,
-    updateCalls: 0,
-    readinessCalls: 0,
-    initializeCalls: 0,
-    statusRefreshes: 0,
-  };
-  const retryBody = extractActionBranch("pwa-retry");
-  const homeCheckBody = extractActionBranch("pwa-check");
-  const harness = evaluateHarness({
-    prelude: `
-      let ui={screen:"nameGate"};
-      const pwa={
-        registration:{
-          waiting:null,
-          installing:null,
-          async update(){effects.updateCalls+=1;}
-        },
-        lastUpdateCheck:0,
-        updateReady:false,
-        reloadSuggested:false,
-        phase:"READY",
-        details:null,
-        error:null
-      };
-      const navigator={onLine:true};
-      function refreshPwaStatus(){effects.statusRefreshes+=1;}
-      function setPwaState(phase,{details=null,error=null}={}){
-        pwa.phase=phase;pwa.details=details;pwa.error=error?String(error):null;
-        refreshPwaStatus();
-      }
-      async function queryPwaReadiness(){effects.readinessCalls+=1;return true;}
-      async function initializePwa(){effects.initializeCalls+=1;}
-      function invokeExplicitRetry(){${retryBody}}
-      async function invokeHomeCheck(){${homeCheckBody}}
-      function setScreen(screen){ui.screen=screen;}
-    `,
-    functions: ["updateReadyState", "checkPwaUpdateAtBoundary", "checkPwaUpdateNow"],
-    exposed: "pwa,setScreen,checkPwaUpdateAtBoundary,invokeExplicitRetry,invokeHomeCheck",
-    context: {
-      effects,
-      Date: { now: () => effects.now },
-    },
-  });
-
+async function assertAutomaticUpdateBoundaries(harness, effects) {
   harness.setScreen("home");
   harness.pwa.registration.installing = {};
   assert.equal(await harness.checkPwaUpdateAtBoundary(true), true);
@@ -1014,7 +791,9 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Home
   harness.setScreen("session");
   assert.equal(await harness.checkPwaUpdateAtBoundary(true), false);
   assert.equal(effects.updateCalls, 3, "even a forced check must not interrupt a question");
+}
 
+async function assertExplicitUpdateBypassesDebounce(harness, effects) {
   harness.setScreen("home");
   harness.pwa.lastUpdateCheck = effects.now;
   harness.invokeExplicitRetry();
@@ -1032,6 +811,30 @@ test("safe-boundary checks include name gate, home, and grown-ups; explicit Home
   harness.pwa.registration = null;
   await harness.invokeHomeCheck();
   assert.equal(effects.initializeCalls, 1, "the Home control must initialize offline support when needed");
+}
+
+test("safe-boundary checks include name gate, home, and grown-ups; explicit Home and Retry checks bypass debounce", async () => {
+  const effects = {
+    now: 120_000,
+    updateCalls: 0,
+    readinessCalls: 0,
+    initializeCalls: 0,
+    statusRefreshes: 0,
+  };
+  const retryBody = extractActionBranch("pwa-retry");
+  const homeCheckBody = extractActionBranch("pwa-check");
+  const harness = evaluateHarness({
+    prelude: updateBoundaryPrelude(retryBody, homeCheckBody),
+    functions: ["updateReadyState", "checkPwaUpdateAtBoundary", "checkPwaUpdateNow"],
+    exposed: "pwa,setScreen,checkPwaUpdateAtBoundary,invokeExplicitRetry,invokeHomeCheck",
+    context: {
+      effects,
+      Date: { now: () => effects.now },
+    },
+  });
+
+  await assertAutomaticUpdateBoundaries(harness, effects);
+  await assertExplicitUpdateBypassesDebounce(harness, effects);
 });
 
 test("Home renders a grown-up update control with truthful, live states", () => {
@@ -1091,57 +894,7 @@ function createExportHarness(shareResult) {
     notices: [],
     timers: [],
   };
-  class MockFile {
-    constructor(parts, name, options) {
-      this.parts = parts;
-      this.name = name;
-      this.type = options.type;
-      this.lastModified = options.lastModified;
-    }
-  }
-  const document = {
-    body: {
-      appendChild(anchor) {
-        effects.appendedAnchors += 1;
-        anchor.isConnected = true;
-      },
-    },
-    createElement(name) {
-      assert.equal(name, "a");
-      return {
-        isConnected: false,
-        click() {
-          effects.downloadClicks += 1;
-        },
-        remove() {
-          effects.removedAnchors += 1;
-          this.isConnected = false;
-        },
-      };
-    },
-  };
-  const navigator = {
-    canShare(payload) {
-      effects.canShareCalls += 1;
-      assert.equal(payload.files.length, 1);
-      return true;
-    },
-    async share(payload) {
-      effects.shareCalls += 1;
-      assert.equal(payload.files.length, 1);
-      return shareResult();
-    },
-  };
-  const urlApi = {
-    createObjectURL(blob) {
-      assert.ok(blob.size > 0);
-      effects.createUrlCalls += 1;
-      return "blob:math-quest-private-backup";
-    },
-    revokeObjectURL(url) {
-      effects.revokeUrls.push(url);
-    },
-  };
+  const browser = backupExportBrowser(effects, shareResult);
   const harness = evaluateHarness({
     prelude: `
       let backupExportBusy=false;
@@ -1162,10 +915,7 @@ function createExportHarness(shareResult) {
     context: {
       effects,
       Blob,
-      File: MockFile,
-      navigator,
-      document,
-      URL: urlApi,
+      ...browser,
       Date: { now: () => 1_720_000_000_000 },
       setTimeout(callback, delay) {
         effects.timers.push({ callback, delay });
@@ -1225,9 +975,9 @@ test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mi
   const effects = { requests: [], replyMode: "valid" };
   const harness = evaluateHarness({
     prelude: `
-      const PWA_RELEASE="1.0.0-beta.8";
-      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.8";
-      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.8";
+      const PWA_RELEASE="1.0.0-beta.9";
+      const PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.9";
+      const PWA_CACHE_ID="math-quest-static-v1.0.0-beta.9";
       const PWA_REQUIRED_PATHS=Object.freeze(["./index.html","./PRIVACY.md"]);
       const PWA_ACTIVATION_CHALLENGE_PATTERN=/^[a-f0-9]{64}$/;
       const waiting={
@@ -1317,51 +1067,7 @@ function createUpdateApplyHarness(readinessOutcomes, saveOutcomes = [true]) {
     nextTimerId: 1,
   };
   const harness = evaluateHarness({
-    prelude: `
-      const PWA_ACTIVATION_TIMEOUT_MS=12000;
-      const navigator={serviceWorker:{controller:{id:"verified-active-controller"}}};
-      let ui={screen:"home"};
-      let readinessIndex=0;
-      let saveIndex=0;
-      const listeners=new Map();
-      const waiting={
-        state:"installed",
-        addEventListener(type,listener){
-          effects.addedListeners+=1;
-          listeners.set(type,listener);
-        },
-        removeEventListener(type,listener){
-          effects.removedListeners+=1;
-          if(listeners.get(type)===listener)listeners.delete(type);
-        },
-        postMessage(message){effects.messages.push(message);}
-      };
-      const pwa={
-        phase:"READY",details:{ready:true},error:null,registration:{waiting},
-        applying:false,applyAcknowledged:false,applyAttempt:0,applyTimer:null,
-        applyWorker:null,applyStateHandler:null,updateReady:true,
-        reloadSuggested:false,reloaded:false
-      };
-      async function queryWaitingPwaReadiness(){
-        effects.readinessCalls+=1;
-        const outcome=effects.readinessOutcomes[Math.min(readinessIndex,effects.readinessOutcomes.length-1)];
-        readinessIndex+=1;
-        if(outcome&&outcome.throws)throw new Error(outcome.throws);
-        if(outcome&&outcome.replaceWaiting)pwa.registration.waiting={state:"installed",postMessage(){}};
-        return outcome&&Object.hasOwn(outcome,"value")?outcome.value:outcome;
-      }
-      async function saveCommitted(){
-        effects.saveCalls+=1;
-        const outcome=effects.saveOutcomes[Math.min(saveIndex,effects.saveOutcomes.length-1)];
-        saveIndex+=1;
-        return outcome;
-      }
-      function refreshPwaStatus(){effects.statusRefreshes+=1;}
-      function setPwaState(phase,{details=null,error=null}={}){
-        pwa.phase=phase;pwa.details=details;pwa.error=error?String(error):null;
-        refreshPwaStatus();
-      }
-    `,
+    prelude: UPDATE_APPLY_PRELUDE,
     functions: [
       "hasVerifiedActivePwaShell",
       "clearPwaActivationWait",
@@ -1595,32 +1301,38 @@ function createFatigueTransitionHarness() {
   return harness;
 }
 
-test("simultaneous reteach and fatigue clears stale question UI without changing progress choices", () => {
-  const local = (value) => JSON.parse(JSON.stringify(value));
-  const oneMore = createFatigueTransitionHarness();
-  oneMore.next();
+function plainValue(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function assertFatigueQuestionCleared(oneMore) {
   assert.equal(oneMore.effects.saves, 1);
   assert.equal(oneMore.effects.cancelledSpeech, 1);
   assert.equal(oneMore.effects.stoppedSounds, 1);
   assert.equal(oneMore.ui.screen, "fatigue");
   assert.equal(oneMore.ui.phase, "question");
   assert.equal(oneMore.ui.question, null);
-  assert.deepEqual(local(oneMore.ui.choiceCandidates), []);
-  assert.deepEqual(local(oneMore.ui.responseState), {});
+  assert.deepEqual(plainValue(oneMore.ui.choiceCandidates), []);
+  assert.deepEqual(plainValue(oneMore.ui.responseState), {});
   assert.equal(oneMore.ui.feedback, null);
   assert.equal(oneMore.ui.lastAttempt, null);
   assert.equal(oneMore.ui.isReteach, false);
   assert.equal(oneMore.ui.reteachAdvancesIndex, false);
+}
+
+function assertFatigueCheckpointPreserved(oneMore) {
   assert.equal(oneMore.ui.index, 1);
   assert.equal(oneMore.ui.servedCount, 2);
-  assert.deepEqual(local(oneMore.ui.servedOrdinals), [0, 1]);
-  assert.deepEqual(local(oneMore.ui.choiceResolved), { 0: 1 }, "past choice resolution must survive fatigue");
+  assert.deepEqual(plainValue(oneMore.ui.servedOrdinals), [0, 1]);
+  assert.deepEqual(plainValue(oneMore.ui.choiceResolved), { 0: 1 }, "past choice resolution must survive fatigue");
   assert.deepEqual(
     JSON.parse(JSON.stringify(oneMore.effects.snapshots[0])),
     JSON.parse(JSON.stringify(oneMore.ui)),
     "the durable checkpoint must be the cleared fatigue state",
   );
+}
 
+function assertOneMoreAfterFatigue(oneMore) {
   oneMore.chooseOneMore();
   assert.equal(oneMore.ui.stopReason, "FATIGUE_STOPPED");
   assert.equal(oneMore.ui.stopRequested, true);
@@ -1629,8 +1341,10 @@ test("simultaneous reteach and fatigue clears stale question UI without changing
   assert.equal(oneMore.effects.prepared, 1);
   assert.equal(oneMore.effects.capstones, 0);
   assert.equal(oneMore.ui.servedCount, 3);
-  assert.deepEqual(local(oneMore.ui.servedOrdinals), [0, 1, 2]);
+  assert.deepEqual(plainValue(oneMore.ui.servedOrdinals), [0, 1, 2]);
+}
 
+function assertDoneAfterFatigue() {
   const done = createFatigueTransitionHarness();
   done.next();
   done.chooseDone();
@@ -1639,10 +1353,19 @@ test("simultaneous reteach and fatigue clears stale question UI without changing
   assert.equal(done.ui.oneMore, false);
   assert.equal(done.ui.index, 1, "Done must not advance the queue");
   assert.equal(done.ui.servedCount, 2);
-  assert.deepEqual(local(done.ui.servedOrdinals), [0, 1]);
+  assert.deepEqual(plainValue(done.ui.servedOrdinals), [0, 1]);
   assert.equal(done.effects.prepared, 0);
   assert.equal(done.effects.capstones, 1);
   assert.equal(done.ui.screen, "capstone");
+}
+
+test("simultaneous reteach and fatigue clears stale question UI without changing progress choices", () => {
+  const oneMore = createFatigueTransitionHarness();
+  oneMore.next();
+  assertFatigueQuestionCleared(oneMore);
+  assertFatigueCheckpointPreserved(oneMore);
+  assertOneMoreAfterFatigue(oneMore);
+  assertDoneAfterFatigue();
 });
 
 test("count-touch markup preserves exact controls while using world-specific object glyphs", () => {

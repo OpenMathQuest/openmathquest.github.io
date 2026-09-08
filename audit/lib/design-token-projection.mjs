@@ -7,10 +7,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export const DESIGN_TOKEN_SOURCE_PATH = "assets/design/math-quest-design-tokens-v1.json";
 export const DESIGN_TOKEN_PROJECTION_CSS_PATH = "assets/design/math-quest-design-tokens-v1.css";
-export const DESIGN_TOKEN_PROJECTION_GENERATOR_PATH = "tools/build-design-token-projection.mjs";
+const DESIGN_TOKEN_PROJECTION_GENERATOR_PATH = "tools/build-design-token-projection.mjs";
 export const DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX = "--mq-conservatory-";
-export const DESIGN_TOKEN_RUNTIME_LINK_SELECTOR = "link[data-mq-design-token-projection=\"v1\"]";
-export const DESIGN_TOKEN_RUNTIME_CONSUMER_PATHS = Object.freeze(["index.html"]);
+const DESIGN_TOKEN_RUNTIME_LINK_SELECTOR = "link[data-mq-design-token-projection=\"v1\"]";
+const DESIGN_TOKEN_RUNTIME_CONSUMER_PATHS = Object.freeze(["index.html"]);
 export const DESIGN_TOKEN_PROJECTED_VALUE_CLASSES = Object.freeze([
   "COLOURS",
   "DIMENSIONS",
@@ -30,7 +30,7 @@ function canonicalValue(value) {
     .map((key) => [key, canonicalValue(value[key])]));
 }
 
-export function designTokenSemanticProjectionInput(tokens) {
+function designTokenSemanticProjectionInput(tokens) {
   return canonicalValue({
     approvedTextPairings: tokens.approvedTextPairings,
     colours: tokens.colours,
@@ -45,11 +45,11 @@ export function designTokenSemanticProjectionInput(tokens) {
   });
 }
 
-export function designTokenConsumerContractSha256(tokens) {
+function designTokenConsumerContractSha256(tokens) {
   return sha256(Buffer.from(JSON.stringify(canonicalValue(tokens.runtimeConsumerContract)), "utf8"));
 }
 
-export function designTokenSemanticProjectionSha256(tokens) {
+function designTokenSemanticProjectionSha256(tokens) {
   return sha256(Buffer.from(JSON.stringify(designTokenSemanticProjectionInput(tokens)), "utf8"));
 }
 
@@ -74,19 +74,14 @@ export function designTokenProjectionProperties(tokens) {
   return Object.freeze(properties.map(Object.freeze));
 }
 
-export function designTokenProjectionSourceIssues(tokens) {
-  const issues = [];
-  const ids = [
-    ...(tokens.colours || []).map((record) => record.id),
-    ...(tokens.dimensions || []).map((record) => record.id),
-    ...(tokens.motion || []).map((record) => record.id),
-  ];
-  const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))].sort();
-  for (const id of duplicateIds) issues.push(`design-token source repeats scalar id ${id}.`);
+function validatePaletteColours(tokens, issues) {
   const colours = new Set((tokens.colours || []).map((record) => record.id));
   for (const palette of tokens.viewPalettes || []) {
     for (const tokenId of palette.tokenIds || []) if (!colours.has(tokenId)) issues.push(`${palette.id} references unknown colour ${tokenId}.`);
   }
+}
+
+function validateProjectedProperties(tokens, issues) {
   let properties = [];
   try { properties = designTokenProjectionProperties(tokens); }
   catch (error) { issues.push(`design-token source cannot be projected: ${error.message}`); }
@@ -96,6 +91,9 @@ export function designTokenProjectionSourceIssues(tokens) {
     if (!/^--mq-conservatory-[a-z0-9-]+$/u.test(record.name)) issues.push(`design-token property ${record.name} escapes the closed namespace grammar.`);
     if (typeof record.value !== "string" || record.value.length === 0 || record.value === "undefined") issues.push(`design-token property ${record.name} has no scalar CSS value.`);
   }
+}
+
+function validateConsumerSourceRecords(tokens, ids, issues) {
   const consumerRecords = tokens.runtimeConsumerContract?.records || [];
   const orderedConsumerRecords = [...consumerRecords].sort((left, right) => left.id.localeCompare(right.id, "en"));
   if (!same(consumerRecords, orderedConsumerRecords)) issues.push("design-token runtime consumer records must be sorted lexicographically by id.");
@@ -109,6 +107,20 @@ export function designTokenProjectionSourceIssues(tokens) {
   for (const record of consumerRecords) {
     for (const tokenId of record.tokenIds || []) if (!scalarIds.has(tokenId)) issues.push(`${record.id} references unknown projected token ${tokenId}.`);
   }
+}
+
+export function designTokenProjectionSourceIssues(tokens) {
+  const issues = [];
+  const ids = [
+    ...(tokens.colours || []).map((record) => record.id),
+    ...(tokens.dimensions || []).map((record) => record.id),
+    ...(tokens.motion || []).map((record) => record.id),
+  ];
+  const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))].sort();
+  for (const id of duplicateIds) issues.push(`design-token source repeats scalar id ${id}.`);
+  validatePaletteColours(tokens, issues);
+  validateProjectedProperties(tokens, issues);
+  validateConsumerSourceRecords(tokens, ids, issues);
   return Object.freeze(issues);
 }
 
@@ -238,7 +250,7 @@ export function expectedRuntimeConsumers(tokens) {
   })).sort((left, right) => `${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.selector}\u0000${right.cssProperty}`, "en"));
 }
 
-export function validateDesignTokenRuntimeConsumers(tokens, source) {
+function validateDesignTokenRuntimeConsumers(tokens, source) {
   const issues = [];
   const markedStyles = functionalArtStyles(source, tokens.runtimeConsumerContract?.styleMarkers);
   if (!markedStyles) return Object.freeze(["index.html must contain exactly the ordered ART-MIG-05 and ART-MIG-06 governed-art style blocks."]);
@@ -275,12 +287,7 @@ function runtimeSourceCanDynamicallyReadOrAuthorCss(source) {
   ].some((pattern) => pattern.test(canonical));
 }
 
-export function validateDesignTokenProjection(tokens, cssBytes, {
-  releaseShell = null,
-  runtimeSources = {},
-} = {}) {
-  const issues = [];
-  issues.push(...designTokenProjectionSourceIssues(tokens));
+function validateProjectionBytes(tokens, cssBytes, issues) {
   const expectedCss = Buffer.from(renderDesignTokenProjectionCss(tokens), "utf8");
   const actualCss = Buffer.from(cssBytes || "");
   const expectedProjection = expectedDesignTokenProjection(tokens);
@@ -289,7 +296,10 @@ export function validateDesignTokenProjection(tokens, cssBytes, {
   const names = designTokenProjectionProperties(tokens).map((record) => record.name);
   if (new Set(names).size !== names.length) issues.push("design-token projection contains a duplicate custom-property name.");
   if (names.some((name) => !name.startsWith(DESIGN_TOKEN_CUSTOM_PROPERTY_PREFIX))) issues.push("design-token projection escaped its collision-safe custom-property namespace.");
+  return expectedProjection;
+}
 
+function validateProjectionRuntimeSources(tokens, runtimeSources, issues) {
   const expectedRuntimePaths = new Set(DESIGN_TOKEN_RUNTIME_CONSUMER_PATHS);
   const observedRuntimePaths = new Set(Object.keys(runtimeSources).map(normalizePath));
   if (!same([...observedRuntimePaths].sort(), [...expectedRuntimePaths].sort())) issues.push("design-token runtime consumer scan did not cover the exact declared path set.");
@@ -301,7 +311,9 @@ export function validateDesignTokenProjection(tokens, cssBytes, {
   }
   const pageText = runtimeSources["index.html"];
   if (typeof pageText !== "string" || !runtimeProjectionLinkIsClosed(pageText)) issues.push("index.html must contain exactly one closed design-token projection stylesheet link.");
+}
 
+function validateProjectionReleaseBinding(releaseShell, expectedProjection, issues) {
   const shellEntry = releaseShell?.entries?.find((entry) => normalizePath(entry.path) === DESIGN_TOKEN_PROJECTION_CSS_PATH);
   if (!shellEntry
       || shellEntry.mime !== "text/css"
@@ -310,6 +322,17 @@ export function validateDesignTokenProjection(tokens, cssBytes, {
       || shellEntry.bytes !== expectedProjection.cssBytes) {
     issues.push("release shell does not bind the exact design-token projection CSS bytes.");
   }
+}
+
+export function validateDesignTokenProjection(tokens, cssBytes, {
+  releaseShell = null,
+  runtimeSources = {},
+} = {}) {
+  const issues = [];
+  issues.push(...designTokenProjectionSourceIssues(tokens));
+  const expectedProjection = validateProjectionBytes(tokens, cssBytes, issues);
+  validateProjectionRuntimeSources(tokens, runtimeSources, issues);
+  validateProjectionReleaseBinding(releaseShell, expectedProjection, issues);
   return Object.freeze(issues);
 }
 

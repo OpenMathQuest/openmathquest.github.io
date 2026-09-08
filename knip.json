@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "audit/*.mjs",
+    "audit/approved-visual-regression.js",
+    "audit/fixtures/*.js",
+    "audit/fixtures/*.mjs",
+    "audit/playwright/*.mjs",
+    "audit/tests/*.mjs",
+    "playwright.config.mjs",
+    "playwright.deep-ux.config.mjs",
+    "playwright.interaction-fuzz.config.mjs",
+    "tools/*.mjs"
+  ],
+  "project": [
+    "audit/**/*.js",
+    "audit/**/*.mjs",
+    "*.config.mjs",
+    "tools/*.mjs"
+  ],
+  "ignoreDependencies": [
+    "@oxc-parser/binding-win32-x64-msvc",
+    "@oxc-resolver/binding-win32-x64-msvc"
+  ]
+}

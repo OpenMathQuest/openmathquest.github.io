@@ -19,13 +19,15 @@ import { normalizeGithubEnforcementSnapshot } from "../verify-github-gate-enforc
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = async (relative) => JSON.parse(await readFile(path.join(root, relative), "utf8"));
 
-test("the gate-integrity policy is closed, ordered, and complete", async () => {
-  const policy = await loadGateIntegrityPolicy();
-  assert.equal(policy.gateFamilies.length, 21);
-  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 21);
+function assertGateRegistry(policy) {
+  assert.equal(policy.gateFamilies.length, 23);
+  assert.equal(new Set(policy.gateFamilies.map((record) => record.negativeControl.id)).size, 23);
   assert.equal(policy.enforcement.requiredPullRequestCheck, "development-checks");
   assert.deepEqual(policy.enforcement.prohibitedRequiredPullRequestChecks, ["full-audit"]);
   assert.equal(policy.retryPolicy.automaticRetries, 0);
+}
+
+function assertExecutionQualification(policy) {
   assert.equal(policy.executionPolicy.local.maximumConcurrentLanes, 1);
   assert.equal(policy.executionPolicy.githubHosted.maximumConcurrentLanes, 2);
   assert.equal(policy.executionPolicy.githubHosted.adoptionStatus, "DISQUALIFIED_MEASURED_QUALIFICATION");
@@ -66,10 +68,20 @@ test("the gate-integrity policy is closed, ordered, and complete", async () => {
   assert.equal(policy.executionPolicy.nestedProcessTimeoutCleanup.coverage, "FULL_TREE_TERMINATION_VERIFIED_BEFORE_SUBSEQUENT_LANES");
   assert.equal(policy.executionPolicy.nestedConcurrency.playwrightWorkers, 1);
   assert.equal(policy.executionPolicy.nestedConcurrency.browserShardMaximumWhenTopLevelParallel, 1);
+}
+
+test("the gate-integrity policy is closed, ordered, and complete", async () => {
+  const policy = await loadGateIntegrityPolicy();
+  assertGateRegistry(policy);
+  assertExecutionQualification(policy);
   assert.equal(ENGINE_BRANCH_COVERAGE_MINIMUM_PERCENT, policy.metricFloors.engineBranchCoverage.minimumPercent);
   assert.equal(REPRESENTATIVE_MUTATION_FAMILY_COUNT, policy.metricFloors.representativeMutationFamilies.denominator);
   assert.equal(GATE_INTEGRITY_POLICY.version, policy.version);
   assert.deepEqual(await validateGateIntegrityPolicySchema(policy), []);
+});
+
+test("the engine branch coverage floor is the ratcheted canonical value", () => {
+  assert.equal(GATE_INTEGRITY_POLICY.metricFloors.engineBranchCoverage.minimumPercent, 89.33);
 });
 
 test("policy mutations cannot weaken status, metric, retry, or family controls", async () => {

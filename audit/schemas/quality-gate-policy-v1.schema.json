@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/schemas/quality-gate-policy-v1.schema.json",
+  "title": "Math Quest refactor quality-gate policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
+  "properties": {
+    "policyId": { "const": "math-quest-refactor-quality-gates" },
+    "version": { "const": "1.3.0" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "ACTIVE" },
+    "authority": { "const": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates" },
+    "baselineCommit": { "const": "2078625b407d5189f579e94e716c86dce86ae90f" },
+    "approvedTutorialMetadataTransition": {
+      "const": {
+        "contractId": "ART_DEC_013_TUTORIAL_METADATA_V1",
+        "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+        "decisionRegisterPath": "audit/art-design-decision-register-v1.json",
+        "decisionId": "ART-DEC-013",
+        "baselineArtDesignSha256": "f0092420a3cfbe9564f16161523cf62b34680f0144d0a1f8ee6dc7eaf15ec70b",
+        "candidateArtDesignSha256": "57f3ba9df84ffe9aa89297b4cc85fa8df97f4f198ff233a8ceddbe6772d32c83",
+        "baselineTutorialSha256": "42993421ce2020d0a2cba0405cf34462d55053f804a7e33620330f52d07b50e8",
+        "candidateTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
+        "manifestChangedPointer": "/artDesignBinding/sha256",
+        "planChangedPointer": "/manifestSha256"
+      }
+    },
+    "runtime": {
+      "const": {
+        "nodeVersion": "24.14.0",
+        "installCommand": "npm.cmd ci --ignore-scripts --omit=optional --no-audit --no-fund"
+      }
+    },
+    "sliceLifecycle": {
+      "const": {
+        "order": ["FOCUSED_DEVELOPMENT", "STAGE_COMPLETE_SLICE", "INDEPENDENT_REVIEW_IF_REQUIRED", "CORRECT_AND_REVERIFY", "FREEZE_EXACT_STAGED_TREE", "FULL_NINE_STAGE_LOOP", "ADVANCE"],
+        "focusedSelectionAuthority": "tools/blast-radius-lookup.mjs",
+        "unknownEffectPolicy": "BROAD_DEVELOPMENT_SUITE",
+        "fullLoopCallerEntryCondition": "CALLER_MUST_SUPPLY_A_REVIEW_CLEAR_COMPLETE_SLICE_WITH_ZERO_UNSTAGED_TRACKED_OR_NONIGNORED_UNTRACKED_PATHS",
+        "fullLoopInvalidation": "ANY_CANDIDATE_CHANGE_REQUIRES_A_NEW_TREE_AND_COMPLETE_LOOP",
+        "releaseCertificationBoundary": "SEPARATE_EXACT_FROZEN_RELEASE_CANDIDATE",
+        "gateAdmissionPolicy": "DEMONSTRATED_UNCOVERED_ESCAPE_REQUIRES_AN_EFFECT_SENSITIVE_CONTROL"
+      }
+    },
+    "candidateBinding": {
+      "const": {
+        "contractId": "STAGED_TREE_CANDIDATE_V1",
+        "fileHashAlgorithm": "SHA-256",
+        "requiredReportFields": ["baselineCommit", "candidateTreeOid", "gateIntegrityPolicySha256", "nodeExecutableSha256", "nodeVersion", "packageLockSha256", "qualityPolicySha256"],
+        "preconditions": ["ZERO_UNSTAGED_TRACKED_PATHS", "ZERO_NONIGNORED_UNTRACKED_PATHS"],
+        "postconditions": ["UNCHANGED_STAGED_TREE_OID", "ZERO_UNSTAGED_TRACKED_PATHS", "ZERO_NONIGNORED_UNTRACKED_PATHS"],
+        "automaticRetryPolicy": "PROHIBITED"
+      }
+    },
+    "aiChangeLoop": {
+      "const": {
+        "order": [
+          "compiler-types",
+          "static-architecture",
+          "tests",
+          "differential-equivalence",
+          "property-fuzz",
+          "mutation",
+          "security-dependencies",
+          "complexity-duplication-size",
+          "performance-budgets"
+        ],
+        "passSemantics": "EVERY_STAGE_MUST_RUN_IN_ORDER_AND_REPORT_PASS_BEFORE_THE_CHANGE_OR_SLICE_MAY_ADVANCE",
+        "stages": [
+          { "id": "compiler-types", "claim": "SOURCE_PARSES_AND_DECLARED_DATA_CONTRACTS_VALIDATE" },
+          { "id": "static-architecture", "claim": "MODULE_DIRECTION_WRITER_OWNERSHIP_AND_PRIVACY_BOUNDARIES_HOLD" },
+          { "id": "tests", "claim": "UNIT_INTEGRATION_AND_EFFECT_SENSITIVE_BEHAVIOUR_PASS" },
+          { "id": "differential-equivalence", "claim": "PRE_REFACTOR_AND_REFACTORED_OBSERVABLE_RESULTS_ARE_EQUIVALENT" },
+          { "id": "property-fuzz", "claim": "BOUNDED_SEEDED_GENERATION_FINDS_NO_INVARIANT_OR_INTERACTION_FAILURE" },
+          { "id": "mutation", "claim": "CURATED_CRITICAL_MUTANTS_ARE_KILLED_BY_INDEPENDENT_ORACLES" },
+          { "id": "security-dependencies", "claim": "SECRETS_STATIC_SECURITY_DEPENDENCY_INTEGRITY_LICENCES_AND_VULNERABILITIES_PASS" },
+          { "id": "complexity-duplication-size", "claim": "COMPLEXITY_DUPLICATION_DEAD_CODE_FUNCTION_AND_FILE_RATCHETS_DO_NOT_WORSEN" },
+          { "id": "performance-budgets", "claim": "SHIPPED_BYTES_AND_MEASURED_RUNTIME_BUDGETS_DO_NOT_REGRESS" }
+        ]
+      }
+    },
+    "qualityToolComponents": { "$ref": "#/$defs/supplyChain/properties/qualityToolComponents" },
+    "supplyChain": { "$ref": "#/$defs/supplyChain" },
+    "analysisRatchets": { "$ref": "#/$defs/analysisRatchets" },
+    "sourceBudgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lineCountContract", "strictMaximumLinesByExtension", "legacyLineRatchets"],
+      "properties": {
+        "lineCountContract": { "const": "UTF8_TEXT_LINES_WITH_CRLF_OR_LF_AND_NO_SYNTHETIC_TRAILING_EMPTY_LINE" },
+        "strictMaximumLinesByExtension": {
+          "const": { ".css": 500, ".html": 600, ".js": 600, ".mjs": 600, ".ps1": 500 }
+        },
+        "legacyLineRatchets": {
+          "type": "array",
+          "maxItems": 25,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "maximumLines"],
+            "properties": {
+              "path": { "type": "string", "pattern": "^(?!/)(?!.*\\\\)[A-Za-z0-9._/-]+$" },
+              "maximumLines": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "performanceBudgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stylesheetMaximumBytes", "javascriptMaximumBytes", "compiledAssetMaximumBytes", "productionPayloadMaximumBytes", "engineScenarioMaximumWallTimeMs", "qualityGateMaximumWallTimeMs"],
+      "properties": {
+        "stylesheetMaximumBytes": { "type": "integer", "minimum": 1 },
+        "javascriptMaximumBytes": { "type": "integer", "minimum": 1 },
+        "compiledAssetMaximumBytes": { "type": "integer", "minimum": 1 },
+        "productionPayloadMaximumBytes": { "type": "integer", "minimum": 1 },
+        "engineScenarioMaximumWallTimeMs": { "type": "integer", "minimum": 1000 },
+        "qualityGateMaximumWallTimeMs": { "type": "integer", "minimum": 1000 }
+      }
+    },
+    "performanceEvidence": {
+      "const": {
+        "applicationMetricsPolicy": "HARD_FAIL_IN_EVERY_ENVIRONMENT",
+        "qualityGateWallTimeMetric": "qualityGateWallTimeMs",
+        "calibratedEnvironmentVariable": "MQ_CALIBRATED_QUALITY_GATE_RUNTIME",
+        "calibratedRequiredValue": "1",
+        "calibratedPolicy": "HARD_FAIL_AT_THE_EXISTING_BUDGET",
+        "uncalibratedPolicy": "MEASURE_AND_REPORT_AS_UNCALIBRATED_ENVIRONMENT_TELEMETRY",
+        "automaticRetryPolicy": "PROHIBITED"
+      }
+    },
+    "finishLine": {
+      "const": {
+        "requiredCheckpointOrder": ["R0", "R1", "R2", "R3", "R4"],
+        "zeroFindingTargets": ["eslintWarnings", "knipUnusedExports", "knipDuplicateExports", "markdownlintFindings", "stylelintFindings", "sourceBudgetFindings", "performanceBudgetFindings"],
+        "driftChain": ["Owners", "Code Map", "Feature Map", "Tutorial Manifest", "Art Design", "Blast Radius", "Gates"],
+        "releaseCertificationBoundary": "DEVELOPMENT_CHECKS_ONLY_UNTIL_A_SEPARATELY_FROZEN_RELEASE_CANDIDATE",
+        "legacyEslintCompletion": "RATCHET_DURING_R2_AND_R3_ZERO_WARNINGS_REQUIRED_AT_R4"
+      }
+    }
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "licence", "resolved", "integrity"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$" },
+        "licence": { "type": "string", "minLength": 1 },
+        "resolved": { "type": "string", "pattern": "^https://registry\\.npmjs\\.org/" },
+        "integrity": { "type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+=*$" }
+      }
+    },
+    "supplyChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packageLockSha256", "packageCountIncludingRoot", "allowedClosureLicences", "licenceMetadataExceptions", "lifecycleScriptExceptions", "dependencyOverrides", "directDependencies"],
+      "properties": {
+        "packageLockSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "packageCountIncludingRoot": { "const": 375 },
+        "allowedClosureLicences": {
+          "const": ["(MIT OR CC0-1.0)", "0BSD", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "BlueOak-1.0.0", "CC-BY-3.0", "CC0-1.0", "ISC", "MIT", "MIT-0", "MPL-2.0", "Python-2.0"]
+        },
+        "licenceMetadataExceptions": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "version", "licence", "reason"],
+              "properties": {
+                "path": { "const": "node_modules/jsonpack" },
+                "version": { "const": "1.1.5" },
+                "licence": { "const": "MIT" },
+                "reason": { "type": "string", "minLength": 80 }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "version", "licence", "reason"],
+              "properties": {
+                "path": { "const": "node_modules/svg-tags" },
+                "version": { "const": "1.0.0" },
+                "licence": { "const": "MIT" },
+                "reason": { "type": "string", "minLength": 80 }
+              }
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "lifecycleScriptExceptions": {
+          "type": "array",
+          "prefixItems": [{
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "version", "optional", "os", "reason"],
+            "properties": {
+              "path": { "const": "node_modules/fsevents" },
+              "version": { "const": "2.3.2" },
+              "optional": { "const": true },
+              "os": { "const": ["darwin"] },
+              "reason": { "type": "string", "minLength": 80 }
+            }
+          }],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "dependencyOverrides": {
+          "type": "array",
+          "prefixItems": [{
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["requester", "dependency", "declaredRange", "version", "licence", "resolved", "integrity", "reason"],
+            "properties": {
+              "requester": { "const": "bundlewatch" },
+              "dependency": { "const": "axios" },
+              "declaredRange": { "const": "^0.31.1" },
+              "version": { "const": "1.20.0" },
+              "licence": { "const": "MIT" },
+              "resolved": { "const": "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz" },
+              "integrity": { "const": "sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==" },
+              "reason": { "type": "string", "minLength": 120 }
+            }
+          }],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "directDependencies": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/dependency" }
+        },
+        "qualityToolComponents": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "packageName", "sourceUrl", "sourceCommit", "licenceEvidence", "scope"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9@.-]+$" },
+              "kind": { "type": "string", "pattern": "^ci-only-[a-z0-9-]+$" },
+              "packageName": { "type": "string", "minLength": 1 },
+              "sourceUrl": { "type": "string", "pattern": "^https://github\\.com/" },
+              "sourceCommit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+              "licenceEvidence": { "type": "string", "pattern": "^https://github\\.com/.+/LICENSE$" },
+              "scope": { "type": "string", "minLength": 24 }
+            }
+          }
+        }
+      }
+    },
+    "functionViolationCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "type": "integer", "minimum": 0 },
+        "abcMagnitude": { "type": "integer", "minimum": 0 },
+        "cognitive": { "type": "integer", "minimum": 0 },
+        "functionLines": { "type": "integer", "minimum": 0 },
+        "maxNesting": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "analysisRatchets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["historicalLintEvidence", "eslintWarningsByRule", "functionQuality", "knip", "markdownlintFindings", "stylelintFindings", "engineBranchCoverageMinimumPercent", "changePolicy"],
+      "properties": {
+        "historicalLintEvidence": {
+          "const": {
+            "status": "OWNER_EXCLUDED_HISTORICAL_EVIDENCE",
+            "approvedDate": "2026-09-04",
+            "missingLocalFile": "ALLOWED_NOT_A_PASS",
+            "changedLocalFile": "FAIL_CLOSED",
+            "recordedWarnings": 53,
+            "records": [
+              {
+                "path": "qa/reviews/visual-interaction/agent-3/run-independent-visual-audit.mjs",
+                "sha256": "bb75d301bb9f27cdf6c4ab320db2b1056fc0cd79a2c9b81a2cb2bf898ce2081d",
+                "warnings": 19
+              },
+              {
+                "path": "qa/reviews/visual-interaction/post-remediation/2026-07-29-blind-child-ui/edge-review.mjs",
+                "sha256": "2bc6584b3e86053a7b46eb161578f7c23c2999c0261b81be9673ec3efe04e91d",
+                "warnings": 15
+              },
+              {
+                "path": "qa/reviews/visual-interaction/post-remediation/final-blind-child-ui/review.mjs",
+                "sha256": "0a52bc9579340826ed90d1c5e695fa58d3fbd81887baff43fb68deeb902df1ad",
+                "warnings": 19
+              }
+            ]
+          }
+        },
+        "eslintWarningsByRule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["complexity", "max-depth", "max-lines-per-function", "max-params", "max-statements", "no-promise-executor-return", "no-unsafe-finally", "no-unused-vars", "no-useless-escape"],
+          "properties": {
+            "complexity": { "type": "integer", "minimum": 0 },
+            "max-depth": { "type": "integer", "minimum": 0 },
+            "max-lines-per-function": { "type": "integer", "minimum": 0 },
+            "max-params": { "type": "integer", "minimum": 0 },
+            "max-statements": { "type": "integer", "minimum": 0 },
+            "no-promise-executor-return": { "type": "integer", "minimum": 0 },
+            "no-unsafe-finally": { "type": "integer", "minimum": 0 },
+            "no-unused-vars": { "type": "integer", "minimum": 0 },
+            "no-useless-escape": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "functionQuality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baselineArtifacts", "newOrMateriallyModifiedLimits", "legacyViolationCeilings"],
+          "properties": {
+            "baselineArtifacts": {
+              "const": {
+                "primary": {
+                  "path": "audit/function-quality-baseline-v1.json",
+                  "sha256": "903a6934fc13086515e3e5d3ed46fd8956f78369ca8380db2b1cbe3863af4049"
+                },
+                "inlineHtmlCorrection": {
+                  "path": "audit/inline-function-quality-baseline-correction-v1.json",
+                  "sha256": "2ac9a34594339c0324237c9abb97d4c487d61012f16f5ad0db592af0da5dbe9d"
+                }
+              }
+            },
+            "newOrMateriallyModifiedLimits": {
+              "const": { "cyclomatic": 10, "abcMagnitude": 30, "cognitive": 15, "functionLines": 80, "maxNesting": 4 }
+            },
+            "legacyViolationCeilings": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["javascript", "javascriptInlineHtml", "powershell"],
+              "properties": {
+                "javascript": { "$ref": "#/$defs/functionViolationCounts" },
+                "javascriptInlineHtml": { "$ref": "#/$defs/functionViolationCounts" },
+                "powershell": { "$ref": "#/$defs/functionViolationCounts" }
+              }
+            }
+          }
+        },
+        "knip": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["unusedFiles", "unusedDependencies", "unusedExports", "duplicateExportGroups"],
+          "properties": {
+            "unusedFiles": { "const": 0 },
+            "unusedDependencies": { "const": 0 },
+            "unusedExports": { "type": "integer", "minimum": 0 },
+            "duplicateExportGroups": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "markdownlintFindings": { "const": 0 },
+        "stylelintFindings": { "const": 0 },
+        "engineBranchCoverageMinimumPercent": { "const": 90.5 },
+        "changePolicy": { "const": "COUNTS_MUST_NOT_INCREASE_AND_RATCHETS_MUST_DECREASE_WITH_EACH_COMPLETED_REFACTOR_SLICE" }
+      }
+    }
+  }
+}

@@ -1,42 +1,25 @@
+import { serviceWorkerFixture } from "./service-worker-fixture.mjs";
+import "./browser-readiness-contract.test.mjs";
+import "./browser-frame-contract.test.mjs";
+import "./browser-runner-lifecycle.test.mjs";
+import "./browser-fixture-contract.test.mjs";
+import { createHtmlSourceExtractor, createSourceExtractor } from "./source-extraction.mjs";
 import assert from "node:assert/strict";
 import { execFile as execFileCallback } from "node:child_process";
-import { createHash } from "node:crypto";
-import {
-  chmod,
-  mkdir,
-  mkdtemp,
-  readFile,
-  readdir,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { createHash, webcrypto } from "node:crypto";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import vm from "node:vm";
-import { webcrypto } from "node:crypto";
 import "./page-adapter-effects.test.mjs";
-import {
-  AUDIT_COMPLETION_EXPRESSION,
-  AUDIT_SERVED_RELATIVE_PATHS,
-  BROWSER_AUDIT_SHARDS,
-  BROWSER_AUDIT_TIMING,
-  EXPECTED_BROWSER_RESULT_IDS,
-  browserLaunchArgs,
-  requestBrowserClose,
-  serveWorkspace,
-  validateBrowserAuditPayload,
-  waitForBrowserCleanup,
-  waitForAuditPageCompletion,
-} from "../lib/browser-smoke.mjs";
-import { loadShippedEngine } from "../lib/engine-loader.mjs";
 import { releaseCertificationRunEligible } from "../lib/gate-integrity-policy.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const pwaStatusSource = await readFile(path.join(root, "assets", "js", "math-quest-pwa-status.js"), "utf8");
 const execFile = promisify(execFileCallback);
-
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -47,6 +30,7 @@ const RELEASE_ENTRY_SPECS = Object.freeze([
   ["./assets/icons/apple-touch-icon.png", "image/png"],
   ["./assets/icons/icon-192.png", "image/png"],
   ["./assets/icons/icon-512.png", "image/png"],
+  ["./assets/js/math-quest-progress-source.js", "text/javascript"], ["./assets/js/math-quest-pwa-status.js", "text/javascript"],
   ["./assets/sounds/close.wav", "audio/wav"],
   ["./assets/sounds/confirm.wav", "audio/wav"],
   ["./assets/sounds/incorrect.wav", "audio/wav"],
@@ -64,6 +48,7 @@ const PAGES_TAGGED_ARTIFACT_SPECS = Object.freeze([
   ["assets/icons/apple-touch-icon.png", "image/png"],
   ["assets/icons/icon-192.png", "image/png"],
   ["assets/icons/icon-512.png", "image/png"],
+  ["assets/js/math-quest-progress-source.js", "text/javascript"], ["assets/js/math-quest-pwa-status.js", "text/javascript"],
   ["assets/sounds/close.wav", "audio/wav"],
   ["assets/sounds/confirm.wav", "audio/wav"],
   ["assets/sounds/incorrect.wav", "audio/wav"],
@@ -96,34 +81,41 @@ function explicitRelativePathArray(source, marker) {
   return [...body.matchAll(/"(\.\/[^"]+)"/gu)].map((match) => match[1]);
 }
 
-function matchingDelimiter(source, openIndex, open, close) {
-  let depth = 0;
-  let quote = null;
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    if (quote) {
-      if (character === "\\") index += 1;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    if (character === close && --depth === 0) return index;
+
+const sourceExtractions = new Map();
+
+function extractionFor(source, sourceType) {
+  const key = sourceType + source;
+  if (!sourceExtractions.has(key)) {
+    sourceExtractions.set(key, sourceType === "html"
+      ? createHtmlSourceExtractor(source)
+      : createSourceExtractor(source, { sourceType }));
   }
-  throw new Error(`unclosed ${open}${close} delimiter`);
+  return sourceExtractions.get(key);
 }
 
-function adapterFunction(adapter, name) {
-  const matches = [...adapter.matchAll(new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu"))];
-  assert.equal(matches.length, 1, `${name} must have one shipped declaration`);
-  const parametersStart = adapter.indexOf("(", matches[0].index);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(matches[0].index, bodyEnd + 1);
+function matchingDelimiter(source, openIndex, open, close) {
+  return extractionFor(source, "module").matchingDelimiter(openIndex, open, close);
+}
+
+function adapterFunction(source, name) {
+  return extractionFor(source, "script").functionDeclaration(name);
+}
+
+function htmlFunction(source, name) {
+  return extractionFor(source, "html").functionDeclaration(name);
+}
+
+function explicitHtmlRelativePathArray(source, marker) {
+  return explicitRelativePathArray(extractionFor(source, "html").scriptContaining(marker), marker);
+}
+
+async function readPwaAdapter() {
+  const page = await readFile(path.join(root, "index.html"), "utf8");
+  const scripts = [...page.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
+    .map((match) => match[1]);
+  assert.equal(scripts.length, 2);
+  return scripts[1];
 }
 
 function adapterPwaStatusFunctions(adapter) {
@@ -132,12 +124,12 @@ function adapterPwaStatusFunctions(adapter) {
   assert.notEqual(start, -1, "the shipped PWA dialog-state boundary must exist");
   assert.notEqual(end, -1, "validateReadiness must have one shipped declaration");
   assert.ok(end > start, "PWA status helpers must precede validateReadiness");
-  return adapter.slice(start, end);
+  return `${pwaStatusSource}\n${adapter.slice(start, end)}`;
 }
 
 test("legacy recovery links remain one-use but the current page exposes no forced-navigation responder", async () => {
   const adapter = await readFile(path.join(root, "index.html"), "utf8");
-  const consumeSource = adapterFunction(adapter, "consumeLegacyBeta1RecoveryMarker");
+  const consumeSource = htmlFunction(adapter, "consumeLegacyBeta1RecoveryMarker");
 
   function consume(href, { replaceThrows = false } = {}) {
     const location = new URL(href);
@@ -217,1285 +209,16 @@ test("generator, worker, page, and browser audit share one exact explicit shell 
     expectedEntries,
   );
   assert.deepEqual(
-    explicitRelativePathArray(page, "PWA_REQUIRED_PATHS=Object.freeze("),
+    explicitHtmlRelativePathArray(page, "PWA_REQUIRED_PATHS=Object.freeze("),
     ["./release-shell-v1.json", ...expectedEntries],
   );
   assert.deepEqual(
-    explicitRelativePathArray(browserAudit, "const expectedShellEntryPaths = Object.freeze("),
+    explicitHtmlRelativePathArray(browserAudit, "const expectedShellEntryPaths = Object.freeze("),
     expectedEntries,
   );
 });
 
-test("browser-audit session fixtures use the shipped active-UI schema and export as valid state", async () => {
-  const [browserAudit, loaded] = await Promise.all([
-    readFile(path.join(root, "audit.html"), "utf8"),
-    loadShippedEngine(new URL("../../index.html", import.meta.url)),
-  ]);
-  const baseUi = vm.runInNewContext(`(${adapterFunction(browserAudit, "baseUi")})`);
-  const activeStateFor = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "activeStateFor")})`,
-    { baseUi },
-  );
-  const { engine } = loaded;
-  const generated = [];
-  for (const skill of engine.SKILLS) {
-    for (const tier of ["EASY", "HARD/TARGET"]) {
-      for (let ordinal = 0; ordinal < 12; ordinal += 1) {
-        const representation = skill.phases.includes("P") ? "PICTORIAL" : "ABSTRACT";
-        generated.push(engine.makeQuestion({
-          skillId: skill.skillId,
-          tier,
-          representation,
-          seed: 1732050807,
-          ordinal,
-          eligibleQuestionOrdinal: ordinal,
-          scheduledReview: false,
-          coldTest: false,
-          preview: false,
-          theme: "ocean",
-          scaffolded: false,
-        }));
-      }
-    }
-  }
-  const fixtures = [
-    ["native selection", generated.find((question) => question.inputClass === "SELECTION")],
-    ["incorrect COUNT_TOUCH", generated.find((question) => question.inputMethod === "COUNT_TOUCH")],
-    ["MQ-048 practice token", generated.find((question) => question.skillId === "MQ-048")],
-  ];
-  for (const [label, question] of fixtures) {
-    assert.ok(question, `${label} fixture must remain generated`);
-    const state = activeStateFor(engine, 20_000, question);
-    assert.equal(engine.validateState(state), null, label);
-    const exported = engine.exportState(state);
-    const restored = engine.loadState(exported, 20_000);
-    assert.equal(restored.ok, true, label);
-    assert.notEqual(restored.state.activeSession, null, label);
-    assert.equal(restored.state.activeSession.uiState.question.questionId, state.activeSession.uiState.question.questionId, label);
-    assert.equal(state.activeSession.uiState.version, engine.CONSTANTS.ACTIVE_UI_VERSION, label);
-    assert.equal(state.activeSession.uiState.tutorialOpen, false, label);
-    assert.equal(state.activeSession.uiState.tutorialStep, 1, label);
-    assert.equal(state.activeSession.uiState.attemptCommitted, true, label);
-  }
-
-  const stale = activeStateFor(engine, 20_000, fixtures[0][1]);
-  stale.activeSession.uiState.version -= 1;
-  assert.equal(engine.validateState(stale), "Invalid active session.");
-  assert.throws(() => engine.exportState(stale), /Invalid active session/u);
-
-  const tutorial = activeStateFor(engine, 20_000, fixtures[0][1], {
-    hintUsed: true,
-    tutorialOpen: true,
-    tutorialStep: 3,
-  });
-  assert.equal(engine.validateState(tutorial), null);
-  assert.equal(tutorial.activeSession.uiState.hintUsed, true);
-  assert.equal(tutorial.activeSession.uiState.tutorialOpen, true);
-  assert.equal(tutorial.activeSession.uiState.tutorialStep, 3);
-
-  const layoutViewportFlowOutcome = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "layoutViewportFlowOutcome")})`,
-  );
-  assert.equal(layoutViewportFlowOutcome({
-    tutorialRequired: false,
-    documentFitsFirstScreen: true,
-    tutorialActionsReachable: false,
-    noNestedTutorialScroll: false,
-  }).pass, true, "ordinary question rows retain the first-screen contract");
-  assert.equal(layoutViewportFlowOutcome({
-    tutorialRequired: false,
-    documentFitsFirstScreen: false,
-    tutorialActionsReachable: true,
-    noNestedTutorialScroll: true,
-  }).pass, false, "ordinary question rows cannot borrow the tutorial outer-scroll exception");
-  const unapprovedTutorialOverflow = layoutViewportFlowOutcome({
-    tutorialRequired: true,
-    documentFitsFirstScreen: false,
-    tutorialActionsReachable: true,
-    noNestedTutorialScroll: true,
-  });
-  assert.equal(unapprovedTutorialOverflow.pass, false, "tutorial rows cannot use unrestricted outer-page scrolling");
-  assert.equal(unapprovedTutorialOverflow.approvedOuterScroll, false, "the diagnostic cannot claim an unapproved outer-scroll exception");
-  const approvedTutorialOverflow = layoutViewportFlowOutcome({
-    tutorialRequired: true,
-    documentFitsFirstScreen: false,
-    tutorialActionsReachable: true,
-    noNestedTutorialScroll: true,
-    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
-    viewportWidth: 844,
-    viewportHeight: 390,
-    laterGradeLargeModel: true,
-  });
-  assert.equal(approvedTutorialOverflow.pass, true, "only the exact later-grade 844x390 large-model exception may use outer-page scrolling");
-  assert.equal(approvedTutorialOverflow.approvedOuterScroll, true, "the diagnostic must report only the exact approved exception");
-  for (const mutation of [
-    { outerScrollException: "OTHER", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: true },
-    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 843, viewportHeight: 390, laterGradeLargeModel: true },
-    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 391, laterGradeLargeModel: true },
-    { outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL", viewportWidth: 844, viewportHeight: 390, laterGradeLargeModel: false },
-  ]) {
-    const outcome = layoutViewportFlowOutcome({
-      tutorialRequired: true,
-      documentFitsFirstScreen: false,
-      tutorialActionsReachable: true,
-      noNestedTutorialScroll: true,
-      ...mutation,
-    });
-    assert.equal(outcome.pass, false, "the short-landscape exception must fail closed when any approved predicate changes");
-    assert.equal(outcome.approvedOuterScroll, false, "a rejected exception cannot be reported as approved");
-  }
-  assert.equal(layoutViewportFlowOutcome({
-    tutorialRequired: true,
-    documentFitsFirstScreen: false,
-    tutorialActionsReachable: false,
-    noNestedTutorialScroll: true,
-    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
-    viewportWidth: 844,
-    viewportHeight: 390,
-    laterGradeLargeModel: true,
-  }).pass, false, "outer flow cannot hide a tutorial action");
-  assert.equal(layoutViewportFlowOutcome({
-    tutorialRequired: true,
-    documentFitsFirstScreen: false,
-    tutorialActionsReachable: true,
-    noNestedTutorialScroll: false,
-    outerScrollException: "LATER_GRADE_844x390_LARGE_MODEL",
-    viewportWidth: 844,
-    viewportHeight: 390,
-    laterGradeLargeModel: true,
-  }).pass, false, "a nested tutorial scroller remains prohibited");
-  assert.match(browserAudit, /const viewportFlow = layoutViewportFlowOutcome\(\{/u,
-    "the rendered BR-21 verdict and diagnostic must use the effect-tested viewport policy outcome");
-  assert.match(browserAudit, /tutorialOuterScrollAllowed: viewportFlow\.approvedOuterScroll/u,
-    "the rendered BR-21 diagnostic must come from the same effect-tested outcome as its verdict");
-  assert.match(browserAudit, /viewportFlowPass: viewportFlow\.pass/u,
-    "the rendered BR-21 pass diagnostic must come from the same effect-tested outcome as its verdict");
-
-  const visibleMetrics = vm.runInNewContext(`(${adapterFunction(browserAudit, "visibleMetrics")})`);
-  const tutorialStep = { fontSize: 14 };
-  const ordinaryHeading = { fontSize: 18 };
-  const metricScenario = {
-    doc: {
-      querySelector() {
-        return {
-          querySelectorAll(selector) {
-            if (selector === "button,input,select") return [];
-            return selector.includes(".tutorial-stepper li")
-              ? [ordinaryHeading, tutorialStep]
-              : [ordinaryHeading];
-          },
-        };
-      },
-    },
-    win: {
-      getComputedStyle(element) {
-        return {
-          display: "block",
-          visibility: "visible",
-          fontSize: `${element.fontSize}px`,
-          fontFamily: "Inter",
-        };
-      },
-    },
-  };
-  for (const element of [ordinaryHeading, tutorialStep]) {
-    element.getBoundingClientRect = () => ({ width: 100, height: 44 });
-  }
-  assert.equal(
-    visibleMetrics(metricScenario, ".tutorial-panel").minFont,
-    14,
-    "BR-21 must measure tutorial step labels so a below-floor label fails the rendered font oracle",
-  );
-
-  const visualAudit = await readFile(path.join(root, "audit", "approved-visual-regression.js"), "utf8");
-  const resetBeforeMeasurement = /await selectCase\(auditCase\);\s*labWindow\.scrollTo\(0, 0\);\s*await pause\(\);/gu;
-  assert.equal(
-    [...visualAudit.matchAll(resetBeforeMeasurement)].length,
-    2,
-    "desktop and mobile layout measurements must start from the top instead of inheriting focus-induced scroll from a prior case",
-  );
-  assert.match(
-    visualAudit,
-    /toggle\.click\(\);\s*await pause\(\);\s*\}\s*labWindow\.scrollTo\(0, 0\);\s*await pause\(\);/u,
-    "opening a teaching model must not leave the following geometry measurement at a focus-induced scroll offset",
-  );
-});
-
-test("hosted browser audit uses bounded real-time CDP completion and preserves workflow headroom", async () => {
-  const workflow = await readFile(path.join(root, ".github", "workflows", "audit.yml"), "utf8");
-  const releaseJob = workflow.split(/^  full-audit:\s*$/mu)[1] || "";
-  const workflowTimeout = Number(releaseJob.match(/^\s*timeout-minutes:\s*(\d+)\s*$/mu)?.[1]);
-  assert.equal(
-    workflowTimeout,
-    BROWSER_AUDIT_TIMING.workflowTimeoutMinutes,
-    "the code policy and hosted workflow must share one reviewed job ceiling",
-  );
-  assert.equal(
-    BROWSER_AUDIT_TIMING.inPageWatchdogMs,
-    2_280_000,
-    "the page must retain the owner-approved doubled 38-minute real-time watchdog",
-  );
-  assert.equal(
-    BROWSER_AUDIT_TIMING.wallTimeoutMs,
-    2_400_000,
-    "the installed-browser controller must retain the doubled 40-minute fail-closed wall ceiling",
-  );
-  assert.ok(
-    BROWSER_AUDIT_TIMING.wallTimeoutMs
-      - BROWSER_AUDIT_TIMING.inPageWatchdogMs >= 120_000,
-    "the fail-closed in-page watchdog must retain at least two real minutes for CDP serialization and shutdown",
-  );
-  assert.ok(
-    BROWSER_AUDIT_TIMING.wallTimeoutMs
-      + BROWSER_AUDIT_TIMING.requiredWorkflowHeadroomMs
-      <= workflowTimeout * 60_000,
-    "the browser wall limit must preserve reviewed setup, reporting, and artifact-upload headroom",
-  );
-
-  const profile = "C:\\audit\\isolated-profile";
-  const url = "http://127.0.0.1:8771/audit.html?autorun=1";
-  const args = browserLaunchArgs({ profile, url });
-  assert.equal(args.some((argument) => argument.startsWith("--virtual-time-budget=")), false);
-  assert.equal(args.includes("--dump-dom"), false);
-  assert.equal(args.includes("--remote-debugging-address=127.0.0.1"), true);
-  assert.equal(args.includes("--remote-debugging-port=0"), true);
-  assert.equal(args.includes(`--user-data-dir=${profile}`), true);
-  assert.equal(
-    args.includes("--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE 127.0.0.1"),
-    true,
-  );
-  for (const argument of [
-    "--disable-background-timer-throttling",
-    "--disable-backgrounding-occluded-windows",
-    "--disable-renderer-backgrounding",
-  ]) {
-    assert.equal(args.includes(argument), true, argument);
-  }
-  assert.equal(args.at(-1), url);
-
-  assert.equal(
-    vm.runInNewContext(AUDIT_COMPLETION_EXPRESSION, { document: { documentElement: null } }),
-    false,
-    "the CDP completion probe must treat a transient document without a root as incomplete instead of throwing",
-  );
-  assert.equal(
-    vm.runInNewContext(AUDIT_COMPLETION_EXPRESSION, {
-      document: { documentElement: { dataset: { auditComplete: "true" } } },
-    }),
-    true,
-    "the same completion probe must still recognize the exact terminal marker",
-  );
-
-  const cleanupWaits = [];
-  await waitForBrowserCleanup(new Promise(() => {}), {
-    remainingMs: () => BROWSER_AUDIT_TIMING.wallTimeoutMs,
-    wait: async (delay) => { cleanupWaits.push(delay); },
-  });
-  assert.deepEqual(
-    cleanupWaits,
-    [BROWSER_AUDIT_TIMING.browserCloseGraceMs],
-    "a CDP/control failure must bound browser-tree cleanup to the reviewed grace period rather than the remaining wall deadline",
-  );
-
-  let completionClock = 0;
-  const completionEffects = [];
-  const completion = await waitForAuditPageCompletion({
-    timeoutMs: 1_000,
-    pollIntervalMs: 250,
-    now: () => completionClock,
-    evaluate: async () => {
-      completionEffects.push(`evaluate:${completionClock}`);
-      return completionClock === 500;
-    },
-    wait: async (delay) => {
-      completionEffects.push(`wait:${delay}`);
-      completionClock += delay;
-    },
-  });
-  assert.deepEqual(completion, { polls: 3, elapsedMs: 500 });
-  assert.deepEqual(completionEffects, [
-    "evaluate:0",
-    "wait:250",
-    "evaluate:250",
-    "wait:250",
-    "evaluate:500",
-  ]);
-  let timeoutClock = 0;
-  await assert.rejects(
-    waitForAuditPageCompletion({
-      timeoutMs: 1_000,
-      pollIntervalMs: 250,
-      now: () => timeoutClock,
-      evaluate: async () => false,
-      wait: async (delay) => { timeoutClock += delay; },
-    }),
-    /did not report completion within 1000 ms/u,
-  );
-  assert.equal(timeoutClock, 1_000);
-
-  const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
-  const watchdogLiteral = browserAudit.match(/const AUDIT_WATCHDOG_MS = ([\d_]+);/u)?.[1];
-  assert.equal(
-    Number(String(watchdogLiteral).replaceAll("_", "")),
-    BROWSER_AUDIT_TIMING.inPageWatchdogMs,
-    "the browser page and installed-browser runner must share one watchdog policy",
-  );
-  const watchdogEffects = [];
-  let watchdogCallback = null;
-  const activeApp = {
-    getAttribute(name) {
-      return name === "aria-busy" ? "true" : null;
-    },
-    childElementCount: 7,
-  };
-  const activeFrame = {
-    title: "active scenario",
-    isConnected: true,
-    getAttribute(name) {
-      return name === "src" ? "index.html?browser-audit=active" : null;
-    },
-    contentDocument: {
-      readyState: "complete",
-      getElementById(id) {
-        return id === "app" ? activeApp : null;
-      },
-    },
-    remove() {
-      watchdogEffects.push("remove");
-    },
-  };
-  const primaryFrame = { src: "index.html" };
-  const armBrowserAuditWatchdog = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "armBrowserAuditWatchdog")})`,
-    {
-      AUDIT_WATCHDOG_MS: BROWSER_AUDIT_TIMING.inPageWatchdogMs,
-      auditFinalized: false,
-      auditProgressMarker: "scenario:mq121-horizontal-containment-help:ready",
-      results: [{ id: "BR-01" }],
-      document: {
-        querySelectorAll(selector) {
-          assert.equal(selector, "iframe");
-          return [activeFrame];
-        },
-      },
-      add(id, title, pass, details) {
-        watchdogEffects.push({
-          id,
-          title,
-          pass,
-          details: JSON.parse(JSON.stringify(details)),
-        });
-      },
-      iframe: primaryFrame,
-      restoreOriginalStorage() {
-        watchdogEffects.push("restore");
-      },
-      renderResults() {
-        watchdogEffects.push("render");
-      },
-      setTimeout(callback, delay) {
-        watchdogCallback = callback;
-        assert.equal(delay, BROWSER_AUDIT_TIMING.inPageWatchdogMs);
-        return 91;
-      },
-    },
-  );
-  assert.equal(armBrowserAuditWatchdog([activeFrame]), 91);
-  assert.equal(typeof watchdogCallback, "function");
-  watchdogCallback();
-  assert.equal(primaryFrame.src, "about:blank");
-  assert.deepEqual(
-    watchdogEffects,
-    [
-      {
-        id: "BR-00",
-        title: "Browser harness completes",
-        pass: false,
-        details: {
-          reason: "The whole-run real-time watchdog expired before the audit completed.",
-          watchdogMs: BROWSER_AUDIT_TIMING.inPageWatchdogMs,
-          completedResults: 1,
-          progressMarker: "scenario:mq121-horizontal-containment-help:ready",
-          activeFrames: [{
-            title: "active scenario",
-            src: "index.html?browser-audit=active",
-            connected: true,
-            documentReadyState: "complete",
-            appBusy: "true",
-            appChildren: 7,
-          }],
-        },
-      },
-      "remove",
-      "restore",
-      "render",
-    ],
-  );
-});
-
-test("browser close and result reconciliation fail closed under hangs and malformed payloads", async (t) => {
-  let closeCalls = 0;
-  const startedAt = Date.now();
-  const close = await requestBrowserClose("ws://127.0.0.1:1/devtools/browser/test", {
-    timeoutMs: 25,
-    connect: async () => ({
-      send: async () => new Promise(() => {}),
-      close() { closeCalls += 1; },
-    }),
-  });
-  assert.equal(close.requested, true);
-  assert.match(close.error, /Browser\.close exceeded 25 ms/u);
-  assert.equal(closeCalls, 1, "the timed-out CDP client is closed exactly once");
-  assert.ok(Date.now() - startedAt < 1_000, "a nonresponsive Browser.close cannot hang the runner");
-
-  const validPayload = () => ({
-    completed: true,
-    generatedAt: "2026-07-30T12:00:00.000Z",
-    shard: "all",
-    results: EXPECTED_BROWSER_RESULT_IDS.map((id) => ({
-      id,
-      title: `Result ${id}`,
-      status: "PASS",
-      details: "",
-    })),
-    fail: 0,
-    skipped: 0,
-  });
-  assert.equal(EXPECTED_BROWSER_RESULT_IDS.length, 72);
-  assert.equal(validateBrowserAuditPayload(validPayload()).valid, true);
-  const shardIds = Object.values(BROWSER_AUDIT_SHARDS).flat();
-  assert.equal(new Set(shardIds).size, 72, "browser shard ids must not overlap");
-  assert.deepEqual(new Set(shardIds), new Set(EXPECTED_BROWSER_RESULT_IDS), "browser shards must exactly partition the closed oracle");
-  for (const [shard, ids] of Object.entries(BROWSER_AUDIT_SHARDS)) {
-    const payload = {
-      ...validPayload(),
-      shard,
-      results: validPayload().results.filter((result) => ids.includes(result.id)),
-    };
-    assert.equal(validateBrowserAuditPayload(payload, { shard }).valid, true, shard);
-    assert.equal(validateBrowserAuditPayload({ ...payload, shard: "all" }, { shard }).valid, false, `${shard} identity is bound`);
-  }
-
-  const rejects = async (name, mutate, expected) => t.test(name, () => {
-    const payload = validPayload();
-    mutate(payload);
-    const validation = validateBrowserAuditPayload(payload);
-    assert.equal(validation.valid, false);
-    assert.match(validation.errors.join("\n"), expected);
-  });
-  await rejects(
-    "duplicate id",
-    (payload) => { payload.results[1].id = payload.results[0].id; },
-    /duplicated|missing/u,
-  );
-  await rejects(
-    "missing result",
-    (payload) => { payload.results.pop(); },
-    /missing|count/u,
-  );
-  await rejects(
-    "unknown id",
-    (payload) => { payload.results[0].id = "BR-99"; },
-    /unknown|missing/u,
-  );
-  await rejects(
-    "malformed result field",
-    (payload) => { payload.results[0].surprise = true; },
-    /closed result schema/u,
-  );
-  await rejects(
-    "unsupported status",
-    (payload) => { payload.results[0].status = "SKIP"; },
-    /invalid status/u,
-  );
-  await rejects(
-    "fabricated aggregate",
-    (payload) => {
-      payload.results[0].status = "FAIL";
-      payload.fail = 0;
-    },
-    /fail count/u,
-  );
-  await rejects(
-    "unknown payload field",
-    (payload) => { payload.surprise = true; },
-    /closed result schema/u,
-  );
-});
-
-test("browser scenarios await settled Home and release the writer lease before iframe removal", async () => {
-  const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
-  const armAuditFrameRemoval = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "armAuditFrameRemoval")})`,
-  );
-  const effects = [];
-  class FrameEvent {
-    constructor(type) {
-      this.type = type;
-    }
-  }
-  const frame = {
-    contentWindow: {
-      Event: FrameEvent,
-      dispatchEvent(event) {
-        effects.push(event.type);
-      },
-    },
-    remove() {
-      effects.push("remove");
-    },
-  };
-  assert.equal(armAuditFrameRemoval(frame), frame);
-  frame.remove();
-  frame.remove();
-  assert.deepEqual(
-    effects,
-    ["pagehide", "remove", "remove"],
-    "pagehide must synchronously release the game's writer lease before the first physical removal",
-  );
-
-  let homeReady = false;
-  const requireScenarioHome = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "requireScenarioHome")})`,
-    {
-      scenarioAppReady: () => homeReady,
-      async waitUntil(predicate) {
-        assert.equal(await predicate(), false, "the transient pre-Home document must not pass");
-        homeReady = true;
-        assert.equal(await predicate(), true, "the settled Home document must pass");
-        return true;
-      },
-    },
-  );
-  const homeFrame = {
-    title: "anonymous first-use",
-    contentDocument: {
-      querySelector(selector) {
-        if (selector === '[data-action="start"]') return homeReady ? {} : null;
-        if (selector === '[data-action="name-skip"]') return homeReady ? null : {};
-        return null;
-      },
-    },
-  };
-  assert.equal(await requireScenarioHome(homeFrame), true);
-
-  const keepAuditFramePainted = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "keepAuditFramePainted")})`,
-  );
-  const paintedScenario = { frame: { style: {} } };
-  keepAuditFramePainted(paintedScenario);
-  assert.deepEqual(
-    paintedScenario.frame.style,
-    { left: "0", opacity: "0.01", zIndex: "9999" },
-  );
-
-  const resizeScenarioSource = adapterFunction(browserAudit, "resizeScenario");
-  assert.match(resizeScenarioSource, /await requireStableRenderedGeometry\(scenario,/u);
-  const resizeEffects = [];
-  let releaseSettlement;
-  let markSettlementStarted;
-  const settlementGate = new Promise((resolve) => { releaseSettlement = resolve; });
-  const settlementStarted = new Promise((resolve) => { markSettlementStarted = resolve; });
-  const resizedScenario = {
-    frame: { style: {} },
-    win: {
-      Event: class { constructor(type) { this.type = type; } },
-      dispatchEvent(event) { resizeEffects.push(event.type); },
-    },
-  };
-  const resizeScenario = vm.runInNewContext(`(${resizeScenarioSource})`, {
-    pause: async () => resizeEffects.push("pause"),
-    requireStableRenderedGeometry: async (candidate, label) => {
-      assert.equal(candidate, resizedScenario);
-      assert.equal(label, "Resized browser audit 844x390");
-      resizeEffects.push("settlement-started");
-      markSettlementStarted();
-      await settlementGate;
-      resizeEffects.push("settled");
-    },
-  });
-  let resizeResolved = false;
-  const pendingResize = resizeScenario(resizedScenario, 844, 390).then(() => {
-    resizeResolved = true;
-    resizeEffects.push("resolved");
-  });
-  await settlementStarted;
-  assert.equal(resizeResolved, false, "resizeScenario must not release its caller before settlement");
-  assert.deepEqual(resizedScenario.frame.style, { width: "844px", height: "390px" });
-  assert.deepEqual(resizeEffects, ["resize", "pause", "pause", "settlement-started"]);
-  releaseSettlement();
-  await pendingResize;
-  assert.equal(resizeResolved, true);
-  assert.deepEqual(resizeEffects, ["resize", "pause", "pause", "settlement-started", "settled", "resolved"]);
-
-  const scenarioFrameSource = adapterFunction(browserAudit, "scenarioFrameBytes");
-  assert.match(scenarioFrameSource, /armAuditFrameRemoval\(frame\)/u);
-  const bootEffects = [];
-  const bootFrame = {
-    style: {},
-    contentDocument: {},
-    contentWindow: {},
-    remove() {
-      bootEffects.push("remove");
-    },
-  };
-  let failBoot = false;
-  const scenarioFrameContext = {
-    auditProgressMarker: "initializing",
-    TEST_SAVE_KEY: "test-progress",
-    auditWriterBarrier: async () => bootEffects.push("barrier"),
-    localStorage: {
-      setItem(key, value) {
-        bootEffects.push(`stored:${key}:${value}`);
-      },
-    },
-    document: {
-      createElement(tag) {
-        assert.equal(tag, "iframe");
-        return bootFrame;
-      },
-      body: {
-        append(candidate) {
-          assert.equal(candidate, bootFrame);
-          bootEffects.push("append");
-        },
-      },
-    },
-    armAuditFrameRemoval(candidate) {
-      assert.equal(candidate, bootFrame);
-      bootEffects.push("armed");
-    },
-    keepAuditFramePainted,
-    async waitFrame(candidate) {
-      assert.equal(candidate, bootFrame);
-      assert.equal(candidate.style.left, "0");
-      assert.equal(candidate.style.opacity, "0.01");
-      assert.equal(candidate.style.zIndex, "9999");
-      bootEffects.push("waited-while-painted");
-      if (failBoot) throw new Error("boot-failure");
-    },
-    pause: async () => bootEffects.push("paused"),
-    requireScenarioAppReady: async (candidate) => {
-      assert.equal(candidate, bootFrame);
-      bootEffects.push("ready");
-    },
-    requireStableRenderedGeometry: async (scenario, label) => {
-      assert.equal(scenario.frame, bootFrame);
-      assert.equal(scenario.doc, bootFrame.contentDocument);
-      assert.equal(scenario.win, bootFrame.contentWindow);
-      assert.equal(label, bootFrame.title);
-      bootEffects.push("settled");
-    },
-  };
-  const scenarioFrameBytes = vm.runInNewContext(
-    `(${scenarioFrameSource})`,
-    scenarioFrameContext,
-  );
-  const bootedScenario = await scenarioFrameBytes("paintable-boot", "bytes", 390, 844);
-  assert.equal(bootedScenario.frame, bootFrame);
-  assert.equal(scenarioFrameContext.auditProgressMarker, "scenario:paintable-boot:ready");
-  assert.deepEqual(
-    bootEffects,
-    [
-      "barrier",
-      "stored:test-progress:bytes",
-      "armed",
-      "append",
-      "waited-while-painted",
-      "paused",
-      "ready",
-      "settled",
-    ],
-  );
-  failBoot = true;
-  const failedBootStart = bootEffects.length;
-  await assert.rejects(
-    scenarioFrameBytes("failed-boot", "bad-bytes"),
-    /boot-failure/u,
-  );
-  assert.equal(scenarioFrameContext.auditProgressMarker, "scenario:failed-boot:failed");
-  assert.deepEqual(
-    bootEffects.slice(failedBootStart),
-    [
-      "barrier",
-      "stored:test-progress:bad-bytes",
-      "armed",
-      "append",
-      "waited-while-painted",
-      "remove",
-    ],
-    "a failed boot must execute the same lease-releasing frame cleanup",
-  );
-  assert.match(
-    browserAudit,
-    /const homeAfterSkip = await requireScenarioHome\(\s*anonymousScenario\.frame,/u,
-  );
-});
-
-test("browser audit rejects safe-boundary navigation and opens only the bound physical cache", async () => {
-  const browserAudit = await readFile(path.join(root, "audit.html"), "utf8");
-  const waitForNavigation = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "waitForScenarioNavigation")})`,
-    {
-      scenarioAppReady: () => true,
-      waitUntil: async (predicate) => {
-        assert.equal(await predicate(), false, "the pre-navigation document must not satisfy readiness");
-        scenario.doc = restoredDocument;
-        return predicate();
-      },
-    },
-  );
-  const initialDocument = {};
-  const restoredDocument = {};
-  const scenario = { doc: initialDocument, frame: {} };
-  assert.equal(
-    await waitForNavigation(
-      scenario,
-      initialDocument,
-      (candidate) => candidate.doc === restoredDocument ? "restored" : false,
-    ),
-    "restored",
-  );
-  const observeNavigationQuiet = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "observeScenarioNavigationQuiet")})`,
-    { setTimeout },
-  );
-  const listeners = new Set();
-  const stableDocument = {};
-  const quietScenario = {
-    doc: stableDocument,
-    frame: {
-      addEventListener(type, listener) {
-        assert.equal(type, "load");
-        listeners.add(listener);
-      },
-      removeEventListener(type, listener) {
-        assert.equal(type, "load");
-        listeners.delete(listener);
-      },
-    },
-  };
-  assert.equal(await observeNavigationQuiet(quietScenario, stableDocument, () => {}, 5), false);
-  assert.equal(listeners.size, 0, "the bounded quiet observation must remove its listener");
-  assert.equal(await observeNavigationQuiet(quietScenario, stableDocument, () => {
-    setTimeout(() => {
-      quietScenario.doc = {};
-      for (const listener of listeners) listener();
-    }, 1);
-  }, 10), true);
-  assert.equal(listeners.size, 0, "navigation observation must also remove its listener");
-
-  const readinessReply = { type: "MATH_QUEST_READINESS_V1", ready: true };
-  class FakeMessageChannel {
-    constructor() {
-      const port1 = {
-        onmessage: null,
-        onmessageerror: null,
-        close() { this.closed = true; },
-      };
-      this.port1 = port1;
-      this.port2 = {
-        reply(value) { queueMicrotask(() => port1.onmessage?.({ data: value })); },
-      };
-    }
-  }
-  const controller = {
-    postMessage(message, ports) {
-      assert.equal(message.type, "MATH_QUEST_GET_READINESS_V1");
-      assert.equal(Object.keys(message).join(","), "type");
-      assert.equal(ports.length, 1);
-      ports[0].reply(readinessReply);
-    },
-  };
-  const registration = { active: controller };
-  const queryReadiness = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "queryBrowserPwaReadiness")})`,
-  );
-  const queried = await queryReadiness({
-    navigator: {
-      serviceWorker: {
-        ready: Promise.resolve(registration),
-        controller,
-        addEventListener() {},
-        removeEventListener() {},
-      },
-    },
-    MessageChannel: FakeMessageChannel,
-    setTimeout,
-    clearTimeout,
-  });
-  assert.equal(queried.registration, registration);
-  assert.equal(queried.controller, controller);
-  assert.equal(queried.readinessWorker, controller);
-  assert.equal(queried.readiness, readinessReply);
-
-  await assert.rejects(
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: new Promise(() => {}),
-          controller: null,
-          addEventListener() {},
-          removeEventListener() {},
-        },
-      },
-      MessageChannel: FakeMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 5),
-    (error) => {
-      assert.match(error.message, /service worker registration readiness timed out after 5 ms/u);
-      assert.equal(error.code, "PWA_READINESS_STAGE_TIMEOUT");
-      assert.equal(error.stage, "service-worker-ready");
-      assert.equal(error.timedOut, true);
-      assert.equal(error.timeoutMs, 5);
-      return true;
-    },
-  );
-
-  const activeWorkerWithoutController = await queryReadiness({
-    navigator: {
-      serviceWorker: {
-        ready: Promise.resolve(registration),
-        controller: null,
-        addEventListener() { throw new Error("controllerchange must not be required"); },
-        removeEventListener() { throw new Error("controllerchange must not be required"); },
-      },
-    },
-    MessageChannel: FakeMessageChannel,
-    setTimeout,
-    clearTimeout,
-  }, 25);
-  assert.equal(activeWorkerWithoutController.controller, null);
-  assert.equal(activeWorkerWithoutController.readinessWorker, controller);
-  assert.equal(activeWorkerWithoutController.readiness, readinessReply);
-
-  let readinessPortClosed = false;
-  class SilentMessageChannel {
-    constructor() {
-      this.port1 = {
-        onmessage: null,
-        onmessageerror: null,
-        close() { readinessPortClosed = true; },
-      };
-      this.port2 = {};
-    }
-  }
-  await assert.rejects(
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: Promise.resolve(registration),
-          controller: { postMessage() {} },
-          addEventListener() {},
-          removeEventListener() {},
-        },
-      },
-      MessageChannel: SilentMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 5),
-    (error) => {
-      assert.match(error.message, /service worker readiness response timed out after 5 ms/u);
-      assert.equal(error.code, "PWA_READINESS_STAGE_TIMEOUT");
-      assert.equal(error.stage, "readiness-message");
-      assert.equal(error.timedOut, true);
-      assert.equal(error.timeoutMs, 5);
-      return true;
-    },
-  );
-  assert.equal(readinessPortClosed, true, "a timed-out readiness channel must be closed");
-
-  await assert.rejects(
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: Promise.reject(new Error("registration unavailable")),
-          controller: null,
-          addEventListener() {},
-          removeEventListener() {},
-        },
-      },
-      MessageChannel: FakeMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 25),
-    (error) => {
-      assert.equal(error.code, "PWA_READINESS_STAGE_FAILED");
-      assert.equal(error.stage, "service-worker-ready");
-      assert.equal(error.timedOut, false);
-      assert.match(error.message, /registration unavailable/u);
-      return true;
-    },
-  );
-
-  class ThrowingCloseMessageChannel {
-    constructor() {
-      this.port1 = {
-        onmessage: null,
-        onmessageerror: null,
-        close() { throw new Error("readiness channel cleanup failed"); },
-      };
-      this.port2 = {};
-    }
-  }
-  const cleanupDoesNotHang = Promise.race([
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: Promise.resolve(registration),
-          controller: { postMessage() {} },
-          addEventListener() {},
-          removeEventListener() {},
-        },
-      },
-      MessageChannel: ThrowingCloseMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 5),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("cleanup test guard expired")), 100)),
-  ]);
-  await assert.rejects(cleanupDoesNotHang, (error) => {
-    assert.equal(error.code, "PWA_READINESS_STAGE_TIMEOUT");
-    assert.equal(error.stage, "readiness-message");
-    assert.match(error.message, /readiness channel cleanup failed/u);
-    return true;
-  });
-
-  await assert.rejects(
-    queryReadiness({
-      navigator: {
-        serviceWorker: {
-          ready: Promise.resolve({ active: null }),
-          controller: null,
-        },
-      },
-      MessageChannel: FakeMessageChannel,
-      setTimeout,
-      clearTimeout,
-    }, 25),
-    (error) => {
-      assert.equal(error.code, "PWA_READINESS_STAGE_FAILED");
-      assert.equal(error.stage, "readiness-worker");
-      assert.equal(error.timedOut, false);
-      assert.match(error.message, /no active service worker can answer readiness/u);
-      return true;
-    },
-  );
-
-  const dispatchKey = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "dispatchKey")})`,
-  );
-  let dispatchedTarget = null;
-  const fakeDocument = {
-    activeElement: null,
-    documentElement: {},
-    body: {
-      dispatchEvent() { throw new Error("body must not receive the shortcut"); },
-    },
-    getElementById(id) { return id === "app" ? app : null; },
-  };
-  const app = {
-    focus() { fakeDocument.activeElement = app; },
-    dispatchEvent(event) {
-      dispatchedTarget = app;
-      assert.equal(event.key, "Enter");
-      return true;
-    },
-  };
-  const nativeButton = {
-    dispatchEvent(event) {
-      dispatchedTarget = nativeButton;
-      assert.equal(event.key, "Enter");
-      return true;
-    },
-  };
-  fakeDocument.activeElement = nativeButton;
-  class FakeKeyboardEvent {
-    constructor(type, options) {
-      this.type = type;
-      this.defaultPrevented = false;
-      Object.assign(this, options);
-    }
-  }
-  const shortcut = dispatchKey(
-    { doc: fakeDocument, win: { KeyboardEvent: FakeKeyboardEvent } },
-    "Enter",
-  );
-  assert.equal(shortcut.target, nativeButton);
-  assert.equal(dispatchedTarget, nativeButton);
-  assert.equal(fakeDocument.activeElement, nativeButton);
-
-  const physicalCacheNames = vm.runInNewContext(
-    `(${adapterFunction(browserAudit, "pwaPhysicalCacheNames")})`,
-  );
-  const logicalIdentity = "math-quest-static-v1.0.0-beta.8";
-  const manifestSha = "a".repeat(64);
-  const physicalName = `${logicalIdentity}-${manifestSha}`;
-  assert.deepEqual(
-    [...physicalCacheNames(logicalIdentity, [
-      logicalIdentity,
-      physicalName,
-      `${physicalName}-staging`,
-      `math-quest-static-v1.0.0-beta.1-${manifestSha}`,
-    ])],
-    [physicalName],
-  );
-  assert.deepEqual(
-    [...physicalCacheNames(logicalIdentity, [
-      physicalName,
-      `${logicalIdentity}-${"b".repeat(64)}`,
-    ])],
-    [physicalName, `${logicalIdentity}-${"b".repeat(64)}`],
-  );
-  assert.deepEqual(
-    [...physicalCacheNames("math-quest-static-v1.0.0-beta.1", [physicalName])],
-    [],
-  );
-  assert.doesNotMatch(
-    browserAudit,
-    /await waitForScenarioNavigation\(\s*placementScenario,\s*boundaryDocumentBeforePause,/u,
-  );
-  assert.match(browserAudit, /boundaryNavigationObserved = await observeScenarioNavigationQuiet\(/u);
-  assert.match(browserAudit, /explicitResumeButton\s*&&\s*!boundaryNavigationObserved\s*&&\s*boundaryDraftRestored/u);
-  assert.match(browserAudit, /placementScenario\.doc === boundaryDocumentBeforePause[\s\S]{0,500}\[data-question-id="\$\{boundaryQuestionId\}"\][\s\S]{0,500}=== boundaryQuestionId[\s\S]{0,500}=== boundaryDraftBeforePause/u);
-  assert.doesNotMatch(browserAudit, /physical-done|shortcutTarget/u);
-  assert.match(
-    browserAudit,
-    /const pwaReadinessPromise = queryBrowserPwaReadiness\(win\)\.then\(/u,
-  );
-  assert.match(browserAudit, /const pwaReadiness = await pwaReadinessPromise;/u);
-  assert.match(
-    browserAudit,
-    /matchingCacheStorageNames\.length === 1\s*\?\s*matchingCacheStorageNames\[0\]/u,
-  );
-  assert.match(browserAudit, /shellManifestSha === cacheStorageManifestSha/u);
-  assert.doesNotMatch(browserAudit, /win\.caches\.open\(cacheIdentity\)/u);
-  assert.doesNotMatch(browserAudit, /fetch\("\.\/sw\.js"/u);
-  assert.match(browserAudit, /queryBrowserPwaReadiness\(hostWindow, timeoutMs = 8000\)/u);
-  assert.ok(
-    browserAudit.indexOf('add("BR-24"') < browserAudit.indexOf("const visualRegression ="),
-    "BR-24 must record its bounded verdict before later visual/profile checks run",
-  );
-});
-
-test("the real browser-smoke server emits the verified legal-document MIME types", async () => {
-  const requests = [];
-  const server = serveWorkspace(root, requests);
-  try {
-    await new Promise((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", resolve);
-    });
-    const address = server.address();
-    assert.ok(address && typeof address !== "string");
-    const origin = `http://127.0.0.1:${address.port}`;
-    for (const documentPath of ["/PRIVACY.md", "/THIRD_PARTY_NOTICES.md"]) {
-      const response = await fetch(`${origin}${documentPath}`);
-      assert.equal(response.status, 200, documentPath);
-      assert.equal(
-        String(response.headers.get("content-type")).split(";", 1)[0],
-        "text/markdown",
-        documentPath,
-      );
-      const expected = await readFile(path.join(root, documentPath.slice(1)));
-      assert.equal(
-        sha256(Buffer.from(await response.arrayBuffer())),
-        sha256(expected),
-        documentPath,
-      );
-    }
-    assert.deepEqual(
-      requests.map((request) => request.pathname),
-      ["/PRIVACY.md", "/THIRD_PARTY_NOTICES.md"],
-    );
-  } finally {
-    if (server.listening) {
-      await new Promise((resolve) => server.close(resolve));
-    }
-  }
-});
-
-test("every expected static browser-audit request is a real 200 response", async () => {
-  const requests = [];
-  const server = serveWorkspace(root, requests);
-  try {
-    await new Promise((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", resolve);
-    });
-    const address = server.address();
-    assert.ok(address && typeof address !== "string");
-    const origin = `http://127.0.0.1:${address.port}`;
-    for (const relative of AUDIT_SERVED_RELATIVE_PATHS) {
-      const response = await fetch(`${origin}/${relative}`);
-      assert.equal(response.status, 200, relative);
-      assert.ok(response.headers.get("content-type"), relative);
-    }
-    const absentFavicon = await fetch(`${origin}/favicon.ico`);
-    assert.equal(absentFavicon.status, 204);
-  } finally {
-    if (server.listening) await new Promise((resolve) => server.close(resolve));
-  }
-});
-
-test("the generator prepares a self-consistent candidate without mutating the frozen shell", async () => {
-  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "math-quest-pwa-prepare-"));
-  const preparedDirectory = path.join(temporaryRoot, "prepared");
-  const manifestPath = path.join(root, "release-shell-v1.json");
-  const workerPath = path.join(root, "sw.js");
-  const [originalManifest, originalWorker] = await Promise.all([
-    readFile(manifestPath),
-    readFile(workerPath),
-  ]);
-  try {
-    await assert.rejects(
-      execFile(process.execPath, [
-        path.join(root, "tools", "build-pwa-release-manifest.mjs"),
-      ], { cwd: root }),
-      /Usage:.*--write/isu,
-      "freezing the repository must require an explicit --write mode",
-    );
-    const result = await execFile(process.execPath, [
-      path.join(root, "tools", "build-pwa-release-manifest.mjs"),
-      "--prepare-directory",
-      preparedDirectory,
-    ], { cwd: root });
-    assert.match(result.stdout, /Prepared release-shell-v1\.json and bound sw\.js/u);
-    assert.deepEqual(
-      (await readdir(preparedDirectory)).sort(),
-      ["release-shell-v1.json", "sw.js"],
-    );
-    const [preparedManifestText, preparedWorker] = await Promise.all([
-      readFile(path.join(preparedDirectory, "release-shell-v1.json"), "utf8"),
-      readFile(path.join(preparedDirectory, "sw.js"), "utf8"),
-    ]);
-    const preparedManifest = JSON.parse(preparedManifestText);
-    assert.deepEqual(
-      {
-        schemaVersion: preparedManifest.schemaVersion,
-        release: preparedManifest.release,
-        buildId: preparedManifest.buildId,
-        cacheName: preparedManifest.cacheName,
-        entryPath: preparedManifest.entryPath,
-        excludedPaths: preparedManifest.excludedPaths,
-      },
-      {
-        schemaVersion: 1,
-        release: "1.0.0-beta.8",
-        buildId: "math-quest-pwa-v1.0.0-beta.8",
-        cacheName: "math-quest-static-v1.0.0-beta.8",
-        entryPath: "./index.html",
-        excludedPaths: ["./release-shell-v1.json", "./sw.js"],
-      },
-    );
-    assert.deepEqual(
-      preparedManifest.entries.map((entry) => [entry.path, entry.mime]),
-      RELEASE_ENTRY_SPECS,
-    );
-    for (const entry of preparedManifest.entries) {
-      const bytes = await readFile(path.join(root, entry.path.slice(2)));
-      assert.equal(entry.bytes, bytes.byteLength, entry.path);
-      assert.equal(entry.sha256, sha256(bytes), entry.path);
-      assert.equal(entry.status, 200, entry.path);
-    }
-    const manifestHash = sha256(Buffer.from(preparedManifestText, "utf8"));
-    assert.match(
-      preparedWorker,
-      new RegExp(`const RELEASE_MANIFEST_SHA256 = "${manifestHash}";`, "u"),
-    );
-    assert.doesNotMatch(preparedWorker, /KNOWN_OBSOLETE_CACHES|clients\.claim\(\)/u,
-      "a prepared worker must not claim or remove storage beneath another open release");
-    await assert.rejects(
-      execFile(process.execPath, [
-        path.join(root, "tools", "build-pwa-release-manifest.mjs"),
-        "--prepare-directory",
-        preparedDirectory,
-      ], { cwd: root }),
-      /EEXIST|already exists/iu,
-      "preparation must not overwrite an earlier review candidate",
-    );
-    const guardedDirectory = path.join(temporaryRoot, "guarded");
-    await mkdir(guardedDirectory);
-    const guardedWorkerPath = path.join(guardedDirectory, "sw.js");
-    await writeFile(guardedWorkerPath, "do-not-overwrite\n", "utf8");
-    await assert.rejects(
-      execFile(process.execPath, [
-        path.join(root, "tools", "build-pwa-release-manifest.mjs"),
-        "--prepare-directory",
-        guardedDirectory,
-      ], { cwd: root }),
-      /already exists/iu,
-    );
-    assert.equal(await readFile(guardedWorkerPath, "utf8"), "do-not-overwrite\n");
-    await assert.rejects(
-      readFile(path.join(guardedDirectory, "release-shell-v1.json")),
-      { code: "ENOENT" },
-      "preflight must not create one file beside an occupied target",
-    );
-
-    const freezeFixture = path.join(temporaryRoot, "freeze-fixture");
-    const fixtureToolPath = path.join(
-      freezeFixture,
-      "tools",
-      "build-pwa-release-manifest.mjs",
-    );
-    await mkdir(path.dirname(fixtureToolPath), { recursive: true });
-    await writeFile(
-      fixtureToolPath,
-      await readFile(path.join(root, "tools", "build-pwa-release-manifest.mjs")),
-    );
-    await writeFile(path.join(freezeFixture, "sw.js"), originalWorker);
-    await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.8\n", "utf8");
-    for (const [entryPath] of RELEASE_ENTRY_SPECS) {
-      const destination = path.join(freezeFixture, entryPath.slice(2));
-      await mkdir(path.dirname(destination), { recursive: true });
-      await writeFile(destination, await readFile(path.join(root, entryPath.slice(2))));
-    }
-
-    await execFile(process.execPath, [fixtureToolPath, "--write"], { cwd: freezeFixture });
-    await execFile(process.execPath, [fixtureToolPath, "--check"], { cwd: freezeFixture });
-    const firstFrozenManifest = await readFile(
-      path.join(freezeFixture, "release-shell-v1.json"),
-      "utf8",
-    );
-    const firstFrozenHash = sha256(Buffer.from(firstFrozenManifest, "utf8"));
-    await writeFile(
-      path.join(freezeFixture, "PRIVACY.md"),
-      Buffer.concat([
-        await readFile(path.join(freezeFixture, "PRIVACY.md")),
-        Buffer.from("\nDisposable second generation.\n", "utf8"),
-      ]),
-    );
-    await execFile(process.execPath, [fixtureToolPath, "--write"], { cwd: freezeFixture });
-    await execFile(process.execPath, [fixtureToolPath, "--check"], { cwd: freezeFixture });
-    const secondFrozenManifest = await readFile(
-      path.join(freezeFixture, "release-shell-v1.json"),
-      "utf8",
-    );
-    const secondFrozenHash = sha256(Buffer.from(secondFrozenManifest, "utf8"));
-    assert.notEqual(secondFrozenHash, firstFrozenHash);
-    const secondFrozenWorker = await readFile(path.join(freezeFixture, "sw.js"), "utf8");
-    assert.match(secondFrozenWorker,
-      new RegExp(`const RELEASE_MANIFEST_SHA256 = "${secondFrozenHash}";`, "u"));
-    assert.doesNotMatch(secondFrozenWorker, new RegExp(firstFrozenHash, "u"),
-      "a new manifest binding must not turn the prior release cache into a deletion target");
-    assert.doesNotMatch(secondFrozenWorker, /KNOWN_OBSOLETE_CACHES|clients\.claim\(\)/u);
-    assert.deepEqual(await readFile(manifestPath), originalManifest);
-    assert.deepEqual(await readFile(workerPath), originalWorker);
-  } finally {
-    await rm(temporaryRoot, { recursive: true, force: true });
-  }
-});
-
-test("Beta 8 release-shell manifest binds every declared byte", async () => {
-  const [text, worker] = await Promise.all([
-    readFile(path.join(root, "release-shell-v1.json"), "utf8"),
-    readFile(path.join(root, "sw.js"), "utf8"),
-  ]);
-  assert.equal(text.endsWith("\n"), true);
-  assert.equal(text.includes("\r"), false);
-  const manifest = JSON.parse(text);
+function assertReleaseManifestIdentity(manifest) {
   assert.deepEqual(
     {
       schemaVersion: manifest.schemaVersion,
@@ -1507,13 +230,168 @@ test("Beta 8 release-shell manifest binds every declared byte", async () => {
     },
     {
       schemaVersion: 1,
-      release: "1.0.0-beta.8",
-      buildId: "math-quest-pwa-v1.0.0-beta.8",
-      cacheName: "math-quest-static-v1.0.0-beta.8",
+      release: "1.0.0-beta.9",
+      buildId: "math-quest-pwa-v1.0.0-beta.9",
+      cacheName: "math-quest-static-v1.0.0-beta.9",
       entryPath: "./index.html",
       excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     },
   );
+}
+
+async function assertPreparedRelease(preparedManifestText, preparedWorker) {
+  const preparedManifest = JSON.parse(preparedManifestText);
+  assertReleaseManifestIdentity(preparedManifest);
+  assert.deepEqual(
+    preparedManifest.entries.map((entry) => [entry.path, entry.mime]),
+    RELEASE_ENTRY_SPECS,
+  );
+  for (const entry of preparedManifest.entries) {
+    const bytes = await readFile(path.join(root, entry.path.slice(2)));
+    assert.equal(entry.bytes, bytes.byteLength, entry.path);
+    assert.equal(entry.sha256, sha256(bytes), entry.path);
+    assert.equal(entry.status, 200, entry.path);
+  }
+  const manifestHash = sha256(Buffer.from(preparedManifestText, "utf8"));
+  assert.match(
+    preparedWorker,
+    new RegExp(`const RELEASE_MANIFEST_SHA256 = "${manifestHash}";`, "u"),
+  );
+  assert.doesNotMatch(preparedWorker, /KNOWN_OBSOLETE_CACHES|clients\.claim\(\)/u,
+    "a prepared worker must not claim or remove storage beneath another open release");
+}
+
+async function assertPreparationPreservesOccupiedTargets(temporaryRoot, preparedDirectory) {
+  await assert.rejects(
+    execFile(process.execPath, [
+      path.join(root, "tools", "build-pwa-release-manifest.mjs"),
+      "--prepare-directory",
+      preparedDirectory,
+    ], { cwd: root }),
+    /EEXIST|already exists/iu,
+    "preparation must not overwrite an earlier review candidate",
+  );
+  const guardedDirectory = path.join(temporaryRoot, "guarded");
+  await mkdir(guardedDirectory);
+  const guardedWorkerPath = path.join(guardedDirectory, "sw.js");
+  await writeFile(guardedWorkerPath, "do-not-overwrite\n", "utf8");
+  await assert.rejects(
+    execFile(process.execPath, [
+      path.join(root, "tools", "build-pwa-release-manifest.mjs"),
+      "--prepare-directory",
+      guardedDirectory,
+    ], { cwd: root }),
+    /already exists/iu,
+  );
+  assert.equal(await readFile(guardedWorkerPath, "utf8"), "do-not-overwrite\n");
+  await assert.rejects(
+    readFile(path.join(guardedDirectory, "release-shell-v1.json")),
+    { code: "ENOENT" },
+    "preflight must not create one file beside an occupied target",
+  );
+}
+
+async function copyFrozenEntryInputs(freezeFixture) {
+  for (const [entryPath] of RELEASE_ENTRY_SPECS) {
+    const destination = path.join(freezeFixture, entryPath.slice(2));
+    await mkdir(path.dirname(destination), { recursive: true });
+    await writeFile(destination, await readFile(path.join(root, entryPath.slice(2))));
+  }
+
+}
+
+async function createFreezeFixture(temporaryRoot, originalWorker) {
+  const freezeFixture = path.join(temporaryRoot, "freeze-fixture");
+  const fixtureToolPath = path.join(
+    freezeFixture,
+    "tools",
+    "build-pwa-release-manifest.mjs",
+  );
+  await mkdir(path.dirname(fixtureToolPath), { recursive: true });
+  await writeFile(
+    fixtureToolPath,
+    await readFile(path.join(root, "tools", "build-pwa-release-manifest.mjs")),
+  );
+  await writeFile(path.join(freezeFixture, "sw.js"), originalWorker);
+  await writeFile(path.join(freezeFixture, "VERSION"), "1.0.0-beta.9\n", "utf8");
+  await copyFrozenEntryInputs(freezeFixture);
+  return { freezeFixture, fixtureToolPath };
+}
+
+async function freezeAndReadManifest(freezeFixture, fixtureToolPath) {
+  await execFile(process.execPath, [fixtureToolPath, "--write"], { cwd: freezeFixture });
+  await execFile(process.execPath, [fixtureToolPath, "--check"], { cwd: freezeFixture });
+  return readFile(path.join(freezeFixture, "release-shell-v1.json"), "utf8");
+}
+
+async function assertRepeatedFreezeBinding(temporaryRoot, originalWorker) {
+  const { freezeFixture, fixtureToolPath } = await createFreezeFixture(temporaryRoot, originalWorker);
+  const firstFrozenManifest = await freezeAndReadManifest(freezeFixture, fixtureToolPath);
+  const firstFrozenHash = sha256(Buffer.from(firstFrozenManifest, "utf8"));
+  await writeFile(
+    path.join(freezeFixture, "PRIVACY.md"),
+    Buffer.concat([
+      await readFile(path.join(freezeFixture, "PRIVACY.md")),
+      Buffer.from("\nDisposable second generation.\n", "utf8"),
+    ]),
+  );
+  const secondFrozenManifest = await freezeAndReadManifest(freezeFixture, fixtureToolPath);
+  const secondFrozenHash = sha256(Buffer.from(secondFrozenManifest, "utf8"));
+  assert.notEqual(secondFrozenHash, firstFrozenHash);
+  const secondFrozenWorker = await readFile(path.join(freezeFixture, "sw.js"), "utf8");
+  assert.match(secondFrozenWorker,
+    new RegExp(`const RELEASE_MANIFEST_SHA256 = "${secondFrozenHash}";`, "u"));
+  assert.doesNotMatch(secondFrozenWorker, new RegExp(firstFrozenHash, "u"),
+    "a new manifest binding must not turn the prior release cache into a deletion target");
+  assert.doesNotMatch(secondFrozenWorker, /KNOWN_OBSOLETE_CACHES|clients\.claim\(\)/u);
+}
+
+async function prepareAndCheckRelease(preparedDirectory) {
+  await assert.rejects(
+    execFile(process.execPath, [
+      path.join(root, "tools", "build-pwa-release-manifest.mjs"),
+    ], { cwd: root }),
+    /Usage:.*--write/isu,
+    "freezing the repository must require an explicit --write mode",
+  );
+  const result = await execFile(process.execPath, [
+    path.join(root, "tools", "build-pwa-release-manifest.mjs"),
+    "--prepare-directory",
+    preparedDirectory,
+  ], { cwd: root });
+  assert.match(result.stdout, /Prepared release-shell-v1\.json and bound sw\.js/u);
+  assert.deepEqual(
+    (await readdir(preparedDirectory)).sort(),
+    ["release-shell-v1.json", "sw.js"],
+  );
+  const [preparedManifestText, preparedWorker] = await Promise.all([
+    readFile(path.join(preparedDirectory, "release-shell-v1.json"), "utf8"),
+    readFile(path.join(preparedDirectory, "sw.js"), "utf8"),
+  ]);
+  await assertPreparedRelease(preparedManifestText, preparedWorker);
+}
+
+test("the generator prepares a self-consistent candidate without mutating the frozen shell", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "math-quest-pwa-prepare-"));
+  const preparedDirectory = path.join(temporaryRoot, "prepared");
+  const manifestPath = path.join(root, "release-shell-v1.json");
+  const workerPath = path.join(root, "sw.js");
+  const [originalManifest, originalWorker] = await Promise.all([
+    readFile(manifestPath),
+    readFile(workerPath),
+  ]);
+  try {
+    await prepareAndCheckRelease(preparedDirectory);
+    await assertPreparationPreservesOccupiedTargets(temporaryRoot, preparedDirectory);
+    await assertRepeatedFreezeBinding(temporaryRoot, originalWorker);
+    assert.deepEqual(await readFile(manifestPath), originalManifest);
+    assert.deepEqual(await readFile(workerPath), originalWorker);
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+async function assertFrozenManifestEntries(manifest) {
   assert.equal(new Set(manifest.entries.map((entry) => entry.path)).size, manifest.entries.length);
   assert.deepEqual(
     manifest.entries.map((entry) => [entry.path, entry.mime]),
@@ -1526,6 +404,18 @@ test("Beta 8 release-shell manifest binds every declared byte", async () => {
     assert.equal(entry.status, 200, entry.path);
     assert.match(entry.mime, /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/u, entry.path);
   }
+}
+
+test("Beta 9 release-shell manifest binds every declared byte", async () => {
+  const [text, worker] = await Promise.all([
+    readFile(path.join(root, "release-shell-v1.json"), "utf8"),
+    readFile(path.join(root, "sw.js"), "utf8"),
+  ]);
+  assert.equal(text.endsWith("\n"), true);
+  assert.equal(text.includes("\r"), false);
+  const manifest = JSON.parse(text);
+  assertReleaseManifestIdentity(manifest);
+  await assertFrozenManifestEntries(manifest);
   assert.match(
     worker,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${sha256(Buffer.from(text, "utf8"))}";`, "u"),
@@ -1566,6 +456,7 @@ test("each service-worker installation owns a distinct nonce-bound staging cache
   let generation = 0;
   const freshName = new vm.Script(`(()=>{
     const CACHE_STORAGE_NAME="math-quest-static-${productVersion}-${"a".repeat(64)}";
+    ${adapterFunction(worker, "hex")}
     ${adapterFunction(worker, "freshStagingCacheName")}
     return freshStagingCacheName;
   })()`).runInNewContext({
@@ -1584,14 +475,9 @@ test("each service-worker installation owns a distinct nonce-bound staging cache
   assert.doesNotMatch(worker, /const STAGING_CACHE_NAME/u);
 });
 
-test("caregiver update copy distinguishes a verified active shell from fresh setup", async () => {
-  const page = await readFile(path.join(root, "index.html"), "utf8");
-  const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
-    .map((match) => match[1]);
-  assert.equal(scripts.length, 2);
-  const adapter = scripts[1];
+function caregiverCopyHarness(adapter) {
   const statusFunctions = adapterPwaStatusFunctions(adapter);
-  const harness = new vm.Script(`(()=> {
+  return new vm.Script(`(()=> {
     "use strict";
     const navigator={serviceWorker:{controller:null}};
     const pwa={
@@ -1628,6 +514,17 @@ test("caregiver update copy distinguishes a verified active shell from fresh set
       }
     };
   })()`, { filename: "pwa-caregiver-copy-effect.js" }).runInNewContext();
+}
+
+function configureVerifiedCopy(harness) {
+  harness.setController({ id: "exact-controller" });
+  harness.pwa.phase = "READY";
+  harness.pwa.details = { ready: true };
+}
+
+test("caregiver update copy distinguishes a verified active shell from fresh setup", async () => {
+  const adapter = await readPwaAdapter();
+  const harness = caregiverCopyHarness(adapter);
 
   for (const phase of ["CHECKING", "CACHING", "ERROR"]) {
     harness.pwa.updatePhase = phase;
@@ -1641,9 +538,7 @@ test("caregiver update copy distinguishes a verified active shell from fresh set
     assert.equal(harness.verified(), false, phase);
   }
 
-  harness.setController({ id: "exact-controller" });
-  harness.pwa.phase = "READY";
-  harness.pwa.details = { ready: true };
+  configureVerifiedCopy(harness);
   assert.equal(harness.verified(), true);
   for (const phase of ["CHECKING", "CACHING", "ERROR"]) {
     harness.pwa.updatePhase = phase;
@@ -1674,9 +569,7 @@ test("caregiver update copy distinguishes a verified active shell from fresh set
   );
   assert.match(freshActivationFailure, /stay online|retry|offline setup/iu);
 
-  harness.setController({ id: "exact-controller" });
-  harness.pwa.phase = "READY";
-  harness.pwa.details = { ready: true };
+  configureVerifiedCopy(harness);
   assert.match(
     harness.failActivation(),
     /(?:current|verified|this)\s+(?:offline\s+)?version\s+(?:remains|is still)\s+(?:usable|available|ready)/iu,
@@ -1684,11 +577,7 @@ test("caregiver update copy distinguishes a verified active shell from fresh set
 });
 
 test("service-worker exceptions are mapped to bounded caregiver copy without raw browser tuples", async () => {
-  const page = await readFile(path.join(root, "index.html"), "utf8");
-  const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
-    .map((match) => match[1]);
-  assert.equal(scripts.length, 2);
-  const adapter = scripts[1];
+  const adapter = await readPwaAdapter();
   const lifecycleSource = adapter.slice(
     adapter.indexOf("let pwaDialogOpen="),
     adapter.indexOf("function sessionElapsed("),
@@ -1744,12 +633,18 @@ test("service-worker exceptions are mapped to bounded caregiver copy without raw
   );
 });
 
+function assertFreshCandidateFailure(harness, continuityClaim, rawTuple) {
+  assert.equal(harness.pwa.phase, "NOT_CONTROLLED");
+  assert.equal(harness.pwa.updatePhase, "ERROR");
+  assert.doesNotMatch(harness.pwa.updateError, continuityClaim);
+  assert.match(harness.pwa.updateError, /stay online|retry|offline setup/iu);
+  assert.doesNotMatch(harness.pwa.updateError, rawTuple);
+  assert.doesNotMatch(harness.render(), continuityClaim);
+  assert.doesNotMatch(harness.render(), rawTuple);
+}
+
 test("fresh candidate failures render retry guidance without claiming an offline fallback", async () => {
-  const page = await readFile(path.join(root, "index.html"), "utf8");
-  const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
-    .map((match) => match[1]);
-  assert.equal(scripts.length, 2);
-  const adapter = scripts[1];
+  const adapter = await readPwaAdapter();
   const hostileUpdateError = new Error(
     "Update failed for script ('https://example.test/math/sw.js') "
     + "at scope ('https://example.test/math/'): candidate network failed..",
@@ -1806,30 +701,13 @@ test("fresh candidate failures render retry guidance without claiming an offline
   harness.watch(harness.registration);
   harness.triggerUpdateFound();
   harness.rejectCandidate();
-  assert.equal(harness.pwa.phase, "NOT_CONTROLLED");
-  assert.equal(harness.pwa.updatePhase, "ERROR");
-  assert.doesNotMatch(harness.pwa.updateError, continuityClaim);
-  assert.match(harness.pwa.updateError, /stay online|retry|offline setup/iu);
-  assert.doesNotMatch(harness.pwa.updateError, rawTuple);
-  assert.doesNotMatch(harness.render(), continuityClaim);
-  assert.doesNotMatch(harness.render(), rawTuple);
+  assertFreshCandidateFailure(harness, continuityClaim, rawTuple);
 
   assert.equal(await harness.check(true), false);
-  assert.equal(harness.pwa.phase, "NOT_CONTROLLED");
-  assert.equal(harness.pwa.updatePhase, "ERROR");
-  assert.doesNotMatch(harness.pwa.updateError, continuityClaim);
-  assert.match(harness.pwa.updateError, /stay online|retry|offline setup/iu);
-  assert.doesNotMatch(harness.pwa.updateError, rawTuple);
-  assert.doesNotMatch(harness.render(), continuityClaim);
-  assert.doesNotMatch(harness.render(), rawTuple);
+  assertFreshCandidateFailure(harness, continuityClaim, rawTuple);
 });
 
-test("active readiness survives candidate failures and controller changes require a deliberate reload", async () => {
-  const page = await readFile(path.join(root, "index.html"), "utf8");
-  const scripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
-    .map((match) => match[1]);
-  assert.equal(scripts.length, 2);
-  const adapter = scripts[1];
+function candidateFailureHarness(adapter) {
   const statusFunctions = adapterPwaStatusFunctions(adapter);
 
   const candidateEffects = { refreshes: 0 };
@@ -1868,50 +746,19 @@ test("active readiness survives candidate failures and controller changes requir
     return {
       pwa,
       registration,
-      status:pwaStatusText,
+      status:()=>MathQuestPwaStatus.readinessStatusText(pwa.phase),
       watch:watchPwaRegistration,
       triggerUpdateFound(){updateFound();},
       rejectCandidate(){worker.state="redundant";workerStateChange();registration.installing=null;},
       check:checkPwaUpdateAtBoundary
     };
-  })()`, { filename: "pwa-candidate-lifecycle-effect.js" }).runInNewContext({ candidateEffects });
+  })()`, { filename: "pwa-candidate-lifecycle-effect.js" }).runInNewContext({ candidateEffects, hostileUpdateError });
 
-  candidateHarness.watch(candidateHarness.registration);
-  candidateHarness.triggerUpdateFound();
-  assert.equal(candidateHarness.pwa.phase, "READY");
-  assert.equal(candidateHarness.pwa.updatePhase, "CACHING");
-  assert.equal(candidateHarness.status(), "Ready for an offline check");
-  candidateHarness.rejectCandidate();
-  assert.equal(candidateHarness.pwa.phase, "READY");
-  assert.equal(candidateHarness.pwa.error, null);
-  assert.equal(candidateHarness.pwa.updatePhase, "ERROR");
-  assert.match(
-    candidateHarness.pwa.updateError,
-    /(?:current|verified)\s+offline\s+version\s+(?:remains|is still)\s+(?:usable|available|ready)/iu,
-  );
-  assert.equal(await candidateHarness.check(true), false);
-  assert.equal(candidateHarness.pwa.phase, "READY");
-  assert.equal(candidateHarness.pwa.error, null);
-  assert.equal(candidateHarness.pwa.updatePhase, "ERROR");
-  assert.match(
-    candidateHarness.pwa.updateError,
-    /(?:current|verified)\s+offline\s+version\s+(?:remains|is still)\s+(?:usable|available|ready)/iu,
-  );
-  assert.doesNotMatch(
-    JSON.stringify(candidateHarness.pwa),
-    /NetworkError|example\.test|math\/sw\.js|candidate network failed|\.\./iu,
-  );
+  return { candidateHarness, hostileUpdateError };
+}
 
-  const controllerEffects = {
-    inputValue: "Nia",
-    readinessQueries: 0,
-    saves: 0,
-    reloads: 0,
-    cleared: 0,
-    cancelledSpeech: 0,
-    stoppedSounds: 0,
-  };
-  const controllerHarness = new vm.Script(`(()=>{
+function controllerChangeHarness(adapter, controllerEffects) {
+  return new vm.Script(`(()=>{
     "use strict";
     const effects=controllerEffects;
     let ui={screen:"nameGate"};
@@ -1958,7 +805,43 @@ test("active readiness survives candidate failures and controller changes requir
       input(){return effects.inputValue;}
     };
   })()`, { filename: "pwa-controller-boundary-effect.js" }).runInNewContext({ controllerEffects });
+}
 
+test("active readiness survives candidate failures and controller changes require a deliberate reload", async () => {
+  const adapter = await readPwaAdapter();
+  const { candidateHarness, hostileUpdateError } = candidateFailureHarness(adapter);
+
+  await assert.rejects(candidateHarness.registration.update(), (error) => error === hostileUpdateError,
+    "the candidate fixture must throw its configured network error rather than an unrelated harness failure");
+  candidateHarness.watch(candidateHarness.registration);
+  candidateHarness.triggerUpdateFound();
+  assert.equal(candidateHarness.pwa.phase, "READY");
+  assert.equal(candidateHarness.pwa.updatePhase, "CACHING");
+  assert.equal(candidateHarness.status(), "Ready for an offline check");
+  candidateHarness.rejectCandidate();
+  assert.equal(candidateHarness.pwa.phase, "READY");
+  assert.equal(candidateHarness.pwa.error, null);
+  assert.equal(candidateHarness.pwa.updatePhase, "ERROR");
+  assert.match(
+    candidateHarness.pwa.updateError,
+    /(?:current|verified)\s+offline\s+version\s+(?:remains|is still)\s+(?:usable|available|ready)/iu,
+  );
+  assert.equal(await candidateHarness.check(true), false);
+  assert.equal(candidateHarness.pwa.phase, "READY");
+  assert.equal(candidateHarness.pwa.error, null);
+  assert.equal(candidateHarness.pwa.updatePhase, "ERROR");
+  assert.match(
+    candidateHarness.pwa.updateError,
+    /(?:current|verified)\s+offline\s+version\s+(?:remains|is still)\s+(?:usable|available|ready)/iu,
+  );
+  assert.doesNotMatch(
+    JSON.stringify(candidateHarness.pwa),
+    /NetworkError|example\.test|math\/sw\.js|candidate network failed|\.\./iu,
+  );
+
+});
+
+async function assertNameGateControllerTransition(controllerHarness, controllerEffects) {
   await controllerHarness.route();
   assert.equal(controllerHarness.input(), "Nia");
   assert.equal(controllerEffects.saves, 0);
@@ -1976,7 +859,9 @@ test("active readiness survives candidate failures and controller changes requir
   controllerHarness.resetForControlledPage();
   controllerEffects.saves = 0;
   controllerEffects.reloads = 0;
+}
 
+async function assertSessionControllerTransition(controllerHarness, controllerEffects) {
   controllerEffects.inputValue = "unfinished answer";
   controllerHarness.setScreen("session");
   await controllerHarness.route();
@@ -1993,7 +878,9 @@ test("active readiness survives candidate failures and controller changes requir
   assert.equal(controllerEffects.saves, 1);
   assert.equal(controllerEffects.reloads, 1);
   assert.equal(controllerHarness.pwa.reloaded, true);
+}
 
+async function assertApplyingControllerTransition(controllerHarness, controllerEffects) {
   controllerHarness.resetForControlledPage();
   controllerEffects.saves = 0;
   controllerEffects.reloads = 0;
@@ -2002,7 +889,28 @@ test("active readiness survives candidate failures and controller changes requir
   assert.equal(controllerEffects.saves, 1, "the tab that chose Apply must commit before its controller-change reload");
   assert.equal(controllerEffects.reloads, 1, "the tab that chose Apply must reload exactly once through the real controller-change route");
   assert.equal(controllerHarness.pwa.reloaded, true);
+}
 
+test("controller changes preserve unfinished input until deliberate reload", async () => {
+  const adapter = await readPwaAdapter();
+  const controllerEffects = {
+    inputValue: "Nia",
+    readinessQueries: 0,
+    saves: 0,
+    reloads: 0,
+    cleared: 0,
+    cancelledSpeech: 0,
+    stoppedSounds: 0,
+  };
+  const controllerHarness = controllerChangeHarness(adapter, controllerEffects);
+
+  await assertNameGateControllerTransition(controllerHarness, controllerEffects);
+  await assertSessionControllerTransition(controllerHarness, controllerEffects);
+  await assertApplyingControllerTransition(controllerHarness, controllerEffects);
+});
+
+test("only the initiating tab reloads after its waiting worker activates", async () => {
+  const adapter = await readPwaAdapter();
   const initiatingEffects = { reloads: 0 };
   const initiatingHarness = new vm.Script(`(()=>{
     "use strict";
@@ -2069,7 +977,7 @@ test("install manifest preserves the Beta 1 app identity for an in-place update"
 });
 
 test("[NC-LAUNCHER-FOREIGN-HOST] Windows launcher snapshots only the reviewed runtime and rejects a foreign Host", async () => {
-  const [server, manifestText, pagesWorkflow] = await Promise.all([
+  const [server, manifestText] = await Promise.all([
     readFile(path.join(root, "Serve-MathQuest.ps1"), "utf8"),
     readFile(path.join(root, "release-shell-v1.json"), "utf8"),
     readFile(path.join(root, ".github", "workflows", "pages.yml"), "utf8"),
@@ -2150,12 +1058,7 @@ test("Pages upload is an immutable, canonical snapshot of the verified tagged bl
   );
 });
 
-test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit", async () => {
-  const fixture = await mkdtemp(path.join(os.tmpdir(), "mq-pages-snapshot-"));
-  const pagesWorkflow = await readFile(
-    path.join(root, ".github", "workflows", "pages.yml"),
-    "utf8",
-  );
+function snapshotProgramFromWorkflow(pagesWorkflow) {
   const releaseCommit = "a".repeat(40);
   const successfulDispatch = { event: "workflow_dispatch", status: "completed", conclusion: "success", head_sha: releaseCommit };
   assert.equal(releaseCertificationRunEligible(successfulDispatch, [{ name: "full-audit", status: "completed", conclusion: "success" }], releaseCommit), true);
@@ -2171,132 +1074,166 @@ test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a 
     .split(/\r?\n/u)
     .map((line) => line.replace(/^ {10}/u, ""))
     .join("\n");
+  return snapshotProgram;
+}
+
+function snapshotReleaseEntries(fixtureBytes) {
+  return RELEASE_ENTRY_SPECS.map(([entryPath, mime]) => {
+    const bytes = fixtureBytes.get(entryPath.slice(2));
+    assert.ok(bytes, entryPath);
+    return {
+      path: entryPath,
+      sha256: sha256(bytes),
+      bytes: bytes.byteLength,
+      mime,
+      status: 200,
+    };
+  });
+}
+
+function snapshotFixtureBytes() {
+  const runtimeAssets = RELEASE_ENTRY_SPECS
+    .map(([entryPath]) => entryPath.slice(2))
+    .filter((entryPath) => entryPath.startsWith("assets/"));
+  const fixtureBytes = new Map(
+    PAGES_TAGGED_ARTIFACT_SPECS.map(([artifactPath]) => [
+      artifactPath,
+      Buffer.from(`${artifactPath}\n`, "utf8"),
+    ]),
+  );
+  const committedIndex = Buffer.from(
+    `<main>${runtimeAssets
+      .map((assetPath) => `<span data-asset="${assetPath}"></span>`)
+      .join("")}</main>\n`,
+    "utf8",
+  );
+  fixtureBytes.set("index.html", committedIndex);
+  fixtureBytes.set(
+    "manifest.webmanifest",
+    Buffer.from('{"name":"Math Quest"}\n', "utf8"),
+  );
+
+  const releaseEntries = snapshotReleaseEntries(fixtureBytes);
+  const releaseManifestBytes = Buffer.from(
+    `${JSON.stringify({
+      schemaVersion: 1,
+      release: "1.0.0-beta.9",
+      buildId: "fixture",
+      cacheName: "fixture",
+      entryPath: "./index.html",
+      excludedPaths: ["./release-shell-v1.json", "./sw.js"],
+      entries: releaseEntries,
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  fixtureBytes.set("release-shell-v1.json", releaseManifestBytes);
+  fixtureBytes.set(
+    "sw.js",
+    Buffer.from(
+      `const RELEASE_MANIFEST_SHA256 = "${sha256(releaseManifestBytes)}";\n`,
+      "utf8",
+    ),
+  );
+
+  return { fixtureBytes, committedIndex };
+}
+
+async function commitSnapshotFixture(fixture, fixtureBytes) {
+  for (const [artifactPath] of PAGES_TAGGED_ARTIFACT_SPECS) {
+    const destination = path.join(fixture, ...artifactPath.split("/"));
+    await mkdir(path.dirname(destination), { recursive: true });
+    await writeFile(destination, fixtureBytes.get(artifactPath));
+  }
+  await execFile("git", ["init", "--quiet"], { cwd: fixture });
+  await execFile("git", ["config", "core.autocrlf", "false"], { cwd: fixture });
+  await execFile("git", ["config", "user.name", "Snapshot Fixture"], { cwd: fixture });
+  await execFile(
+    "git",
+    ["config", "user.email", "snapshot-fixture"],
+    { cwd: fixture },
+  );
+  await execFile("git", ["add", "."], { cwd: fixture });
+  const emptyHooksDirectory = path.join(fixture, ".git", "empty-hooks");
+  await mkdir(emptyHooksDirectory);
+  await execFile("git", [
+    "-c",
+    "commit.gpgSign=false",
+    "-c",
+    `core.hooksPath=${emptyHooksDirectory}`,
+    "commit",
+    "--no-verify",
+    "--quiet",
+    "-m",
+    "fixture",
+  ], { cwd: fixture });
+  const { stdout: releaseCommitOutput } = await execFile(
+    "git",
+    ["rev-parse", "HEAD^{commit}"],
+    { cwd: fixture },
+  );
+  const releaseCommit = releaseCommitOutput.trim();
+
+  return releaseCommit;
+}
+
+async function assertSnapshotArtifacts(fixture, siteRoot, committedIndex, outputPath) {
+  assert.deepEqual(
+    await readFile(path.join(siteRoot, "index.html")),
+    committedIndex,
+    "the immutable deployment snapshot comes from the commit, not the dirty worktree",
+  );
+  assert.notDeepEqual(
+    await readFile(path.join(fixture, "index.html")),
+    await readFile(path.join(siteRoot, "index.html")),
+    "the fixture actually exercised different worktree and snapshot bytes",
+  );
+  const expectedDeployedFileCount = PAGES_TAGGED_ARTIFACT_SPECS.length + 1; // generated .nojekyll
+  assert.match(
+    await readFile(outputPath, "utf8"),
+    new RegExp(`^sha256=[a-f0-9]{64}\\r?\\nfile_count=${expectedDeployedFileCount}\\r?\\n$`, "u"),
+  );
+}
+
+async function runDirtyWorktreeSnapshot(fixture, snapshotProgram, releaseCommit) {
+  await writeFile(
+    path.join(fixture, "index.html"),
+    Buffer.from("MUTATED WORKTREE BYTES\n", "utf8"),
+  );
+  const outputPath = path.join(fixture, "snapshot-output.txt");
+  const summaryPath = path.join(fixture, "snapshot-summary.md");
+  await execFile(
+    process.execPath,
+    ["--input-type=module", "--eval", snapshotProgram],
+    {
+      cwd: fixture,
+      env: {
+        ...process.env,
+        RELEASE_COMMIT: releaseCommit,
+        GITHUB_OUTPUT: outputPath,
+        GITHUB_STEP_SUMMARY: summaryPath,
+      },
+      maxBuffer: 8 * 1024 * 1024,
+    },
+  );
+
+  return outputPath;
+}
+
+test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a worktree mutation after the release commit", async () => {
+  const fixture = await mkdtemp(path.join(os.tmpdir(), "mq-pages-snapshot-"));
+  const pagesWorkflow = await readFile(
+    path.join(root, ".github", "workflows", "pages.yml"),
+    "utf8",
+  );
+  const snapshotProgram = snapshotProgramFromWorkflow(pagesWorkflow);
   const siteRoot = path.join(fixture, "_site");
 
   try {
-    const runtimeAssets = RELEASE_ENTRY_SPECS
-      .map(([entryPath]) => entryPath.slice(2))
-      .filter((entryPath) => entryPath.startsWith("assets/"));
-    const fixtureBytes = new Map(
-      PAGES_TAGGED_ARTIFACT_SPECS.map(([artifactPath]) => [
-        artifactPath,
-        Buffer.from(`${artifactPath}\n`, "utf8"),
-      ]),
-    );
-    const committedIndex = Buffer.from(
-      `<main>${runtimeAssets
-        .map((assetPath) => `<span data-asset="${assetPath}"></span>`)
-        .join("")}</main>\n`,
-      "utf8",
-    );
-    fixtureBytes.set("index.html", committedIndex);
-    fixtureBytes.set(
-      "manifest.webmanifest",
-      Buffer.from('{"name":"Math Quest"}\n', "utf8"),
-    );
+    const { fixtureBytes, committedIndex } = snapshotFixtureBytes();
+    const releaseCommit = await commitSnapshotFixture(fixture, fixtureBytes);
 
-    const releaseEntries = RELEASE_ENTRY_SPECS.map(([entryPath, mime]) => {
-      const bytes = fixtureBytes.get(entryPath.slice(2));
-      assert.ok(bytes, entryPath);
-      return {
-        path: entryPath,
-        sha256: sha256(bytes),
-        bytes: bytes.byteLength,
-        mime,
-        status: 200,
-      };
-    });
-    const releaseManifestBytes = Buffer.from(
-      `${JSON.stringify({
-        schemaVersion: 1,
-        release: "1.0.0-beta.8",
-        buildId: "fixture",
-        cacheName: "fixture",
-        entryPath: "./index.html",
-        excludedPaths: ["./release-shell-v1.json", "./sw.js"],
-        entries: releaseEntries,
-      }, null, 2)}\n`,
-      "utf8",
-    );
-    fixtureBytes.set("release-shell-v1.json", releaseManifestBytes);
-    fixtureBytes.set(
-      "sw.js",
-      Buffer.from(
-        `const RELEASE_MANIFEST_SHA256 = "${sha256(releaseManifestBytes)}";\n`,
-        "utf8",
-      ),
-    );
-
-    for (const [artifactPath] of PAGES_TAGGED_ARTIFACT_SPECS) {
-      const destination = path.join(fixture, ...artifactPath.split("/"));
-      await mkdir(path.dirname(destination), { recursive: true });
-      await writeFile(destination, fixtureBytes.get(artifactPath));
-    }
-    await execFile("git", ["init", "--quiet"], { cwd: fixture });
-    await execFile("git", ["config", "core.autocrlf", "false"], { cwd: fixture });
-    await execFile("git", ["config", "user.name", "Snapshot Fixture"], { cwd: fixture });
-    await execFile(
-      "git",
-      ["config", "user.email", "snapshot-fixture"],
-      { cwd: fixture },
-    );
-    await execFile("git", ["add", "."], { cwd: fixture });
-    const emptyHooksDirectory = path.join(fixture, ".git", "empty-hooks");
-    await mkdir(emptyHooksDirectory);
-    await execFile("git", [
-      "-c",
-      "commit.gpgSign=false",
-      "-c",
-      `core.hooksPath=${emptyHooksDirectory}`,
-      "commit",
-      "--no-verify",
-      "--quiet",
-      "-m",
-      "fixture",
-    ], { cwd: fixture });
-    const { stdout: releaseCommitOutput } = await execFile(
-      "git",
-      ["rev-parse", "HEAD^{commit}"],
-      { cwd: fixture },
-    );
-    const releaseCommit = releaseCommitOutput.trim();
-
-    await writeFile(
-      path.join(fixture, "index.html"),
-      Buffer.from("MUTATED WORKTREE BYTES\n", "utf8"),
-    );
-    const outputPath = path.join(fixture, "snapshot-output.txt");
-    const summaryPath = path.join(fixture, "snapshot-summary.md");
-    await execFile(
-      process.execPath,
-      ["--input-type=module", "--eval", snapshotProgram],
-      {
-        cwd: fixture,
-        env: {
-          ...process.env,
-          RELEASE_COMMIT: releaseCommit,
-          GITHUB_OUTPUT: outputPath,
-          GITHUB_STEP_SUMMARY: summaryPath,
-        },
-        maxBuffer: 8 * 1024 * 1024,
-      },
-    );
-
-    assert.deepEqual(
-      await readFile(path.join(siteRoot, "index.html")),
-      committedIndex,
-      "the immutable deployment snapshot comes from the commit, not the dirty worktree",
-    );
-    assert.notDeepEqual(
-      await readFile(path.join(fixture, "index.html")),
-      await readFile(path.join(siteRoot, "index.html")),
-      "the fixture actually exercised different worktree and snapshot bytes",
-    );
-    const expectedDeployedFileCount = PAGES_TAGGED_ARTIFACT_SPECS.length + 1; // generated .nojekyll
-    assert.match(
-      await readFile(outputPath, "utf8"),
-      new RegExp(`^sha256=[a-f0-9]{64}\\r?\\nfile_count=${expectedDeployedFileCount}\\r?\\n$`, "u"),
-    );
+    const outputPath = await runDirtyWorktreeSnapshot(fixture, snapshotProgram, releaseCommit);
+    await assertSnapshotArtifacts(fixture, siteRoot, committedIndex, outputPath);
   } finally {
     if (await readFile(path.join(fixture, ".git", "HEAD"), "utf8").catch(() => null)) {
       if (await readFile(path.join(siteRoot, ".nojekyll")).catch(() => null)) {
@@ -2307,7 +1244,7 @@ test("[NC-PAGES-WRONG-COMMIT-OR-MISSING-CERTIFICATION] Pages snapshot ignores a 
   }
 });
 
-test("service-worker install, readiness, corruption, repair, and routing are effect-sensitive", async () => {
+async function loadServiceWorkerFixture() {
   const scope = "https://example.test/";
   const rawWorkerText = await readFile(path.join(root, "sw.js"), "utf8");
   const entries = await Promise.all(RELEASE_ENTRY_SPECS.map(async ([entryPath, mime]) => {
@@ -2322,9 +1259,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   }));
   const releaseManifest = {
     schemaVersion: 1,
-    release: "1.0.0-beta.8",
-    buildId: "math-quest-pwa-v1.0.0-beta.8",
-    cacheName: "math-quest-static-v1.0.0-beta.8",
+    release: "1.0.0-beta.9",
+    buildId: "math-quest-pwa-v1.0.0-beta.9",
+    cacheName: "math-quest-static-v1.0.0-beta.9",
     entryPath: "./index.html",
     excludedPaths: ["./release-shell-v1.json", "./sw.js"],
     entries,
@@ -2342,243 +1279,102 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     workerText,
     new RegExp(`const RELEASE_MANIFEST_SHA256 = "${expectedManifestHash}";`, "u"),
   );
-  const logicalBeta8Name = "math-quest-static-v1.0.0-beta.8";
+  const logicalBeta8Name = "math-quest-static-v1.0.0-beta.9";
   const beta8Name = `${logicalBeta8Name}-${expectedManifestHash}`;
-  const stagingNames = () => [...cacheStores.keys()].filter((name) => name.startsWith(`${beta8Name}-`) && name.endsWith("-staging"));
   const publicBeta3PhysicalName =
     "math-quest-static-v1.0.0-beta.3-9e5fedc72ef838eab3dccf2437a594fa24bdd12f173e81f19c91c5f71a9509b7";
-  const handlers = new Map();
-  const cacheStores = new Map();
-  const networkRequestCounts = new Map();
-  const networkOverrides = new Map();
-  let networkEnabled = true;
-  let cachePutFailure = null;
-  let skipWaitingCalls = 0;
-  let claimCalls = 0;
-  let claimShouldFail = false;
-  const retainedClients = [];
-  const retainedClientNavigations = [];
-  const retainedClientChallenges = [];
-  const matchAllOptions = [];
+  return serviceWorkerFixture({root,scope,workerText,releaseManifest,releaseManifestText,expectedManifestHash,logicalBeta8Name,beta8Name,publicBeta3PhysicalName});
+}
 
-  class MockRequest {
-    constructor(input, init = {}) {
-      this.url = new URL(typeof input === "string" ? input : input.url, scope).href;
-      this.method = init.method || input?.method || "GET";
-      this.mode = init.mode || input?.mode || "same-origin";
-    }
-  }
-
-  class MockResponse {
-    constructor(bytes, url, mime, status = 200, { redirected = false } = {}) {
-      this.bytes = Buffer.from(bytes);
-      this.url = url;
-      this.status = status;
-      this.ok = status >= 200 && status < 300;
-      this.redirected = redirected;
-      this.headers = new Headers({ "Content-Type": mime });
-    }
-    clone() {
-      return new MockResponse(
-        this.bytes,
-        this.url,
-        this.headers.get("Content-Type"),
-        this.status,
-        { redirected: this.redirected },
-      );
-    }
-    async arrayBuffer() {
-      return Uint8Array.from(this.bytes).buffer;
-    }
-  }
-
-  function cacheKey(input, ignoreSearch = false) {
-    const url = new URL(typeof input === "string" ? input : input.url, scope);
-    if (ignoreSearch) url.search = "";
-    return url.href;
-  }
-
-  function cacheFor(name) {
-    if (!cacheStores.has(name)) cacheStores.set(name, new Map());
-    const store = cacheStores.get(name);
-    return {
-      async put(input, response) {
-        const key = cacheKey(input);
-        if (
-          cachePutFailure
-          && cachePutFailure.cacheName === name
-          && (cachePutFailure.url === null || cachePutFailure.url === key)
-        ) {
-          cachePutFailure = null;
-          throw new Error(`injected-cache-put-failure:${name}:${key}`);
-        }
-        store.set(key, response.clone());
-      },
-      async match(input, options = {}) {
-        const response = store.get(cacheKey(input, Boolean(options.ignoreSearch)));
-        return response ? response.clone() : undefined;
-      },
-      async delete(input) {
-        return store.delete(cacheKey(input));
-      },
-      async keys() {
-        return [...store.keys()].map((url) => new MockRequest(url));
-      },
-    };
-  }
-
-  const mimeByPath = new Map(releaseManifest.entries.map((entry) => [entry.path, entry.mime]));
-  mimeByPath.set("./release-shell-v1.json", "application/json");
-  async function networkFetch(input) {
-    if (!networkEnabled) throw new Error("offline");
-    const url = new URL(typeof input === "string" ? input : input.url, scope);
-    const relative = `./${url.pathname.slice(1)}`;
-    networkRequestCounts.set(relative, (networkRequestCounts.get(relative) || 0) + 1);
-    if (!mimeByPath.has(relative)) return new MockResponse("not found", url.href, "text/plain", 404);
-    const override = networkOverrides.get(relative);
-    const bytes = override?.bytes ?? (relative === "./release-shell-v1.json"
-      ? Buffer.from(releaseManifestText, "utf8")
-      : await readFile(path.join(root, relative.slice(2))));
-    return new MockResponse(
-      bytes,
-      override?.url || url.href,
-      override?.mime || mimeByPath.get(relative),
-      override?.status || 200,
-      { redirected: Boolean(override?.redirected) },
-    );
-  }
-
-  const self = {
-    registration: {
-      scope,
-      active: null,
-      waiting: null,
-    },
-    location: new URL("https://example.test/sw.js"),
-    clients: {
-      async claim() {
-        claimCalls += 1;
-        if (claimShouldFail) throw new Error("injected-clients-claim-failure");
-      },
-      async matchAll(options) {
-        matchAllOptions.push(structuredClone(options));
-        return [...retainedClients];
-      },
-    },
-    addEventListener(type, listener) {
-      handlers.set(type, listener);
-    },
-    async skipWaiting() {
-      skipWaitingCalls += 1;
-    },
-  };
-  const context = vm.createContext({
-    self,
-    caches: {
-      async open(name) {
-        return cacheFor(name);
-      },
-      async keys() {
-        return [...cacheStores.keys()];
-      },
-      async delete(name) {
-        return cacheStores.delete(name);
-      },
-    },
-    crypto: webcrypto,
-    fetch: networkFetch,
-    Request: MockRequest,
-    Response,
-    Headers,
-    URL,
-    TextDecoder,
-    Date,
-    Buffer,
-    setTimeout,
-    clearTimeout,
-  });
-  vm.runInContext(workerText, context, { filename: "sw.js" });
-
-  cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["old", "old"]]));
-  cacheStores.set(publicBeta3PhysicalName, new Map([["public-beta3-shell", "preserve-until-claim"]]));
-  networkEnabled = false;
+async function assertOfflineInstallPreservesPriorShells(fixture) {
+  fixture.cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["old", "old"]]));
+  fixture.cacheStores.set(fixture.publicBeta3PhysicalName, new Map([["public-beta3-shell", "preserve-until-claim"]]));
+  fixture.state.networkEnabled = false;
   let failedInstallPromise;
-  handlers.get("install")({ waitUntil(promise) { failedInstallPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { failedInstallPromise = promise; } });
   await assert.rejects(failedInstallPromise);
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
-  assert.equal(cacheStores.has(beta8Name), false);
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
+  assert.equal(fixture.cacheStores.has(fixture.beta8Name), false);
+}
 
-  cacheStores.set(logicalBeta8Name, new Map([["same-identity-old-shell", "preserve"]]));
-  const firstManifestHashIndex = releaseManifestText.indexOf(releaseManifest.entries[0].sha256);
+async function assertTamperedManifestRejected(fixture) {
+  fixture.cacheStores.set(fixture.logicalBeta8Name, new Map([["same-identity-old-shell", "preserve"]]));
+  const firstManifestHashIndex = fixture.releaseManifestText.indexOf(fixture.releaseManifest.entries[0].sha256);
   assert.ok(firstManifestHashIndex > 0);
   const sameLengthTamperedManifest =
-    releaseManifestText.slice(0, firstManifestHashIndex)
-    + (releaseManifestText[firstManifestHashIndex] === "0" ? "1" : "0")
-    + releaseManifestText.slice(firstManifestHashIndex + 1);
-  assert.equal(Buffer.byteLength(sameLengthTamperedManifest), Buffer.byteLength(releaseManifestText));
-  networkOverrides.set("./release-shell-v1.json", {
+    fixture.releaseManifestText.slice(0, firstManifestHashIndex)
+    + (fixture.releaseManifestText[firstManifestHashIndex] === "0" ? "1" : "0")
+    + fixture.releaseManifestText.slice(firstManifestHashIndex + 1);
+  assert.equal(Buffer.byteLength(sameLengthTamperedManifest), Buffer.byteLength(fixture.releaseManifestText));
+  fixture.networkOverrides.set("./release-shell-v1.json", {
     bytes: Buffer.from(sameLengthTamperedManifest, "utf8"),
   });
-  networkEnabled = true;
+  fixture.state.networkEnabled = true;
   let tamperedManifestInstallPromise;
-  handlers.get("install")({ waitUntil(promise) { tamperedManifestInstallPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { tamperedManifestInstallPromise = promise; } });
   await assert.rejects(tamperedManifestInstallPromise, /release-manifest-hash/u);
-  networkOverrides.delete("./release-shell-v1.json");
-  assert.equal(cacheStores.has(beta8Name), false);
-  assert.equal(cacheStores.has(logicalBeta8Name), true);
+  fixture.networkOverrides.delete("./release-shell-v1.json");
+  assert.equal(fixture.cacheStores.has(fixture.beta8Name), false);
+  assert.equal(fixture.cacheStores.has(fixture.logicalBeta8Name), true);
+}
 
-  cacheStores.set(beta8Name, new Map([
+async function assertPartialInstallRemoved(fixture) {
+  fixture.cacheStores.set(fixture.beta8Name, new Map([
     [
-      cacheKey("./orphan"),
-      new MockResponse("orphan", new URL("./orphan", scope).href, "text/plain"),
+      fixture.cacheKey("./orphan"),
+      new fixture.MockResponse("orphan", new URL("./orphan", fixture.scope).href, "text/plain"),
     ],
   ]));
-  cachePutFailure = {
-    cacheName: beta8Name,
-    url: cacheKey("./index.html"),
+  fixture.state.cachePutFailure = {
+    cacheName: fixture.beta8Name,
+    url: fixture.cacheKey("./index.html"),
   };
-  networkEnabled = true;
+  fixture.state.networkEnabled = true;
   let partialCopyInstallPromise;
-  handlers.get("install")({ waitUntil(promise) { partialCopyInstallPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { partialCopyInstallPromise = promise; } });
   await assert.rejects(partialCopyInstallPromise, /injected-cache-put-failure/u);
   assert.equal(
-    cacheStores.has(beta8Name),
+    fixture.cacheStores.has(fixture.beta8Name),
     false,
     "a failed copy must remove the already-invalid partial candidate cache",
   );
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
-  assert.equal(cacheStores.has(logicalBeta8Name), true);
-  assert.deepEqual(stagingNames(), []);
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
+  assert.equal(fixture.cacheStores.has(fixture.logicalBeta8Name), true);
+  assert.deepEqual(fixture.stagingNames(), []);
+}
 
+async function assertExactInstallIsIdempotent(fixture) {
   let installPromise;
-  handlers.get("install")({ waitUntil(promise) { installPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { installPromise = promise; } });
   await installPromise;
-  assert.equal(skipWaitingCalls, 0);
-  let beta8 = cacheStores.get(beta8Name);
-  assert.equal(beta8.size, releaseManifest.entries.length + 1);
+  assert.equal(fixture.state.skipWaitingCalls, 0);
+  fixture.beta8 = fixture.cacheStores.get(fixture.beta8Name);
+  assert.equal(fixture.beta8.size, fixture.releaseManifest.entries.length + 1);
 
-  cachePutFailure = { cacheName: beta8Name, url: null };
+  fixture.state.cachePutFailure = { cacheName: fixture.beta8Name, url: null };
   let idempotentInstallPromise;
-  handlers.get("install")({ waitUntil(promise) { idempotentInstallPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { idempotentInstallPromise = promise; } });
   await idempotentInstallPromise;
-  assert.ok(cachePutFailure, "an already exact live cache must receive no put effects");
-  cachePutFailure = null;
+  assert.ok(fixture.state.cachePutFailure, "an already exact live cache must receive no put effects");
+  fixture.state.cachePutFailure = null;
+}
 
-  const exactTap = beta8.get(cacheKey("./assets/sounds/tap.wav"));
-  const sameLengthTamperedTap = Buffer.from(exactTap.bytes);
+async function assertInvalidNetworkEntriesPreserveExactShell(fixture) {
+  fixture.exactTap = fixture.beta8.get(fixture.cacheKey("./assets/sounds/tap.wav"));
+  const sameLengthTamperedTap = Buffer.from(fixture.exactTap.bytes);
   sameLengthTamperedTap[0] ^= 0x01;
-  assert.equal(sameLengthTamperedTap.byteLength, exactTap.bytes.byteLength);
-  networkOverrides.set("./assets/sounds/tap.wav", { bytes: sameLengthTamperedTap });
+  assert.equal(sameLengthTamperedTap.byteLength, fixture.exactTap.bytes.byteLength);
+  fixture.networkOverrides.set("./assets/sounds/tap.wav", { bytes: sameLengthTamperedTap });
   let corruptNetworkInstallPromise;
-  handlers.get("install")({ waitUntil(promise) { corruptNetworkInstallPromise = promise; } });
+  fixture.handlers.get("install")({ waitUntil(promise) { corruptNetworkInstallPromise = promise; } });
   await assert.rejects(corruptNetworkInstallPromise, /shell-entry-invalid/u);
-  networkOverrides.delete("./assets/sounds/tap.wav");
+  fixture.networkOverrides.delete("./assets/sounds/tap.wav");
   assert.equal(
-    sha256(beta8.get(cacheKey("./assets/sounds/tap.wav")).bytes),
-    sha256(exactTap.bytes),
+    sha256(fixture.beta8.get(fixture.cacheKey("./assets/sounds/tap.wav")).bytes),
+    sha256(fixture.exactTap.bytes),
     "a failed staging fetch must leave the exact live shell byte-for-byte intact",
   );
-  assert.equal(beta8.size, releaseManifest.entries.length + 1);
+  assert.equal(fixture.beta8.size, fixture.releaseManifest.entries.length + 1);
 
   for (const [label, override] of [
     ["wrong MIME", { mime: "text/plain" }],
@@ -2586,9 +1382,9 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     ["unsuccessful status", { status: 503 }],
     ["cross-origin response", { url: "https://other.example/tap.wav" }],
   ]) {
-    networkOverrides.set("./assets/sounds/tap.wav", override);
+    fixture.networkOverrides.set("./assets/sounds/tap.wav", override);
     let rejectedResponseInstallPromise;
-    handlers.get("install")({
+    fixture.handlers.get("install")({
       waitUntil(promise) {
         rejectedResponseInstallPromise = promise;
       },
@@ -2598,60 +1394,66 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
       /shell-entry-invalid/u,
       label,
     );
-    networkOverrides.delete("./assets/sounds/tap.wav");
+    fixture.networkOverrides.delete("./assets/sounds/tap.wav");
     assert.equal(
-      sha256(beta8.get(cacheKey("./assets/sounds/tap.wav")).bytes),
-      sha256(exactTap.bytes),
+      sha256(fixture.beta8.get(fixture.cacheKey("./assets/sounds/tap.wav")).bytes),
+      sha256(fixture.exactTap.bytes),
       `${label} must not mutate the exact live shell`,
     );
   }
+}
 
-  self.registration.active = { scriptURL: self.location.href };
-  beta8.set(
-    cacheKey("./assets/sounds/tap.wav"),
-    new MockResponse(
+async function assertActivationRevalidatesCandidate(fixture) {
+  fixture.self.registration.active = { scriptURL: fixture.self.location.href };
+  fixture.beta8.set(
+    fixture.cacheKey("./assets/sounds/tap.wav"),
+    new fixture.MockResponse(
       "mutated before activation",
-      new URL("./assets/sounds/tap.wav", scope).href,
+      new URL("./assets/sounds/tap.wav", fixture.scope).href,
       "audio/wav",
     ),
   );
   let rejectedActivatePromise;
-  handlers.get("activate")({ waitUntil(promise) { rejectedActivatePromise = promise; } });
+  fixture.handlers.get("activate")({ waitUntil(promise) { rejectedActivatePromise = promise; } });
   await assert.rejects(rejectedActivatePromise, /installed-shell-not-exact/u);
   assert.equal(
-    cacheStores.has("math-quest-static-v1.0.0-beta.1"),
+    fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"),
     true,
     "activation must preserve the prior cache until the candidate is re-proved",
   );
   assert.equal(
-    cacheStores.has(publicBeta3PhysicalName),
+    fixture.cacheStores.has(fixture.publicBeta3PhysicalName),
     true,
     "activation must preserve the exact public Beta 3 cache until the candidate is re-proved",
   );
-  assert.equal(claimCalls, 0);
-  beta8.set(cacheKey("./assets/sounds/tap.wav"), exactTap.clone());
+  assert.equal(fixture.state.claimCalls, 0);
+  fixture.beta8.set(fixture.cacheKey("./assets/sounds/tap.wav"), fixture.exactTap.clone());
+}
 
-  claimShouldFail = true;
+async function assertActivationPreservesPriorCaches(fixture) {
+  fixture.state.claimShouldFail = true;
   let activatePromise;
-  handlers.get("activate")({ waitUntil(promise) { activatePromise = promise; } });
+  fixture.handlers.get("activate")({ waitUntil(promise) { activatePromise = promise; } });
   await activatePromise;
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"), true);
   assert.equal(
-    cacheStores.has(publicBeta3PhysicalName),
+    fixture.cacheStores.has(fixture.publicBeta3PhysicalName),
     true,
     "activation must preserve the exact public Beta 3 cache for any older open tab",
   );
   assert.equal(
-    cacheStores.has(logicalBeta8Name),
+    fixture.cacheStores.has(fixture.logicalBeta8Name),
     true,
     "activation must not destroy an older same-identity storage cache",
   );
-  assert.equal(claimCalls, 0, "activation must not call clients.claim even when that API would fail");
-  claimShouldFail = false;
-  assert.equal(retainedClientNavigations.length, 0, "a post-Beta-1 cache witness preserves the safe-boundary update path");
+  assert.equal(fixture.state.claimCalls, 0, "activation must not call clients.claim even when that API would fail");
+  fixture.state.claimShouldFail = false;
+  assert.equal(fixture.retainedClientNavigations.length, 0, "a post-Beta-1 cache witness preserves the safe-boundary update path");
+}
 
+async function assertActivationDoesNotProbeOrNavigateClients(fixture) {
   const retainedBeta1Progress = Object.freeze({ bytes: "BETA1-PROGRESS-UNCHANGED" });
-  retainedClients.push(...[
+  fixture.retainedClients.push(...[
     "silent-current-entry",
     "suspended-unknown-post-beta1-entry",
     "malformed-unverifiable-entry",
@@ -2659,57 +1461,63 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   ].map((id) => ({
     id,
     type: "window",
-    url: new URL("./index.html", scope).href,
-    postMessage(message) {
-      retainedClientChallenges.push({ id: this.id, message: structuredClone(message) });
-      if (id === "malformed-unverifiable-entry") queueMicrotask(() => handlers.get("message")({ data: { type: "MALFORMED_CLIENT_REPLY" }, source: this, ports: [] }));
+    url: new URL("./index.html", fixture.scope).href,
+    postMessage: function recordRetainedClientChallenge(message) {
+      fixture.retainedClientChallenges.push({ id: this.id, message: structuredClone(message) });
+      if (id === "malformed-unverifiable-entry") queueMicrotask(() => fixture.handlers.get("message")({ data: { type: "MALFORMED_CLIENT_REPLY" }, source: this, ports: [] }));
     },
     async navigate(url) {
-      retainedClientNavigations.push({ id: this.id, url });
+      fixture.retainedClientNavigations.push({ id: this.id, url });
       return this;
     },
   })));
-  cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["legacy-shell", "beta1"]]));
-  const matchAllCountBeforeUnverifiableActivation = matchAllOptions.length;
+  fixture.cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["legacy-shell", "beta1"]]));
+  const matchAllCountBeforeUnverifiableActivation = fixture.matchAllOptions.length;
   let retainedBeta1ActivatePromise;
-  handlers.get("activate")({ waitUntil(promise) { retainedBeta1ActivatePromise = promise; } });
+  fixture.handlers.get("activate")({ waitUntil(promise) { retainedBeta1ActivatePromise = promise; } });
   await retainedBeta1ActivatePromise;
-  assert.equal(matchAllOptions.length, matchAllCountBeforeUnverifiableActivation, "activation must not inspect clients in order to guess their version");
-  assert.deepEqual(retainedClientChallenges, [], "silent, suspended, unknown, malformed, and Beta 1 clients receive no identity probe");
-  assert.deepEqual(retainedClientNavigations, [], "no silent, suspended, unknown, malformed, or Beta 1 client may be forcibly navigated");
+  assert.equal(fixture.matchAllOptions.length, matchAllCountBeforeUnverifiableActivation, "activation must not inspect clients in order to guess their version");
+  assert.deepEqual(fixture.retainedClientChallenges, [], "silent, suspended, unknown, malformed, and Beta 1 clients receive no identity probe");
+  assert.deepEqual(fixture.retainedClientNavigations, [], "no silent, suspended, unknown, malformed, or Beta 1 client may be forcibly navigated");
   assert.equal(retainedBeta1Progress.bytes, "BETA1-PROGRESS-UNCHANGED", "service-worker activation cannot mutate local progress storage");
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true,
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"), true,
     "activation retains the Beta 1 cache while a true silent Beta 1 tab may still need it");
+}
 
-  cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["stale-beta1-shell", "beta1"]]));
-  cacheStores.set("math-quest-static-v1.0.0-beta.2", new Map([["beta2-shell", "beta2"]]));
+async function assertUnknownLineagePreservesClients(fixture) {
+  fixture.cacheStores.set("math-quest-static-v1.0.0-beta.1", new Map([["stale-beta1-shell", "beta1"]]));
+  fixture.cacheStores.set("math-quest-static-v1.0.0-beta.2", new Map([["beta2-shell", "beta2"]]));
   let retainedBeta2ActivatePromise;
-  handlers.get("activate")({ waitUntil(promise) { retainedBeta2ActivatePromise = promise; } });
+  fixture.handlers.get("activate")({ waitUntil(promise) { retainedBeta2ActivatePromise = promise; } });
   await retainedBeta2ActivatePromise;
-  assert.deepEqual(retainedClientNavigations, [], "evicted or unrecognized cache lineage cannot authorize client navigation");
-  assert.deepEqual(retainedClientChallenges, [], "cache lineage cannot authorize client identity probing");
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.1"), true, "Beta 1 storage remains available to an older open tab");
-  assert.equal(cacheStores.has("math-quest-static-v1.0.0-beta.2"), true, "unknown older tabs keep their release storage until browser eviction");
+  assert.deepEqual(fixture.retainedClientNavigations, [], "evicted or unrecognized cache lineage cannot authorize client navigation");
+  assert.deepEqual(fixture.retainedClientChallenges, [], "cache lineage cannot authorize client identity probing");
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.1"), true, "Beta 1 storage remains available to an older open tab");
+  assert.equal(fixture.cacheStores.has("math-quest-static-v1.0.0-beta.2"), true, "unknown older tabs keep their release storage until browser eviction");
+}
 
+async function assertActiveReadinessShape(fixture) {
   let readiness;
   let readinessPromise;
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_GET_READINESS_V1" },
     ports: [{ postMessage(value) { readiness = value; } }],
     waitUntil(promise) { readinessPromise = promise; },
   });
   await readinessPromise;
   assert.equal(readiness.ready, true);
-  assert.equal(readiness.requiredPaths.length, releaseManifest.entries.length + 1);
+  assert.equal(readiness.requiredPaths.length, fixture.releaseManifest.entries.length + 1);
   assert.deepEqual(
     Object.keys(readiness).sort(),
     ["buildId", "cacheIdentity", "checkedAt", "ready", "release", "requiredPaths", "type", "workerState"].sort(),
   );
+}
 
+async function assertColdWorkerUsesCachedManifest(fixture) {
   const coldHandlers = new Map();
   let coldNetworkCalls = 0;
   const coldSelf = {
-    registration: { scope, active: { scriptURL: self.location.href }, waiting: null },
+    registration: { scope: fixture.scope, active: { scriptURL: fixture.self.location.href }, waiting: null },
     location: new URL("https://example.test/sw.js"),
     clients: { async claim() {} },
     addEventListener(type, listener) {
@@ -2717,17 +1525,17 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     },
     async skipWaiting() {},
   };
-  vm.runInContext(workerText, vm.createContext({
+  vm.runInContext(fixture.workerText, vm.createContext({
     self: coldSelf,
     caches: {
       async open(name) {
-        return cacheFor(name);
+        return fixture.cacheFor(name);
       },
       async keys() {
-        return [...cacheStores.keys()];
+        return [...fixture.cacheStores.keys()];
       },
       async delete(name) {
-        return cacheStores.delete(name);
+        return fixture.cacheStores.delete(name);
       },
     },
     crypto: webcrypto,
@@ -2735,7 +1543,7 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
       coldNetworkCalls += 1;
       return new Promise(() => {});
     },
-    Request: MockRequest,
+    Request: fixture.MockRequest,
     Response,
     Headers,
     URL,
@@ -2761,19 +1569,23 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     }),
   ]).finally(() => clearTimeout(coldTimeout));
   assert.equal(coldResult.ready, true);
-  assert.equal(coldResult.requiredPaths.length, releaseManifest.entries.length + 1);
+  assert.equal(coldResult.requiredPaths.length, fixture.releaseManifest.entries.length + 1);
   assert.equal(coldNetworkCalls, 0, "a verified cached manifest must win before network");
+}
 
-  networkEnabled = false;
+async function assertOfflineNavigationBytes(fixture) {
+  fixture.state.networkEnabled = false;
   const navigation = {
-    request: new MockRequest("./", { mode: "navigate" }),
+    request: new fixture.MockRequest("./", { mode: "navigate" }),
     respondWith(promise) { this.response = promise; },
   };
-  handlers.get("fetch")(navigation);
+  fixture.handlers.get("fetch")(navigation);
   const offlineResponse = await navigation.response;
   assert.equal(offlineResponse.status, 200);
-  assert.equal(sha256(Buffer.from(await offlineResponse.arrayBuffer())), releaseManifest.entries.find((entry) => entry.path === "./index.html").sha256);
+  assert.equal(sha256(Buffer.from(await offlineResponse.arrayBuffer())), fixture.releaseManifest.entries.find((entry) => entry.path === "./index.html").sha256);
+}
 
+async function assertOfflineLegalDocumentRoutes(fixture) {
   const pageText = await readFile(path.join(root, "index.html"), "utf8");
   const legalButtonPattern = /data-action="legal-open" data-legal-id="(privacy|notices|license)"/gu;
   const legalIds = [...pageText.matchAll(legalButtonPattern)].map((match) => match[1]);
@@ -2791,16 +1603,16 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     const href = legalPaths[legalId];
     const clickNavigation = {
       intercepted: false,
-      request: new MockRequest(href, { mode: "navigate" }),
+      request: new fixture.MockRequest(href, { mode: "navigate" }),
       respondWith(promise) {
         this.intercepted = true;
         this.response = promise;
       },
     };
-    handlers.get("fetch")(clickNavigation);
+    fixture.handlers.get("fetch")(clickNavigation);
     assert.equal(clickNavigation.intercepted, true, href);
     const legalResponse = await clickNavigation.response;
-    const entry = releaseManifest.entries.find((item) => item.path === href);
+    const entry = fixture.releaseManifest.entries.find((item) => item.path === href);
     assert.equal(legalResponse.status, 200, href);
     assert.equal(legalResponse.headers.get("Content-Type"), entry.mime, href);
     assert.equal(
@@ -2812,66 +1624,70 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
 
   for (const href of ["./README.md", "./PRIVACY-copy.md", "./docs/release/readiness.md"]) {
     let intercepted = false;
-    handlers.get("fetch")({
-      request: new MockRequest(href, { mode: "navigate" }),
+    fixture.handlers.get("fetch")({
+      request: new fixture.MockRequest(href, { mode: "navigate" }),
       respondWith() {
         intercepted = true;
       },
     });
     assert.equal(intercepted, false, `${href} must remain outside the worker scope`);
   }
+}
 
-  beta8.set(
-    cacheKey("./PRIVACY.md"),
-    new MockResponse(
+async function assertOfflineCorruptionFailsClosed(fixture) {
+  fixture.beta8.set(
+    fixture.cacheKey("./PRIVACY.md"),
+    new fixture.MockResponse(
       "corrupt legal text",
-      new URL("./PRIVACY.md", scope).href,
+      new URL("./PRIVACY.md", fixture.scope).href,
       "text/markdown",
     ),
   );
   const corruptLegalNavigation = {
-    request: new MockRequest("./PRIVACY.md", { mode: "navigate" }),
+    request: new fixture.MockRequest("./PRIVACY.md", { mode: "navigate" }),
     respondWith(promise) {
       this.response = promise;
     },
   };
-  handlers.get("fetch")(corruptLegalNavigation);
+  fixture.handlers.get("fetch")(corruptLegalNavigation);
   assert.equal(
     (await corruptLegalNavigation.response).status,
     503,
     "an offline legal document with the wrong bytes must fail closed",
   );
 
-  beta8.set(
-    cacheKey("./index.html"),
-    new MockResponse("corrupt", new URL("./index.html", scope).href, "text/html"),
+  fixture.beta8.set(
+    fixture.cacheKey("./index.html"),
+    new fixture.MockResponse("corrupt", new URL("./index.html", fixture.scope).href, "text/html"),
   );
   const corruptNavigation = {
-    request: new MockRequest("./", { mode: "navigate" }),
+    request: new fixture.MockRequest("./", { mode: "navigate" }),
     respondWith(promise) { this.response = promise; },
   };
-  handlers.get("fetch")(corruptNavigation);
+  fixture.handlers.get("fetch")(corruptNavigation);
   assert.equal((await corruptNavigation.response).status, 503);
 
   let failedRepair;
   let failedRepairPromise;
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_REPAIR_SHELL_V1" },
     ports: [{ postMessage(value) { failedRepair = value; } }],
     waitUntil(promise) { failedRepairPromise = promise; },
   });
   await failedRepairPromise;
   assert.equal(failedRepair.ready, false);
-  assert.equal(beta8.size, releaseManifest.entries.length + 1);
+  assert.equal(fixture.beta8.size, fixture.releaseManifest.entries.length + 1);
+}
 
-  networkEnabled = true;
-  cachePutFailure = {
-    cacheName: beta8Name,
-    url: cacheKey("./index.html"),
+async function assertPartialRepairRemovesPartialBytes(fixture) {
+  fixture.state.networkEnabled = true;
+  fixture.state.cachePutFailure = {
+    cacheName: fixture.beta8Name,
+    url: fixture.cacheKey("./index.html"),
   };
   let partialRepair;
   let partialRepairPromise;
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_REPAIR_SHELL_V1" },
     ports: [{ postMessage(value) { partialRepair = value; } }],
     waitUntil(promise) { partialRepairPromise = promise; },
@@ -2879,35 +1695,39 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   await partialRepairPromise;
   assert.equal(partialRepair.ready, false);
   assert.equal(
-    cacheStores.get(beta8Name).size,
+    fixture.cacheStores.get(fixture.beta8Name).size,
     0,
     "readiness may reopen the cache, but no partial candidate byte may survive",
   );
+}
 
+async function assertRepairRestoresExactCache(fixture) {
   let repair;
   let repairPromise;
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_REPAIR_SHELL_V1" },
     ports: [{ postMessage(value) { repair = value; } }],
     waitUntil(promise) { repairPromise = promise; },
   });
   await repairPromise;
   assert.equal(repair.ready, true);
-  beta8 = cacheStores.get(beta8Name);
-  assert.equal(beta8.size, releaseManifest.entries.length + 1);
+  fixture.beta8 = fixture.cacheStores.get(fixture.beta8Name);
+  assert.equal(fixture.beta8.size, fixture.releaseManifest.entries.length + 1);
+}
 
+async function assertConcurrentRepairsShareOneTransaction(fixture) {
   const manifestFetchesBeforeConcurrentRepair =
-    networkRequestCounts.get("./release-shell-v1.json") || 0;
+    fixture.networkRequestCounts.get("./release-shell-v1.json") || 0;
   let concurrentRepairOne;
   let concurrentRepairTwo;
   let concurrentRepairPromiseOne;
   let concurrentRepairPromiseTwo;
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_REPAIR_SHELL_V1" },
     ports: [{ postMessage(value) { concurrentRepairOne = value; } }],
     waitUntil(promise) { concurrentRepairPromiseOne = promise; },
   });
-  handlers.get("message")({
+  fixture.handlers.get("message")({
     data: { type: "MATH_QUEST_REPAIR_SHELL_V1" },
     ports: [{ postMessage(value) { concurrentRepairTwo = value; } }],
     waitUntil(promise) { concurrentRepairPromiseTwo = promise; },
@@ -2916,31 +1736,35 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   assert.equal(concurrentRepairOne.ready, true);
   assert.equal(concurrentRepairTwo.ready, true);
   assert.equal(
-    (networkRequestCounts.get("./release-shell-v1.json") || 0)
+    (fixture.networkRequestCounts.get("./release-shell-v1.json") || 0)
       - manifestFetchesBeforeConcurrentRepair,
     1,
     "simultaneous repair requests must share one exact-cache population transaction",
   );
+}
 
+async function assertForeignAndPostRequestsStayOutsideWorker(fixture) {
   let crossOriginIntercepted = false;
-  handlers.get("fetch")({
-    request: new MockRequest("https://other.example/file", { mode: "same-origin" }),
+  fixture.handlers.get("fetch")({
+    request: new fixture.MockRequest("https://other.example/file", { mode: "same-origin" }),
     respondWith() { crossOriginIntercepted = true; },
   });
   assert.equal(crossOriginIntercepted, false);
 
   let postIntercepted = false;
-  const post = new MockRequest("./index.html", { method: "POST" });
-  handlers.get("fetch")({ request: post, respondWith() { postIntercepted = true; } });
+  const post = new fixture.MockRequest("./index.html", { method: "POST" });
+  fixture.handlers.get("fetch")({ request: post, respondWith() { postIntercepted = true; } });
   assert.equal(postIntercepted, false);
+}
 
+async function assertWaitingWorkerRequiresChallenge(fixture) {
   function workerPort() {
     return {
-      scriptURL: self.location.href,
+      scriptURL: fixture.self.location.href,
       async postMessage(data) {
         let replyPayload;
         let effectPromise = null;
-        handlers.get("message")({
+        fixture.handlers.get("message")({
           data,
           ports: [{ postMessage(value) { replyPayload = value; } }],
           waitUntil(promise) { effectPromise = Promise.resolve(promise); },
@@ -2952,41 +1776,43 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
     };
   }
 
-  const activeWorker = workerPort();
-  const exactWaitingWorker = workerPort();
-  self.registration.active = activeWorker;
-  self.registration.waiting = exactWaitingWorker;
+  fixture.activeWorker = workerPort();
+  fixture.exactWaitingWorker = workerPort();
+  fixture.self.registration.active = fixture.activeWorker;
+  fixture.self.registration.waiting = fixture.exactWaitingWorker;
   assert.equal(
-    activeWorker.scriptURL,
-    exactWaitingWorker.scriptURL,
+    fixture.activeWorker.scriptURL,
+    fixture.exactWaitingWorker.scriptURL,
     "real deployments can expose identical active and waiting script URLs",
   );
-  const controllerReadiness = await activeWorker.postMessage({
+  const controllerReadiness = await fixture.activeWorker.postMessage({
     type: "MATH_QUEST_GET_READINESS_V1",
   });
   assert.equal(controllerReadiness.workerState, "active");
 
   const noReadinessChallenge = "0".repeat(64);
-  await exactWaitingWorker.postMessage({
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: noReadinessChallenge,
   });
-  assert.equal(skipWaitingCalls, 0, "activation without waiting readiness must fail");
+  assert.equal(fixture.state.skipWaitingCalls, 0, "activation without waiting readiness must fail");
 
-  const invalidReadiness = await exactWaitingWorker.postMessage({
+  const invalidReadiness = await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_GET_WAITING_READINESS_V1",
     activationChallenge: "e".repeat(63),
   });
   assert.equal(invalidReadiness.ready, false);
   assert.equal(invalidReadiness.activationChallenge, null);
-  await exactWaitingWorker.postMessage({
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: "e".repeat(63),
   });
-  assert.equal(skipWaitingCalls, 0, "an invalid challenge must never activate");
+  assert.equal(fixture.state.skipWaitingCalls, 0, "an invalid challenge must never activate");
+}
 
+async function assertMismatchedChallengeIsConsumed(fixture) {
   const acceptedChallenge = "a".repeat(64);
-  const waitingReadiness = await exactWaitingWorker.postMessage({
+  const waitingReadiness = await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_GET_WAITING_READINESS_V1",
     activationChallenge: acceptedChallenge,
   });
@@ -2995,55 +1821,89 @@ test("service-worker install, readiness, corruption, repair, and routing are eff
   assert.equal(waitingReadiness.ready, true);
   assert.equal(waitingReadiness.activationChallenge, acceptedChallenge);
 
-  await exactWaitingWorker.postMessage({
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: "b".repeat(64),
   });
-  assert.equal(skipWaitingCalls, 0, "a mismatched challenge must fail");
-  await exactWaitingWorker.postMessage({
+  assert.equal(fixture.state.skipWaitingCalls, 0, "a mismatched challenge must fail");
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: acceptedChallenge,
   });
-  assert.equal(skipWaitingCalls, 0, "a challenge consumed by a mismatch must be stale");
+  assert.equal(fixture.state.skipWaitingCalls, 0, "a challenge consumed by a mismatch must be stale");
+}
 
+async function assertPostReadinessMutationBlocksActivation(fixture) {
   const mutationChallenge = "c".repeat(64);
-  assert.equal((await exactWaitingWorker.postMessage({
+  assert.equal((await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_GET_WAITING_READINESS_V1",
     activationChallenge: mutationChallenge,
   })).ready, true);
-  const tapEntry = releaseManifest.entries.find((entry) => entry.path === "./assets/sounds/tap.wav");
-  beta8.set(
-    cacheKey(tapEntry.path),
-    new MockResponse(
+  fixture.tapEntry = fixture.releaseManifest.entries.find((entry) => entry.path === "./assets/sounds/tap.wav");
+  fixture.beta8.set(
+    fixture.cacheKey(fixture.tapEntry.path),
+    new fixture.MockResponse(
       "mutated after readiness",
-      new URL(tapEntry.path, scope).href,
-      tapEntry.mime,
+      new URL(fixture.tapEntry.path, fixture.scope).href,
+      fixture.tapEntry.mime,
     ),
   );
-  await exactWaitingWorker.postMessage({
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: mutationChallenge,
   });
-  assert.equal(skipWaitingCalls, 0, "cache mutation after readiness must fail revalidation");
+  assert.equal(fixture.state.skipWaitingCalls, 0, "cache mutation after readiness must fail revalidation");
+}
 
-  const tapBytes = await readFile(path.join(root, tapEntry.path.slice(2)));
-  beta8.set(
-    cacheKey(tapEntry.path),
-    new MockResponse(tapBytes, new URL(tapEntry.path, scope).href, tapEntry.mime),
+async function assertSuccessfulChallengeIsOneTime(fixture) {
+  const tapBytes = await readFile(path.join(root, fixture.tapEntry.path.slice(2)));
+  fixture.beta8.set(
+    fixture.cacheKey(fixture.tapEntry.path),
+    new fixture.MockResponse(tapBytes, new URL(fixture.tapEntry.path, fixture.scope).href, fixture.tapEntry.mime),
   );
   const finalChallenge = "d".repeat(64);
-  assert.equal((await exactWaitingWorker.postMessage({
+  assert.equal((await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_GET_WAITING_READINESS_V1",
     activationChallenge: finalChallenge,
   })).ready, true);
-  await exactWaitingWorker.postMessage({
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: finalChallenge,
   });
-  assert.equal(skipWaitingCalls, 1);
-  await exactWaitingWorker.postMessage({
+  assert.equal(fixture.state.skipWaitingCalls, 1);
+  await fixture.exactWaitingWorker.postMessage({
     type: "MATH_QUEST_SKIP_WAITING_V1",
     activationChallenge: finalChallenge,
   });
-  assert.equal(skipWaitingCalls, 1, "a successful challenge must be one-time");
+  assert.equal(fixture.state.skipWaitingCalls, 1, "a successful challenge must be one-time");
+}
+
+const SERVICE_WORKER_SCENARIOS = Object.freeze([
+  assertOfflineInstallPreservesPriorShells,
+  assertTamperedManifestRejected,
+  assertPartialInstallRemoved,
+  assertExactInstallIsIdempotent,
+  assertInvalidNetworkEntriesPreserveExactShell,
+  assertActivationRevalidatesCandidate,
+  assertActivationPreservesPriorCaches,
+  assertActivationDoesNotProbeOrNavigateClients,
+  assertUnknownLineagePreservesClients,
+  assertActiveReadinessShape,
+  assertColdWorkerUsesCachedManifest,
+  assertOfflineNavigationBytes,
+  assertOfflineLegalDocumentRoutes,
+  assertOfflineCorruptionFailsClosed,
+  assertPartialRepairRemovesPartialBytes,
+  assertRepairRestoresExactCache,
+  assertConcurrentRepairsShareOneTransaction,
+  assertForeignAndPostRequestsStayOutsideWorker,
+  assertWaitingWorkerRequiresChallenge,
+  assertMismatchedChallengeIsConsumed,
+  assertPostReadinessMutationBlocksActivation,
+  assertSuccessfulChallengeIsOneTime,
+]);
+
+test("service-worker install, readiness, corruption, repair, and routing are effect-sensitive", async () => {
+  const fixture = await loadServiceWorkerFixture();
+  for (const scenario of SERVICE_WORKER_SCENARIOS) await scenario(fixture);
 });

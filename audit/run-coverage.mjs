@@ -45,34 +45,59 @@ function exactKeys(value, keys) {
   return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
 }
 
-export function validateStructuredAudit(value, engineSha256) {
-  const issues = [];
+function exactSummary(value, expected) {
+  return exactKeys(value, Object.keys(expected))
+    && Object.entries(expected).every(([key, count]) => value[key] === count);
+}
+
+function uniquePasses(results, count) {
+  return Array.isArray(results) && results.length === count
+    && new Set(results.map((result) => result?.id)).size === count
+    && !results.some((result) => result?.status !== "PASS");
+}
+
+function validateEngineAuditIdentity(engine, engineSha256, issues) {
+  if (!exactKeys(engine, ["sha256", "summary", "results", "effectMap", "childStringCandidateSha256", "childStringConstants"])) issues.push("structured engine result is not closed");
+  if (engine?.sha256 !== engineSha256) issues.push("structured engine SHA does not match the exact staged engine");
+  if (!Array.isArray(engine?.results) || engine.results.length === 0) issues.push("structured engine results are absent");
+}
+
+function validateEngineAuditResults(engine, issues) {
+  if (!exactSummary(engine?.summary, { PASS: 43, FAIL: 0, SKIP: 0, total: 43, requiredFailures: 0 })) issues.push("structured engine summary is not an exact all-pass result");
+  if (!uniquePasses(engine?.results, 43)) issues.push("structured engine assertions are not 43 unique passes");
+  if (!/^[a-f0-9]{64}$/u.test(engine?.childStringCandidateSha256 || "")) issues.push("structured child-string candidate digest is invalid");
+  if (!exactKeys(engine?.childStringConstants, ["pendingApproval", "approvalSha256"])) issues.push("structured child-string constants are not closed");
+}
+
+function validateSemanticAuditIdentity(semantic, issues) {
+  if (!exactKeys(semantic, ["assertions", "summary", "failures", "contractPass"])) issues.push("structured semantic result is not closed");
+  if (!Array.isArray(semantic?.assertions) || semantic.assertions.length === 0 || semantic.contractPass !== true) issues.push("structured semantic results are incomplete");
+}
+
+function validateSemanticAuditResults(semantic, issues) {
+  if (!exactSummary(semantic?.summary, { total: 130, passed: 130, failed: 0, skills: 126, taskTypes: 166, questions: 6_048 })) issues.push("structured semantic summary is not the exact approved all-pass contract");
+  if (!uniquePasses(semantic?.assertions, 130)
+    || !Array.isArray(semantic.failures) || semantic.failures.length !== 0) issues.push("structured semantic assertions are not 130 unique passes");
+}
+
+function validateAuditRoot(value, issues) {
   if (!exactKeys(value, ["schemaVersion", "artifactKind", "complete", "engine", "semantic"])) issues.push("structured audit root is not closed");
   if (value?.schemaVersion !== 1 || value?.artifactKind !== "MATH_QUEST_INSTRUMENTED_ENGINE_SEMANTIC_V1" || value?.complete !== true) issues.push("structured audit identity is invalid");
-  if (!exactKeys(value?.engine, ["sha256", "summary", "results", "effectMap", "childStringCandidateSha256", "childStringConstants"])) issues.push("structured engine result is not closed");
-  if (value?.engine?.sha256 !== engineSha256) issues.push("structured engine SHA does not match the exact staged engine");
-  if (!Array.isArray(value?.engine?.results) || value.engine.results.length === 0) issues.push("structured engine results are absent");
-  if (!exactKeys(value?.engine?.summary, ["PASS", "FAIL", "SKIP", "total", "requiredFailures"])
-    || value.engine.summary.PASS !== 43 || value.engine.summary.FAIL !== 0
-    || value.engine.summary.SKIP !== 0 || value.engine.summary.total !== 43
-    || value.engine.summary.requiredFailures !== 0) issues.push("structured engine summary is not an exact all-pass result");
-  if (!Array.isArray(value?.engine?.results) || value.engine.results.length !== 43
-    || new Set(value.engine.results.map((result) => result?.id)).size !== 43
-    || value.engine.results.some((result) => result?.status !== "PASS")) issues.push("structured engine assertions are not 43 unique passes");
-  if (!/^[a-f0-9]{64}$/u.test(value?.engine?.childStringCandidateSha256 || "")) issues.push("structured child-string candidate digest is invalid");
-  if (!exactKeys(value?.engine?.childStringConstants, ["pendingApproval", "approvalSha256"])) issues.push("structured child-string constants are not closed");
-  if (!exactKeys(value?.semantic, ["assertions", "summary", "failures", "contractPass"])) issues.push("structured semantic result is not closed");
-  if (!Array.isArray(value?.semantic?.assertions) || value.semantic.assertions.length === 0 || value.semantic.contractPass !== true) issues.push("structured semantic results are incomplete");
-  if (!exactKeys(value?.semantic?.summary, ["total", "passed", "failed", "skills", "taskTypes", "questions"])
-    || value.semantic.summary.total !== 130 || value.semantic.summary.passed !== 130
-    || value.semantic.summary.failed !== 0 || value.semantic.summary.skills !== 126
-    || value.semantic.summary.taskTypes !== 166 || value.semantic.summary.questions !== 6_048) issues.push("structured semantic summary is not the exact approved all-pass contract");
-  if (!Array.isArray(value?.semantic?.assertions) || value.semantic.assertions.length !== 130
-    || new Set(value.semantic.assertions.map((assertion) => assertion?.id)).size !== 130
-    || value.semantic.assertions.some((assertion) => assertion?.status !== "PASS")
-    || !Array.isArray(value.semantic.failures) || value.semantic.failures.length !== 0) issues.push("structured semantic assertions are not 130 unique passes");
+}
+
+function validateAuditResultCounts(value, issues) {
   if (value?.engine?.results?.length !== 43) issues.push("structured engine result count is not 43");
   if (value?.semantic?.assertions?.length !== 130) issues.push("structured semantic result count is not 130");
+}
+
+export function validateStructuredAudit(value, engineSha256) {
+  const issues = [];
+  validateAuditRoot(value, issues);
+  validateEngineAuditIdentity(value?.engine, engineSha256, issues);
+  validateEngineAuditResults(value?.engine, issues);
+  validateSemanticAuditIdentity(value?.semantic, issues);
+  validateSemanticAuditResults(value?.semantic, issues);
+  validateAuditResultCounts(value, issues);
   return { valid: issues.length === 0, issues };
 }
 
@@ -110,7 +135,7 @@ function uncoveredBranchRanges(source, script) {
   return [...unique.values()].sort((a, b) => a.startOffset - b.startOffset || a.endOffset - b.endOffset);
 }
 
-async function nativeBranchRangeTotals(directory, suffix, source) {
+async function matchingCoverageScripts(directory, suffix) {
   const matches = [];
   for (const name of await readdir(directory).catch(() => [])) {
     if (!name.endsWith(".json")) continue;
@@ -122,7 +147,11 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
       matches.push(script);
     }
   }
-  if (!matches.length) return {
+  return matches;
+}
+
+function missingCoverageScriptTotals() {
+  return {
     virtualFilenameObserved: false,
     virtualFilename: null,
     rawVirtualUrl: null,
@@ -139,13 +168,19 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
     uncoveredBranchFunctions: [],
   };
 
-  const rangeMap = (script) => JSON.stringify((script.functions || []).map((fn) => ({
+}
+
+function coverageRangeMap(script) {
+  return JSON.stringify((script.functions || []).map((fn) => ({
     functionName: fn.functionName || "",
     isBlockCoverage: fn.isBlockCoverage === true,
     ranges: (fn.ranges || []).map((range) => [range.startOffset, range.endOffset]),
   })));
-  const firstMap = rangeMap(matches[0]);
-  const rangeMapsIdentical = matches.every((script) => rangeMap(script) === firstMap);
+}
+
+function coverageAggregationIdentity(matches, source) {
+  const firstMap = coverageRangeMap(matches[0]);
+  const rangeMapsIdentical = matches.every((script) => coverageRangeMap(script) === firstMap);
   const normalizedUrls = new Set(matches.map((script) => String(script.url || "").replace(/\\/gu, "/").toLowerCase()));
   const sourceSpanMatches = matches.every((script) => {
     const rootRange = script.functions?.[0]?.ranges?.[0];
@@ -155,8 +190,11 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
   if (!rangeMapsIdentical) aggregationError = "Exact-URL coverage scripts exposed mismatched function/range maps.";
   else if (normalizedUrls.size !== 1) aggregationError = "Coverage scripts matched the suffix but did not share one exact virtual URL.";
   else if (!sourceSpanMatches) aggregationError = "Coverage script root span did not match the exact evaluated source bytes.";
+  return { rangeMapsIdentical, sourceSpanMatches, aggregationError };
+}
 
-  const merged = {
+function mergedCoverageScript(matches) {
+  return {
     ...matches[0],
     functions: (matches[0].functions || []).map((fn, functionIndex) => ({
       ...fn,
@@ -169,8 +207,9 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
       })),
     })),
   };
-  const ranges = (merged.functions || []).flatMap((fn) => (fn.ranges || []).slice(1));
-  const uncovered = uncoveredBranchRanges(source, merged);
+}
+
+function uncoveredFunctionSummary(uncovered) {
   const uncoveredByFunction = new Map();
   for (const item of uncovered) {
     const entry = uncoveredByFunction.get(item.functionName) || { functionName: item.functionName, count: 0, lines: new Set() };
@@ -178,35 +217,37 @@ async function nativeBranchRangeTotals(directory, suffix, source) {
     entry.lines.add(item.startLine);
     uncoveredByFunction.set(item.functionName, entry);
   }
+  return [...uncoveredByFunction.values()]
+    .map((entry) => ({ functionName: entry.functionName, count: entry.count, lines: [...entry.lines].sort((a, b) => a - b) }))
+    .sort((a, b) => b.count - a.count || a.functionName.localeCompare(b.functionName));
+}
+
+async function nativeBranchRangeTotals(directory, suffix, source) {
+  const matches = await matchingCoverageScripts(directory, suffix);
+  if (!matches.length) return missingCoverageScriptTotals();
+  const identity = coverageAggregationIdentity(matches, source);
+  const merged = mergedCoverageScript(matches);
+  const ranges = (merged.functions || []).flatMap((fn) => (fn.ranges || []).slice(1));
+  const uncovered = uncoveredBranchRanges(source, merged);
+  const uncoveredBranchFunctions = uncoveredFunctionSummary(uncovered);
   return {
     virtualFilenameObserved: true,
     virtualFilename: path.posix.basename(String(matches[0].url || "").replace(/\\/gu, "/")),
     rawVirtualUrl: matches[0].url,
     scriptInstanceCount: matches.length,
-    rangeMapsIdentical,
-    sourceSpanMatches,
-    aggregationError,
+    ...identity,
     branchTotal: ranges.length,
     branchCovered: ranges.filter((range) => Number(range.count) > 0).length,
     branchMetric: "native V8 non-root block ranges",
     uncoveredBranchRangeCount: uncovered.length,
     uncoveredBranchRanges: uncovered.slice(0, 500),
     uncoveredBranchRangesTruncated: uncovered.length > 500,
-    uncoveredBranchFunctions: [...uncoveredByFunction.values()]
-      .map((entry) => ({ functionName: entry.functionName, count: entry.count, lines: [...entry.lines].sort((a, b) => a - b) }))
-      .sort((a, b) => b.count - a.count || a.functionName.localeCompare(b.functionName)),
+    uncoveredBranchFunctions,
   };
 }
 
-export async function runCoverage({
-  nodePath = process.execPath,
-  indexPath = path.join(root, "index.html"),
-  timeoutMs = DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS,
-} = {}) {
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new RangeError("coverage process timeout must be a positive safe integer");
-  const node = probeNode24(nodePath);
-  const calibration = await calibrateNativeCoverage(nodePath, root);
-  const report = {
+function initialCoverageReport(node, calibration, timeoutMs) {
+  return {
     status: "FAIL", provider: "node:test native V8 coverage", calibrated: calibration.ok,
     nodeVersion: node.version, node24: node.ok, nodeProbeStatus: node.status, nodeProbeError: node.error,
     calibration: {
@@ -233,10 +274,118 @@ export async function runCoverage({
       "nested save snapshot contract audit",
     ],
   };
+}
+
+function recordNativeCoverageProcess(report, run, row) {
+  report.testProcessStatus = run.status;
+  report.testProcessSignal = run.signal;
+  report.testProcessError = run.error;
+  report.testProcessTimedOut = run.timedOut;
+  report.testProcessOutputOverflow = run.outputOverflow;
+  report.testProcessCleanupVerified = run.cleanupVerified;
+  report.testProcessCleanupDetail = run.cleanupDetail;
+  report.testOutput = `${run.stdout}\n${run.stderr}`.slice(-30_000);
+  report.engineRow = row?.raw ?? null;
+  report.nativeReportedBranchPct = row?.branchPct ?? null;
+}
+
+async function readStructuredCoverageAudit(report, structuredAuditPath) {
+  try {
+    const structuredBytes = await readFile(structuredAuditPath);
+    const structured = JSON.parse(structuredBytes.toString("utf8"));
+    const validation = validateStructuredAudit(structured, report.engineSha256);
+    report.structuredAuditValid = validation.valid;
+    report.structuredAuditIssues = validation.issues;
+    report.structuredAuditSha256 = createHash("sha256").update(structuredBytes).digest("hex");
+    report.structuredAudit = validation.valid ? structured : null;
+  } catch (error) {
+    report.structuredAuditIssues.push(`structured audit could not be read: ${String(error)}`);
+  }
+}
+
+function recordCoverageProcessFailures(report, run, timeoutMs) {
+  if (run.timedOut) report.structuredAuditIssues.unshift(`native coverage process exceeded ${timeoutMs} ms`);
+  if (run.outputOverflow) report.structuredAuditIssues.unshift("native coverage process exceeded its output limit");
+  if (run.cleanupVerified === false) report.structuredAuditIssues.unshift(`native coverage process-tree cleanup was not verified (${run.cleanupDetail})`);
+}
+
+function recordCoverageMeasurements(report, totals, row) {
+  Object.assign(report, totals);
+  report.rawBlockRangePct = totals.branchTotal > 0
+    ? Math.round((totals.branchCovered / totals.branchTotal) * 10_000) / 100
+    : null;
+  report.branchPct = row?.branchPct ?? null;
+  report.linePct = row?.linePct ?? null;
+  report.functionPct = row?.functionPct ?? null;
+}
+
+function validCoverageAggregation(totals) {
+  return totals.virtualFilenameObserved && totals.branchTotal > 0
+    && totals.rangeMapsIdentical && totals.sourceSpanMatches && !totals.aggregationError;
+}
+
+function recordCoverageVerdict(report, node, run, row, totals) {
+  report.status = node.ok
+    && coverageProcessCompletedCleanly(run)
+    && row
+    && report.structuredAuditValid
+    && report.branchPct >= MINIMUM_ENGINE_BRANCH_COVERAGE_PCT
+    && validCoverageAggregation(totals)
+    ? "PASS"
+    : "FAIL";
+}
+
+async function measureStagedCoverage({ nodePath, indexPath, timeoutMs, node, report, extracted, tempRoot }) {
+  const enginePath = path.join(tempRoot, "math-quest.engine.js");
+  await writeFile(enginePath, extracted.engineBytes);
+  const staged = await readFile(enginePath);
+  report.stagedSha256 = createHash("sha256").update(staged).digest("hex");
+  report.exactBytes = staged.equals(extracted.engineBytes) && report.stagedSha256 === report.engineSha256;
+  if (!report.exactBytes) return report;
+  const testFile = path.join(root, "audit", "tests", "node-engine.test.mjs");
+  const structuredAuditPath = path.join(tempRoot, "instrumented-engine-semantic-v1.json");
+  const rawCoverageDir = path.join(tempRoot, "v8-raw");
+  await mkdir(rawCoverageDir);
+  const run = await runNativeCoverage(nodePath, testFile, {
+    cwd: tempRoot,
+    env: { MQ_ENGINE_COVERAGE_FILE: enginePath, MQ_INDEX_PATH: indexPath, MQ_STRUCTURED_AUDIT_FILE: structuredAuditPath, NODE_V8_COVERAGE: rawCoverageDir },
+    timeoutMs,
+  });
+  const row = findCoverageRow(run.rows, "math-quest.engine.js");
+  const evaluatedSource = `(\n${extracted.source}\n)`;
+  const totals = await nativeBranchRangeTotals(rawCoverageDir, "math-quest.engine.js", evaluatedSource);
+  recordNativeCoverageProcess(report, run, row);
+  await readStructuredCoverageAudit(report, structuredAuditPath);
+  recordCoverageProcessFailures(report, run, timeoutMs);
+  recordCoverageMeasurements(report, totals, row);
+  recordCoverageVerdict(report, node, run, row, totals);
+  if (!row) report.fallbackAttempts.push({
+    provider: "native V8 coverage",
+    status: "FAIL",
+    reason: run.timedOut
+      ? `Instrumented coverage exceeded its governed ${timeoutMs} ms nested-process budget.`
+      : "Report omitted the exact staged engine filename.",
+  });
+  return report;
+}
+
+function validateCoverageRuntime(report, node) {
   if (!node.ok) {
     report.calibration.reasons.push(`coverage requires Node 24; probe returned ${node.version || node.error || node.status}`);
     report.calibrated = false;
   }
+}
+
+export async function runCoverage({
+  nodePath = process.execPath,
+  indexPath = path.join(root, "index.html"),
+  timeoutMs = DEFAULT_COVERAGE_PROCESS_TIMEOUT_MS,
+} = {}) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new RangeError("coverage process timeout must be a positive safe integer");
+  const node = probeNode24(nodePath);
+  const calibration = await calibrateNativeCoverage(nodePath, root);
+  const report = initialCoverageReport(node, calibration, timeoutMs);
+  validateCoverageRuntime(report, node);
   if (!report.calibrated) {
     report.fallbackAttempts.push({ provider: "pinned c8", status: "UNAVAILABLE", reason: "No repository-pinned c8 installation is present." });
     report.fallbackAttempts.push({ provider: "node:inspector + pinned v8-to-istanbul", status: "UNAVAILABLE", reason: "No repository-pinned v8-to-istanbul installation is present." });
@@ -247,75 +396,7 @@ export async function runCoverage({
   report.engineSha256 = extracted.sha256;
   const tempRoot = await mkdtemp(path.join(root, "audit", ".tmp-engine-coverage-"));
   try {
-    const enginePath = path.join(tempRoot, "math-quest.engine.js");
-    await writeFile(enginePath, extracted.engineBytes);
-    const staged = await readFile(enginePath);
-    report.stagedSha256 = createHash("sha256").update(staged).digest("hex");
-    report.exactBytes = staged.equals(extracted.engineBytes) && report.stagedSha256 === report.engineSha256;
-    if (!report.exactBytes) return report;
-    const testFile = path.join(root, "audit", "tests", "node-engine.test.mjs");
-    const structuredAuditPath = path.join(tempRoot, "instrumented-engine-semantic-v1.json");
-    const rawCoverageDir = path.join(tempRoot, "v8-raw");
-    await mkdir(rawCoverageDir);
-    const run = await runNativeCoverage(nodePath, testFile, {
-      cwd: tempRoot,
-      env: { MQ_ENGINE_COVERAGE_FILE: enginePath, MQ_INDEX_PATH: indexPath, MQ_STRUCTURED_AUDIT_FILE: structuredAuditPath, NODE_V8_COVERAGE: rawCoverageDir },
-      timeoutMs,
-    });
-    const row = findCoverageRow(run.rows, "math-quest.engine.js");
-    const evaluatedSource = `(\n${extracted.source}\n)`;
-    const totals = await nativeBranchRangeTotals(rawCoverageDir, "math-quest.engine.js", evaluatedSource);
-    report.testProcessStatus = run.status;
-    report.testProcessSignal = run.signal;
-    report.testProcessError = run.error;
-    report.testProcessTimedOut = run.timedOut;
-    report.testProcessOutputOverflow = run.outputOverflow;
-    report.testProcessCleanupVerified = run.cleanupVerified;
-    report.testProcessCleanupDetail = run.cleanupDetail;
-    report.testOutput = `${run.stdout}\n${run.stderr}`.slice(-30_000);
-    report.engineRow = row?.raw ?? null;
-    report.nativeReportedBranchPct = row?.branchPct ?? null;
-    try {
-      const structuredBytes = await readFile(structuredAuditPath);
-      const structured = JSON.parse(structuredBytes.toString("utf8"));
-      const validation = validateStructuredAudit(structured, report.engineSha256);
-      report.structuredAuditValid = validation.valid;
-      report.structuredAuditIssues = validation.issues;
-      report.structuredAuditSha256 = createHash("sha256").update(structuredBytes).digest("hex");
-      report.structuredAudit = validation.valid ? structured : null;
-    } catch (error) {
-      report.structuredAuditIssues.push(`structured audit could not be read: ${String(error)}`);
-    }
-    if (run.timedOut) report.structuredAuditIssues.unshift(`native coverage process exceeded ${timeoutMs} ms`);
-    if (run.outputOverflow) report.structuredAuditIssues.unshift("native coverage process exceeded its output limit");
-    if (run.cleanupVerified === false) report.structuredAuditIssues.unshift(`native coverage process-tree cleanup was not verified (${run.cleanupDetail})`);
-    Object.assign(report, totals);
-    report.rawBlockRangePct = totals.branchTotal > 0
-      ? Math.round((totals.branchCovered / totals.branchTotal) * 10_000) / 100
-      : null;
-    report.branchPct = row?.branchPct ?? null;
-    report.linePct = row?.linePct ?? null;
-    report.functionPct = row?.functionPct ?? null;
-    report.status = node.ok
-      && coverageProcessCompletedCleanly(run)
-      && row
-      && report.structuredAuditValid
-      && report.branchPct >= MINIMUM_ENGINE_BRANCH_COVERAGE_PCT
-      && totals.virtualFilenameObserved
-      && totals.branchTotal > 0
-      && totals.rangeMapsIdentical
-      && totals.sourceSpanMatches
-      && !totals.aggregationError
-      ? "PASS"
-      : "FAIL";
-    if (!row) report.fallbackAttempts.push({
-      provider: "native V8 coverage",
-      status: "FAIL",
-      reason: run.timedOut
-        ? `Instrumented coverage exceeded its governed ${timeoutMs} ms nested-process budget.`
-        : "Report omitted the exact staged engine filename.",
-    });
-    return report;
+    return await measureStagedCoverage({ nodePath, indexPath, timeoutMs, node, report, extracted, tempRoot });
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

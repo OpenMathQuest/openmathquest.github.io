@@ -1,0 +1,565 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmathquest.github.io/audit/schemas/refactor-baseline-v2.schema.json",
+  "title": "Math Quest whole-codebase refactor baseline v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "artifactKind", "checkpoint", "status", "baselineCommit",
+    "captureBoundary", "sourceSnapshotSha256", "captureInventory", "hardGateContract",
+    "functionQuality", "files", "lint", "lintSuppressions", "coverage",
+    "deadCodeAndDependencies", "workMarkers", "shippedSizes", "architecture",
+    "security", "dependencyInventory", "openFindingCategories"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "artifactKind": { "const": "MATH_QUEST_REFACTOR_BASELINE_V2" },
+    "checkpoint": { "const": "R0" },
+    "status": { "const": "BASELINE_RECORDED_WITH_FINDINGS" },
+    "baselineCommit": { "$ref": "#/$defs/sha1" },
+    "captureBoundary": { "const": "WHOLE_TRACKED_CODEBASE_BEFORE_STRUCTURAL_PRODUCT_REFACTOR" },
+    "sourceSnapshotSha256": { "$ref": "#/$defs/sha256" },
+    "captureInventory": { "$ref": "#/$defs/captureInventory" },
+    "hardGateContract": { "$ref": "#/$defs/hardGateContract" },
+    "functionQuality": { "$ref": "#/$defs/functionQuality" },
+    "files": { "$ref": "#/$defs/files" },
+    "lint": { "$ref": "#/$defs/lint" },
+    "lintSuppressions": { "$ref": "#/$defs/lintSuppressions" },
+    "coverage": { "$ref": "#/$defs/coverage" },
+    "deadCodeAndDependencies": { "$ref": "#/$defs/deadCode" },
+    "workMarkers": { "$ref": "#/$defs/workMarkers" },
+    "shippedSizes": { "$ref": "#/$defs/shippedSizes" },
+    "architecture": { "$ref": "#/$defs/architecture" },
+    "security": { "$ref": "#/$defs/security" },
+    "dependencyInventory": { "$ref": "#/$defs/dependencyInventory" },
+    "openFindingCategories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["architecture", "complexity", "coverage", "dead-code", "lint", "markers", "security", "sizes"] }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "type": "object",
+            "properties": { "status": { "const": "FAIL" } },
+            "required": ["status"]
+          }
+        },
+        "required": ["security"]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "openFindingCategories": { "type": "array", "contains": { "const": "security" } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "type": "object",
+            "properties": { "status": { "const": "PASS" } },
+            "required": ["status"]
+          }
+        },
+        "required": ["security"]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "security": {
+            "type": "object",
+            "properties": {
+              "verifiedArtifacts": { "type": "integer", "minimum": 1 },
+              "semgrepPlannedTargets": { "type": "integer", "minimum": 1 },
+              "semgrepScannedTargets": { "type": "integer", "minimum": 1 },
+              "semgrepFindings": { "const": 0 },
+              "semgrepErrors": { "const": 0 },
+              "worktreeSecrets": { "const": 0 },
+              "historySecrets": { "const": 0 },
+              "vulnerabilities": {
+                "type": "object",
+                "properties": { "total": { "const": 0 } },
+                "required": ["total"]
+              },
+              "negativeControlsPassed": { "const": true }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nonnegative": { "type": "integer", "minimum": 0 },
+    "numberOrNull": { "type": ["number", "null"], "minimum": 0 },
+    "captureInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trackedPaths", "sourceFiles", "excludedGeneratedPaths"],
+      "properties": {
+        "trackedPaths": { "$ref": "#/$defs/nonnegative" },
+        "sourceFiles": { "$ref": "#/$defs/nonnegative" },
+        "excludedGeneratedPaths": {
+          "const": ["audit/function-quality-baseline-v1.json", "audit/refactor-baseline-v2.json"]
+        }
+      }
+    },
+    "hardGateContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cyclomaticMaximum", "meaningfulCoverageMinimumPercent", "zeroLintErrors",
+        "zeroLintWarningsFinishLine", "noUnexplainedLintSuppressions",
+        "noUntrackedWorkMarkers", "noSecurityOrDependencyFindings",
+        "legacyRatchetsMayOnlyDecrease"
+      ],
+      "properties": {
+        "cyclomaticMaximum": { "const": 10 },
+        "meaningfulCoverageMinimumPercent": { "const": 80 },
+        "zeroLintErrors": { "const": true },
+        "zeroLintWarningsFinishLine": { "const": true },
+        "noUnexplainedLintSuppressions": { "const": true },
+        "noUntrackedWorkMarkers": { "const": true },
+        "noSecurityOrDependencyFindings": { "const": true },
+        "legacyRatchetsMayOnlyDecrease": { "const": true }
+      }
+    },
+    "maxima": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "type": "number", "minimum": 0 },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "functionLines": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "violationCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cyclomatic", "abcMagnitude", "cognitive", "functionLines", "maxNesting"],
+      "properties": {
+        "cyclomatic": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "$ref": "#/$defs/nonnegative" },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "functionLines": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "javascriptParseError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "line", "column", "message"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1 },
+        "line": { "$ref": "#/$defs/nonnegative" },
+        "column": { "$ref": "#/$defs/nonnegative" },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "functionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units", "functions", "parseErrors", "maxima", "violationFunctions", "violationCounts"],
+      "properties": {
+        "units": { "$ref": "#/$defs/nonnegative" },
+        "functions": { "$ref": "#/$defs/nonnegative" },
+        "parseErrors": { "type": "array", "items": { "$ref": "#/$defs/javascriptParseError" } },
+        "maxima": { "$ref": "#/$defs/maxima" },
+        "violationFunctions": { "$ref": "#/$defs/nonnegative" },
+        "violationCounts": { "$ref": "#/$defs/violationCounts" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unchanged", "added", "modified", "deleted", "newOrModified", "newOrModifiedViolations"],
+      "properties": {
+        "unchanged": { "$ref": "#/$defs/nonnegative" },
+        "added": { "$ref": "#/$defs/nonnegative" },
+        "modified": { "$ref": "#/$defs/nonnegative" },
+        "deleted": { "$ref": "#/$defs/nonnegative" },
+        "newOrModified": { "$ref": "#/$defs/nonnegative" },
+        "newOrModifiedViolations": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "javascriptFunctions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["functions", "violationFunctions", "maxima", "violationCounts", "parseErrors", "currentCheckpoint", "currentClassification"],
+      "properties": {
+        "functions": { "$ref": "#/$defs/nonnegative" },
+        "violationFunctions": { "$ref": "#/$defs/nonnegative" },
+        "maxima": { "$ref": "#/$defs/maxima" },
+        "violationCounts": { "$ref": "#/$defs/violationCounts" },
+        "parseErrors": { "type": "array", "items": { "$ref": "#/$defs/javascriptParseError" } },
+        "currentCheckpoint": { "$ref": "#/$defs/functionSummary" },
+        "currentClassification": { "$ref": "#/$defs/classification" }
+      }
+    },
+    "powershellParseError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line", "column", "message"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "$ref": "#/$defs/nonnegative" },
+        "column": { "$ref": "#/$defs/nonnegative" },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "thresholdViolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "observed", "maximum"],
+      "properties": {
+        "metric": { "enum": ["abcMagnitude", "cognitive", "cyclomatic", "functionLines", "maxNesting"] },
+        "observed": { "type": "number", "minimum": 0 },
+        "maximum": { "type": "number", "minimum": 0 }
+      }
+    },
+    "powershellRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "functionId", "path", "name", "kind", "startLine", "endLine", "functionLines",
+        "parameters", "sourceSha256", "cyclomatic", "assignments", "branches", "conditions",
+        "abcMagnitude", "cognitive", "maxNesting", "statements", "thresholdViolations"
+      ],
+      "properties": {
+        "functionId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "const": "FunctionDefinitionAst" },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "functionLines": { "type": "integer", "minimum": 1 },
+        "parameters": { "$ref": "#/$defs/nonnegative" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "cyclomatic": { "type": "integer", "minimum": 1 },
+        "assignments": { "$ref": "#/$defs/nonnegative" },
+        "branches": { "$ref": "#/$defs/nonnegative" },
+        "conditions": { "$ref": "#/$defs/nonnegative" },
+        "abcMagnitude": { "type": "number", "minimum": 0 },
+        "cognitive": { "$ref": "#/$defs/nonnegative" },
+        "maxNesting": { "$ref": "#/$defs/nonnegative" },
+        "statements": { "$ref": "#/$defs/nonnegative" },
+        "thresholdViolations": { "type": "array", "items": { "$ref": "#/$defs/thresholdViolation" } }
+      }
+    },
+    "powershellFunctions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "limits", "files", "functions", "parseErrors", "maxima", "violationFunctions", "violationCounts", "rows"],
+      "properties": {
+        "contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "parser", "cyclomatic", "abc", "cognitive", "functionLoc", "nesting"],
+          "properties": {
+            "id": { "const": "MATH_QUEST_POWERSHELL_FUNCTION_QUALITY_V1" },
+            "parser": { "const": "SYSTEM_MANAGEMENT_AUTOMATION_AST" },
+            "cyclomatic": { "const": "ONE_PLUS_IF_CLAUSES_SWITCH_CLAUSES_LOOPS_CATCH_TRAP_TERNARY_LOGICAL_AND_PIPELINE_CHAINS" },
+            "abc": { "const": "ASSIGNMENTS_COMMAND_OR_METHOD_BRANCHES_AND_BOOLEAN_CONDITIONS_EUCLIDEAN_MAGNITUDE" },
+            "cognitive": { "const": "NESTED_CONTROL_FLOW_LOGICAL_CHAINS_AND_LABELED_JUMPS" },
+            "functionLoc": { "const": "PHYSICAL_INCLUSIVE_SOURCE_LINES" },
+            "nesting": { "const": "CONTROL_AST_ANCESTOR_DEPTH" }
+          }
+        },
+        "limits": { "$ref": "#/$defs/maxima" },
+        "files": { "$ref": "#/$defs/nonnegative" },
+        "functions": { "$ref": "#/$defs/nonnegative" },
+        "parseErrors": { "type": "array", "items": { "$ref": "#/$defs/powershellParseError" } },
+        "maxima": { "$ref": "#/$defs/maxima" },
+        "violationFunctions": { "$ref": "#/$defs/nonnegative" },
+        "violationCounts": { "$ref": "#/$defs/violationCounts" },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/powershellRow" } }
+      }
+    },
+    "functionQuality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["javascriptArtifact", "javascriptArtifactSha256", "javascript", "powershell"],
+      "properties": {
+        "javascriptArtifact": { "const": "audit/function-quality-baseline-v1.json" },
+        "javascriptArtifactSha256": { "$ref": "#/$defs/sha256" },
+        "javascript": { "$ref": "#/$defs/javascriptFunctions" },
+        "powershell": { "$ref": "#/$defs/powershellFunctions" }
+      }
+    },
+    "fileRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "lines", "bytes", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "lines": { "$ref": "#/$defs/nonnegative" },
+        "bytes": { "$ref": "#/$defs/nonnegative" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "fileSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "lines", "bytes", "maxima", "rows"],
+      "properties": {
+        "files": { "$ref": "#/$defs/nonnegative" },
+        "lines": { "$ref": "#/$defs/nonnegative" },
+        "bytes": { "$ref": "#/$defs/nonnegative" },
+        "maxima": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lines", "bytes"],
+          "properties": { "lines": { "$ref": "#/$defs/nonnegative" }, "bytes": { "$ref": "#/$defs/nonnegative" } }
+        },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/fileRow" } }
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["immutableBaseline", "currentCheckpoint", "sourceBudgetFindings"],
+      "properties": {
+        "immutableBaseline": { "$ref": "#/$defs/fileSummary" },
+        "currentCheckpoint": { "$ref": "#/$defs/fileSummary" },
+        "sourceBudgetFindings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "lint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eslintErrors", "eslintWarningsByRule", "markdownlintFindings", "stylelintFindings"],
+      "properties": {
+        "eslintErrors": { "$ref": "#/$defs/nonnegative" },
+        "eslintWarningsByRule": { "type": "object", "additionalProperties": { "$ref": "#/$defs/nonnegative" } },
+        "markdownlintFindings": { "$ref": "#/$defs/nonnegative" },
+        "stylelintFindings": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "suppressionCounts": { "type": "object", "additionalProperties": { "$ref": "#/$defs/nonnegative" } },
+    "inlineSuppressionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line", "kind", "explained"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "kind": { "enum": ["ESLINT", "MARKDOWNLINT", "STYLELINT"] },
+        "explained": { "type": "boolean" }
+      }
+    },
+    "configurationSuppressionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "selector", "explained"],
+      "properties": {
+        "path": { "enum": [".markdownlint-cli2.jsonc", "eslint.config.mjs", "stylelint.config.mjs"] },
+        "kind": { "enum": ["CONFIG_DEFAULT_DISABLED", "CONFIG_EXCLUSION", "CONFIG_RULE_DISABLED"] },
+        "selector": { "type": "string", "minLength": 1 },
+        "explained": { "type": "boolean" }
+      }
+    },
+    "inlineSuppressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "unexplained", "byKind", "records"],
+      "properties": {
+        "total": { "$ref": "#/$defs/nonnegative" },
+        "unexplained": { "$ref": "#/$defs/nonnegative" },
+        "byKind": { "$ref": "#/$defs/suppressionCounts" },
+        "records": { "type": "array", "items": { "$ref": "#/$defs/inlineSuppressionRecord" } }
+      }
+    },
+    "configurationSuppressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "unexplained", "byKind", "records"],
+      "properties": {
+        "total": { "$ref": "#/$defs/nonnegative" },
+        "unexplained": { "$ref": "#/$defs/nonnegative" },
+        "byKind": { "$ref": "#/$defs/suppressionCounts" },
+        "records": { "type": "array", "items": { "$ref": "#/$defs/configurationSuppressionRecord" } }
+      }
+    },
+    "lintSuppressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "unexplained", "inline", "configuration"],
+      "properties": {
+        "total": { "$ref": "#/$defs/nonnegative" },
+        "unexplained": { "$ref": "#/$defs/nonnegative" },
+        "inline": { "$ref": "#/$defs/inlineSuppressions" },
+        "configuration": { "$ref": "#/$defs/configurationSuppressions" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope", "wholeRepositoryInstrumentationStatus", "meaningfulMinimumPercent", "status",
+        "provider", "calibrated", "branchPct", "linePct", "functionPct", "branchTotal",
+        "branchCovered", "engineSha256", "exactBytes", "structuredAuditValid",
+        "testProcessStatus", "testProcessTimedOut", "testProcessOutputOverflow",
+        "testProcessCleanupVerified", "structuredAuditIssues", "calibrationReasons"
+      ],
+      "properties": {
+        "scope": { "const": "EXACT_SHIPPED_ENGINE_NATIVE_V8_BRANCH_LINE_AND_FUNCTION_COVERAGE" },
+        "wholeRepositoryInstrumentationStatus": { "const": "NOT_AVAILABLE_AT_R0" },
+        "meaningfulMinimumPercent": { "const": 80 },
+        "status": { "enum": ["PASS", "FAIL"] },
+        "provider": { "type": "string", "minLength": 1 },
+        "calibrated": { "type": "boolean" },
+        "branchPct": { "$ref": "#/$defs/numberOrNull" },
+        "linePct": { "$ref": "#/$defs/numberOrNull" },
+        "functionPct": { "$ref": "#/$defs/numberOrNull" },
+        "branchTotal": { "$ref": "#/$defs/nonnegative" },
+        "branchCovered": { "$ref": "#/$defs/nonnegative" },
+        "engineSha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "exactBytes": { "type": "boolean" },
+        "structuredAuditValid": { "type": "boolean" },
+        "testProcessStatus": { "type": ["integer", "null"] },
+        "testProcessTimedOut": { "type": "boolean" },
+        "testProcessOutputOverflow": { "type": "boolean" },
+        "testProcessCleanupVerified": { "type": ["boolean", "null"] },
+        "structuredAuditIssues": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "calibrationReasons": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "deadCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unusedFiles", "unusedDependencies", "unusedExports", "duplicateExportGroups"],
+      "properties": {
+        "unusedFiles": { "$ref": "#/$defs/nonnegative" },
+        "unusedDependencies": { "$ref": "#/$defs/nonnegative" },
+        "unusedExports": { "$ref": "#/$defs/nonnegative" },
+        "duplicateExportGroups": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "workMarkerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "line", "tokens", "tracked"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "tokens": { "type": "array", "minItems": 1, "items": { "enum": ["TODO", "FIXME", "HACK"] } },
+        "tracked": { "type": "boolean" }
+      }
+    },
+    "workMarkers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "untracked", "records"],
+      "properties": {
+        "total": { "$ref": "#/$defs/nonnegative" },
+        "untracked": { "$ref": "#/$defs/nonnegative" },
+        "records": { "type": "array", "items": { "$ref": "#/$defs/workMarkerRecord" } }
+      }
+    },
+    "shippedSizes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["measurements", "budgets", "findings"],
+      "properties": {
+        "measurements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "stylesheetBytes", "javascriptBytes", "compiledAssetBytes", "productionPayloadBytes",
+            "engineScenarioExecutions", "engineScenarioWallTimeMs", "qualityGateWallTimeMs"
+          ],
+          "properties": {
+            "stylesheetBytes": { "$ref": "#/$defs/nonnegative" },
+            "javascriptBytes": { "$ref": "#/$defs/nonnegative" },
+            "compiledAssetBytes": { "$ref": "#/$defs/nonnegative" },
+            "productionPayloadBytes": { "$ref": "#/$defs/nonnegative" },
+            "engineScenarioExecutions": { "$ref": "#/$defs/nonnegative" },
+            "engineScenarioWallTimeMs": { "$ref": "#/$defs/nonnegative" },
+            "qualityGateWallTimeMs": { "$ref": "#/$defs/nonnegative" }
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "stylesheetMaximumBytes", "javascriptMaximumBytes", "compiledAssetMaximumBytes",
+            "productionPayloadMaximumBytes", "engineScenarioMaximumWallTimeMs", "qualityGateMaximumWallTimeMs"
+          ],
+          "properties": {
+            "stylesheetMaximumBytes": { "$ref": "#/$defs/nonnegative" },
+            "javascriptMaximumBytes": { "$ref": "#/$defs/nonnegative" },
+            "compiledAssetMaximumBytes": { "$ref": "#/$defs/nonnegative" },
+            "productionPayloadMaximumBytes": { "$ref": "#/$defs/nonnegative" },
+            "engineScenarioMaximumWallTimeMs": { "$ref": "#/$defs/nonnegative" },
+            "qualityGateMaximumWallTimeMs": { "$ref": "#/$defs/nonnegative" }
+          }
+        },
+        "findings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "policyId", "status", "legacyImportEdges", "findings"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "policyId": { "const": "math-quest-static-architecture" },
+        "status": { "enum": ["PASS", "FAIL"] },
+        "legacyImportEdges": { "$ref": "#/$defs/nonnegative" },
+        "findings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "vulnerabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["info", "low", "moderate", "high", "critical", "total"],
+      "properties": {
+        "info": { "$ref": "#/$defs/nonnegative" },
+        "low": { "$ref": "#/$defs/nonnegative" },
+        "moderate": { "$ref": "#/$defs/nonnegative" },
+        "high": { "$ref": "#/$defs/nonnegative" },
+        "critical": { "$ref": "#/$defs/nonnegative" },
+        "total": { "$ref": "#/$defs/nonnegative" }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status", "verifiedArtifacts", "semgrepPlannedTargets", "semgrepScannedTargets",
+        "semgrepFindings", "semgrepErrors", "worktreeSecrets", "historySecrets",
+        "vulnerabilities", "negativeControlsPassed"
+      ],
+      "properties": {
+        "status": { "enum": ["PASS", "FAIL"] },
+        "verifiedArtifacts": { "$ref": "#/$defs/nonnegative" },
+        "semgrepPlannedTargets": { "$ref": "#/$defs/nonnegative" },
+        "semgrepScannedTargets": { "$ref": "#/$defs/nonnegative" },
+        "semgrepFindings": { "$ref": "#/$defs/nonnegative" },
+        "semgrepErrors": { "$ref": "#/$defs/nonnegative" },
+        "worktreeSecrets": { "$ref": "#/$defs/nonnegative" },
+        "historySecrets": { "$ref": "#/$defs/nonnegative" },
+        "vulnerabilities": { "$ref": "#/$defs/vulnerabilities" },
+        "negativeControlsPassed": { "type": "boolean" }
+      }
+    },
+    "dependencyInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directDevelopmentDependencies", "lockfilePackages"],
+      "properties": {
+        "directDevelopmentDependencies": { "$ref": "#/$defs/nonnegative" },
+        "lockfilePackages": { "$ref": "#/$defs/nonnegative" }
+      }
+    }
+  }
+}

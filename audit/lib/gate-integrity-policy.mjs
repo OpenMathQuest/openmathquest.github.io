@@ -4,8 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 
-export const GATE_INTEGRITY_POLICY_PATH = "audit/gate-integrity-policy-v1.json";
-export const GATE_INTEGRITY_POLICY_SCHEMA_PATH = "audit/schemas/gate-integrity-policy-v1.schema.json";
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const canonicalPolicyUrl = new URL("../gate-integrity-policy-v1.json", import.meta.url);
@@ -37,28 +35,36 @@ export function releaseCertificationRunEligible(run, jobs, releaseCommit) {
       && job?.conclusion === "success").length === 1;
 }
 
+function pullRequestEnforcementIssues(requiredContexts, enforcement, issues) {
+  if (!requiredContexts.includes(enforcement.requiredPullRequestCheck)) {
+    issues.push(`main does not require ${enforcement.requiredPullRequestCheck}`);
+  }
+  for (const prohibited of enforcement.prohibitedRequiredPullRequestChecks) {
+    if (requiredContexts.includes(prohibited)) issues.push(`main incorrectly requires ${prohibited}`);
+  }
+}
+
+function tagEnforcementIssues(tagRules, enforcement, issues) {
+  const tagRule = tagRules.find((record) => record.pattern === enforcement.requiredTagPattern);
+  if (!tagRule) {
+    issues.push(`missing tag rule ${enforcement.requiredTagPattern}`);
+    return;
+  }
+  for (const required of enforcement.requiredTagRules) {
+    if (!tagRule.rules?.includes(required)) issues.push(`tag rule lacks ${required}`);
+  }
+  if (tagRule.bypassActorsObserved !== true) issues.push("tag rule bypass actors were not observable");
+  else if (tagRule.bypassActorCount !== 0) issues.push("tag rule must not have bypass actors");
+}
+
 export function evaluateGithubEnforcementSnapshot(snapshot, policy) {
   const requiredContexts = Array.isArray(snapshot?.requiredPullRequestChecks)
     ? snapshot.requiredPullRequestChecks
     : [];
   const tagRules = Array.isArray(snapshot?.tagRules) ? snapshot.tagRules : [];
   const issues = [];
-  if (!requiredContexts.includes(policy.enforcement.requiredPullRequestCheck)) {
-    issues.push(`main does not require ${policy.enforcement.requiredPullRequestCheck}`);
-  }
-  for (const prohibited of policy.enforcement.prohibitedRequiredPullRequestChecks) {
-    if (requiredContexts.includes(prohibited)) issues.push(`main incorrectly requires ${prohibited}`);
-  }
-  const tagRule = tagRules.find((record) => record.pattern === policy.enforcement.requiredTagPattern);
-  if (!tagRule) {
-    issues.push(`missing tag rule ${policy.enforcement.requiredTagPattern}`);
-  } else {
-    for (const required of policy.enforcement.requiredTagRules) {
-      if (!tagRule.rules?.includes(required)) issues.push(`tag rule lacks ${required}`);
-    }
-    if (tagRule.bypassActorsObserved !== true) issues.push("tag rule bypass actors were not observable");
-    else if (tagRule.bypassActorCount !== 0) issues.push("tag rule must not have bypass actors");
-  }
+  pullRequestEnforcementIssues(requiredContexts, policy.enforcement, issues);
+  tagEnforcementIssues(tagRules, policy.enforcement, issues);
   return Object.freeze({ valid: issues.length === 0, issues: Object.freeze(issues) });
 }
 
@@ -102,70 +108,134 @@ export async function validateGateIntegrityPolicySchema(policy, schemaPathOrUrl 
   return Object.freeze(validate(policy) ? [] : (validate.errors || []).map(schemaIssue));
 }
 
-export async function validateGateIntegrityPolicy(policy, { root = repositoryRoot, trackedPaths = null } = {}) {
-  const issues = [...await validateGateIntegrityPolicySchema(policy)];
-  if (issues.length) return Object.freeze(issues);
+async function resolvedTrackedPaths(root, trackedPaths) {
   const tracked = new Set(trackedPaths || []);
-  if (!tracked.size) {
-    const { trackedRepositoryPaths } = await import("./repository-code-map.mjs");
-    for (const entry of trackedRepositoryPaths(root)) tracked.add(entry);
+  if (tracked.size) return tracked;
+  const { trackedRepositoryPaths } = await import("./repository-code-map.mjs");
+  for (const entry of trackedRepositoryPaths(root)) tracked.add(entry);
+  return tracked;
+}
+
+function recordIds(records) {
+  return records.map((record) => record.id);
+}
+
+function addDuplicateIdIssues(policy, issues) {
+  const collections = [
+    [policy.rules, "rules contain duplicate ids"],
+    [policy.gateFamilies, "gateFamilies contain duplicate ids"],
+    [policy.gateFamilies.map((record) => record.negativeControl), "gateFamilies contain duplicate negative-control ids"],
+    [policy.acceptanceCriteria, "acceptanceCriteria contain duplicate ids"],
+  ];
+  for (const [records, message] of collections) {
+    const ids = recordIds(records);
+    if (new Set(ids).size !== ids.length) issues.push(message);
   }
-  const ruleIds = policy.rules.map((record) => record.id);
-  const familyIds = policy.gateFamilies.map((record) => record.id);
-  const negativeControlIds = policy.gateFamilies.map((record) => record.negativeControl.id);
-  const acceptanceIds = policy.acceptanceCriteria.map((record) => record.id);
-  if (new Set(ruleIds).size !== ruleIds.length) issues.push("rules contain duplicate ids");
-  if (new Set(familyIds).size !== familyIds.length) issues.push("gateFamilies contain duplicate ids");
-  if (new Set(negativeControlIds).size !== negativeControlIds.length) issues.push("gateFamilies contain duplicate negative-control ids");
-  if (new Set(acceptanceIds).size !== acceptanceIds.length) issues.push("acceptanceCriteria contain duplicate ids");
-  if (!same(policy.rules, canonical(policy.rules, (record) => record.id))) issues.push("rules must be sorted lexicographically by id");
-  if (!same(policy.gateFamilies, canonical(policy.gateFamilies, (record) => record.id))) issues.push("gateFamilies must be sorted lexicographically by id");
-  if (!same(policy.acceptanceCriteria, canonical(policy.acceptanceCriteria, (record) => record.id))) issues.push("acceptanceCriteria must be sorted lexicographically by id");
+}
+
+function addOrderingIssues(policy, issues) {
+  const collections = [
+    [policy.rules, "rules"],
+    [policy.gateFamilies, "gateFamilies"],
+    [policy.acceptanceCriteria, "acceptanceCriteria"],
+  ];
+  for (const [records, label] of collections) {
+    if (!same(records, canonical(records, (record) => record.id))) {
+      issues.push(`${label} must be sorted lexicographically by id`);
+    }
+  }
+}
+
+function familyDeclaredPaths(family) {
+  return [...family.implementationPaths, ...family.validatorPaths];
+}
+
+function addFamilyPathIssues(family, tracked, issues) {
+  if (!same(family.implementationPaths, [...family.implementationPaths].sort())) {
+    issues.push(`${family.id} implementationPaths must be sorted lexicographically`);
+  }
+  if (!same(family.validatorPaths, [...family.validatorPaths].sort())) {
+    issues.push(`${family.id} validatorPaths must be sorted lexicographically`);
+  }
+  for (const entry of familyDeclaredPaths(family)) {
+    if (!tracked.has(entry)) issues.push(`${family.id} references untracked path ${entry}`);
+  }
+}
+
+function addNodeTestControlIssues(family, source, issues) {
+  const control = family.negativeControl;
+  if (!control.testName.startsWith(`[${control.id}] `)) {
+    issues.push(`${family.id} negative control testName is bound to a different control id`);
+  }
+  if (!source.includes(`test("${control.testName}"`)) {
+    issues.push(`${family.id} negative control testName is not present in its executable test`);
+  }
+}
+
+function addSelfTestControlIssues(family, source, issues) {
+  const control = family.negativeControl;
+  const allowedBindings = new Set([
+    `REPORT_FIELD:negativeControls.${control.id}.status=PASS`,
+    `STDOUT:NEGATIVE_CONTROL=${control.id}:PASS`,
+  ]);
+  if (!allowedBindings.has(control.passEvidence)) {
+    issues.push(`${family.id} negative control passEvidence is bound to a different control id or unknown evidence channel`);
+  } else if (!source.includes(JSON.stringify(control.passEvidence))) {
+    issues.push(`${family.id} negative control passEvidence is not declared by its executable source`);
+  }
+}
+
+function addControlSourceIssues(family, source, issues) {
+  const control = family.negativeControl;
+  if (!source.includes(control.id)) {
+    issues.push(`${family.id} negative control id is not bound to executable source`);
+  }
+  if (control.executionMode === "NODE_TEST") addNodeTestControlIssues(family, source, issues);
+  else addSelfTestControlIssues(family, source, issues);
+}
+
+async function addNegativeControlIssues(family, root, issues) {
+  const control = family.negativeControl;
+  if (!familyDeclaredPaths(family).includes(control.executionPath)) {
+    issues.push(`${family.id} negative control executionPath is not a declared family path`);
+    return;
+  }
+  try {
+    const source = await readFileAsync(path.join(root, ...control.executionPath.split("/")), "utf8");
+    addControlSourceIssues(family, source, issues);
+  } catch (error) {
+    issues.push(`${family.id} negative control executable is unreadable: ${error.message}`);
+  }
+}
+
+async function addGateFamilyIssues(policy, tracked, root, issues) {
   for (const family of policy.gateFamilies) {
-    if (!same(family.implementationPaths, [...family.implementationPaths].sort())) issues.push(`${family.id} implementationPaths must be sorted lexicographically`);
-    if (!same(family.validatorPaths, [...family.validatorPaths].sort())) issues.push(`${family.id} validatorPaths must be sorted lexicographically`);
-    for (const entry of [...family.implementationPaths, ...family.validatorPaths]) {
-      if (!tracked.has(entry)) issues.push(`${family.id} references untracked path ${entry}`);
-    }
-    const control = family.negativeControl;
-    if (![...family.implementationPaths, ...family.validatorPaths].includes(control.executionPath)) {
-      issues.push(`${family.id} negative control executionPath is not a declared family path`);
-      continue;
-    }
-    try {
-      const source = await readFileAsync(path.join(root, ...control.executionPath.split("/")), "utf8");
-      if (!source.includes(control.id)) issues.push(`${family.id} negative control id is not bound to executable source`);
-      if (control.executionMode === "NODE_TEST") {
-        if (!control.testName.startsWith(`[${control.id}] `)) {
-          issues.push(`${family.id} negative control testName is bound to a different control id`);
-        }
-        if (!source.includes(`test("${control.testName}"`)) {
-          issues.push(`${family.id} negative control testName is not present in its executable test`);
-        }
-      } else {
-        const allowedBindings = new Set([
-          `REPORT_FIELD:negativeControls.${control.id}.status=PASS`,
-          `STDOUT:NEGATIVE_CONTROL=${control.id}:PASS`,
-        ]);
-        if (!allowedBindings.has(control.passEvidence)) {
-          issues.push(`${family.id} negative control passEvidence is bound to a different control id or unknown evidence channel`);
-        } else if (!source.includes(JSON.stringify(control.passEvidence))) {
-          issues.push(`${family.id} negative control passEvidence is not declared by its executable source`);
-        }
-      }
-    } catch (error) {
-      issues.push(`${family.id} negative control executable is unreadable: ${error.message}`);
-    }
+    addFamilyPathIssues(family, tracked, issues);
+    await addNegativeControlIssues(family, root, issues);
   }
+}
+
+function addClosedPolicyIssues(policy, issues) {
+  const familyIds = recordIds(policy.gateFamilies);
   const requiredFamilyIds = [
-    "gate.art-design-governance", "gate.art-functional-vertical-slice", "gate.art-migration-baseline", "gate.art-question-shell", "gate.art-question-zones", "gate.art-token-projection", "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
+    "gate.accessibility-automation", "gate.ai-change-loop", "gate.art-design-governance", "gate.art-functional-vertical-slice", "gate.art-migration-baseline", "gate.art-question-shell", "gate.art-question-zones", "gate.art-token-projection", "gate.audit-orchestration", "gate.browser", "gate.canary", "gate.coverage", "gate.deep-ux", "gate.engine", "gate.generator",
     "gate.github-pr", "gate.launcher", "gate.mutation", "gate.pages", "gate.playwright", "gate.public-candidate",
     "gate.publication-evidence", "gate.semantic",
   ];
   if (!same(familyIds, requiredFamilyIds)) issues.push("gateFamilies do not equal the closed required family set");
-  if (policy.metricFloors.engineBranchCoverage.minimumPercent !== 88) issues.push("engine branch coverage floor drifted from 88 percent");
+  if (policy.metricFloors.engineBranchCoverage.minimumPercent !== 89.33) issues.push("engine branch coverage floor drifted from 89.33 percent");
   if (policy.metricFloors.representativeMutationFamilies.minimumKilled !== 11) issues.push("representative mutation floor drifted from eleven families");
   if (policy.executionPolicy.automaticRetries !== 0) issues.push("audit lane retries drifted from zero");
+}
+
+export async function validateGateIntegrityPolicy(policy, { root = repositoryRoot, trackedPaths = null } = {}) {
+  const issues = [...await validateGateIntegrityPolicySchema(policy)];
+  if (issues.length) return Object.freeze(issues);
+  const tracked = await resolvedTrackedPaths(root, trackedPaths);
+  addDuplicateIdIssues(policy, issues);
+  addOrderingIssues(policy, issues);
+  await addGateFamilyIssues(policy, tracked, root, issues);
+  addClosedPolicyIssues(policy, issues);
   return Object.freeze(issues);
 }
 

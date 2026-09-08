@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { assertRightsInputBindings } from "./rights-state-fixture.mjs";
 import path from "node:path";
 import test from "node:test";
+import "./playwright-server-lifecycle.test.mjs";
 import { fileURLToPath } from "node:url";
 import {
   PLAYWRIGHT_FOCUSED_AUTOMATIC_RETRIES,
@@ -20,13 +22,23 @@ import {
 } from "../lib/playwright-focused-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const lifecycleSource = await readFile(new URL("../lib/playwright-server-lifecycle.mjs", import.meta.url), "utf8");
 const digest = "a".repeat(64);
 
-const validReport = () => ({
-  schemaVersion: PLAYWRIGHT_FOCUSED_SCHEMA_VERSION,
-  contractId: PLAYWRIGHT_FOCUSED_CONTRACT_ID,
-  generatedAt: "2026-08-12T12:00:00.000Z",
-  toolchain: {
+test("[NC-PLAYWRIGHT-HELPER-RIGHTS-BINDING] extracted browser helper bytes remain bound to rights evidence", async () => {
+  await assertRightsInputBindings([
+    "audit/lib/playwright-deep-ux-sampling.mjs",
+    "audit/playwright/art-dom-observations.mjs",
+    "audit/playwright/assisted-learning-journey.mjs",
+    "audit/playwright/deep-ux-dom-observations.mjs",
+    "audit/playwright/design-token-observations.mjs",
+    "audit/playwright/functional-art-journey.mjs",
+    "audit/playwright/parent-lab-journey.mjs",
+    "audit/playwright/tutorial-observations.mjs",
+  ]);
+});
+
+const REPORT_TOOLCHAIN = Object.freeze({
     runnerPackage: "@playwright/test",
     runnerVersion: PLAYWRIGHT_TEST_VERSION,
     browserProduct: "Microsoft Edge",
@@ -34,7 +46,13 @@ const validReport = () => ({
     browserExecutableSha256: digest,
     serverRootId: digest,
     servedPayloadSha256: digest,
-  },
+});
+
+const validReport = () => ({
+  schemaVersion: PLAYWRIGHT_FOCUSED_SCHEMA_VERSION,
+  contractId: PLAYWRIGHT_FOCUSED_CONTRACT_ID,
+  generatedAt: "2026-08-12T12:00:00.000Z",
+  toolchain: { ...REPORT_TOOLCHAIN },
   privacy: {
     usesSyntheticStateOnly: true,
     includesChildName: false,
@@ -42,6 +60,14 @@ const validReport = () => ({
     includesTraceOnPass: false,
     includesScreenshotOnPass: false,
     uploadsFailureArtifacts: false,
+  },
+  accessibility: {
+    enginePackage: "axe-core",
+    engineVersion: "4.13.0",
+    runTags: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"],
+    negativeControl: { id: "NC-AXE-UNNAMED-BUTTON-DETECTED", status: "PASS" },
+    violationCount: 0,
+    manualReviewItems: [],
   },
   summary: {
     expected: PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.length,
@@ -70,6 +96,8 @@ test("[NC-PLAYWRIGHT-MISSING-SKIPPED-RETRIED-RESULT] focused Playwright report a
     (report) => { report.toolchain.serverRootId = "b".repeat(64); },
     (report) => { report.toolchain.servedPayloadSha256 = "b".repeat(64); },
     (report) => { report.toolchain.browserExecutableSha256 = "b".repeat(64); },
+    (report) => { report.accessibility.negativeControl.status = "FAIL"; },
+    (report) => { report.accessibility.violationCount = 1; },
   ]) {
     const mutant = validReport();
     mutate(mutant);
@@ -104,11 +132,12 @@ test("Playwright configuration preserves one-worker, zero-retry, installed-Edge 
 });
 
 test("direct journeys use native Playwright actions and forbid synthetic interaction shortcuts", async () => {
-  const [spec, fixtures] = await Promise.all([
-    readFile(path.join(root, "audit", "playwright", "critical-journeys.spec.mjs"), "utf8"),
-    readFile(path.join(root, "audit", "playwright", "fixtures.mjs"), "utf8"),
-  ]);
-  const source = `${spec}\n${fixtures}`;
+  const sources = await Promise.all([
+    "critical-journeys.spec", "fixtures", "art-dom-observations",
+    "assisted-learning-journey", "design-token-observations",
+    "functional-art-journey", "parent-lab-journey", "tutorial-observations",
+  ].map((name) => readFile(path.join(root, "audit", "playwright", `${name}.mjs`), "utf8")));
+  const source = sources.join("\n");
   for (const id of PLAYWRIGHT_FOCUSED_EXPECTED_RESULT_KEYS.filter((key) => key.startsWith("edge-desktop:")).map((key) => key.split(":")[1])) {
     assert.match(source, new RegExp(`\\[${id}\\]`, "u"));
   }
@@ -138,7 +167,7 @@ test("focused server identity binds the exact checkout root and served bytes", a
   assert.equal(playwrightFocusedServerIdentityMatches({ ...identity, rootId: "b".repeat(64) }, identity), false);
   assert.equal(playwrightFocusedServerIdentityMatches({ ...identity, servedPayloadSha256: "b".repeat(64) }, identity), false);
   assert.equal(playwrightFocusedServerIdentityMatches({ ...identity, extra: true }, identity), false);
-  assert.match(runner, /playwrightFocusedServerIdentityMatches\(value, expectedHealth\)/u);
+  assert.match(lifecycleSource, /playwrightFocusedServerIdentityMatches\(value, expectedHealth\)/u);
   assert.match(runner, /MQ_PLAYWRIGHT_ROOT_ID/u);
   assert.match(runner, /MQ_PLAYWRIGHT_SERVED_PAYLOAD_SHA256/u);
 });

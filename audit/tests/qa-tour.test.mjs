@@ -1,3 +1,5 @@
+import { qaReportContext, qaSnapshotHarness } from "./qa-browser-fixture.mjs";
+import { createSourceExtractor } from "./source-extraction.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -9,7 +11,7 @@ const indexUrl = new URL("../../index.html", import.meta.url);
 const html = readFileSync(indexUrl, "utf8");
 const localServerSource = readFileSync(new URL("../../Serve-MathQuest.ps1", import.meta.url), "utf8");
 const browserSmokeSource = readFileSync(new URL("../lib/browser-smoke.mjs", import.meta.url), "utf8");
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)].map((match) => match[1]);
+const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)].map((match) => match[1]);
 assert.equal(scripts.length, 2);
 const adapter = scripts[1];
 const extractedEngine = await extractEngine(indexUrl);
@@ -27,83 +29,11 @@ const EXPECTED_RELEASE_REACHABLE_METHODS = Object.freeze(
   EXPECTED_RENDERER_CAPABLE_METHODS.filter((method) => !["NUMBER_BOND", "NUMBER_CHOICE"].includes(method)),
 );
 
-function matchingDelimiter(source, openIndex, open, close) {
-  let depth = 0;
-  let quote = null;
-  let lineComment = false;
-  let blockComment = false;
-  for (let index = openIndex; index < source.length; index += 1) {
-    const character = source[index];
-    const next = source[index + 1];
-    if (lineComment) {
-      if (character === "\n") lineComment = false;
-      continue;
-    }
-    if (blockComment) {
-      if (character === "*" && next === "/") {
-        blockComment = false;
-        index += 1;
-      }
-      continue;
-    }
-    if (quote) {
-      if (character === "\\") index += 1;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === "/" && next === "/" && source[index - 1] !== "\\") {
-      lineComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "/" && next === "*" && source[index - 1] !== "\\") {
-      blockComment = true;
-      index += 1;
-      continue;
-    }
-    if (character === "'" || character === '"' || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === open) depth += 1;
-    if (character === close && --depth === 0) return index;
-  }
-  throw new Error(`unclosed ${open}${close}`);
-}
+const extraction = createSourceExtractor(adapter);
+const extractFunction = (name) => extraction.functionDeclaration(name);
+const extractFunctionOptional = (name) => extraction.functionDeclaration(name, { optional: true });
 
-function extractFunctionOptional(name) {
-  const matches = [...adapter.matchAll(new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "gu"))];
-  if (!matches.length) return null;
-  assert.equal(matches.length, 1, `${name} must have exactly one adapter declaration`);
-  const start = matches[0].index;
-  const parametersStart = adapter.indexOf("(", start);
-  const parametersEnd = matchingDelimiter(adapter, parametersStart, "(", ")");
-  const bodyStart = adapter.indexOf("{", parametersEnd);
-  const bodyEnd = matchingDelimiter(adapter, bodyStart, "{", "}");
-  return adapter.slice(start, bodyEnd + 1);
-}
-
-function extractFunction(name) {
-  const source = extractFunctionOptional(name);
-  assert.ok(source, `${name} must have exactly one adapter declaration`);
-  return source;
-}
-
-function extractListenerStatement(target, eventName, marker) {
-  const token = `${target}.addEventListener("${eventName}",`;
-  const matches = [];
-  for (let from = 0; ; ) {
-    const start = adapter.indexOf(token, from);
-    if (start < 0) break;
-    const open = adapter.indexOf("(", start);
-    const close = matchingDelimiter(adapter, open, "(", ")");
-    const statement = `${adapter.slice(start, close + 1)};`;
-    if (statement.includes(marker)) matches.push(statement);
-    from = close + 1;
-  }
-  assert.equal(matches.length, 1, `${target} ${eventName} listener containing ${marker} must be unique`);
-  return matches[0];
-}
+const extractListenerStatement = (target, eventName, marker) => extraction.listenerStatement(target, eventName, marker);
 
 function declarationBetween(startToken, endToken) {
   const start = adapter.indexOf(startToken);
@@ -187,83 +117,11 @@ function qaReportHarness({
     revoked: [],
     shared: [],
   };
-  class LocalFile extends Blob {
-    constructor(parts, name, options = {}) {
-      super(parts, options);
-      this.name = String(name);
-      this.lastModified = Number(options.lastModified) || 0;
-    }
-  }
   const anchors = [];
-  const document = {
-    body: {
-      appendChild(anchor) {
-        anchor.isConnected = true;
-        effects.appended.push(anchor);
-      },
-    },
-    createElement(name) {
-      if (name !== "a") throw new Error(`unexpected element: ${name}`);
-      const anchor = {
-        download: "",
-        hidden: false,
-        href: "",
-        isConnected: false,
-        rel: "",
-        click() { effects.clicks += 1; },
-        remove() { this.isConnected = false; },
-      };
-      anchors.push(anchor);
-      return anchor;
-    },
-  };
-  const navigator = {
-    maxTouchPoints: 5,
-    userAgent: "Mozilla/5.0 RAW-UA-SECRET Chrome/120.0.0.0 Safari/537.36",
-    sendBeacon() { effects.network += 1; throw new Error("network forbidden"); },
-    ...(share ? {
-      canShare(payload) { return Array.isArray(payload?.files) && payload.files.length === 1; },
-      async share(payload) {
-        effects.shared.push(payload);
-        if (shareThrows) throw shareThrows;
-      },
-    } : {}),
-  };
   const reportRecords = records ?? completeQaRecords();
-  const context = {
-    Blob,
-    Date,
-    E: engine,
-    File: LocalFile,
-    JSON,
-    Math,
-    Number,
-    Object,
-    Promise,
-    Set,
-    String,
-    URL: {
-      createObjectURL(blob) {
-        effects.createdBlobs.push(blob);
-        return `blob:qa-local-${effects.createdBlobs.length}`;
-      },
-      revokeObjectURL(url) { effects.revoked.push(url); },
-    },
-    document,
-    effects,
-    fetch() { effects.network += 1; throw new Error("network forbidden"); },
-    innerHeight: 844,
-    innerWidth: 390,
-    location: { origin: "https://ORIGIN-SECRET.invalid", href: "https://ORIGIN-SECRET.invalid/?qa-tour=qa-tour-v1" },
-    navigator,
-    screen: { width: 390, height: 844 },
-    setTimeout(callback) { effects.cleanup.push(callback); return effects.cleanup.length; },
-    state: { childProgress: "PROGRESS-SECRET" },
-    structuredClone,
-    window: { devicePixelRatio: 3 },
-  };
+  const context = qaReportContext(effects, anchors, { engine, share, shareThrows });
   const source = `(()=>{"use strict";
-    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.8",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.8";
+    const QA_TOUR_VERSION="qa-tour-v1",QA_TOUR_SEED=0x51415431,QA_TOUR_V1=effects.specs,KEY="math-quest:v1",PWA_RELEASE="1.0.0-beta.9",PWA_BUILD_ID="math-quest-pwa-v1.0.0-beta.9";
     let childName="CHILD-NAME-SECRET";
     let lab={saveBytes:effects.storedSave,qaTour:true,qaComplete:effects.complete,qaIndex:49,qaRecords:structuredClone(effects.records),qaSubmitted:false,qaSubmitNotice:"",qaBusy:false,integrityError:effects.integrityError};
     let ui={screen:"lab",world:"forest"};
@@ -489,75 +347,9 @@ test("flag changes mutate only the current disposable QA record", async () => {
 
 test("visual snapshots use a revocable local Blob URL and fail closed after cleanup", async () => {
   const captureSource = `${extractFunction("qaCopyFormState")}\n${extractFunction("qaCaptureSnapshot")}`;
-  const createHarness = ({ imageFailure = false, contextAvailable = true } = {}) => {
-    const effects = {
-      blobs: [],
-      draws: 0,
-      imageFailure,
-      imageSources: [],
-      revoked: [],
-      toDataUrlTypes: [],
-    };
-    class LocalImage {
-      set src(value) {
-        effects.imageSources.push(value);
-        if (effects.imageFailure) this.onerror?.(new Error("image-load-failed"));
-        else this.onload?.();
-      }
-    }
-    const clone = {
-      outerHTML: '<section class="qa-question">Question</section>',
-      querySelectorAll() { return []; },
-    };
-    const source = {
-      cloneNode() { return clone; },
-      getBoundingClientRect() { return { width: 319.2, height: 179.1 }; },
-      querySelectorAll() { return []; },
-    };
-    const context = contextAvailable ? {
-      drawImage() { effects.draws += 1; },
-    } : null;
-    const document = {
-      styleSheets: [{ cssRules: [{ cssText: ".qa-question{color:#123456}" }] }],
-      createElement(name) {
-        assert.equal(name, "canvas");
-        return {
-          width: 0,
-          height: 0,
-          getContext(kind) { assert.equal(kind, "2d"); return context; },
-          toDataURL(kind) {
-            effects.toDataUrlTypes.push(kind);
-            return "data:image/png;base64,AA==";
-          },
-        };
-      },
-    };
-    const harness = new vm.Script(`(()=>{"use strict";
-      const app={querySelector(selector){return selector===".qa-question"?effects.source:null;}};
-      ${captureSource}
-      return {capture:qaCaptureSnapshot};
-    })()`, { filename: "math-quest-qa-tour-local-snapshot.js" }).runInNewContext({
-      Blob,
-      HTMLInputElement: class {},
-      HTMLSelectElement: class {},
-      HTMLTextAreaElement: class {},
-      Image: LocalImage,
-      URL: {
-        createObjectURL(blob) {
-          effects.blobs.push(blob);
-          return `blob:qa-snapshot-${effects.blobs.length}`;
-        },
-        revokeObjectURL(url) { effects.revoked.push(url); },
-      },
-      app: undefined,
-      assert,
-      document,
-      effects: { ...effects, source },
-    });
-    return { effects, harness };
-  };
 
-  const success = createHarness();
+
+  const success = qaSnapshotHarness(captureSource);
   const snapshot = await success.harness.capture();
   assert.equal(snapshot.kind, "image/png");
   assert.equal(snapshot.dataUrl, "data:image/png;base64,AA==");
@@ -570,7 +362,7 @@ test("visual snapshots use a revocable local Blob URL and fail closed after clea
   assert.equal(success.effects.blobs[0].type, "image/svg+xml");
   assert.match(await success.effects.blobs[0].text(), /<svg[\s\S]*qa-question/iu);
 
-  const failed = createHarness({ imageFailure: true });
+  const failed = qaSnapshotHarness(captureSource, { imageFailure: true });
   assert.equal(await failed.harness.capture(), null);
   assert.deepEqual(failed.effects.revoked, ["blob:qa-snapshot-1"]);
   assert.equal(failed.effects.draws, 0);

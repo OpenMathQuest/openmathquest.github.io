@@ -1,37 +1,16 @@
 import { expect, test as base } from "@playwright/test";
+import { AXE_NEGATIVE_CONTROL_ID, axeManualReviewSummaries, axeViolationFindings, scanAxeAccessibility, verifyAxeNegativeControl } from "../lib/axe-accessibility.mjs";
+import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
 
 const ALLOWED_PATHS = new Set([
-  "/",
-  "/index.html",
-  "/manifest.webmanifest",
-  "/release-shell-v1.json",
-  "/sw.js",
-  "/curriculum/math-quest-tutorial-manifest-v1.json",
-  "/assets/design/math-quest-design-tokens-v1.css",
-  "/assets/fonts/Inter-Variable.ttf",
-  "/assets/icons/apple-touch-icon.png",
-  "/assets/icons/icon-192.png",
-  "/assets/icons/icon-512.png",
-  "/assets/sounds/close.wav",
-  "/assets/sounds/confirm.wav",
-  "/assets/sounds/incorrect.wav",
-  "/assets/sounds/tap.wav",
-  "/LICENSE",
-  "/PRIVACY.md",
-  "/THIRD_PARTY_NOTICES.md",
+  ...PLAYWRIGHT_FOCUSED_SERVER_ROUTES.map(([route]) => route),
   "/__math_quest_health__",
 ]);
 
-export const test = base.extend({
-  mathQuestGuard: [async ({ browser, page }, use, testInfo) => {
+function observeBrowserErrors(page) {
     const pageErrors = [];
     const consoleErrors = [];
     const unexpectedRequests = [];
-    testInfo.annotations.push({ type: "browser-version", description: browser.version() });
-    const browserSession = await browser.newBrowserCDPSession();
-    const browserIdentity = await browserSession.send("Browser.getVersion");
-    await browserSession.detach();
-    testInfo.annotations.push({ type: "browser-product", description: String(browserIdentity.product || "") });
     page.on("pageerror", (error) => pageErrors.push(String(error?.message || error)));
     page.on("console", (message) => {
       if (message.type() === "error") consoleErrors.push(message.text());
@@ -44,11 +23,40 @@ export const test = base.extend({
         unexpectedRequests.push(`${request.method()} ${url.origin}${url.pathname}${url.search}`);
       }
     });
-    await use({ pageErrors, consoleErrors, unexpectedRequests });
-    expect(pageErrors, "uncaught page errors").toEqual([]);
-    expect(consoleErrors, "browser console errors").toEqual([]);
-    expect(unexpectedRequests, "unexpected or query-bearing browser requests").toEqual([]);
-  }, { auto: true }],
+    return { pageErrors, consoleErrors, unexpectedRequests };
+}
+
+async function annotateBrowserIdentity(browser, testInfo) {
+    testInfo.annotations.push({ type: "browser-version", description: browser.version() });
+    const browserSession = await browser.newBrowserCDPSession();
+    const browserIdentity = await browserSession.send("Browser.getVersion");
+    await browserSession.detach();
+    testInfo.annotations.push({ type: "browser-product", description: String(browserIdentity.product || "") });
+}
+
+async function inspectFocusedAccessibility(page, testInfo) {
+    const axeResults = await scanAxeAccessibility(page, "#app");
+    const manualReview = axeManualReviewSummaries(axeResults);
+    testInfo.annotations.push({ type: "axe-manual-review", description: JSON.stringify(manualReview) });
+    const axeViolations = axeViolationFindings(axeResults);
+    testInfo.annotations.push({ type: "axe-violation-count", description: String(axeViolations.length) });
+    expect(axeViolations, "axe-core WCAG violations").toEqual([]);
+}
+
+async function mathQuestGuard({ browser, page }, use, testInfo) {
+    await verifyAxeNegativeControl(browser);
+    testInfo.annotations.push({ type: "axe-negative-control", description: `${AXE_NEGATIVE_CONTROL_ID}:PASS` });
+    await annotateBrowserIdentity(browser, testInfo);
+    const observations = observeBrowserErrors(page);
+    await use(observations);
+    await inspectFocusedAccessibility(page, testInfo);
+    expect(observations.pageErrors, "uncaught page errors").toEqual([]);
+    expect(observations.consoleErrors, "browser console errors").toEqual([]);
+    expect(observations.unexpectedRequests, "unexpected or query-bearing browser requests").toEqual([]);
+}
+
+export const test = base.extend({
+  mathQuestGuard: [mathQuestGuard, { auto: true }],
 });
 
 export { expect };
@@ -66,7 +74,7 @@ export async function openFreshHome(page) {
   const health = await page.request.get("/__math_quest_health__");
   expect(health.status()).toBe(200);
   await expect(health.json()).resolves.toEqual({
-    schemaVersion: 1, identity: "math-quest-local-server:v2", release: "1.0.0-beta.8", port: 8771,
+    schemaVersion: 1, identity: "math-quest-local-server:v2", release: "1.0.0-beta.9", port: 8771,
     rootId: process.env.MQ_PLAYWRIGHT_ROOT_ID,
     servedPayloadSha256: process.env.MQ_PLAYWRIGHT_SERVED_PAYLOAD_SHA256,
   });
@@ -101,12 +109,7 @@ export async function completeCurrentPairLinkQuestion(page) {
     await activate(firstRow.getByRole("button", { disabled: false }).first(), page);
     await activate(secondRow.getByRole("button", { disabled: false }).first(), page);
   }
-  const confirm = page.getByRole("button", { name: "Confirm", exact: true });
-  await expect(confirm).toBeEnabled();
-  await activate(confirm, page);
-  const feedback = page.locator('[data-feedback-state="correct"]');
-  await expect(feedback).toBeVisible();
-  await expect(feedback).toBeFocused();
+  await confirmAnswerAndExpectFeedback(page, "correct");
 }
 
 export async function openRegularPatternQuestion(page) {
@@ -121,14 +124,8 @@ export async function openRegularPatternQuestion(page) {
   return question;
 }
 
-export async function patternResponsePlan(page) {
-  return page.evaluate(() => {
-    const engine = window.MathQuestEngine;
-    const bytes = localStorage.getItem(engine.CONSTANTS.STORAGE_NAMESPACE);
-    const question = bytes ? JSON.parse(bytes)?.activeSession?.uiState?.question : null;
-    if (!question || question.skillId !== "MQ-004" || question.inputMethod !== "PATTERN_BUILD") {
-      throw new Error("The regular pattern-response fixture is unavailable.");
-    }
+function readPatternResponsePlan() {
+  const validAlternatives = (question) => {
     const correct = String(question.answer?.value || "").trim().split(/\s+/u).filter(Boolean);
     const choices = Array.isArray(question.params?.tokenChoices) ? question.params.tokenChoices.map(String) : [];
     if (!correct.length || choices.length < 2 || correct.some((token) => !choices.includes(token))) {
@@ -136,12 +133,25 @@ export async function patternResponsePlan(page) {
     }
     const incorrect = correct.slice();
     incorrect[0] = choices.find((token) => token !== correct[0]);
-    if (engine.gradeAnswer(question, { tokens: incorrect }).correct
-        || !engine.gradeAnswer(question, { tokens: correct }).correct) {
-      throw new Error("The regular pattern-response fixture does not separate correct and incorrect work.");
-    }
     return { correct, incorrect };
-  });
+  };
+  const engine = window.MathQuestEngine;
+  const bytes = localStorage.getItem(engine.CONSTANTS.STORAGE_NAMESPACE);
+  const question = bytes ? JSON.parse(bytes)?.activeSession?.uiState?.question : null;
+  if (!question || question.skillId !== "MQ-004" || question.inputMethod !== "PATTERN_BUILD") {
+    throw new Error("The regular pattern-response fixture is unavailable.");
+  }
+  const { correct, incorrect } = validAlternatives(question);
+  if (engine.gradeAnswer(question, { tokens: incorrect }).correct
+      || !engine.gradeAnswer(question, { tokens: correct }).correct) {
+    throw new Error("The regular pattern-response fixture does not separate correct and incorrect work.");
+  }
+  return { correct, incorrect };
+}
+
+// Playwright serializes this browser reader; all storage and grading stay atomic.
+export async function patternResponsePlan(page) {
+  return page.evaluate(readPatternResponsePlan);
 }
 
 export async function answerPatternResponse(page, tokens, expectedState, { beforeConfirm } = {}) {
@@ -155,12 +165,7 @@ export async function answerPatternResponse(page, tokens, expectedState, { befor
     await activate(tokenButtons.nth(index), page);
   }
   if (beforeConfirm) await beforeConfirm();
-  const confirm = page.getByRole("button", { name: "Confirm", exact: true });
-  await expect(confirm).toBeEnabled();
-  await activate(confirm, page);
-  const feedback = page.locator(`[data-feedback-state="${expectedState}"]`);
-  await expect(feedback).toBeVisible();
-  await expect(feedback).toBeFocused();
+  await confirmAnswerAndExpectFeedback(page, expectedState);
 }
 
 export async function openPreviewSelectionQuestion(page) {
@@ -193,49 +198,53 @@ export async function answerSelection(page, optionId, expectedState) {
   const option = page.locator(`[data-action="select"][data-id="${optionId}"]`);
   await activate(option, page);
   await expect(option).toHaveAttribute("aria-pressed", "true");
+  await confirmAnswerAndExpectFeedback(page, expectedState);
+  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
+}
+
+async function confirmAnswerAndExpectFeedback(page, expectedState) {
   const confirm = page.getByRole("button", { name: "Confirm", exact: true });
   await expect(confirm).toBeEnabled();
   await activate(confirm, page);
   const feedback = page.locator(`[data-feedback-state="${expectedState}"]`);
   await expect(feedback).toBeVisible();
   await expect(feedback).toBeFocused();
-  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
 }
 
 export async function savedSessionSnapshot(page, requestedSkillId = null) {
   return page.evaluate((requestedSkillId) => {
+    const valueOr = (record, property, fallback = null) => record?.[property] || fallback;
+    const entryCount = (entries) => Array.isArray(entries) ? entries.length : 0;
+    const sumValues = (records, amount) => Object.values(records).reduce((total, record) => total + amount(record), 0);
     const engine = window.MathQuestEngine;
     const bytes = localStorage.getItem(engine.CONSTANTS.STORAGE_NAMESPACE);
     const saved = bytes ? JSON.parse(bytes) : null;
-    const active = saved?.activeSession?.uiState || null;
-    const skillId = requestedSkillId || active?.question?.skillId || null;
-    const skill = skillId ? saved?.skills?.[skillId] : null;
-    const evidenceCount = Object.values(saved?.skills || {}).reduce(
-      (total, record) => total + (Array.isArray(record?.evidence) ? record.evidence.length : 0),
-      0,
-    );
-    const practiceCount = Object.values(saved?.practiceCountByDay || {}).reduce(
-      (total, count) => total + (Number(count) || 0),
-      0,
-    );
+    const active = valueOr(valueOr(saved, "activeSession"), "uiState", {});
+    const question = valueOr(active, "question", {});
+    const skills = valueOr(saved, "skills", {});
+    const skillId = requestedSkillId || valueOr(question, "skillId");
+    const skill = skillId ? skills[skillId] : null;
+    const lastAttempt = valueOr(active, "lastAttempt", {});
+    const evidenceCount = sumValues(skills, (record) => entryCount(valueOr(record, "evidence")));
+    const practiceCount = sumValues(valueOr(saved, "practiceCountByDay", {}), (count) => Number(count) || 0);
     return {
-      questionId: active?.question?.questionId || null,
+      questionId: valueOr(question, "questionId"),
       skillId,
-      sampleKey: active?.question?.sampleKey || null,
-      selected: active?.selected ?? null,
-      phase: active?.phase || null,
-      tutorialOpen: active?.tutorialOpen === true,
-      tutorialStep: Number(active?.tutorialStep || 0),
-      hintUsed: active?.hintUsed === true,
-      attemptCommitted: active?.attemptCommitted === true,
-      lastFeedbackClass: active?.lastAttempt?.feedbackClass || null,
-      lastEvidenceClass: active?.lastAttempt?.evidenceClass || null,
+      sampleKey: valueOr(question, "sampleKey"),
+      selected: active.selected ?? null,
+      phase: valueOr(active, "phase"),
+      tutorialOpen: active.tutorialOpen === true,
+      tutorialStep: Number(valueOr(active, "tutorialStep", 0)),
+      hintUsed: active.hintUsed === true,
+      attemptCommitted: active.attemptCommitted === true,
+      lastFeedbackClass: valueOr(lastAttempt, "feedbackClass"),
+      lastEvidenceClass: valueOr(lastAttempt, "evidenceClass"),
       evidenceCount,
       practiceCount,
-      skillEvidenceCount: Array.isArray(skill?.evidence) ? skill.evidence.length : 0,
-      skillMissCount: Array.isArray(skill?.misses) ? skill.misses.length : 0,
-      skillAcquisition: skill?.acquisition || null,
-      feedbackHistoryCount: Array.isArray(saved?.feedbackHistory) ? saved.feedbackHistory.length : 0,
+      skillEvidenceCount: entryCount(valueOr(skill, "evidence")),
+      skillMissCount: entryCount(valueOr(skill, "misses")),
+      skillAcquisition: valueOr(skill, "acquisition"),
+      feedbackHistoryCount: entryCount(valueOr(saved, "feedbackHistory")),
     };
   }, requestedSkillId);
 }
@@ -269,4 +278,27 @@ export async function expectOnFirstScreen(locator, page) {
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+}
+
+export async function activateNamedButton(page, name) {
+  await activate(page.getByRole("button", { name, exact: true }), page);
+}
+
+export async function expectSelectedState(control, { labelled = false } = {}) {
+  await expect(control).toHaveAttribute("aria-pressed", "true");
+  await expect(control).toHaveClass(/\bselected-state\b/u);
+  await expect(control).toHaveAttribute("data-selected-label", "Selected");
+  const presentation = await control.evaluate((button) => {
+    const style = getComputedStyle(button);
+    const marker = getComputedStyle(button, "::after");
+    return {
+      backgroundImage: style.backgroundImage,
+      boxShadow: style.boxShadow,
+      markerContent: marker.content,
+    };
+  });
+  expect(presentation.backgroundImage).toContain("repeating-linear-gradient");
+  expect(presentation.boxShadow).toContain("inset");
+  expect(presentation.markerContent).not.toContain("✓");
+  if (labelled) expect(presentation.markerContent).toContain("Selected");
 }

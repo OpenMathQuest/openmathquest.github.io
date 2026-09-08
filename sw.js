@@ -1,15 +1,15 @@
 "use strict";
 
-const RELEASE = "1.0.0-beta.8";
-const BUILD_ID = "math-quest-pwa-v1.0.0-beta.8";
-const CACHE_NAME = "math-quest-static-v1.0.0-beta.8";
+const RELEASE = "1.0.0-beta.9";
+const BUILD_ID = "math-quest-pwa-v1.0.0-beta.9";
+const CACHE_NAME = "math-quest-static-v1.0.0-beta.9";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "e9204c79e36e860d9123abb9496403d66c01d749bdf0a92b72c6b3cea4c104af";
+const RELEASE_MANIFEST_SHA256 = "5289d3907779039e055dcd073466a2d0899866f680ac1c0045a0bf3c17ddc681";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 function freshStagingCacheName() {
   const nonce = new Uint8Array(16);
   crypto.getRandomValues(nonce);
-  return `${CACHE_STORAGE_NAME}-${Array.from(nonce, (value) => value.toString(16).padStart(2, "0")).join("")}-staging`;
+  return `${CACHE_STORAGE_NAME}-${hex(nonce)}-staging`;
 }
 const APP_ENTRY_PATHS = new Set([
   new URL("./", self.registration.scope).pathname,
@@ -29,6 +29,8 @@ const SHELL_RELATIVE_PATHS = Object.freeze([
   "./assets/icons/apple-touch-icon.png",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
+  "./assets/js/math-quest-progress-source.js",
+  "./assets/js/math-quest-pwa-status.js",
   "./assets/sounds/close.wav",
   "./assets/sounds/confirm.wav",
   "./assets/sounds/incorrect.wav",
@@ -67,43 +69,35 @@ function exactSameOriginResponse(response, expectedUrl, expectedMime) {
     && mediaType(response) === expectedMime;
 }
 
+function manifestIdentityMatches(manifest) {
+  return manifest.schemaVersion === 1
+    && manifest.release === RELEASE
+    && manifest.buildId === BUILD_ID
+    && manifest.cacheName === CACHE_NAME
+    && manifest.entryPath === "./index.html";
+}
+
+function validManifestEntry(entry, expectedPath) {
+  // The closed ordered inventory also excludes duplicate, traversal, and non-string paths.
+  if (!entry || entry.path !== expectedPath) return false;
+  return /^[a-f0-9]{64}$/.test(entry.sha256)
+    && Number.isSafeInteger(entry.bytes)
+    && entry.bytes > 0
+    && entry.status === 200
+    && typeof entry.mime === "string"
+    && entry.mime === entry.mime.toLowerCase()
+    && !entry.mime.includes(";");
+}
+
 function validManifestShape(manifest) {
-  if (
-    !manifest
-    || manifest.schemaVersion !== 1
-    || manifest.release !== RELEASE
-    || manifest.buildId !== BUILD_ID
-    || manifest.cacheName !== CACHE_NAME
-    || manifest.entryPath !== "./index.html"
-    || !Array.isArray(manifest.excludedPaths)
+  if (!manifest || !manifestIdentityMatches(manifest)) return false;
+  if (!Array.isArray(manifest.excludedPaths)
     || manifest.excludedPaths.length !== 2
     || manifest.excludedPaths[0] !== "./release-shell-v1.json"
     || manifest.excludedPaths[1] !== "./sw.js"
     || !Array.isArray(manifest.entries)
-    || manifest.entries.length === 0
-  ) return false;
-
-  const paths = new Set();
-  for (const entry of manifest.entries) {
-    if (
-      !entry
-      || typeof entry.path !== "string"
-      || !entry.path.startsWith("./")
-      || entry.path.includes("..")
-      || paths.has(entry.path)
-      || !/^[a-f0-9]{64}$/.test(entry.sha256)
-      || !Number.isSafeInteger(entry.bytes)
-      || entry.bytes <= 0
-      || entry.status !== 200
-      || typeof entry.mime !== "string"
-      || entry.mime !== entry.mime.toLowerCase()
-      || entry.mime.includes(";")
-    ) return false;
-    paths.add(entry.path);
-  }
-  return manifest.entries.length === SHELL_RELATIVE_PATHS.length
-    && manifest.entries.every((entry, index) => entry.path === SHELL_RELATIVE_PATHS[index])
-    && paths.has(manifest.entryPath);
+    || manifest.entries.length !== SHELL_RELATIVE_PATHS.length) return false;
+  return SHELL_RELATIVE_PATHS.every((expectedPath, index) => validManifestEntry(manifest.entries[index], expectedPath));
 }
 
 async function verifyManifestResponse(response) {
@@ -209,6 +203,22 @@ async function cacheContainsExactShell(cache, manifest) {
   return true;
 }
 
+async function copyStagedShell(cache, staging, manifest) {
+  const required = [RELEASE_MANIFEST_URL, ...manifest.entries.map((entry) => entry.path)];
+  for (const path of required) {
+    const response = await staging.match(path, { ignoreSearch: true });
+    if (!response) throw new Error(`staged-shell-entry-missing:${path}`);
+    await cache.put(path, response);
+  }
+  const requiredUrls = new Set(required.map((path) => new URL(path, self.registration.scope).href));
+  for (const request of await cache.keys()) {
+    if (!requiredUrls.has(new URL(request.url).href)) await cache.delete(request);
+  }
+  if (!await cacheContainsExactShell(cache, manifest)) {
+    throw new Error("installed-shell-not-exact");
+  }
+}
+
 async function populateExactCacheOnce() {
   const { manifest, response: manifestResponse } = await fetchManifestFromNetwork();
   const stagingCacheName = freshStagingCacheName();
@@ -229,19 +239,7 @@ async function populateExactCacheOnce() {
       return manifest;
     }
     targetKnownInvalid = true;
-    const required = [RELEASE_MANIFEST_URL, ...manifest.entries.map((entry) => entry.path)];
-    for (const path of required) {
-      const response = await staging.match(path, { ignoreSearch: true });
-      if (!response) throw new Error(`staged-shell-entry-missing:${path}`);
-      await cache.put(path, response);
-    }
-    const requiredUrls = new Set(required.map((path) => new URL(path, self.registration.scope).href));
-    for (const request of await cache.keys()) {
-      if (!requiredUrls.has(new URL(request.url).href)) await cache.delete(request);
-    }
-    if (!await cacheContainsExactShell(cache, manifest)) {
-      throw new Error("installed-shell-not-exact");
-    }
+    await copyStagedShell(cache, staging, manifest);
     releaseManifestPromise = Promise.resolve(manifest);
     return manifest;
   } catch (error) {

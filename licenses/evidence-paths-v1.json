@@ -15,7 +15,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Fail-closed component, provenance, and licence eligibility policy.",
-      "sha256": "91d5d7e9d29c83cf9689d57faf558c236fc627ca2161bd75d0813571361b0809"
+      "sha256": "f656a1c0710cb264240d9c3c427b0946a52319b0df1db52ef66e444f3a55ee9e"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -53,9 +53,9 @@
       "path": "licenses/ci-toolchain.md",
       "kind": "attribution",
       "origin": "mixed-open",
-      "licenceExpression": "Apache-2.0 AND MIT AND BSD-3-Clause",
-      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser and closed JSON-contract tools.",
-      "sha256": "264a58d8ef2513753a881de1bcc77e581e36eaf1cae1d360678b63a2f4af519b"
+      "licenceExpression": "AGPL-3.0-only AND Apache-2.0 AND BSD-3-Clause AND ISC AND LGPL-2.1-or-later AND MIT AND MPL-2.0",
+      "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser, accessibility, contract, quality, size, and security tools.",
+      "sha256": "dde274e46076f6fbb88e096f7d0fd00d682b68d728d2d5b166243f2a722d94ff"
     },
     {
       "path": "licenses/design-tokens.md",
@@ -63,7 +63,15 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Original authorship, closed ART-MIG-04 through ART-MIG-06 runtime consumer contract, generation boundary, and exact hashes for the canonical Conservatory token contract and stylesheet projection.",
-      "sha256": "952ddba63185943cec46b7e905eebdbae8cf8c2ff7c63e946cb5fe712875a814"
+      "sha256": "8fb1cbf81deb8aaceda838f77843973db050435241ab663d356c938f88ca6fdf"
+    },
+    {
+      "path": "licenses/runtime-components.md",
+      "kind": "attribution",
+      "origin": "original-project",
+      "licenceExpression": "MIT",
+      "purpose": "Original authorship, purpose, and exact hashes for separately shipped Math Quest runtime source components.",
+      "sha256": "0aa802846b5bc8822dc5295f76fd6def799e375fb9cd5bb31aa101368631ec54"
     },
     {
       "path": "licenses/sound-effects.md",
