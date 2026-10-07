@@ -43,7 +43,7 @@ export function planDevelopmentSuites(changedPaths = []) {
   const broad = paths.length === 0;
   const routeExpressions = Object.values(ROUTES).flat();
   const unknown = broad ? [] : paths.filter((file) => !matches(file, [...routeExpressions, ...EXPLICIT_NO_IMPACT]));
-  const selected = new Set(["governance", "metadata", "guard"]);
+  const selected = new Set(["governance", "metadata", "playwright", "guard"]);
   if (broad || unknown.length) {
     for (const id of DEVELOPMENT_SUITE_IDS) selected.add(id);
   } else {

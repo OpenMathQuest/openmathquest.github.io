@@ -1452,6 +1452,111 @@ coverage input for that focused stage came from the retained hosted run only
 after its engine SHA-256 matched the unchanged current engine. The original
 browser-failure risk remains pending the owner's release decision.
 
+### Owner-directed E2E-first migration — 2026-10-03
+
+The owner directed that E2E tests take absolute priority, that existing unit
+tests be replaced or removed where quality coverage is preserved, and that no
+new unit tests be added without approval. This work begins from
+`ba575daaff417c8d907d2df7571d53b5b8331cd4`. Acceptance requires the normal
+development/release entry point to execute the real browser journeys before
+unit checks, an exact protected-effect mapping before each unit removal, no
+new unit cases, and unchanged independent mathematical, mutation, failure-path,
+privacy, persistence, accessibility, coverage and release protections. All 62
+existing Node test entries were inspected by their actual execution boundary;
+file names alone do not classify a real Git, HTTP, filesystem or child-process
+test as a unit test.
+
+The initial browser additions exercise native backup export, platform share
+success/cancellation/rejection, actual download and object-URL cleanup, blocked
+startup under unavailable progress protection, exact private-QA query gating
+with a real saved session, and native recovery import from malformed progress.
+Platform failure outcomes are deliberately injected at the browser boundary;
+they do not qualify a physical operating-system share sheet. Existing unique
+malformed-save, grading, report-forgery, migration-race, parser and fixture-oracle
+coverage remains while no equivalent executed E2E replacement exists.
+
+Browser development exposed an actual accessibility defect in `#importFile`.
+The two import screens now reuse one input component labelled with the existing
+“Import a backup” wording. A single-use sound-setting forwarder was inlined
+with its identical Boolean expression. Source lines remain unchanged and the
+page is 56 bytes smaller; the PWA manifest/worker binding is regenerated.
+Neither art assets, geometry nor CSS were changed. Existing art governance and
+functional DOM checks remain required; this task creates no new art candidate
+or new visual-approval claim. Art-consistency intake used the current decision
+register and Atelier v005; historical accepted screenshot folders are empty
+locally, so no new style or visual-plausibility verdict is inferred from them.
+
+The first local attempt could not connect to its sandboxed loopback server.
+Later diagnostics verified the exact server root and payload identity. Two
+prototype backup selectors were corrected against the actual DOM before the
+accessibility defect was found. Failed/interrupted logs and synthetic traces
+are retained outside the repository. These are not passing development or
+release evidence. Browser-clock cleanup now resumes time in a finally block
+before accessibility scanning. Private-QA comparison begins after native Home
+has committed the real paused session; Cancel removes the query and re-entry
+uses the exact private URL. These correct harness boundaries without changing
+the game's QA behavior.
+
+The initial 48-result desktop/phone matrix and real compiler, architecture,
+differential and property/fuzz CLI gates supported a 13-case removal proposal.
+Independent review found the QA bootstrap replacement incomplete, so that
+original assertion was retained until the corrected 50-result matrix passed.
+The existing effect map records the 13 removed unit cases and their exact
+replacement or already-executed coverage. The architecture unit entry is removed, its Code
+Map validator references point to the real CLI, and its path has a tombstone.
+All other distinct malformed-state, mathematical, secrecy, report-forgery,
+parser and migration-race oracles remain. No new unit cases are added. Two
+retained migration callbacks use cohesive helpers while preserving every
+assertion and scenario; the new journey helpers satisfy the unchanged native
+function limits. The JavaScript ABC violation ceiling tightens from 55 to 53,
+and the reduced source and shipped-byte ceilings tighten to actual values.
+The normal entry-point verification, bounded independent review and frozen
+nine-stage slice loop remain required before advancement. This work makes no
+Beta 9 publication-clearance or resolution claim for the earlier lost fuzz
+failure.
+
+Focused verification passes 132 retained checks and twelve blast-radius
+controls. The normal entry-point run passes all 48 real browser journeys
+before its first unit output; it then exposes a source-contract mismatch for
+three loop-generated case labels, corrected by declaring the same complete
+literal identifiers. The corrected focused contract passes without adding or
+weakening a unit case. A separate real-entry-point negative control supplies a
+foreign loopback server identity and verifies nonzero E2E-stage exit with no
+unit output. Its intentionally failing CLI run is negative-control evidence,
+not a passing complete development run.
+
+The same independent reviewer found two bounded gaps: the QA query exception
+also admitted background requests, and the saved-session journey could not
+exercise placement restoration with a null active session. The exception now
+requires a declared main-frame GET navigation. A native background-request
+control requires exact rejection by the same observer; its temporary response
+uses an existing first-party PNG and is removed before the real application
+journey. Earlier fetch and HTML-as-image probes caused intentional CSP console
+errors; those failed attempts remain retained and do not count as passes.
+`PW-F-25` creates a real placement draft through native controls, preserves
+both records through QA confirmation/Cancel and proves ordinary reload resumes
+the same question. The corrected 25-case desktop/phone matrix passes all 50
+results before the bootstrap wrapper is removed. No new unit cases are added.
+
+The unchanged early-learning fixture moved into the existing functional-art
+journey module, reducing the main spec from above its 426-line ceiling to 390
+lines. Its parsed function declaration is byte-identical before and after;
+the source ceiling tightens to 390. Ownership/dependency records follow the
+move. Neither the fixture's question semantics nor the game's art changes.
+These focused corrections still require the same reviewer's verification and
+the frozen nine-stage development loop before advancement.
+
+The real development-stage failure control also exposes a related diagnostic
+gap: its stderr-first selection discards E2E stdout whenever stderr exists.
+The caller now reuses the existing process-result formatter. The actual
+foreign-server control fails its diagnostic expectation before the change
+and passes afterward with both labelled streams retained. Its production
+stage remains intentionally failed. Existing formatter unit cases are reused;
+none are added. This prevents another evidence-retention loss and does not
+resolve the original Beta 9 fuzz failure. The frozen slice will use the
+required hosted nine-stage development check; release certification remains
+a separate, later boundary.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,

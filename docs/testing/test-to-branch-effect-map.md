@@ -379,10 +379,71 @@ fail safe to the broad development suite.
 
 ## Direct Playwright journey effect map
 
+The owner's E2E-first rule is mirrored in the closed quality policy's
+`testStrategy` record and bound to the exact marked directive in `AGENTS.md`.
+The normal development/release entry point runs real browser journeys before
+unit checks and stops before those checks on an E2E failure. Focused selection
+always includes Playwright. The full release orchestrator retains its existing
+separately owned Playwright lane; its count is not added to the entry-point
+precondition's count.
+
+The real-entry-point negative control
+`NC-E2E-FIRST-ENTRYPOINT-FAILURE-STOPS-UNITS` starts an owned loopback server
+with a deliberately foreign identity, invokes the normal development CLI and
+requires nonzero exit at the mandatory E2E stage before any native unit-test
+output. The initial entry-point run independently demonstrates all 48 browser
+results before the first unit output. This is a CLI E2E control, not a new unit
+test; the disposable server is stopped after the check.
+
+`NC-DEVELOPMENT-E2E-FAILURE-DIAGNOSTICS` exercises the production development
+stage against a deliberately foreign server. The preceding stderr-first
+wrapper loses the real E2E stdout; the corrected caller reuses the existing
+process-result formatter and retains both labelled streams. The existing
+diagnostic-retention unit oracle remains unchanged. This additional CLI E2E
+control requires the stage to fail and both streams to survive; it does not
+claim a passing full development run or recover the earlier lost fuzz action.
+
+| Added journey | Protected effect and evidence limits |
+|---|---|
+| `PW-F-19` / `PW-F-20` | A native grown-up export produces one exact private backup through the browser's file-sharing API; success and cancellation produce zero download URLs or clicks and preserve saved progress. Platform outcomes are injected; no physical share-sheet qualification is claimed. |
+| `PW-F-21` | A rejected share produces an actual browser download, one private object URL and one anchor; controlled browser time proves the exact 60-second cleanup boundary, anchor removal and URL revocation while progress remains unchanged. |
+| `PW-F-22` | The entire application boots under missing/broken Web Locks and unreadable protected storage. It renders a grown-up protection screen, exposes no child entry/start control and performs no storage writes; unreadable storage requests no lock. A normal boot remains operable. All additional tabs share error/request observation. |
+| `PW-F-23` | Wrong or unrelated query values cannot open private QA. The exact query presents an explicit grown-up gate before restoring a real saved child session. Cancel/start controls are native, routing and focus are observed, and progress bytes remain unchanged. The four declared synthetic queries are permitted only for main-frame GET navigations; background requests, POSTs and subframes remain rejected. `NC-QA-BACKGROUND-QUERY-REQUEST-REJECTED` makes a controlled native image request to the QA URL and requires the observer to reject it. Its response uses an existing first-party PNG solely to avoid treating HTML as an image; the response route is removed in finally before real QA navigation, and only the exactly asserted injected request is consumed. |
+| `PW-F-24` | Malformed stored bytes remain intact until the grown-up uses the labelled real file input. Actual FileReader/import/commit restores validated state, independently requires the existing exact generation increment, and survives reload. |
+| `PW-F-25` | Native Starting point, Start the check, Pause and Home create a real resumable placement draft with `activeSession === null`. QA confirmation renders before placement restoration, preserves both records and returns to Home on Cancel. An ordinary reload independently proves the same saved placement question resumes. This protects the distinct draft-restoration branch that a non-null child session cannot exercise. |
+
+The suite's closed matrix is 25 cases across two reviewed profiles, for 50
+required results. Existing unique unit evidence is retained until an executed
+replacement or existing CLI proof covers its entire protected effect.
+
+The 2026-10-03 migration removes the following 13 unit cases only after the
+50-result browser matrix and the named real CLI gates pass. The removed
+architecture file has a Code Map tombstone; its validator references now point
+to the CLI. No new unit cases are introduced.
+
+| Removed unit cases | Executed protection and limits |
+|---|---|
+| `page-adapter-effects`: “successful Web Share exports privately without creating a download URL”; “Web Share AbortError is a cancellation and never falls through to download”; “a rejected non-cancellation share falls back to download and revokes its object URL” | `PW-F-19`–`PW-F-21` exercise the real grown-up buttons, exact File bytes, one share attempt, notices, download occurrence or absence, one anchor/object URL, the 60-second cleanup boundary and unchanged saved progress. Only the platform outcome is controlled. |
+| `page-adapter-effects`: “a missing or broken Web Lock refuses the persistent write without an unlocked fallback”; “an unreadable initial save fails closed before requesting the writer lease” | `PW-F-22` boots the full shipped application under each injected browser failure, requires the protection screen and absence of child entry, observes zero writes and the expected lock/read effects, then verifies ordinary native startup. |
+| `qa-tour`: “the hidden QA URL requires the exact version and stops at an explicit grown-up confirmation screen”; “render routes qaConfirm explicitly rather than falling through to another screen” | `PW-F-23` checks exact/rejected queries, the real confirmation route before restoring a saved child session, adult actions/focus, Cancel query removal, actual QA entry and unchanged progress. `PW-F-25` separately protects the null-session placement-restoration branch and proves its draft is genuinely resumable. The bootstrap wrapper was retained until that complete replacement passed. The separate confirmation-render test remains because it independently checks child-name secrecy. |
+| `architecture-policy`: both closed-policy/current-graph and `NC-ARCHITECTURE-BOUNDARIES-HAVE-EFFECT` cases | `audit/run-architecture-gate.mjs` loads the same production policy, performs both schema/domain validations and executes the identical dependency and mutation helpers. |
+| `compiler-contracts`: `NC-COMPILER-CONTRACTS` | `audit/run-compiler-contracts.mjs` includes the identical zero-argument malformed-source/policy control in its fail-closed findings. The distinct synthetic-clean and URI-resolution unit oracles remain. |
+| `differential-equivalence`: `NC-DIFFERENTIAL-EQUIVALENCE-DETECTS-DRIFT` | `audit/run-differential-equivalence.mjs` invokes the identical helper with the production baseline commit. The independent exact-corpus and hermetic-Git unit assertions remain. |
+| `property-fuzz-stage`: `NC-PROPERTY-FUZZ-COUNTEREXAMPLE-CANNOT-PASS` | `audit/run-property-fuzz-stage.mjs` invokes the identical result-rejection control and requires its actual contract process and seeded browser fuzz to pass. This shared synthetic result control is not an additional browser counterexample. The distinct diagnostic-retention unit oracle remains. |
+| `tutorial-metadata-transition`: `NC-TUTORIAL-METADATA-TRANSITION` | The differential CLI reaches the identical six alteration controls using the same immutable baseline, shipped engine, approved transition and decision register. The distinct translation, stale-fingerprint and policy-matrix assertions remain. |
+
+The inventory covers all 62 preceding Node test entries by execution boundary.
+The 61 remaining entries include existing filesystem, Git, HTTP and process
+checks as well as unit oracles. Unique malformed-save matrices, grading and
+mathematical oracles, migration races, forged reports, parser cases and
+fixture-validator controls remain until an adequate executed E2E replacement
+exists. The two retained migration callbacks are organized into transaction
+and storage-event helpers with their original assertions and scenarios intact.
+
 `audit/playwright/critical-journeys.spec.mjs` supplements the exhaustive
 72-record browser audit with native, direct-user interactions. Each stable
 case runs in installed Microsoft Edge at 1366x768 desktop and 390x844 touch
-phone profiles, producing exactly 36 closed results. Playwright's ordinary
+phone profiles, producing exactly 50 closed results. Playwright's ordinary
 actionability checks must succeed; the suite forbids forced clicks, synthetic
 event dispatch, direct DOM `.click()`, and scripted `.focus()` as substitutes
 for real pointer or keyboard operation. Service workers are blocked for these
@@ -1081,8 +1142,8 @@ residual-risk statement, technical result, or gate ordering blocks release.
 
 ## Representative mutation proof
 
-The focused browser journeys retain their 18 case identities across desktop
-and phone. Shared DOM observations capture one atomic browser snapshot before
+The focused browser journeys retain their original 18 case identities and add
+seven native boundary cases across desktop and phone. Shared DOM observations capture one atomic browser snapshot before
 projecting shell, zone, counting, and frame facts. The journeys exercise
 `NC-ART-DOM-DUPLICATE-RAIL`, `NC-ART-DOM-MISSING-ZONE`,
 `NC-ART-DOM-MISSING-COUNTING-ID`, and

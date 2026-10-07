@@ -367,6 +367,16 @@ try {
         Write-Host ("Development suite mode: {0}; suites: {1}" -f $developmentPlan.mode, ($developmentPlan.suites -join ', '))
     }
     Test-PublicFilesystemMetadata
+    Push-Location $workspace
+    try {
+        Write-Host 'E2E-first: running shipped browser journeys before unit checks.'
+        & $node.Path (Join-Path $auditDirectory 'run-playwright-focused.mjs')
+        if ($LASTEXITCODE -ne 0) {
+            throw 'The required first E2E browser journey stage failed; unit checks were not started.'
+        }
+    } finally {
+        Pop-Location
+    }
     if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'launcher') {
         & (Join-Path $auditDirectory 'test-launcher-identity.ps1')
     } else {
@@ -552,19 +562,6 @@ try {
         }
     } elseif ($DevelopmentOnly) {
         Write-Host 'Driftless map and blast-radius checks not selected by the changed-path development plan.'
-    }
-    if ($DevelopmentOnly -and $developmentPlan.suites -contains 'playwright') {
-        Push-Location $workspace
-        try {
-            & $node.Path (Join-Path $auditDirectory 'run-playwright-focused.mjs')
-            if ($LASTEXITCODE -ne 0) {
-                throw 'The direct native-input Playwright journey matrix failed.'
-            }
-        } finally {
-            Pop-Location
-        }
-    } elseif ($DevelopmentOnly) {
-        Write-Host 'Direct Playwright journeys not selected by the changed-path development plan.'
     }
     if ($DevelopmentOnly) {
         $candidate = Invoke-PublicCandidateGuard -ValidatedNode $node.Path

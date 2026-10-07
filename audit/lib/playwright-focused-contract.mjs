@@ -35,6 +35,17 @@ export const PLAYWRIGHT_FOCUSED_CASE_IDS = Object.freeze([
   "PW-F-16",
   "PW-F-17",
   "PW-F-18",
+  "PW-F-19",
+  "PW-F-20",
+  "PW-F-21",
+  "PW-F-22",
+  "PW-F-23",
+  "PW-F-24",
+  "PW-F-25",
+]);
+
+export const PLAYWRIGHT_FOCUSED_QA_ENTRY_QUERIES = Object.freeze([
+  "?qa-tour=qa-tour-v1", "?qa-tour=QA-TOUR-V1", "?qa-tour=qa-tour-v2", "?other=qa-tour-v1",
 ]);
 
 export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([

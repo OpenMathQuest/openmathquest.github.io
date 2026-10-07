@@ -4,10 +4,10 @@
   "title": "Math Quest refactor quality-gate policy v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
+  "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
   "properties": {
     "policyId": { "const": "math-quest-refactor-quality-gates" },
-    "version": { "const": "1.3.0" },
+    "version": { "const": "1.4.0" },
     "schemaVersion": { "const": 1 },
     "status": { "const": "ACTIVE" },
     "authority": { "const": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates" },
@@ -24,6 +24,26 @@
         "candidateTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
         "manifestChangedPointer": "/artDesignBinding/sha256",
         "planChangedPointer": "/manifestSha256"
+      }
+    },
+    "testStrategy": {
+      "const": {
+        "authority": {
+          "path": "AGENTS.md",
+          "startMarker": "<!-- E2E-TEST-STRATEGY-START -->",
+          "endMarker": "<!-- E2E-TEST-STRATEGY-END -->",
+          "sha256": "88a2784c54740620084791c094bb2724ebf1b7d9cf0ea881897d49b8edd3a31a"
+        },
+        "priority": "E2E_FIRST",
+        "mandatoryEntryPoint": "audit/run-playwright-focused.mjs",
+        "entryPointOrdering": "BEFORE_UNIT_TESTS_IN_DEVELOPMENT_AND_RELEASE",
+        "existingUnitReplacement": "EQUIVALENT_OR_STRONGER_PROTECTED_EFFECTS",
+        "existingUnitRemoval": "EXECUTED_EXISTING_COVERAGE_OF_ALL_PROTECTED_EFFECTS",
+        "unmatchedExistingUnits": "RETAIN_PENDING_ADEQUATE_E2E_COVERAGE",
+        "newUnitTests": "OWNER_APPROVAL_REQUIRED",
+        "newUnitCasesInExistingFiles": "OWNER_APPROVAL_REQUIRED",
+        "evidenceBoundary": "SHIPPED_BROWSER_CONTROLS_OR_REAL_PROGRAM_ENTRY_POINT",
+        "traceabilityAuthority": "docs/testing/test-to-branch-effect-map.md"
       }
     },
     "runtime": {

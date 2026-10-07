@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.53.0",
+  "version": "1.54.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -249,7 +249,7 @@
         }
       ],
       "validators": [
-        "audit/tests/architecture-policy.test.mjs"
+        "audit/run-architecture-gate.mjs"
       ]
     },
     {
@@ -666,6 +666,42 @@
       ],
       "validators": [
         "audit/tests/repository-code-map.test.mjs"
+      ]
+    },
+    {
+      "id": "policy.e2e-first-testing",
+      "owner": "AGENTS.md",
+      "owns": [
+        "policy.e2e-first-testing.execution-priority",
+        "policy.e2e-first-testing.unit-admission",
+        "policy.e2e-first-testing.unit-removal"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/development-suite-plan.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/quality-gate-policy-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/run-audit.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/development/post-beta-backlog.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/lib/quality-gate-policy.mjs"
       ]
     },
     {
@@ -1519,8 +1555,8 @@
         }
       ],
       "validators": [
+        "audit/run-architecture-gate.mjs",
         "audit/test-launcher-identity.ps1",
-        "audit/tests/architecture-policy.test.mjs",
         "audit/tests/page-adapter-effects.test.mjs",
         "audit/tests/playwright-focused-contract.test.mjs",
         "audit/tests/progress-source.test.mjs",
@@ -1588,8 +1624,8 @@
         }
       ],
       "validators": [
+        "audit/run-architecture-gate.mjs",
         "audit/test-launcher-identity.ps1",
-        "audit/tests/architecture-policy.test.mjs",
         "audit/tests/page-adapter-effects.test.mjs",
         "audit/tests/playwright-focused-contract.test.mjs",
         "audit/tests/pwa-release.test.mjs",
@@ -1641,6 +1677,39 @@
       "validators": [
         "audit/tests/public-candidate-refactor-policies.test.mjs",
         "audit/tests/security-dependency-gate.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.adult-boundary-journeys",
+      "owner": "audit/playwright/adult-boundary-journey.mjs",
+      "owns": [
+        "testing.adult-boundary-journeys.backup-effects",
+        "testing.adult-boundary-journeys.private-qa-entry",
+        "testing.adult-boundary-journeys.progress-protection",
+        "testing.adult-boundary-journeys.recovery-import"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/critical-journeys.spec.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/playwright/fixtures.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs"
       ]
     },
     {
@@ -2261,6 +2330,7 @@
       "id": "testing.functional-art-journey",
       "owner": "audit/playwright/functional-art-journey.mjs",
       "owns": [
+        "testing.functional-art-journey.early-learning-session-fixture",
         "testing.functional-art-journey.forced-colors",
         "testing.functional-art-journey.identity-and-selection",
         "testing.functional-art-journey.speech-state"
@@ -2525,6 +2595,25 @@
       ],
       "validators": [
         "audit/tests/playwright-server-lifecycle.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.process-result-diagnostics",
+      "owner": "audit/run-property-fuzz-stage.mjs",
+      "owns": [
+        "testing.process-result-diagnostics.failed-process-status",
+        "testing.process-result-diagnostics.stdout-and-stderr"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/ai-change-loop-operations.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/tests/property-fuzz-stage.test.mjs"
       ]
     },
     {
@@ -3914,6 +4003,30 @@
       "kind": "TESTS"
     },
     {
+      "id": "e2e-first.authority-mirror",
+      "source": "AGENTS.md",
+      "target": "audit/quality-gate-policy-v1.json",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "e2e-first.browser-entry",
+      "source": "audit/run-playwright-focused.mjs",
+      "target": "audit/run-audit.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "e2e-first.native-boundaries",
+      "source": "audit/playwright/adult-boundary-journey.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "e2e-first.policy-schema",
+      "source": "audit/schemas/quality-gate-policy-v1.schema.json",
+      "target": "audit/quality-gate-policy-v1.json",
+      "kind": "VALIDATES"
+    },
+    {
       "id": "engine-ambient-scan.core",
       "source": "audit/lib/engine-loader.mjs",
       "target": "audit/tests/engine-core-checks.mjs",
@@ -4376,6 +4489,12 @@
       "kind": "TESTS"
     },
     {
+      "id": "playwright.journey.adult-boundary-journey.request-probe-image",
+      "source": "assets/icons/icon-192.png",
+      "target": "audit/playwright/adult-boundary-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "playwright.journey.art-dom-observations.entry",
       "source": "audit/playwright/art-dom-observations.mjs",
       "target": "audit/playwright/critical-journeys.spec.mjs",
@@ -4445,6 +4564,12 @@
       "id": "playwright.journey.functional-art-journey.rights",
       "source": "audit/playwright/functional-art-journey.mjs",
       "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.functional-art-journey.saved-ui-fixture",
+      "source": "audit/tests/session-fixtures.mjs",
+      "target": "audit/playwright/functional-art-journey.mjs",
       "kind": "CONSUMES"
     },
     {
@@ -4746,6 +4871,12 @@
       "source": "audit/schemas/quality-gate-policy-v1.schema.json",
       "target": "audit/lib/quality-gate-policy.mjs",
       "kind": "VALIDATES"
+    },
+    {
+      "id": "quality-gate.shared-process-diagnostics",
+      "source": "audit/run-property-fuzz-stage.mjs",
+      "target": "audit/ai-change-loop-operations.mjs",
+      "kind": "CONSUMES"
     },
     {
       "id": "refactor-baseline.schema",
@@ -5216,6 +5347,11 @@
       "path": "audit/legacy-file-ownership-map.json",
       "reason": "A second ownership authority would drift from the canonical repository code map.",
       "ownerRecord": "audit/repository-code-map-v1.json"
+    },
+    {
+      "path": "audit/tests/architecture-policy.test.mjs",
+      "reason": "The real architecture CLI already executes the same closed-policy, dependency and mutation checks with production inputs.",
+      "ownerRecord": "audit/run-architecture-gate.mjs"
     },
     {
       "path": "audit/tests/placement-fixtures.mjs",

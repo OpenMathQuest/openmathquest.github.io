@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { propertyFuzzResultFinding, propertyFuzzStageMutationFailures } from "../run-property-fuzz-stage.mjs";
-
-test("[NC-PROPERTY-FUZZ-COUNTEREXAMPLE-CANNOT-PASS] a shrunk failing counterexample fails the ordered stage", () => {
-  assert.deepEqual(propertyFuzzStageMutationFailures(), []);
-});
+import { propertyFuzzResultFinding } from "../run-property-fuzz-stage.mjs";
 
 test("original property diagnostics survive concurrent stderr, truncation pressure, and termination", () => {
   const result = {

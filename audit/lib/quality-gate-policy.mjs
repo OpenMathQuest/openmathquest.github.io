@@ -127,6 +127,7 @@ export async function validateQualityGatePolicySchema(policy, schemaPathOrUrl = 
 export async function validateQualityGatePolicy(policy) {
   const issues = [...await validateQualityGatePolicySchema(policy)];
   if (issues.length) return Object.freeze(issues);
+  issues.push(...await testStrategyAuthorityIssues(policy.testStrategy.authority));
   if (!entriesSortedBy(policy.supplyChain.directDependencies, "name")) {
     issues.push("directDependencies must be unique and lexicographically ordered");
   }
@@ -142,6 +143,17 @@ export async function validateQualityGatePolicy(policy) {
   if (policy.analysisRatchets.knip.unusedExports > 104) issues.push("unused-export ratchet exceeds the pre-refactor ceiling 104");
   if (policy.analysisRatchets.knip.duplicateExportGroups > 2) issues.push("duplicate-export ratchet exceeds the pre-refactor ceiling 2");
   return Object.freeze(issues);
+}
+
+async function testStrategyAuthorityIssues(authority) {
+  const text = (await readFileAsync(new URL("../../AGENTS.md", import.meta.url), "utf8")).replace(/\r\n/gu, "\n");
+  const first = text.indexOf(authority.startMarker), last = text.indexOf(authority.endMarker);
+  if (first < 0 || last <= first || first !== text.lastIndexOf(authority.startMarker) || last !== text.lastIndexOf(authority.endMarker)) {
+    return ["E2E-first authority markers are missing, duplicated or reordered"];
+  }
+  const source = text.slice(first, last + authority.endMarker.length);
+  return createHash("sha256").update(source).digest("hex") === authority.sha256
+    ? [] : ["E2E-first test strategy does not bind the exact owner directive"];
 }
 
 export async function loadQualityGatePolicy(pathOrUrl = canonicalPolicyUrl) {

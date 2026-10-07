@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-refactor-quality-gates",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -16,6 +16,24 @@
     "candidateTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
     "manifestChangedPointer": "/artDesignBinding/sha256",
     "planChangedPointer": "/manifestSha256"
+  },
+  "testStrategy": {
+    "authority": {
+      "path": "AGENTS.md",
+      "startMarker": "<!-- E2E-TEST-STRATEGY-START -->",
+      "endMarker": "<!-- E2E-TEST-STRATEGY-END -->",
+      "sha256": "88a2784c54740620084791c094bb2724ebf1b7d9cf0ea881897d49b8edd3a31a"
+    },
+    "priority": "E2E_FIRST",
+    "mandatoryEntryPoint": "audit/run-playwright-focused.mjs",
+    "entryPointOrdering": "BEFORE_UNIT_TESTS_IN_DEVELOPMENT_AND_RELEASE",
+    "existingUnitReplacement": "EQUIVALENT_OR_STRONGER_PROTECTED_EFFECTS",
+    "existingUnitRemoval": "EXECUTED_EXISTING_COVERAGE_OF_ALL_PROTECTED_EFFECTS",
+    "unmatchedExistingUnits": "RETAIN_PENDING_ADEQUATE_E2E_COVERAGE",
+    "newUnitTests": "OWNER_APPROVAL_REQUIRED",
+    "newUnitCasesInExistingFiles": "OWNER_APPROVAL_REQUIRED",
+    "evidenceBoundary": "SHIPPED_BROWSER_CONTROLS_OR_REAL_PROGRAM_ENTRY_POINT",
+    "traceabilityAuthority": "docs/testing/test-to-branch-effect-map.md"
   },
   "runtime": {
     "nodeVersion": "24.14.0",
@@ -386,7 +404,7 @@
       "legacyViolationCeilings": {
         "javascript": {
           "cyclomatic": 0,
-          "abcMagnitude": 55,
+          "abcMagnitude": 53,
           "cognitive": 4,
           "functionLines": 3,
           "maxNesting": 0
@@ -462,7 +480,7 @@
       },
       {
         "path": "audit/playwright/critical-journeys.spec.mjs",
-        "maximumLines": 426
+        "maximumLines": 390
       },
       {
         "path": "audit/public-candidate-guard.mjs",
@@ -474,7 +492,7 @@
       },
       {
         "path": "audit/run-audit.ps1",
-        "maximumLines": 614
+        "maximumLines": 611
       },
       {
         "path": "audit/run-trusted-https-canary.mjs",
@@ -502,7 +520,7 @@
       },
       {
         "path": "audit/tests/page-adapter-effects.test.mjs",
-        "maximumLines": 1549
+        "maximumLines": 1415
       },
       {
         "path": "audit/tests/placement-adapter-effects.test.mjs",
@@ -518,7 +536,7 @@
       },
       {
         "path": "audit/tests/qa-tour.test.mjs",
-        "maximumLines": 512
+        "maximumLines": 455
       },
       {
         "path": "audit/tests/trusted-https-canary.test.mjs",
@@ -532,9 +550,9 @@
   },
   "performanceBudgets": {
     "stylesheetMaximumBytes": 234769,
-    "javascriptMaximumBytes": 1044905,
+    "javascriptMaximumBytes": 1044849,
     "compiledAssetMaximumBytes": 932443,
-    "productionPayloadMaximumBytes": 2701404,
+    "productionPayloadMaximumBytes": 2701348,
     "engineScenarioMaximumWallTimeMs": 12000,
     "qualityGateMaximumWallTimeMs": 120000
   },
