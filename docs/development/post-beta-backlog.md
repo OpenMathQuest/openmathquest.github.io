@@ -1616,6 +1616,22 @@ with zero npm advisories, no scanner findings, and all seven negative controls,
 including rejection of a changed installed source file. Independent review and
 a complete new frozen nine-stage loop remain required before integration.
 
+The approved repair passes independent review on tree
+`5dbd66ded4c84358dc55558976ce40f6a3fa810e`, repair diff SHA-256
+`661e619962e498743017c0e4dbf8b166ba3be06139e5324bbdcda3252e806083`.
+The reviewer independently passes the complete compatibility CLI and verifies
+the closure, source, archive and licence bindings. The subsequent hosted run
+([37695887287](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37695887287))
+passes the first seven stages, including all 50 browser journeys and security,
+then fails the zero-unused-export check with two exports. Performance was not
+run. The architecture schema and policy validators lost their only external
+callers when redundant unit wrappers were removed; their live policy loader
+still executes both. They are now private functions with otherwise identical
+source. Restricted and unrestricted local Knip diagnostics stalled and were
+stopped; neither is passing evidence. A supplementary local stylesheet
+diagnostic was also stopped without a result. The hosted report remains
+retained, and the complete required loop must pass on the corrected tree.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,
