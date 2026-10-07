@@ -169,6 +169,7 @@
     "audit/run-audit.ps1",
     "audit/run-browser-smoke.mjs",
     "audit/run-bundlewatch-budgets.mjs",
+    "audit/run-ci-dependency-compatibility.mjs",
     "audit/run-compiler-contracts.mjs",
     "audit/run-coverage.mjs",
     "audit/run-differential-equivalence.mjs",
@@ -880,16 +881,16 @@
       "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
     },
     {
-      "id": "fast-uri-3.1.6",
+      "id": "fast-uri-3.1.8",
       "kind": "ci-only-transitive-validator-dependency",
-      "version": "3.1.6",
+      "version": "3.1.8",
       "licence": "BSD-3-Clause",
-      "sourceUrl": "https://github.com/fastify/fast-uri/tree/6f970b2951fd896aa0f3a7ff28eeb6640c137d33",
-      "sourceCommit": "6f970b2951fd896aa0f3a7ff28eeb6640c137d33",
-      "licenceEvidence": "https://github.com/fastify/fast-uri/blob/6f970b2951fd896aa0f3a7ff28eeb6640c137d33/LICENSE",
+      "sourceUrl": "https://github.com/fastify/fast-uri/tree/ead3ab7bb134c989e972c8174632d0670023f269",
+      "sourceCommit": "ead3ab7bb134c989e972c8174632d0670023f269",
+      "licenceEvidence": "https://github.com/fastify/fast-uri/blob/ead3ab7bb134c989e972c8174632d0670023f269/LICENSE",
       "packageName": "fast-uri",
-      "packageUrl": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.6.tgz",
-      "packageSri": "sha512-7Ical1vFEMr0onbVzEDIreM22I4khW+fzyQPwvAFWBp1iwdshSZRsL4jjRvPG9JP1uiqMHRto+YU6R2/CzDz5Q==",
+      "packageUrl": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz",
+      "packageSri": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==",
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
       "scope": "Ajv transitive dependency for closed repository JSON-contract validation only"
@@ -1043,6 +1044,21 @@
       "attributionRecord": "licenses/ci-toolchain.md",
       "bundled": false,
       "scope": "reviewed Windows resolver binding dynamically loaded by Knip"
+    },
+    {
+      "id": "braces-depth-guard-3.0.3-pn.3",
+      "kind": "ci-only-glob-security-dependency",
+      "version": "3.0.3-pn.3",
+      "licence": "MIT",
+      "sourceUrl": "https://github.com/dieub/braces-depth-guard/tree/305a2e4bfe324bb53c336c1b03387ee1251c926f",
+      "sourceCommit": "305a2e4bfe324bb53c336c1b03387ee1251c926f",
+      "licenceEvidence": "https://github.com/dieub/braces-depth-guard/blob/305a2e4bfe324bb53c336c1b03387ee1251c926f/LICENSE",
+      "packageName": "@dieub/braces-depth-guard",
+      "packageUrl": "https://registry.npmjs.org/@dieub/braces-depth-guard/-/braces-depth-guard-3.0.3-pn.3.tgz",
+      "packageSri": "sha512-QY+Uq4s42STyIMPoRkBuUZfYyvz0uZuwuUburLwMx5N+lWqnHHaBxcKPtgKVKjTyFnS1q4ivKu9Wxi4VG7FE9Q==",
+      "attributionRecord": "licenses/ci-toolchain.md",
+      "bundled": false,
+      "scope": "Owner-approved depth-guard fork for CI file discovery only; never distributed with the game"
     },
     {
       "id": "semgrep-core-1.164.0-win-amd64",

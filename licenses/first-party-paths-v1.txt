@@ -147,6 +147,7 @@ audit/run-audit.mjs
 audit/run-audit.ps1
 audit/run-browser-smoke.mjs
 audit/run-bundlewatch-budgets.mjs
+audit/run-ci-dependency-compatibility.mjs
 audit/run-compiler-contracts.mjs
 audit/run-coverage.mjs
 audit/run-differential-equivalence.mjs

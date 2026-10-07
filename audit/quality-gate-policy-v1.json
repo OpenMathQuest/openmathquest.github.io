@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-refactor-quality-gates",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -206,8 +206,8 @@
     }
   ],
   "supplyChain": {
-    "packageLockSha256": "3a1f416e0bea3951567b180085f17da8d79f0747bc2187dbf7a586c5582c5a3e",
-    "packageCountIncludingRoot": 375,
+    "packageLockSha256": "9ff507dd7453172b9a5c1d556dcdbc271b301927fbc06e24c938ba69ffc55eef",
+    "packageCountIncludingRoot": 374,
     "allowedClosureLicences": [
       "(MIT OR CC0-1.0)",
       "0BSD",
@@ -253,11 +253,79 @@
         "requester": "bundlewatch",
         "dependency": "axios",
         "declaredRange": "^0.31.1",
+        "specifier": "1.20.0",
+        "packageName": "axios",
+        "resolvedPath": "node_modules/axios",
         "version": "1.20.0",
         "licence": "MIT",
         "resolved": "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz",
         "integrity": "sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==",
         "reason": "BundleWatch 0.4.2 declares a vulnerable Axios 0.x range; this exact audited override keeps local-only size analysis while preserving the zero-vulnerability gate."
+      },
+      {
+        "requester": "markdownlint-cli2",
+        "dependency": "js-yaml",
+        "declaredRange": "5.2.2",
+        "specifier": "5.4.3",
+        "packageName": "js-yaml",
+        "resolvedPath": "node_modules/js-yaml",
+        "version": "5.4.3",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/js-yaml/-/js-yaml-5.4.3.tgz",
+        "integrity": "sha512-yzzNtgczwgoVHNigCyKTXcQJU4Y8t/ikU4UxXW0BvrLfHTGWZhsNcOT2s/a7vn81/4KqVnNmHjaUEPlvWnNwVw==",
+        "reason": "Owner-approved CI-only patch for GHSA-r3ph-w7gj-g6xm prevents excessive merge-key processing while retaining the pinned Markdownlint CLI and all existing Markdown rules."
+      },
+      {
+        "requester": "markdownlint-cli2",
+        "dependency": "markdown-it",
+        "declaredRange": "14.3.0",
+        "specifier": "14.3.1",
+        "packageName": "markdown-it",
+        "resolvedPath": "node_modules/markdown-it",
+        "version": "14.3.1",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/markdown-it/-/markdown-it-14.3.1.tgz",
+        "integrity": "sha512-4Ej49aYTDFIQ+uBkfX8GBvJGccoARxxPep+7aWTs55ozbjQJpW9M26Fe53vnGgvLeVzva/amzjQQaQu9w0vMhA==",
+        "reason": "Owner-approved CI-only patch for GHSA-253c-mchw-3w2r repairs quadratic linkification without changing the pinned Markdownlint CLI, its rule configuration or selected source files."
+      },
+      {
+        "requester": "markdownlint-cli2",
+        "dependency": "smol-toml",
+        "declaredRange": "1.7.0",
+        "specifier": "1.9.0",
+        "packageName": "smol-toml",
+        "resolvedPath": "node_modules/smol-toml",
+        "version": "1.9.0",
+        "licence": "BSD-3-Clause",
+        "resolved": "https://registry.npmjs.org/smol-toml/-/smol-toml-1.9.0.tgz",
+        "integrity": "sha512-hpd+HLON7HdZXqYchMM/+LaTTbdK0AU3NngIJ4KVyWbY9bfQqdL9cD+4yf6dUoU2Ap4VsU0JkQi6FxAI1B2mXQ==",
+        "reason": "Owner-approved CI-only patch for GHSA-7w5x-hrqm-74c2 and GHSA-r4xh-jqrq-34v2 repairs malformed-input and quadratic parsing failures while preserving the existing lint-tool contracts."
+      },
+      {
+        "requester": "micromark-extension-math",
+        "dependency": "katex",
+        "declaredRange": "^0.16.0",
+        "specifier": "0.18.2",
+        "packageName": "katex",
+        "resolvedPath": "node_modules/katex",
+        "version": "0.18.2",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/katex/-/katex-0.18.2.tgz",
+        "integrity": "sha512-3snve4y0SXTMequLim1FMiPvLGElySam0blN5xQZBqEY3lOJz1TnuaaiugnBZBqHzlSAGmFTYL7MCQkORuLKCA==",
+        "reason": "Owner-approved CI-only update for GHSA-238p-pmpm-9mq7 closes the trust bypass in Markdown math tooling; this dependency is not part of the game or its public runtime payload."
+      },
+      {
+        "requester": "micromatch",
+        "dependency": "braces",
+        "declaredRange": "^3.0.3",
+        "specifier": "npm:@dieub/braces-depth-guard@3.0.3-pn.3",
+        "packageName": "@dieub/braces-depth-guard",
+        "resolvedPath": "node_modules/micromatch/node_modules/braces",
+        "version": "3.0.3-pn.3",
+        "licence": "MIT",
+        "resolved": "https://registry.npmjs.org/@dieub/braces-depth-guard/-/braces-depth-guard-3.0.3-pn.3.tgz",
+        "integrity": "sha512-QY+Uq4s42STyIMPoRkBuUZfYyvz0uZuwuUburLwMx5N+lWqnHHaBxcKPtgKVKjTyFnS1q4ivKu9Wxi4VG7FE9Q==",
+        "reason": "Owner approved the exact MIT depth-guard fork for GHSA-vfj7-8cjw-p6xm on 2026-10-07. Installed source hashes and native linter compatibility and rejection controls are mandatory; an alias alone is never remediation evidence."
       }
     ],
     "directDependencies": [
@@ -345,7 +413,60 @@
         "resolved": "https://registry.npmjs.org/stylelint/-/stylelint-17.14.1.tgz",
         "integrity": "sha512-xVQwyiuxALUBNB2fBe0tmNemg9KqLtdj3T64mioFDar79B2cU8LIyz+3KL6LdiHs9NkeNfwxpKSaIVOY8f112g=="
       }
-    ]
+    ],
+    "guardedBraces": {
+      "contractId": "CI_BRACES_DEPTH_GUARD_V1",
+      "approvedDate": "2026-10-07",
+      "advisory": "GHSA-vfj7-8cjw-p6xm",
+      "packagePath": "node_modules/micromatch/node_modules/braces",
+      "sourceUrl": "https://github.com/dieub/braces-depth-guard/tree/305a2e4bfe324bb53c336c1b03387ee1251c926f",
+      "sourceCommit": "305a2e4bfe324bb53c336c1b03387ee1251c926f",
+      "licenceEvidence": "https://github.com/dieub/braces-depth-guard/blob/305a2e4bfe324bb53c336c1b03387ee1251c926f/LICENSE",
+      "maximumDepth": 100,
+      "negativeControlId": "NC-CI-GLOB-DEPTH-GUARD",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+        },
+        {
+          "path": "README.md",
+          "sha256": "f06ecffb78d40201813ecf840cd06b280a5a56ee85a7f9a6224df3bc1453c53d"
+        },
+        {
+          "path": "index.js",
+          "sha256": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4"
+        },
+        {
+          "path": "lib/compile.js",
+          "sha256": "20ea98b7f04c8969ca478db458e3e08e0f3b47cc9f810a75336370bfedbf9436"
+        },
+        {
+          "path": "lib/constants.js",
+          "sha256": "f9fb688959232eee3e6ad7906a5b0e3234815db49ee857ef86983d65b917dc7c"
+        },
+        {
+          "path": "lib/expand.js",
+          "sha256": "3fb6a53995e05263b594485975c2ac9312e0c3b6b8bf37bd3b4ec6e5deb43a9e"
+        },
+        {
+          "path": "lib/parse.js",
+          "sha256": "43d983a546dce1ed446dbe8535438a717de9e85040ab701edae3a5a50acdc1d4"
+        },
+        {
+          "path": "lib/stringify.js",
+          "sha256": "dd47ae5c9ac1f1a0e65de7160e25500a9dd724279a65fe96011c7f1b7b7ed36c"
+        },
+        {
+          "path": "lib/utils.js",
+          "sha256": "34b39e1b7d634c5460c30b1fe271dd337cfc383709b3659c31e5d84b12e92e61"
+        },
+        {
+          "path": "package.json",
+          "sha256": "6a966416d58086ffe4cb6d5f6af14c380953bba178d2865c536a9ecb4dab4e74"
+        }
+      ]
+    }
   },
   "analysisRatchets": {
     "historicalLintEvidence": {

@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.54.0",
+  "version": "1.55.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -1046,6 +1046,7 @@
         "quality.gates.approved-tutorial-metadata-transition",
         "quality.gates.candidate-binding",
         "quality.gates.finish-line",
+        "quality.gates.guarded-dependency-source",
         "quality.gates.historical-lint-evidence",
         "quality.gates.performance-budgets",
         "quality.gates.performance-evidence",
@@ -1103,6 +1104,10 @@
         },
         {
           "path": "audit/run-bundlewatch-budgets.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/run-ci-dependency-compatibility.mjs",
           "relationship": "OPERATIONAL_CONFIG"
         },
         {
@@ -1973,6 +1978,31 @@
       "validators": [
         "audit/tests/child-string-validation.test.mjs",
         "audit/tests/node-engine.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.ci-dependency-compatibility",
+      "owner": "audit/run-ci-dependency-compatibility.mjs",
+      "owns": [
+        "testing.ci-dependency-compatibility.command-deadline",
+        "testing.ci-dependency-compatibility.linter-file-selection",
+        "testing.ci-dependency-compatibility.malformed-glob-rejection",
+        "testing.ci-dependency-compatibility.source-tamper-rejection"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "audit/run-security-dependency-gate.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/run-security-dependency-gate.mjs"
       ]
     },
     {
@@ -4879,6 +4909,12 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "quality.guarded-dependency-compatibility",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/run-ci-dependency-compatibility.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "refactor-baseline.schema",
       "source": "audit/schemas/refactor-baseline-v2.schema.json",
       "target": "audit/lib/refactor-baseline.mjs",
@@ -5051,6 +5087,12 @@
       "source": "audit/schemas/security-gate-policy-v1.schema.json",
       "target": "audit/lib/security-gate-policy.mjs",
       "kind": "VALIDATES"
+    },
+    {
+      "id": "security.native-dependency-compatibility",
+      "source": "audit/run-ci-dependency-compatibility.mjs",
+      "target": "audit/run-security-dependency-gate.mjs",
+      "kind": "CONSUMES"
     },
     {
       "id": "semantic-curriculum-facets.suite",

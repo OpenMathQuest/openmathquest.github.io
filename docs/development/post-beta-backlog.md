@@ -1591,6 +1591,31 @@ it does not establish the cause of the hosted resource error. The unchanged
 console guard, zero retries, all 50 journeys and complete nine-stage loop
 remain required on the corrected tree before integration.
 
+The next frozen run
+([37683965570](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37683965570))
+passes compiler/types, architecture, tests including all 50 native journeys,
+differential equivalence, property/fuzz and mutation. Security then fails on
+16 npm affected-package entries; complexity/size and performance were not run.
+The raw report remains retained. The owner approved the exact MIT-licensed
+`@dieub/braces-depth-guard@3.0.3-pn.3` CI-only replacement and related security
+updates, compatibility checks and one independent review on 2026-10-07.
+
+The closed supply-chain owner now binds six exact overrides, the complete
+373-package dependency closure and all ten installed fork files. The source
+and archive match commit `305a2e4bfe324bb53c336c1b03387ee1251c926f`.
+Both actual lint CLIs pass normal file discovery, brace expansion and genuine
+rule-error controls with the patched dependency, and reject a 4,000-level
+pattern at the declared depth cap. The unpatched CLI diagnostic timed out
+within its 60-second bound instead of reproducing a stack-overflow message;
+it remains failed diagnostic evidence. The installed-byte check and native
+controls preserve visibility of the original advisory; package renaming alone
+never qualifies as remediation. No new unit cases are added. Focused compiler,
+function-quality, Markdown and driftless checks pass, along with all 55 retained
+policy tests and all 24 driftless tests, without skips. The security gate passes
+with zero npm advisories, no scanner findings, and all seven negative controls,
+including rejection of a changed installed source file. Independent review and
+a complete new frozen nine-stage loop remain required before integration.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,

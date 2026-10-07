@@ -50,7 +50,7 @@ function sortedUnique(values) {
 function validatePolicyIdentity(policy, findings) {
   const identity = {
     policyId: "math-quest-refactor-quality-gates",
-    version: "1.4.0",
+    version: "1.5.0",
     schemaVersion: 1,
     status: "ACTIVE",
     authority: "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -77,7 +77,7 @@ function validSupplyChainCollections(supplyChain) {
     Array.isArray(supplyChain?.licenceMetadataExceptions),
     Array.isArray(supplyChain?.lifecycleScriptExceptions),
     Array.isArray(supplyChain?.dependencyOverrides),
-    supplyChain?.dependencyOverrides?.length === 1,
+    supplyChain?.dependencyOverrides?.length === 6,
     Array.isArray(supplyChain?.directDependencies),
     supplyChain?.directDependencies?.length > 0,
   ]);
@@ -92,6 +92,7 @@ function validSupplyChainShape(supplyChain) {
     "lifecycleScriptExceptions",
     "dependencyOverrides",
     "directDependencies",
+    "guardedBraces",
   ];
   return all([
     exactKeys(supplyChain, supplyChainKeys),
@@ -150,22 +151,22 @@ function validatePolicyExceptions(supplyChain, findings) {
 }
 
 function validatePolicyOverride(supplyChain, findings) {
-  const override = supplyChain.dependencyOverrides[0];
-  const expected = {
-    requester: "bundlewatch",
-    dependency: "axios",
-    declaredRange: "^0.31.1",
-    version: "1.20.0",
-    licence: "MIT",
-    resolved: "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz",
-    integrity: "sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==",
-  };
-  const valid = all([
-    exactKeys(override, [...Object.keys(expected), "reason"]),
-    objectMatches(override, expected),
-    String(override?.reason).length >= 120,
-  ]);
-  if (!valid) findings.push("audit/quality-gate-policy-v1.json: the BundleWatch Axios security override must remain exact and explained");
+  const binding = { overrides: supplyChain.dependencyOverrides, guarded: supplyChain.guardedBraces };
+  const digest = createHash("sha256").update(JSON.stringify(binding)).digest("hex");
+  if (digest !== "fac22c8bbe1fbba146922991a7f1bc799dad88964006dffbc9e0cdb0f5c3cf40") {
+    findings.push("audit/quality-gate-policy-v1.json: the approved security overrides and fork source binding must remain exact");
+  }
+}
+
+function manifestOverrides(records) {
+  const overrides = {};
+  if (!Array.isArray(records)) return overrides;
+  for (const record of records) {
+    if (!record || typeof record !== "object") return {};
+    overrides[record.requester] ||= {};
+    overrides[record.requester][record.dependency] = record.specifier;
+  }
+  return overrides;
 }
 
 function validatePolicy(policy, findings) {
@@ -194,7 +195,7 @@ function validateManifest(manifest, policy, findings) {
     license: "MIT",
     engines: { node: policy.runtime?.nodeVersion },
     scripts: MANIFEST_SCRIPTS,
-    overrides: { bundlewatch: { axios: policy.supplyChain.dependencyOverrides[0]?.version } },
+    overrides: manifestOverrides(policy.supplyChain.dependencyOverrides),
   };
   if (!objectMatches(manifest, identity)) {
     findings.push("package.json: CI manifest identity, scripts, and Node pin must remain exact");
@@ -309,24 +310,41 @@ function validateDirectLockRecords(packages, directDependencies, findings) {
 }
 
 function validateLockOverride(packages, supplyChain, findings) {
-  const override = supplyChain.dependencyOverrides[0];
+  if (!Array.isArray(supplyChain.dependencyOverrides)) return;
+  for (const override of supplyChain.dependencyOverrides) {
+    if (override && typeof override === "object") validateResolvedOverride(packages, override, findings);
+  }
+}
+
+function validateResolvedOverride(packages, override, findings) {
   const requester = packages[`node_modules/${override.requester}`];
-  const dependency = packages[`node_modules/${override.dependency}`];
+  const nested = `node_modules/${override.requester}/node_modules/${override.dependency}`;
+  const resolvedPath = packages[nested] ? nested : `node_modules/${override.dependency}`;
+  const dependency = packages[resolvedPath];
   if (requester?.dependencies?.[override.dependency] !== override.declaredRange) {
-    findings.push("package-lock.json: BundleWatch must retain its declared Axios range as override provenance");
+    findings.push(`package-lock.json: ${override.requester} must retain its declared ${override.dependency} range as override provenance`);
   }
-  if (!objectMatches(dependency, {
-    version: override.version,
-    license: override.licence,
-    resolved: override.resolved,
-    integrity: override.integrity,
-    dev: true,
-  })) {
-    findings.push("package-lock.json: the resolved Axios security override must remain exact");
+  if (resolvedPath !== override.resolvedPath || !validDirectLockRecord(override, dependency)) {
+    findings.push(`package-lock.json: the resolved ${override.dependency} security override must remain exact without shadowing`);
   }
-  if (packages[`node_modules/${override.requester}/node_modules/${override.dependency}`]) {
-    findings.push("package-lock.json: a nested vulnerable Axios copy bypasses the reviewed override");
+  if (override.packageName !== override.dependency && dependency?.name !== override.packageName) {
+    findings.push(`package-lock.json: the ${override.dependency} alias must identify the approved package`);
   }
+}
+
+function guardedDependencyRecord(supplyChain) {
+  if (!Array.isArray(supplyChain.dependencyOverrides)) return null;
+  const dependency = supplyChain.dependencyOverrides.find((record) => record?.dependency === "braces");
+  if (!dependency) return null;
+  const source = supplyChain.guardedBraces;
+  return {
+    id: "braces-depth-guard-" + dependency.version, kind: "ci-only-glob-security-dependency",
+    version: dependency.version, licence: dependency.licence,
+    sourceUrl: source.sourceUrl, sourceCommit: source.sourceCommit, licenceEvidence: source.licenceEvidence,
+    packageName: dependency.packageName, packageUrl: dependency.resolved, packageSri: dependency.integrity,
+    attributionRecord: "licenses/ci-toolchain.md", bundled: false,
+    scope: "Owner-approved depth-guard fork for CI file discovery only; never distributed with the game",
+  };
 }
 
 function validateLock(lockText, lock, manifest, policy, findings) {
@@ -346,6 +364,13 @@ function validateLock(lockText, lock, manifest, policy, findings) {
   validateLockOverride(lock.packages, supplyChain, findings);
 }
 
+function appendGuardedRecord(supplyChain, records, findings) {
+  if (!supplyChain?.guardedBraces) return;
+  const guarded = guardedDependencyRecord(supplyChain);
+  if (guarded) records.push(guarded);
+  else findings.push("audit/quality-gate-policy-v1.json: guarded dependency is missing its approved override");
+}
+
 export function qualityToolRegisterRecords(policyText) {
   const findings = [];
   const policy = parseJson(policyText, "audit/quality-gate-policy-v1.json", findings);
@@ -360,6 +385,7 @@ export function qualityToolRegisterRecords(policyText) {
     };
   });
   if (records.length !== 8) findings.push("audit/quality-gate-policy-v1.json: eight quality-tool component records are required");
+  appendGuardedRecord(policy?.supplyChain, records, findings);
   return { records, findings };
 }
 

@@ -50,7 +50,7 @@ export const KIND_LICENCES = Object.freeze({
 export const EVIDENCE_KINDS = new Set(["licence-text", "policy", "attribution", "provenance"]);
 export const EVIDENCE_ORIGINS = new Set(["standard-open-text", "original-project", "mixed-open", "third-party-open"]);
 const LEGACY_TOOLCHAIN_RECORDS = 13;
-const EXTENDED_TOOLCHAIN_RECORDS = 23;
+const EXTENDED_TOOLCHAIN_RECORDS = 24;
 const REVIEWED_REGISTRY_CONTACT = ["i", "@", "izs.me"].join("");
 const REVIEWED_REGISTRY_METADATA_LINES = new Map([
   ["package-lock.json", new Set([
@@ -131,7 +131,7 @@ function projectedToolRecords(blobs) {
 
 export function extendedToolchainFindings(register, blobs) {
   if (!Array.isArray(register?.toolchain) || register.toolchain.length !== EXTENDED_TOOLCHAIN_RECORDS) {
-    return [`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the twenty-three reviewed runtime, browser, validator, quality, security, accessibility, and native-binding records`];
+    return [`${COMPONENT_REGISTER_PATH}: toolchain must contain exactly the twenty-four reviewed runtime, browser, validator, quality, security, accessibility, native-binding, and guarded dependency records`];
   }
   const projection = projectedToolRecords(blobs);
   const findings = [...projection.findings];

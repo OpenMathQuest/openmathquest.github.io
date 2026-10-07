@@ -56,7 +56,7 @@ test("the security policy is closed and binds the reviewed scanners and rules", 
   const policy = await loadSecurityGatePolicy();
   assert.deepEqual(policy.tools.map((tool) => tool.name), ["Semgrep", "TruffleHog"]);
   assert.equal(policy.semgrep.requiredRuleIds.length, 8);
-  assert.equal(policy.negativeControls.length, 5);
+  assert.equal(policy.negativeControls.length, 7);
   assert.equal(policy.dependencyAudit.temporaryDirectoryEnvironmentVariable, "MQ_NPM_AUDIT_TEMP");
   assert.equal(policy.dependencyAudit.maximumVulnerabilities.total, 0);
 });
