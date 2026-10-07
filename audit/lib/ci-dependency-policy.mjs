@@ -50,13 +50,13 @@ function sortedUnique(values) {
 function validatePolicyIdentity(policy, findings) {
   const identity = {
     policyId: "math-quest-refactor-quality-gates",
-    version: "1.3.0",
+    version: "1.4.0",
     schemaVersion: 1,
     status: "ACTIVE",
     authority: "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
     baselineCommit: "2078625b407d5189f579e94e716c86dce86ae90f",
   };
-  const keys = ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"];
+  const keys = ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"];
   if (!exactKeys(policy, keys)) findings.push("audit/quality-gate-policy-v1.json: policy must use the exact closed schema");
   if (!objectMatches(policy, identity)) findings.push("audit/quality-gate-policy-v1.json: policy identity and authority must remain exact");
 }

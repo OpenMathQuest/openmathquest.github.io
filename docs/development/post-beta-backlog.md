@@ -1557,6 +1557,19 @@ resolve the original Beta 9 fuzz failure. The frozen slice will use the
 required hosted nine-stage development check; release certification remains
 a separate, later boundary.
 
+The correction review clears both findings on tree
+`a4317ce9c5a190cbb36be2ca2b3434f636cda8a0`. The first hosted run
+([37615452916](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37615452916))
+passes compiler, architecture and all 50 browser journeys, then fails the
+existing canary supply-chain test because its closed policy mirror still
+expects version 1.3.0 without `testStrategy`. The two expectation literals now
+match the approved 1.4.0 owner; exact-key rejection and all supply-chain checks
+remain. The failed run is retained, and later stages were not run. All 25
+existing canary/public-candidate checks pass after the correction; a new
+hosted loop on the corrected tree remains required before integration. This
+narrow mirror correction adds no unit cases and does not resolve the
+historical Beta 9 fuzz failure.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,
@@ -3113,21 +3126,28 @@ context, and effect-sensitive protection against its declared false passes.
 
 ## Certification-cycle efficiency review
 
-**Status:** Cadence decision approved on 2026-08-02 and encoded in `AGENTS.md`
-and `audit/certification-cadence-v1.json`. Ordinary development now uses
-focused effect-sensitive checks. The complete certification system runs once
-after an immutable candidate freeze and immediately before publication; an
-early complete run requires explicit owner approval. Detailed audit-stage
-performance telemetry remains a future optimization task.
+**Status:** On 2026-10-07 the owner queued implementation after the E2E-first
+conversion is integrated, with a target of reducing complete-gauntlet
+wall-clock time by at least 50 percent without reducing coverage quality.
+The existing cadence decision remains approved and encoded in `AGENTS.md`
+and `audit/certification-cadence-v1.json`: ordinary development uses focused
+checks, and the complete certification system runs once after an immutable
+candidate freeze immediately before publication. An early complete run still
+requires explicit owner approval.
 
 ### Objective
 
-Investigate why complete release certification consumes so much elapsed time
-and model usage without weakening the permanent fail-closed release policy.
-Determine whether full gates are being restarted before a candidate is
-actually frozen, which evidence can be reused safely, and which focused checks
-should run during development before exactly one complete final candidate
-gate.
+Measure the complete-gauntlet baseline and its stage costs, then implement
+safe execution improvements that cut comparable end-to-end wall-clock time
+by at least half. Bind before/after measurements to exact candidates and
+comparable runner, browser, workload and cache conditions. Preserve every
+required gate, protected effect, negative control, mathematical oracle,
+browser profile, fuzz/mutation workload, coverage floor and evidence
+freshness rule. Do not obtain the target by skipping checks, weakening
+thresholds, hiding failures or moving work outside the measured boundary.
+Retain the E2E-first strategy and the owner's prohibition on new unit cases.
+Use existing approved utilities and governed concurrency; qualify any changed
+execution plan against serial results and candidate invalidation rules.
 
 ### Remaining performance questions
 
@@ -3146,9 +3166,11 @@ gate.
 7. How should timing and invalidation telemetry be added so future
    optimization is evidence-based?
 
-The deliverable should be a proposed development/release test cadence, an
-evidence invalidation matrix, audit-stage timing data, and a prioritized list
-of safe efficiency improvements for owner approval.
+Deliver working testing/gate optimizations, stage timing evidence and a
+comparable before/after report proving the 50-percent target with equivalent
+quality coverage. Record any shortfall honestly. This queue authorization
+does not relax certification cadence or authorize a new dependency, weakened
+gate or publication-clearance decision.
 
 The Pages dependency regression stays in the existing public-candidate
 dependency-policy test module. Its relocation preserves all assertions and
