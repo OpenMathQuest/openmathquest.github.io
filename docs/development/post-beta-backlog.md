@@ -1570,6 +1570,27 @@ hosted loop on the corrected tree remains required before integration. This
 narrow mirror correction adds no unit cases and does not resolve the
 historical Beta 9 fuzz failure.
 
+The second hosted run
+([37617775349](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37617775349))
+passes compiler and architecture, then records 49 passing browser results and
+one `ERR_NO_BUFFER_SPACE` console failure in the desktop progress-protection
+journey. Chromium defines this as unavailable socket-buffer space. Its
+product assertions completed, but the console guard correctly rejects the
+result; unit checks and later stages were not started. The original log is
+retained. The hosted job did not retain the focused lane's trace, so the exact
+failed request and cause of resource exhaustion remain unknown. A local
+diagnostic could not start its restricted loopback server; an unrestricted
+attempt then timed out during fixture setup and was stopped with its trace
+retained. Neither diagnostic is passing evidence.
+
+Inspection also found that `PW-F-21` advanced its cleanup clock after the
+download-start event without awaiting completion. It now waits for the saved
+file and compares its bytes with the exact backup before checking cleanup.
+This strengthens native download coverage and removes that timing overlap;
+it does not establish the cause of the hosted resource error. The unchanged
+console guard, zero retries, all 50 journeys and complete nine-stage loop
+remain required on the corrected tree before integration.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,

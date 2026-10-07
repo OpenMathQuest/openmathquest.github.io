@@ -68,6 +68,8 @@ async function downloadResources(page) {
 
 async function expectDownloadCleanup(page, download, before) {
   const created = await expectPendingDownload(page, download, before);
+  const downloadedBytes = await readFile(await download.path(), "utf8");
+  expect(downloadedBytes).toBe(before);
   expect(await downloadResources(page)).toEqual({ anchors: 1, revoked: [] });
   await page.clock.fastForward(59_999);
   expect(await downloadResources(page)).toEqual({ anchors: 1, revoked: [] });
