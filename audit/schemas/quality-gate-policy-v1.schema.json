@@ -7,7 +7,7 @@
   "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
   "properties": {
     "policyId": { "const": "math-quest-refactor-quality-gates" },
-    "version": { "const": "1.5.0" },
+    "version": { "const": "1.6.0" },
     "schemaVersion": { "const": 1 },
     "status": { "const": "ACTIVE" },
     "authority": { "const": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates" },

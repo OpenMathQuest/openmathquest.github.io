@@ -11,8 +11,7 @@ function schemaIssue(error) {
 }
 
 export async function validateRefactorBaselineSchema(report, schemaUrl = new URL("../schemas/refactor-baseline-v2.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFile(schemaUrl, "utf8"));
-  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+  const validate = compileClosedSchema(await readFile(schemaUrl, "utf8"));
   return Object.freeze(validate(report) ? [] : (validate.errors || []).map(schemaIssue));
 }
 
@@ -256,4 +255,4 @@ export function composeRefactorBaseline(input) {
   });
 }
 import { readFile } from "node:fs/promises";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";

@@ -1,7 +1,7 @@
 import { duplicateValues } from "./manifest-collection-checks.mjs";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 import { canonicalizeJson, manifestArtifact } from "./curriculum-manifest.mjs";
 import { AI_READER_CONTRACT_REF } from "./repository-code-map.mjs";
 
@@ -95,9 +95,7 @@ function ajvIssue(error) {
 }
 
 async function validateTutorialManifestSchema(manifest, schemaPathOrUrl = new URL("../schemas/tutorial-manifest-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFile(schemaPathOrUrl, "utf8"));
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  const validate = ajv.compile(schema);
+  const validate = compileClosedSchema(await readFile(schemaPathOrUrl, "utf8"));
   const valid = validate(manifest);
   return Object.freeze(valid ? [] : (validate.errors ?? []).map(ajvIssue));
 }

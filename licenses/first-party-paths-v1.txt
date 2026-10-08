@@ -67,6 +67,7 @@ audit/lib/browser-runner-evidence.mjs
 audit/lib/browser-smoke.mjs
 audit/lib/child-strings.mjs
 audit/lib/ci-dependency-policy.mjs
+audit/lib/closed-schema-compiler.mjs
 audit/lib/curriculum-manifest.mjs
 audit/lib/design-token-projection.mjs
 audit/lib/development-suite-plan.mjs
@@ -151,6 +152,7 @@ audit/run-ci-dependency-compatibility.mjs
 audit/run-compiler-contracts.mjs
 audit/run-coverage.mjs
 audit/run-differential-equivalence.mjs
+audit/run-e2e-checks.ps1
 audit/run-function-quality-gate.mjs
 audit/run-performance-budgets.mjs
 audit/run-playwright-deep-ux-census.mjs
@@ -187,6 +189,7 @@ audit/tests/ai-change-loop.test.mjs
 audit/tests/art-design-governance.test.mjs
 audit/tests/art-migration-baseline.test.mjs
 audit/tests/art-question-shell.test.mjs
+audit/tests/audit-execution-cli.test.mjs
 audit/tests/audit-lane-orchestration.test.mjs
 audit/tests/audit-orchestration.test.mjs
 audit/tests/axe-accessibility.test.mjs

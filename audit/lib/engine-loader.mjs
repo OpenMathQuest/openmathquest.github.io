@@ -168,6 +168,15 @@ function throwingAmbient(name) {
   });
 }
 
+function restrictedEngineContext(sandbox) {
+  const context = vm.createContext(vm.constants.DONT_CONTEXTIFY, {
+    name: "math-quest-restricted-engine",
+    codeGeneration: { strings: false, wasm: false },
+  });
+  Object.assign(context, sandbox);
+  return context;
+}
+
 export function evaluateEngine(source, { timeoutMs = 1_000, filename = ENGINE_FILENAME } = {}) {
   const safeMath = Object.create(null);
   for (const key of Object.getOwnPropertyNames(Math)) {
@@ -191,10 +200,7 @@ export function evaluateEngine(source, { timeoutMs = 1_000, filename = ENGINE_FI
     setTimeout: throwingAmbient("setTimeout"),
     setInterval: throwingAmbient("setInterval"),
   });
-  const context = vm.createContext(sandbox, {
-    name: "math-quest-restricted-engine",
-    codeGeneration: { strings: false, wasm: false },
-  });
+  const context = restrictedEngineContext(sandbox);
   // Parentheses make the marker payload parse as exactly one expression. A
   // payload such as `first(); second()` is therefore rejected before it can
   // run, while the extracted and hashed bytes remain unchanged.
