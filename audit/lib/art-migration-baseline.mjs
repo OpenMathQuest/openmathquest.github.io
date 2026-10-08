@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 
 import {
   artMigrationCanonicalJson,
@@ -135,8 +135,7 @@ export function visualObservationFromBrowserEvidence(evidence) {
 }
 
 async function validateArtMigrationSchema(value, schemaPath) {
-  const schema = JSON.parse(await readFile(schemaPath, "utf8"));
-  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+  const validate = compileClosedSchema(await readFile(schemaPath, "utf8"));
   return validate(value) ? [] : (validate.errors || []).map(schemaIssue);
 }
 

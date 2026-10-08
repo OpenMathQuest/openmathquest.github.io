@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { loadQualityGatePolicy } from "../lib/quality-gate-policy.mjs";
-import { compareWithBaseline, differentialMutationFailures, loadEngineFromGit } from "../lib/differential-equivalence.mjs";
+import { compareWithBaseline, loadEngineFromGit } from "../lib/differential-equivalence.mjs";
 import "./tutorial-metadata-transition.test.mjs";
 import "./release-version-comparison.test.mjs";
 
@@ -28,11 +28,6 @@ test("the refactored engine remains differentially equivalent to the immutable R
     "question.timeReadDigital",
   ]);
   assert.deepEqual(result.findings, []);
-});
-
-test("[NC-DIFFERENTIAL-EQUIVALENCE-DETECTS-DRIFT] changed witness selection, core, response, strategy, and later semantic-model results are rejected", async () => {
-  const policy = await loadQualityGatePolicy();
-  assert.deepEqual(await differentialMutationFailures(policy.baselineCommit), []);
 });
 
 test("[NC-DIFFERENTIAL-HERMETIC-R0] immutable baseline loading ignores ambient Git redirection and replacement state", async () => {

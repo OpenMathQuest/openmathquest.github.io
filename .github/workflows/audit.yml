@@ -55,6 +55,23 @@ jobs:
         shell: powershell
         run: node .\audit\run-ai-change-loop.mjs --progress
 
+      - name: Retain synthetic interaction-fuzz failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-interaction-fuzz-failure-${{ github.sha }}
+          path: |
+            audit/.tmp-playwright-interaction-fuzz-report.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop.json
+            audit/.tmp-playwright-interaction-fuzz/edge-phone.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop-original-failure.json
+            audit/.tmp-playwright-interaction-fuzz/edge-phone-original-failure.json
+            audit/.tmp-playwright-interaction-fuzz/edge-desktop-failure.png
+            audit/.tmp-playwright-interaction-fuzz/edge-phone-failure.png
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 90
+
   full-audit:
     if: github.event_name == 'workflow_dispatch' && inputs.execution_qualification != true
     runs-on: windows-latest
@@ -314,18 +331,48 @@ jobs:
         env:
           MQ_AUDIT_EXECUTION_MODE: SERIAL_REFERENCE
         run: |
+          $entryTimer = [Diagnostics.Stopwatch]::StartNew()
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          $nodeDigest = (Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant()
           & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+          $entryExit = $LASTEXITCODE
+          $entryTimer.Stop()
+          if ($entryExit -ne 0) { throw 'The serial technical entry point failed.' }
+          if ((Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $nodeDigest) { throw 'The Node executable changed during the technical entry point.' }
           Copy-Item -LiteralPath 'audit/last-report.json' -Destination (Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial.json')
+          $reportPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial.json'
+          $timingPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial-timing.json'
+          $timing = [ordered]@{
+            schemaVersion = 1; boundary = 'TECHNICAL_ENTRY_POINT'; executionStatus = 'COMPLETED'
+            reportSha256 = (Get-FileHash -LiteralPath $reportPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            nodeExecutableSha256 = $nodeDigest
+            wallDurationMs = $entryTimer.ElapsedMilliseconds
+          }
+          [IO.File]::WriteAllText($timingPath, ($timing | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
 
       - name: Run bounded candidate once
         shell: powershell
         env:
           MQ_AUDIT_EXECUTION_MODE: BOUNDED_PARALLEL
         run: |
+          $entryTimer = [Diagnostics.Stopwatch]::StartNew()
           $nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+          $nodeDigest = (Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant()
           & .\audit\run-audit.ps1 -NodePath $nodePath -TechnicalOnly
+          $entryExit = $LASTEXITCODE
+          $entryTimer.Stop()
+          if ($entryExit -ne 0) { throw 'The bounded technical entry point failed.' }
+          if ((Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $nodeDigest) { throw 'The Node executable changed during the technical entry point.' }
           Copy-Item -LiteralPath 'audit/last-report.json' -Destination (Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel.json')
+          $reportPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel.json'
+          $timingPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel-timing.json'
+          $timing = [ordered]@{
+            schemaVersion = 1; boundary = 'TECHNICAL_ENTRY_POINT'; executionStatus = 'COMPLETED'
+            reportSha256 = (Get-FileHash -LiteralPath $reportPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            nodeExecutableSha256 = $nodeDigest
+            wallDurationMs = $entryTimer.ElapsedMilliseconds
+          }
+          [IO.File]::WriteAllText($timingPath, ($timing | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
 
       - name: Require equivalent evidence and measured improvement
         shell: powershell
@@ -333,7 +380,9 @@ jobs:
           $serialPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial.json'
           $parallelPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel.json'
           $comparisonPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-comparison.json'
-          $comparison = & node .\audit\compare-audit-execution-modes.mjs "--serial=$serialPath" "--parallel=$parallelPath"
+          $serialTimingPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-serial-timing.json'
+          $parallelTimingPath = Join-Path $env:MQ_AUDIT_QUALIFICATION_DIRECTORY 'execution-qualification-parallel-timing.json'
+          $comparison = & node .\audit\compare-audit-execution-modes.mjs "--serial=$serialPath" "--parallel=$parallelPath" "--serial-entry-timing=$serialTimingPath" "--parallel-entry-timing=$parallelTimingPath"
           $comparisonExit = $LASTEXITCODE
           $comparison | Set-Content -LiteralPath $comparisonPath -Encoding utf8
           if ($comparisonExit -ne 0) { throw 'Bounded audit execution did not qualify.' }
@@ -347,5 +396,7 @@ jobs:
             ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-serial.json
             ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-parallel.json
             ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-comparison.json
+            ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-serial-timing.json
+            ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-parallel-timing.json
           if-no-files-found: error
           retention-days: 90

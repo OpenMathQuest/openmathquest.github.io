@@ -26,15 +26,16 @@ function runNode(argumentsList) {
   });
 }
 
-function resultFinding(label, result) {
-  if (result.error) return label + " could not start: " + result.error;
-  if (result.signal) return label + " ended with signal " + result.signal;
-  if (result.status !== 0) return label + " exited " + result.status + ": " + (result.stderr || result.stdout).trim().slice(-4000);
-  return null;
+export function propertyFuzzResultFinding(label, result) {
+  if (result.status === 0 && !result.error && !result.signal) return null;
+  const reason = result.error ? " could not start: " + result.error
+    : result.signal ? " ended with signal " + result.signal : " exited " + result.status;
+  return label + reason + ":\nstdout:\n" + String(result.stdout || "").trim()
+    + "\nstderr:\n" + String(result.stderr || "").trim();
 }
 
 export function propertyFuzzStageMutationFailures() {
-  const syntheticFailure = resultFinding("synthetic property check", {
+  const syntheticFailure = propertyFuzzResultFinding("synthetic property check", {
     status: 1,
     signal: null,
     error: null,
@@ -52,8 +53,8 @@ export function runPropertyFuzzStage() {
     ? runNode(["audit/run-playwright-interaction-fuzz.mjs"])
     : Object.freeze({ status: null, signal: null, error: "blocked by failed property contracts", stdout: "", stderr: "" });
   const findings = [
-    resultFinding("fast-check property contracts", contractTests),
-    resultFinding("seeded browser interaction fuzz", interactionFuzz),
+    propertyFuzzResultFinding("fast-check property contracts", contractTests),
+    propertyFuzzResultFinding("seeded browser interaction fuzz", interactionFuzz),
     ...propertyFuzzStageMutationFailures(),
   ].filter(Boolean);
   return Object.freeze({

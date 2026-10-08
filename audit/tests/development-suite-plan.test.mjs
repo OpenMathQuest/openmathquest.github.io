@@ -15,10 +15,10 @@ test("no paths and unknown paths fail safe to the broad suite", () => {
   assert.deepEqual(unknown.suites, DEVELOPMENT_SUITE_IDS);
 });
 
-test("documentation-only work avoids product and engine execution", () => {
+test("documentation-only work selects the mandatory browser and shared policy layers", () => {
   const plan = planDevelopmentSuites(["docs/release/readiness.md"]);
   assert.equal(plan.mode, "FOCUSED_CHANGED_PATHS");
-  assert.deepEqual(plan.suites, ["governance", "metadata", "guard"]);
+  assert.deepEqual(plan.suites, ["governance", "metadata", "playwright", "guard"]);
 });
 
 test("single-file product changes select every affected independent layer", () => {
