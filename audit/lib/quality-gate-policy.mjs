@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { readFile as readFileAsync } from "node:fs/promises";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 
 const canonicalPolicyUrl = new URL("../quality-gate-policy-v1.json", import.meta.url);
 
@@ -119,8 +119,7 @@ function functionQualityPolicyIssues(functionQuality) {
 export const QUALITY_GATE_POLICY = freezeDeep(JSON.parse(readFileSync(canonicalPolicyUrl, "utf8")));
 
 export async function validateQualityGatePolicySchema(policy, schemaPathOrUrl = new URL("../schemas/quality-gate-policy-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFileAsync(schemaPathOrUrl, "utf8"));
-  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+  const validate = compileClosedSchema(await readFileAsync(schemaPathOrUrl, "utf8"));
   return Object.freeze(validate(policy) ? [] : (validate.errors || []).map(schemaIssue));
 }
 

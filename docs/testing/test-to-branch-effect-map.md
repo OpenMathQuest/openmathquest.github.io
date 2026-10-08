@@ -1225,3 +1225,48 @@ constants, progress and serialized bytes retain exact comparisons. Negative
 controls reject wrong, missing and duplicate version fields, and changes to
 schema, earned level and export formatting remain observable. Actual baseline
 saves must load into the current engine with all other state unchanged.
+
+The schema-compilation helper serves the existing quality-policy, Code Map,
+Feature Map, Tutorial Manifest, gate-integrity, refactor-baseline and governed
+art-record validators. Their original valid and
+malformed-data cases still execute every validation and preserve each error
+mapper. Callers reread schema text on every invocation; the helper reuses
+only strict Ajv compilation keyed by exact text, with at most eight retained
+validators. It does not reuse input decisions or release evidence. Existing
+cases cover changed input and schema closure; schema-file tampering and FIFO
+eviction are not independently exercised by those cases. Focused source
+review must retain attention to these limits. No unit case is removed or added.
+
+The audit execution CLI E2E checks create external report and timing files,
+execute the real program, and inspect its JSON output and process exit. A
+valid control precedes missing, zero, negative and non-numeric duration
+rejections. Whole timing controls require a 7.14-percent entry-point reduction
+to fail despite a 50-percent inner-lane reduction, accept a valid 42.86-percent
+control, and reject stale report digests and zero elapsed time. These are
+synthetic contract controls, not measured gauntlet gains. The pre-fix missing-
+duration command incorrectly returned success, providing an effect-sensitive
+failure for the correction.
+
+Qualification measures setup, checks and cleanup through the actual technical
+entry point. Closed metadata binds to exact report bytes and a shared Node
+digest; both original lane and whole-entry adoption floors still apply. Its
+evidence does not cover dependency installation, manual or physical-device
+work, optional census work, or formal release certification. The E2E subprocess
+is the comparator CLI, whose executed path starts no child processes; bounded
+standard subprocess handling preserves expected nonzero comparison outcomes.
+
+Tracked literal discovery still reads every declared non-owner file and
+applies the original binary exclusion. Eight-read batches settle before
+their results are consumed in declaration order, preserving the original
+first error and projection order. Existing Code Map and blast-radius cases
+retain missing-path, literal-copy, ownership, closure and ordering protection.
+They do not directly measure concurrent filesystem operations.
+
+Canonical differential hashing reuses only sorted key lists for an exact
+key-array signature, with 128 process-local entries. It traverses every
+current value and recomputes every observation and digest. The unchanged
+48,384-request discovery, immutable corpus and witness digests, full candidate
+corpus and every existing differential mutation remain required. These
+checks provide the value-sensitive protection; the cache is not an oracle.
+`audit/run-e2e-checks.ps1` runs browser and real-program E2E checks before the
+parent entry point reaches any unit checks and throws on either failure.

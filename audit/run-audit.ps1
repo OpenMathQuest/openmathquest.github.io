@@ -367,16 +367,7 @@ try {
         Write-Host ("Development suite mode: {0}; suites: {1}" -f $developmentPlan.mode, ($developmentPlan.suites -join ', '))
     }
     Test-PublicFilesystemMetadata
-    Push-Location $workspace
-    try {
-        Write-Host 'E2E-first: running shipped browser journeys before unit checks.'
-        & $node.Path (Join-Path $auditDirectory 'run-playwright-focused.mjs')
-        if ($LASTEXITCODE -ne 0) {
-            throw 'The required first E2E browser journey stage failed; unit checks were not started.'
-        }
-    } finally {
-        Pop-Location
-    }
+    & (Join-Path $auditDirectory 'run-e2e-checks.ps1') -NodePath $node.Path -AuditDirectory $auditDirectory -Workspace $workspace
     if (-not $DevelopmentOnly -or $developmentPlan.suites -contains 'launcher') {
         & (Join-Path $auditDirectory 'test-launcher-identity.ps1')
     } else {

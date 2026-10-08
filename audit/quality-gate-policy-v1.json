@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-refactor-quality-gates",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -612,8 +612,8 @@
         "maximumLines": 538
       },
       {
-        "path": "audit/run-audit.ps1",
-        "maximumLines": 611
+          "path": "audit/run-audit.ps1",
+          "maximumLines": 602
       },
       {
         "path": "audit/run-trusted-https-canary.mjs",

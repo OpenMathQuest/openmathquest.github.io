@@ -3188,9 +3188,10 @@ context, and effect-sensitive protection against its declared false passes.
 
 ## Certification-cycle efficiency review
 
-**Status:** On 2026-10-07 the owner queued implementation after the E2E-first
-conversion is integrated, with a target of reducing complete-gauntlet
-wall-clock time by at least 50 percent without reducing coverage quality.
+**Status:** On 2026-10-07 the owner authorized overnight implementation from
+the verified E2E-first candidate while PR 97's merge remains pending. The
+target is a 50-percent reduction in complete-gauntlet wall-clock time; the
+owner prefers a thoroughly verified 40 percent over a faulty 50 percent.
 The existing cadence decision remains approved and encoded in `AGENTS.md`
 and `audit/certification-cadence-v1.json`: ordinary development uses focused
 checks, and the complete certification system runs once after an immutable
@@ -3229,10 +3230,88 @@ execution plan against serial results and candidate invalidation rules.
    optimization is evidence-based?
 
 Deliver working testing/gate optimizations, stage timing evidence and a
-comparable before/after report proving the 50-percent target with equivalent
-quality coverage. Record any shortfall honestly. This queue authorization
+comparable before/after report assessing the target with equivalent quality
+coverage. Record any shortfall honestly. This implementation authorization
 does not relax certification cadence or authorize a new dependency, weakened
 gate or publication-clearance decision.
+
+### Schema-compilation work in progress
+
+The first change reuses the existing approved Ajv compiler for unchanged
+schema text in eight validators: quality policy, Code Map, Feature Map,
+Tutorial Manifest, gate-integrity policy, refactor baseline and the two
+governed art-record validators. Each call still rereads its schema and validates its
+input; no input, validation decision or release evidence is cached. Exact
+schema text keys and an eight-entry process-local FIFO limit bound reuse.
+Changed or malformed schema text must take the original parse/compile path.
+Ajv's strict and all-errors options and the callers' error formatting remain
+unchanged. Existing valid and malformed-data cases remain in their original
+test modules; no unit cases or dependencies were added. Validators with
+additional registered schemas or different format options retain their
+existing compilers.
+
+The pre-edit Ajv symbol lookup completed against commit `e047427` and exposed
+a broad dependency hypothesis, which remains bounded by the canonical maps.
+Earlier stalled lookup attempts were cancelled without results. A local
+four-suite baseline passed the six Feature Map cases, then stalled between
+suites and was cancelled; it is incomplete, non-passing evidence. It cannot
+establish a timing improvement. The local machine had about 850 MB of free
+memory. Candidate checks, independent review and comparable hosted timing
+remain pending. No complete-gauntlet speed reduction is claimed.
+
+Tracked-text discovery now rereads the complete declared inventory in batches
+of at most eight. It settles each batch and preserves declared projection
+order and the first declared read failure; it caches no file contents. The
+18 existing Code Map and blast-radius cases passed with zero skips before
+the final ownership additions. Canonical differential hashing also retains
+at most 128 sorted key lists, keyed by the exact original key array. It
+caches no questions, values, observations or digests. Every generator call,
+value traversal, immutable digest and mutation workload still executes;
+the differential checks remain required on the final candidate.
+
+The E2E entry block is extracted into `audit/run-e2e-checks.ps1`: all 50
+shipped browser journeys run first, followed by the real comparison-program
+E2E cases, before any unit entry. The main PowerShell file falls from 611 to
+602 lines; quality-policy version 1.6.0 tightens its ceiling to 602 and updates
+the existing closed schema and compatibility mirror together.
+
+### Timing-integrity repair and measurement boundary
+
+The existing comparator converted a missing bounded-run duration into zero,
+which could falsely report a 100-percent improvement. A real CLI E2E
+regression reproduced this: its valid file-fed control succeeded, and the
+missing-duration command also returned success instead of the required
+failure. The pre-fix run is retained as one failed E2E case. Missing, zero,
+negative and non-numeric durations now fail closed.
+
+The non-release qualification workflow now measures the entire technical
+PowerShell entry point, including runtime setup, preceding checks, browser
+journeys, inner audit lanes and cleanup. It retains separate closed timing
+records outside the audited checkout, bound to the exact report bytes and
+Node executable digest. The comparator requires both records, equivalent
+gate evidence, matching candidates and executables, valid elapsed time and
+the existing 20-percent adoption floor for both the inner lanes and whole
+entry point. Its CLI result identifies the measured boundary and uses
+schema version 2. Legacy API comparisons retain their inner-lane scope.
+
+New E2E cases execute the actual comparison program through report files,
+stdout and exit codes. They protect duration rejection, a whole-entry-point
+shortfall despite faster inner lanes, valid whole timing and stale report
+bindings. Their first repair run failed because the general lane supervisor
+treated expected nonzero CLI exits as unverified cleanup after trying to kill
+already-exited processes. The checks now use the standard bounded subprocess
+API for this leaf CLI; production process-tree cleanup rules are unchanged.
+The earlier cancelled setup attempt and failed repair run remain non-passes.
+The two repaired CLI E2E cases subsequently passed with zero skips; final
+candidate checks and independent review remain required.
+
+This timing boundary excludes dependency installation, human and physical-
+device certification work and optional census work. It does not establish a
+complete-release gauntlet reduction or replace the final frozen-candidate
+certification. Protected-main dispatch, the non-release sentinel, serial
+default, disqualified bounded-adoption state and certification cadence remain
+in force. Comparable complete-gauntlet timing and the owner's target remain
+open.
 
 The Pages dependency regression stays in the existing public-candidate
 dependency-policy test module. Its relocation preserves all assertions and

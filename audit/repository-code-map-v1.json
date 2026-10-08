@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.55.0",
+  "version": "1.56.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -403,6 +403,58 @@
       ]
     },
     {
+      "id": "audit.canonical-key-order",
+      "owner": "audit/lib/differential-equivalence.mjs",
+      "owns": [
+        "audit.canonical-key-order.bounded-shape-cache",
+        "audit.canonical-key-order.full-value-traversal"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/run-differential-equivalence.mjs",
+        "audit/tests/differential-equivalence.test.mjs"
+      ]
+    },
+    {
+      "id": "audit.schema-compilation",
+      "owner": "audit/lib/closed-schema-compiler.mjs",
+      "owns": [
+        "audit.schema-compilation.byte-keyed-reuse",
+        "audit.schema-compilation.strict-options"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/art-design-governance.test.mjs",
+        "audit/tests/art-migration-baseline.test.mjs",
+        "audit/tests/feature-map.test.mjs",
+        "audit/tests/gate-integrity-policy.test.mjs",
+        "audit/tests/quality-gate-policy.test.mjs",
+        "audit/tests/refactor-baseline.test.mjs",
+        "audit/tests/repository-code-map.test.mjs",
+        "audit/tests/tutorial-manifest.test.mjs"
+      ]
+    },
+    {
+      "id": "audit.tracked-text-discovery",
+      "owner": "audit/lib/repository-code-map.mjs",
+      "owns": [
+        "audit.tracked-text-discovery.bounded-fresh-reads",
+        "audit.tracked-text-discovery.ordered-errors",
+        "audit.tracked-text-discovery.ordered-projections"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/tests/blast-radius-lookup.test.mjs",
+        "audit/tests/repository-code-map.test.mjs"
+      ]
+    },
+    {
       "id": "browser.reviewed-identity",
       "owner": "audit/browser-runner-evidence-v1.json",
       "owns": [
@@ -424,10 +476,39 @@
       ]
     },
     {
+      "id": "certification.audit-entry-timing",
+      "owner": "audit/compare-audit-execution-modes.mjs",
+      "owns": [
+        "certification.audit-entry-timing.closed-metadata-format",
+        "certification.audit-entry-timing.comparison-boundary",
+        "certification.audit-entry-timing.source-byte-bindings"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": ".github/workflows/audit.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "docs/development/post-beta-backlog.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        },
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-execution-cli.test.mjs"
+      ]
+    },
+    {
       "id": "certification.audit-evidence-comparison",
       "owner": "audit/lib/audit-evidence-comparison.mjs",
       "owns": [
         "certification.audit-evidence-comparison.canonical-evidence-comparison",
+        "certification.audit-evidence-comparison.positive-duration-precondition",
         "certification.audit-evidence-comparison.volatile-field-projection"
       ],
       "copyPolicy": "REFERENCES_ONLY",
@@ -443,6 +524,7 @@
         }
       ],
       "validators": [
+        "audit/tests/audit-execution-cli.test.mjs",
         "audit/tests/audit-lane-orchestration.test.mjs"
       ]
     },
@@ -1770,6 +1852,26 @@
       ]
     },
     {
+      "id": "testing.audit-execution-cli",
+      "owner": "audit/tests/audit-execution-cli.test.mjs",
+      "owns": [
+        "testing.audit-execution-cli.external-file-inputs",
+        "testing.audit-execution-cli.external-output-and-exit",
+        "testing.audit-execution-cli.real-program-execution"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/tests/audit-execution-cli.test.mjs"
+      ]
+    },
+    {
       "id": "testing.axe-accessibility",
       "owner": "audit/lib/axe-accessibility.mjs",
       "owns": [
@@ -2067,6 +2169,20 @@
       "validators": [
         "audit/playwright/critical-journeys.spec.mjs",
         "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.e2e-entry-order",
+      "owner": "audit/run-e2e-checks.ps1",
+      "owns": [
+        "testing.e2e-entry-order.browser-before-program-checks",
+        "testing.e2e-entry-order.failures-prevent-unit-entry"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [],
+      "validators": [
+        "audit/run-audit.ps1"
       ]
     },
     {
@@ -3745,6 +3861,24 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "audit-entry-timing.cli-e2e",
+      "source": "audit/compare-audit-execution-modes.mjs",
+      "target": "audit/tests/audit-execution-cli.test.mjs",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "audit-entry-timing.registration",
+      "source": "audit/tests/audit-execution-cli.test.mjs",
+      "target": "audit/run-e2e-checks.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "audit-entry-timing.workflow",
+      "source": "audit/compare-audit-execution-modes.mjs",
+      "target": ".github/workflows/audit.yml",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "audit-evidence-comparison.consumer-1",
       "source": "audit/lib/audit-evidence-comparison.mjs",
       "target": "audit/lib/bounded-audit-lanes.mjs",
@@ -4031,6 +4165,18 @@
       "source": "curriculum/math-quest-manifest-v1.json",
       "target": "audit/tests/engine-strategy-boundary-contract.mjs",
       "kind": "TESTS"
+    },
+    {
+      "id": "e2e-entry-order.browser",
+      "source": "audit/run-playwright-focused.mjs",
+      "target": "audit/run-e2e-checks.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "e2e-entry-order.caller",
+      "source": "audit/run-e2e-checks.ps1",
+      "target": "audit/run-audit.ps1",
+      "kind": "CONSUMES"
     },
     {
       "id": "e2e-first.authority-mirror",
@@ -5044,6 +5190,54 @@
       "id": "rights.toolchain-records.guard",
       "source": "audit/lib/public-toolchain-records.mjs",
       "target": "audit/public-candidate-guard.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.art-design-governance",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/art-design-governance.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.art-migration-baseline",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/art-migration-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.feature-map",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/feature-map.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.gate-integrity-policy",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/gate-integrity-policy.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.quality-gate-policy",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/quality-gate-policy.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.refactor-baseline",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/refactor-baseline.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.repository-code-map",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/repository-code-map.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "schema-compilation.tutorial-manifest",
+      "source": "audit/lib/closed-schema-compiler.mjs",
+      "target": "audit/lib/tutorial-manifest.mjs",
       "kind": "CONSUMES"
     },
     {

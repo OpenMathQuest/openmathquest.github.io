@@ -50,7 +50,7 @@ function sortedUnique(values) {
 function validatePolicyIdentity(policy, findings) {
   const identity = {
     policyId: "math-quest-refactor-quality-gates",
-    version: "1.5.0",
+    version: "1.6.0",
     schemaVersion: 1,
     status: "ACTIVE",
     authority: "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",

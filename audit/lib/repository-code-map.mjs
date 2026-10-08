@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 
 export const REPOSITORY_CODE_MAP_PATH = "audit/repository-code-map-v1.json";
 export const REPOSITORY_CODE_MAP_SCHEMA_PATH = "audit/schemas/repository-code-map-v1.schema.json";
@@ -47,9 +47,7 @@ function schemaIssue(error) {
 }
 
 export async function validateRepositoryCodeMapSchema(map, schemaPathOrUrl = new URL("../schemas/repository-code-map-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFile(schemaPathOrUrl, "utf8"));
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  const validate = ajv.compile(schema);
+  const validate = compileClosedSchema(await readFile(schemaPathOrUrl, "utf8"));
   const valid = validate(map);
   return Object.freeze(valid ? [] : (validate.errors || []).map(schemaIssue));
 }
@@ -333,10 +331,17 @@ function validateFamilyReferences(family, context, issues) {
 
 async function trackedTextProjections(root, tracked, owner) {
   const trackedTextEntries = [];
-  for (const file of tracked) {
-    if (file === normalizePath(owner)) continue;
-    const bytes = await readFile(path.join(root, ...file.split("/")));
-    if (!bytes.includes(0)) trackedTextEntries.push({ path: file, text: bytes.toString("utf8") });
+  const files = tracked.filter((file) => file !== normalizePath(owner));
+  const batchSize = 8;
+  for (let offset = 0; offset < files.length; offset += batchSize) {
+    const settled = await Promise.allSettled(files.slice(offset, offset + batchSize).map(async (file) => {
+      const bytes = await readFile(path.join(root, ...file.split("/")));
+      return bytes.includes(0) ? null : { path: file, text: bytes.toString("utf8") };
+    }));
+    for (const result of settled) {
+      if (result.status === "rejected") throw result.reason;
+      if (result.value) trackedTextEntries.push(result.value);
+    }
   }
   return trackedTextEntries;
 }
