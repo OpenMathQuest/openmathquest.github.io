@@ -155,7 +155,7 @@ effects earlier, but do not constitute another complete cycle.
 - [ ] Kill every required disposable mutation family.
 - [ ] Run browser smoke tests against the newly frozen shipped page with zero
   unexplained failures.
-- [ ] Run all 36 direct-user Playwright journeys in the exact installed-Edge
+- [ ] Run every direct-user Playwright journey in the exact installed-Edge
   desktop and touch-phone projects with zero failures, skips, retries,
   unexpected requests, page errors, or console errors.
 - [x] Record that odd-numbered Beta 9 is not selected by the alternating-beta
