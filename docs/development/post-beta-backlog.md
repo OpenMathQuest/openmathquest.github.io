@@ -3316,3 +3316,35 @@ open.
 The Pages dependency regression stays in the existing public-candidate
 dependency-policy test module. Its relocation preserves all assertions and
 the PWA test file’s downward source-size limit; no quality ceiling is raised.
+
+The first hosted optimization loop, run `37719540651` on tree
+`d3d081a0535143f1bd64847a0c065bdb039cd2bb`, failed the function-quality
+stage. The preceding seven stages passed, including 90.50 percent engine
+branch coverage, but the performance stage did not run. New timing-validation
+and E2E scenario functions exceeded the existing complexity limits; the
+legacy report-reader metrics also regressed. The correction separates byte
+reading, parsing, timing identity validation and the existing external CLI
+scenarios without deleting assertions or changing limits. Run the focused
+function-quality gate before the next freeze to catch this defect earlier.
+The tests and differential stages took 522,114 and 335,690 ms, respectively,
+against 521,561 and 331,561 ms in the prior hosted candidate. These observations
+show no useful speed gain in those stages and are not a complete-loop or
+complete-gauntlet improvement claim. Retain the failed report; a corrected
+candidate requires fresh review verification and its own complete loop.
+
+A historical engine CPU profile identified VM hashing as a performance
+hypothesis. A temporary ordinary-global-context loader then measured the same
+unmodified engine bytes on Node 24.14.0, with 1,008 generation/support/tutorial
+requests per round in original/candidate/candidate/original order. The rounds
+took 7,040/675/669/1,810 ms and produced the same corpus digest
+`33e71fcfedb74e32cc97b2b7e14f541a32b6753c5d2f9e8173f938abb0facd8b`.
+These local iteration-only observations exclude loading and the remaining
+gauntlet, include a large cold-start difference, and make no complete speed
+claim. The initial diagnostic used an unnormalized manifest skill shape and
+failed before a measurement; it remains a non-pass.
+The implementation now uses the Node standard-library context option while
+retaining frozen Math, ambient proxies, disabled dynamic code generation,
+unchanged extracted bytes, the one-expression boundary and existing deadline.
+The canonical Code Map registers the context owner and its consumers. Existing
+engine/oracle/coverage/mutation checks, focused quality, independent correction
+verification and a fresh hosted loop remain required on the final candidate.

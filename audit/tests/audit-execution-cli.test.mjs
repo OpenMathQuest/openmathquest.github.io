@@ -71,30 +71,42 @@ test("E2E comparison rejects a missing bounded duration after a valid file-fed c
   } finally { await removeComparison(fixture); }
 });
 
+async function wholeEntryTimingControl(fixture) {
+  await writeComparison(fixture);
+  await writeEntryTimings(fixture, 700, 650);
+  const slow = await runComparison(fixture, true);
+  assert.equal(slow.exitCode, 1);
+  assert.equal(slow.report.measurementBoundary, "TECHNICAL_ENTRY_POINT");
+  assert.equal(slow.report.measuredWallTimeReductionPercent, 7.14);
+  await writeEntryTimings(fixture, 700, 400);
+  assert.equal((await runComparison(fixture, true)).exitCode, 0);
+}
+
+async function staleEntryTimingControl(fixture) {
+  fixture.parallel.gate.status = "FAIL";
+  await writeComparison(fixture);
+  const stale = await runComparison(fixture, true);
+  assert.equal(stale.exitCode, 1);
+  assert.ok(stale.report.issues.includes("parallel entry-point timing does not bind the exact report bytes"));
+}
+
+async function zeroEntryTimingControl(fixture) {
+  fixture.parallel.gate.status = "PASS";
+  await writeComparison(fixture);
+  await writeEntryTimings(fixture, 700, 400);
+  const timing = JSON.parse(await readFile(fixture.paths["parallel-timing"], "utf8"));
+  timing.wallDurationMs = 0;
+  await writeFile(fixture.paths["parallel-timing"], JSON.stringify(timing), "utf8");
+  const zero = await runComparison(fixture, true);
+  assert.equal(zero.exitCode, 1);
+  assert.ok(zero.report.issues.includes("parallel entry-point duration must be a positive integer covering the inner lanes"));
+}
+
 test("E2E comparison counts the whole technical entry point and rejects stale timing bindings", async () => {
   const fixture = await comparisonFiles();
   try {
-    await writeComparison(fixture);
-    await writeEntryTimings(fixture, 700, 650);
-    const slow = await runComparison(fixture, true);
-    assert.equal(slow.exitCode, 1);
-    assert.equal(slow.report.measurementBoundary, "TECHNICAL_ENTRY_POINT");
-    assert.equal(slow.report.measuredWallTimeReductionPercent, 7.14);
-    await writeEntryTimings(fixture, 700, 400);
-    assert.equal((await runComparison(fixture, true)).exitCode, 0);
-    fixture.parallel.gate.status = "FAIL";
-    await writeComparison(fixture);
-    const stale = await runComparison(fixture, true);
-    assert.equal(stale.exitCode, 1);
-    assert.ok(stale.report.issues.includes("parallel entry-point timing does not bind the exact report bytes"));
-    fixture.parallel.gate.status = "PASS";
-    await writeComparison(fixture);
-    await writeEntryTimings(fixture, 700, 400);
-    const timing = JSON.parse(await readFile(fixture.paths["parallel-timing"], "utf8"));
-    timing.wallDurationMs = 0;
-    await writeFile(fixture.paths["parallel-timing"], JSON.stringify(timing), "utf8");
-    const zero = await runComparison(fixture, true);
-    assert.equal(zero.exitCode, 1);
-    assert.ok(zero.report.issues.includes("parallel entry-point duration must be a positive integer covering the inner lanes"));
+    await wholeEntryTimingControl(fixture);
+    await staleEntryTimingControl(fixture);
+    await zeroEntryTimingControl(fixture);
   } finally { await removeComparison(fixture); }
 });

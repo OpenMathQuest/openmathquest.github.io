@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.56.0",
+  "version": "1.57.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -2276,6 +2276,26 @@
       ]
     },
     {
+      "id": "testing.engine-evaluation",
+      "owner": "audit/lib/engine-loader.mjs",
+      "owns": [
+        "testing.engine-evaluation.restricted-vm-context"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/run-coverage.mjs",
+        "audit/run-differential-equivalence.mjs",
+        "audit/tests/engine-suite.mjs"
+      ]
+    },
+    {
       "id": "testing.engine-free-play-behavior",
       "owner": "audit/tests/engine-free-play-behavior.mjs",
       "owns": [
@@ -4223,6 +4243,30 @@
     {
       "id": "engine-core-checks.suite",
       "source": "audit/tests/engine-core-checks.mjs",
+      "target": "audit/tests/engine-suite.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-evaluation.coverage",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/run-coverage.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-evaluation.differential",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/lib/differential-equivalence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-evaluation.mutations",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/mutation-runner.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "engine-evaluation.suite",
+      "source": "audit/lib/engine-loader.mjs",
       "target": "audit/tests/engine-suite.mjs",
       "kind": "CONSUMES"
     },

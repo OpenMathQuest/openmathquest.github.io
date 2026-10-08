@@ -153,6 +153,7 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 | `testing.engine-audit` | `audit/tests/engine-suite.mjs` | `docs/testing/test-to-branch-effect-map.md` | `audit/tests/node-engine.test.mjs` |
 | `testing.engine-boundary-checks` | `audit/tests/engine-boundary-checks.mjs` | `audit/tests/engine-suite.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/tests/engine-suite.mjs` |
 | `testing.engine-core-checks` | `audit/tests/engine-core-checks.mjs` | `audit/tests/engine-suite.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/tests/engine-suite.mjs` |
+| `testing.engine-evaluation` | `audit/lib/engine-loader.mjs` | `docs/testing/test-to-branch-effect-map.md` | `audit/run-coverage.mjs`<br>`audit/run-differential-equivalence.mjs`<br>`audit/tests/engine-suite.mjs` |
 | `testing.engine-free-play-behavior` | `audit/tests/engine-free-play-behavior.mjs` | `audit/tests/engine-learning-checks.mjs`<br>`audit/tests/engine-suite.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/tests/engine-suite.mjs` |
 | `testing.engine-import-behavior` | `audit/tests/engine-import-behavior.mjs` | `audit/tests/engine-learning-checks.mjs`<br>`audit/tests/engine-suite.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/tests/engine-suite.mjs` |
 | `testing.engine-input-behavior` | `audit/tests/engine-input-behavior.mjs` | `audit/tests/engine-core-checks.mjs`<br>`audit/tests/engine-suite.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/tests/engine-suite.mjs` |

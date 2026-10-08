@@ -15,19 +15,25 @@ for (const argument of process.argv.slice(2)) {
   argumentsByName.set(match[1], match[2]);
 }
 const arg = (name) => argumentsByName.get(name) ?? null;
-const readReport = async (value) => {
+const readReport = (bytes) => JSON.parse(bytes.toString("utf8"));
+const readSource = async (value) => {
   const bytes = await readFile(path.resolve(root, value));
-  return { report: JSON.parse(bytes.toString("utf8")), sha256: createHash("sha256").update(bytes).digest("hex") };
+  return { report: readReport(bytes), sha256: createHash("sha256").update(bytes).digest("hex") };
 };
 
-function entryTimingIssues(timing, source, label) {
+function entryTimingIdentityIssues(timing, source, label) {
   const issues = [];
-  if (!exactKeys(timing, ["schemaVersion", "boundary", "executionStatus", "reportSha256", "nodeExecutableSha256", "wallDurationMs"])) {
-    return [`${label} entry-point timing has missing or unknown fields`];
-  }
   if (timing.schemaVersion !== 1 || timing.boundary !== "TECHNICAL_ENTRY_POINT" || timing.executionStatus !== "COMPLETED") issues.push(`${label} entry-point timing has an invalid completion boundary`);
   if (timing.reportSha256 !== source.sha256) issues.push(`${label} entry-point timing does not bind the exact report bytes`);
   if (typeof timing.nodeExecutableSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(timing.nodeExecutableSha256)) issues.push(`${label} entry-point timing has an invalid Node executable digest`);
+  return issues;
+}
+
+function entryTimingIssues(timing, source, label) {
+  if (!exactKeys(timing, ["schemaVersion", "boundary", "executionStatus", "reportSha256", "nodeExecutableSha256", "wallDurationMs"])) {
+    return [`${label} entry-point timing has missing or unknown fields`];
+  }
+  const issues = entryTimingIdentityIssues(timing, source, label);
   if (!Number.isSafeInteger(timing.wallDurationMs) || timing.wallDurationMs < 1 || timing.wallDurationMs < source.report.auditOrchestration?.wallDurationMs) issues.push(`${label} entry-point duration must be a positive integer covering the inner lanes`);
   return issues;
 }
@@ -35,7 +41,7 @@ function entryTimingIssues(timing, source, label) {
 const serialPath = arg("serial");
 const parallelPath = arg("parallel");
 if (!serialPath || !parallelPath) throw new TypeError("--serial and --parallel report paths are required.");
-const [serialSource, parallelSource] = await Promise.all([readReport(serialPath), readReport(parallelPath)]);
+const [serialSource, parallelSource] = await Promise.all([readSource(serialPath), readSource(parallelPath)]);
 const serialTimingPath = arg("serial-entry-timing");
 const parallelTimingPath = arg("parallel-entry-timing");
 const hasEntryTiming = serialTimingPath !== null || parallelTimingPath !== null;
@@ -45,7 +51,7 @@ let parallelReport = parallelSource.report;
 if (hasEntryTiming) {
   if (!serialTimingPath || !parallelTimingPath) timingIssues.push("both entry-point timing files are required");
   else {
-    const [serialTiming, parallelTiming] = await Promise.all([readReport(serialTimingPath), readReport(parallelTimingPath)]);
+    const [serialTiming, parallelTiming] = await Promise.all([readSource(serialTimingPath), readSource(parallelTimingPath)]);
     timingIssues.push(...entryTimingIssues(serialTiming.report, serialSource, "serial"), ...entryTimingIssues(parallelTiming.report, parallelSource, "parallel"));
     if (serialTiming.report.nodeExecutableSha256 !== parallelTiming.report.nodeExecutableSha256) timingIssues.push("entry-point timings do not bind the same Node executable");
     if (!timingIssues.length) {

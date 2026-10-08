@@ -143,6 +143,14 @@ retains setup failures, optional result filtering, and harness reporting.
 masking, interpolation scanning, nested braces/templates, and direct-reference
 ordering in the engine loader.
 
+The restricted audit VM uses Node's ordinary context globals through
+`vm.constants.DONT_CONTEXTIFY`. Its frozen Math object still excludes random;
+the throwing ambient proxies, disabled string/Wasm generation, exact engine
+bytes, single-expression evaluation and initialization deadline are retained.
+The existing engine, coverage, exhaustive differential and mutation programs
+continue every call and oracle. No generated question or validation outcome
+is cached. Focused iteration timings do not establish whole-gauntlet speed.
+
 The semantic suite contributes exactly 130 result records: one load/binding
 check, one taxonomy check, one check for each of 126 skills, and two
 task-type/mastery checks. A green release run must also reconcile 126 skills,
