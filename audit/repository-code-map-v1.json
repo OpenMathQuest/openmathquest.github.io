@@ -4709,6 +4709,30 @@
       "kind": "TESTS"
     },
     {
+      "id": "playwright.interaction-fuzz.hosted-contract",
+      "source": "audit/lib/playwright-interaction-fuzz.mjs",
+      "target": ".github/workflows/audit.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.interaction-fuzz.hosted-install",
+      "source": "audit/install-reviewed-ci-dependencies.ps1",
+      "target": ".github/workflows/audit.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.interaction-fuzz.hosted-runner",
+      "source": "audit/run-playwright-interaction-fuzz.mjs",
+      "target": ".github/workflows/audit.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.interaction-fuzz.hosted-runtime",
+      "source": "audit/lib/playwright-focused-contract.mjs",
+      "target": ".github/workflows/audit.yml",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "playwright.journey.adult-boundary-journey.request-probe-image",
       "source": "assets/icons/icon-192.png",
       "target": "audit/playwright/adult-boundary-journey.mjs",

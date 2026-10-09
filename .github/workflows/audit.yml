@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - codex/beta9-fuzz-diagnostic
   workflow_dispatch:
     inputs:
       candidate_sha:
@@ -400,3 +401,147 @@ jobs:
             ${{ runner.temp }}/math-quest-audit-execution-qualification/execution-qualification-parallel-timing.json
           if-no-files-found: error
           retention-days: 90
+
+  historical-fuzz-diagnostic:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/beta9-fuzz-diagnostic'
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out diagnostic harness
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify diagnostic boundary
+        shell: powershell
+        run: |
+          if ($env:GITHUB_REPOSITORY -cne 'OpenMathQuest/openmathquest.github.io' -or
+              $env:GITHUB_REF -cne 'refs/heads/codex/beta9-fuzz-diagnostic' -or
+              $env:GITHUB_EVENT_NAME -cne 'push' -or
+              $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+              [string]::IsNullOrWhiteSpace($env:ImageOS) -or
+              [string]::IsNullOrWhiteSpace($env:ImageVersion)) {
+            throw 'This bounded historical diagnostic requires its named branch and a GitHub-hosted Windows runner.'
+          }
+          Write-Output 'DIAGNOSTIC_ONLY: no release certification, publication clearance, or historical-failure resolution claim.'
+
+      - name: Set up pinned Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          package-manager-cache: false
+
+      - name: Install existing reviewed dependencies
+        shell: powershell
+        run: .\audit\install-reviewed-ci-dependencies.ps1
+
+      - name: Bind historical served runtime and current capture harness
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $historicalSha = '35059be92b0f0d95b470c671b6adcd47e542c5ef'
+          $captureSha = '1a70e86d8b943eb73fff2e6b75eeaa7c3affdc90'
+          $runtimePaths = @(node --input-type=module --eval "import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES as routes } from './audit/lib/playwright-focused-contract.mjs'; console.log([...new Set(routes.map(([, relativePath]) => relativePath))].sort().join('\n'));" )
+          if ($LASTEXITCODE -ne 0 -or $runtimePaths.Count -eq 0) { throw 'Canonical served-runtime discovery failed.' }
+          $nodePath = (Get-Command node).Source
+          $nodeHash = (Get-FileHash -LiteralPath $nodePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ((node --version) -cne 'v24.14.0' -or
+              $nodeHash -cne '63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088') {
+            throw 'The pinned diagnostic Node identity changed.'
+          }
+          git fetch origin $historicalSha
+          if ($LASTEXITCODE -ne 0) { throw 'Exact historical checkout is unavailable.' }
+          $capturePaths = @('Serve-MathQuest.ps1', 'playwright.interaction-fuzz.config.mjs',
+            'audit/run-playwright-interaction-fuzz.mjs', 'audit/playwright/interaction-fuzz.spec.mjs',
+            'audit/playwright/fixtures.mjs', 'audit/lib/playwright-interaction-fuzz.mjs',
+            'audit/lib/playwright-focused-contract.mjs', 'package.json', 'package-lock.json')
+          foreach ($capturePath in $capturePaths) {
+            $difference = @(git diff --name-only $captureSha HEAD -- $capturePath)
+            if ($LASTEXITCODE -ne 0 -or $difference.Count -ne 0) { throw "Capture harness changed: $capturePath" }
+          }
+          New-Item -ItemType Directory -Path audit-artifacts/historical-fuzz -Force | Out-Null
+          $runtimeArchive = Join-Path $env:RUNNER_TEMP 'math-quest-historical-runtime.zip'
+          git archive --format=zip "--output=$runtimeArchive" $historicalSha -- $runtimePaths
+          if ($LASTEXITCODE -ne 0) { throw 'Historical runtime archive failed.' }
+          Expand-Archive -LiteralPath $runtimeArchive -DestinationPath $env:GITHUB_WORKSPACE -Force
+          $runtimeBindings = @()
+          foreach ($runtimePath in $runtimePaths) {
+            $historicalBlob = (git rev-parse "${historicalSha}:$runtimePath").Trim()
+            $observedBlob = (git hash-object --no-filters -- $runtimePath).Trim()
+            if ($LASTEXITCODE -ne 0 -or $historicalBlob -cne $observedBlob) { throw "Historical bytes differ: $runtimePath" }
+            $runtimeBindings += [ordered]@{ path = $runtimePath; gitBlobOid = $observedBlob }
+          }
+          $record = [ordered]@{
+            kind = 'BOUNDED_HOSTED_HISTORICAL_BROWSER_FUZZ_DIAGNOSTIC'; certificationClaim = 'NONE'
+            historicalSha = $historicalSha; captureHarnessSha = $captureSha; diagnosticWorkflowSha = $env:GITHUB_SHA
+            nodeVersion = '24.14.0'; nodeExecutableSha256 = $nodeHash
+            runnerImageOS = $env:ImageOS; runnerImageVersion = $env:ImageVersion
+            workflowRunId = $env:GITHUB_RUN_ID; workflowRunAttempt = $env:GITHUB_RUN_ATTEMPT
+            maximumAttempts = 3; stopOnFirstFailure = $true; runtimeBindings = $runtimeBindings
+          }
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::WriteAllText((Join-Path $env:GITHUB_WORKSPACE 'audit-artifacts/historical-fuzz/construction.json'), (($record | ConvertTo-Json -Depth 8) + "`n"), $utf8)
+
+      - name: Run bounded diagnostic and retain every attempt
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $construction = Get-Content -LiteralPath audit-artifacts/historical-fuzz/construction.json -Raw | ConvertFrom-Json
+          $edgeCandidates = @('C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe')
+          $edge = $edgeCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+          if (-not $edge) { throw 'Reviewed installed Edge is unavailable.' }
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          foreach ($attempt in 1..$construction.maximumAttempts) {
+            $attemptDir = Join-Path $env:GITHUB_WORKSPACE "audit-artifacts/historical-fuzz/attempt-$attempt"
+            New-Item -ItemType Directory -Path $attemptDir | Out-Null
+            $started = (Get-Date).ToUniversalTime().ToString('o')
+            $browserHashBefore = (Get-FileHash -LiteralPath $edge -Algorithm SHA256).Hash.ToLowerInvariant()
+            $browserVersion = (Get-Item -LiteralPath $edge).VersionInfo.ProductVersion
+            $process = Start-Process -FilePath (Get-Command node).Source `
+              -ArgumentList @('.\audit\run-playwright-interaction-fuzz.mjs') `
+              -WorkingDirectory $env:GITHUB_WORKSPACE -WindowStyle Hidden -Wait -PassThru `
+              -RedirectStandardOutput (Join-Path $attemptDir 'execution.stdout.log') `
+              -RedirectStandardError (Join-Path $attemptDir 'execution.stderr.log')
+            $exitCode = $process.ExitCode
+            $browserHashAfter = (Get-FileHash -LiteralPath $edge -Algorithm SHA256).Hash.ToLowerInvariant()
+            $summary = $null
+            if (Test-Path -LiteralPath audit/.tmp-playwright-interaction-fuzz-report.json) {
+              Copy-Item -LiteralPath audit/.tmp-playwright-interaction-fuzz-report.json -Destination (Join-Path $attemptDir 'report.json')
+              $summary = (Get-Content -LiteralPath audit/.tmp-playwright-interaction-fuzz-report.json -Raw | ConvertFrom-Json).summary
+            }
+            if (Test-Path -LiteralPath audit/.tmp-playwright-interaction-fuzz) {
+              Copy-Item -LiteralPath audit/.tmp-playwright-interaction-fuzz -Destination (Join-Path $attemptDir 'retained-artifacts') -Recurse
+            }
+            $runtimeUnchanged = $true
+            foreach ($binding in $construction.runtimeBindings) {
+              $observedBlob = (git hash-object --no-filters -- $binding.path).Trim()
+              if ($LASTEXITCODE -ne 0 -or $observedBlob -cne $binding.gitBlobOid) { $runtimeUnchanged = $false }
+            }
+            $result = [ordered]@{
+              attempt = $attempt; executionExitCode = $exitCode; certificationClaim = 'NONE'
+              startedAtUtc = $started; endedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
+              browserProductName = 'Microsoft Edge'; browserFullVersion = $browserVersion
+              browserExecutableSha256Before = $browserHashBefore; browserExecutableSha256After = $browserHashAfter
+              runtimeUnchanged = $runtimeUnchanged; summary = $summary
+            }
+            [IO.File]::WriteAllText((Join-Path $attemptDir 'execution-metadata.json'), (($result | ConvertTo-Json -Depth 8) + "`n"), $utf8)
+            Write-Output "Historical diagnostic attempt $attempt exited $exitCode."
+            if ($exitCode -ne 0 -or -not $runtimeUnchanged -or $browserHashBefore -cne $browserHashAfter) {
+              throw 'Diagnostic stopped at its first non-pass or changed identity; retain the original evidence.'
+            }
+          }
+
+      - name: Upload bounded synthetic diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: math-quest-historical-fuzz-${{ github.run_id }}
+          path: |
+            audit-artifacts/historical-fuzz/
+            audit/.tmp-playwright-interaction-fuzz-report.json
+            audit/.tmp-playwright-interaction-fuzz/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
