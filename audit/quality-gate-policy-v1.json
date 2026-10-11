@@ -665,15 +665,15 @@
       },
       {
         "path": "index.html",
-        "maximumLines": 4562
+        "maximumLines": 3750
       }
     ]
   },
   "performanceBudgets": {
-    "stylesheetMaximumBytes": 234769,
-    "javascriptMaximumBytes": 1044849,
+    "stylesheetMaximumBytes": 234386,
+    "javascriptMaximumBytes": 1038043,
     "compiledAssetMaximumBytes": 932443,
-    "productionPayloadMaximumBytes": 2701348,
+    "productionPayloadMaximumBytes": 2694159,
     "engineScenarioMaximumWallTimeMs": 12000,
     "qualityGateMaximumWallTimeMs": 120000
   },
