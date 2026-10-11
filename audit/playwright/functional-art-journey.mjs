@@ -1,3 +1,4 @@
+import { baseUi } from "../tests/session-fixtures.mjs";
 import { activate, expect, expectMinimumTarget, expectSelectedState, openFreshHome, tabUntilFocused } from "./fixtures.mjs";
 
 async function installSpeechFixture(page) {
@@ -267,4 +268,64 @@ async function expectSessionSpeechTransitions(page, sessionDiscs) {
   await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "SPEAKING"))).toBe(true);
   await page.evaluate(() => window.__mqSpeechTest.end());
   await expect.poll(() => sessionDiscs.evaluateAll((elements) => elements.every((element) => element.dataset.speechState === "IDLE"))).toBe(true);
+}
+
+export async function seedGovernedEarlyLearningSession(page, options) {
+  return page.evaluate(({ skillId, seed, sessionId, choicePlannedCounts, uiDefaults }) => {
+    const engine = window.MathQuestEngine;
+    const playDay = 20689;
+    const skill = engine.SKILL_BY_ID[skillId];
+    const slotFor = (index) => {
+      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
+      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
+      return {
+        skillId: skill.skillId,
+        ordinal: index,
+        baseOrdinal: index,
+        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
+        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
+        scheduledReview: false,
+        coldTest: false,
+        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: choicePlannedCounts[index] }).includes(index + 1),
+        mandatorySecondExposure: false,
+        obligation: "NEW",
+        preview: false,
+      };
+    };
+    const queue = [slotFor(0), slotFor(1)];
+    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
+    const state = engine.createInitialState(playDay);
+    state.earnedLevel = Math.max(state.earnedLevel, question.level);
+    state.activeSession = {
+      sessionId,
+      playDay,
+      level: question.level,
+      stage: question.stage,
+      seed,
+      queue,
+      baseSlotCount: queue.length,
+      effectivePracticeLimit: queue.length,
+      effectivePlannedCount: queue.length,
+      effectiveTimeCapMs: 60000,
+      adultTimeReduced: true,
+      classifications: [],
+      index: 1,
+      world: "ocean",
+      servedCount: 2,
+      servedOrdinals: [0, 1],
+      elapsedMs: 0,
+      stopReason: null,
+      oneMore: false,
+      uiState: {
+        ...uiDefaults,
+        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
+        question,
+        responseState: engine.createResponseState(question),
+      },
+    };
+    const issue = engine.validateState(state);
+    if (issue !== null) throw new Error(`Invalid early-learning Playwright fixture: ${issue}`);
+    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
+    return { questionId: question.questionId, answerOracle: Number(question.answer.value) };
+  }, { ...options, uiDefaults: baseUi(null, { choiceResolved: options.choiceResolved }) });
 }

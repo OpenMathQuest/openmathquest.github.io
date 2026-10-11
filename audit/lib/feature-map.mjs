@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 import { canonicalizeJson } from "./curriculum-manifest.mjs";
 import { AI_READER_CONTRACT_REF } from "./repository-code-map.mjs";
 import { tutorialFeatureIdForInputMethod } from "./tutorial-manifest.mjs";
@@ -23,9 +23,7 @@ function schemaIssue(error) {
 }
 
 export async function validateFeatureMapSchema(map, schemaPathOrUrl = new URL("../schemas/feature-map-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFile(schemaPathOrUrl, "utf8"));
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  const validate = ajv.compile(schema);
+  const validate = compileClosedSchema(await readFile(schemaPathOrUrl, "utf8"));
   const valid = validate(map);
   return Object.freeze(valid ? [] : (validate.errors || []).map(schemaIssue));
 }

@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-security-dependency-gate",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -66,7 +66,10 @@
       "math-quest.security.no-node-tls-bypass",
       "math-quest.security.no-weak-crypto-hash"
     ],
-    "sourceExtensions": [".js", ".mjs"],
+    "sourceExtensions": [
+      ".js",
+      ".mjs"
+    ],
     "executableInlineHtml": true,
     "maximumFindings": 0,
     "maximumErrors": 0
@@ -75,7 +78,7 @@
     "sourceScope": "GIT_TRACKED_PLUS_UNTRACKED_NONIGNORED",
     "historyStartCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
     "verificationMode": "OFFLINE_UNVERIFIED_DETECTION",
-    "filterEntropy": 3.0,
+    "filterEntropy": 3,
     "maximumWorktreeFindings": 0,
     "maximumHistoryFindings": 0,
     "failOnScanErrors": true
@@ -99,7 +102,11 @@
     }
   },
   "markers": {
-    "tokens": ["TODO", "FIXME", "HACK"],
+    "tokens": [
+      "TODO",
+      "FIXME",
+      "HACK"
+    ],
     "trackingReferencePattern": "(?:https://[^\\s]+|#[1-9]\\d*|[A-Z][A-Z0-9]+-[1-9]\\d*)",
     "explanationPattern": "(?::|-)\\s*\\S",
     "maximumUntrackedMarkers": 0
@@ -109,6 +116,8 @@
     "NC-TRUFFLEHOG-DETECTS-DISPOSABLE-FIXTURE",
     "NC-NPM-AUDIT-NONZERO-OR-VULNERABILITY-FAILS",
     "NC-UNTRACKED-TODO-FIXME-HACK-FAILS",
-    "NC-TOOL-ARTIFACT-HASH-MISMATCH-FAILS"
+    "NC-TOOL-ARTIFACT-HASH-MISMATCH-FAILS",
+    "NC-CI-GLOB-DEPTH-GUARD",
+    "NC-CI-GLOB-SOURCE-TAMPER"
   ]
 }

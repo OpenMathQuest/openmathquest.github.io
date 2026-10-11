@@ -1,5 +1,3 @@
-import assert from "node:assert/strict";
-
 export const BETA1_MIGRATION_PRELUDE = `
       const KEY="math-quest:progress:v2";
       const BETA1_PROGRESS_KEY="math-quest:v2";
@@ -198,60 +196,4 @@ export function updateBoundaryPrelude(retryBody, homeCheckBody) {
       async function invokeHomeCheck(){${homeCheckBody}}
       function setScreen(screen){ui.screen=screen;}
     `;
-}
-
-class MockFile {
-  constructor(parts, name, options) {
-    this.parts = parts;
-    this.name = name;
-    this.type = options.type;
-    this.lastModified = options.lastModified;
-  }
-}
-
-export function backupExportBrowser(effects, shareResult) {
-  const document = {
-    body: {
-      appendChild(anchor) {
-        effects.appendedAnchors += 1;
-        anchor.isConnected = true;
-      },
-    },
-    createElement(name) {
-      assert.equal(name, "a");
-      return {
-        isConnected: false,
-        click() {
-          effects.downloadClicks += 1;
-        },
-        remove() {
-          effects.removedAnchors += 1;
-          this.isConnected = false;
-        },
-      };
-    },
-  };
-  const navigator = {
-    canShare(payload) {
-      effects.canShareCalls += 1;
-      assert.equal(payload.files.length, 1);
-      return true;
-    },
-    async share(payload) {
-      effects.shareCalls += 1;
-      assert.equal(payload.files.length, 1);
-      return shareResult();
-    },
-  };
-  const urlApi = {
-    createObjectURL(blob) {
-      assert.ok(blob.size > 0);
-      effects.createUrlCalls += 1;
-      return "blob:math-quest-private-backup";
-    },
-    revokeObjectURL(url) {
-      effects.revokeUrls.push(url);
-    },
-  };
-  return { File: MockFile, document, navigator, URL: urlApi };
 }

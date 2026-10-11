@@ -1,10 +1,10 @@
 import { exerciseAssistedRetry, exerciseDifferentExampleTutorial, exerciseTutorialKeyboard, exerciseTutorialReload } from "./assisted-learning-journey.mjs";
 import { exerciseActivatedDesignTokens } from "./design-token-observations.mjs";
-import { exerciseFunctionalArt } from "./functional-art-journey.mjs";
+import { exerciseFunctionalArt, seedGovernedEarlyLearningSession } from "./functional-art-journey.mjs";
 import { earlyCountingSnapshot, earlyFrameSnapshot, questionShellSnapshot, questionZoneSnapshot } from "./art-dom-observations.mjs";
 import { exerciseKeyboardParentLab } from "./parent-lab-journey.mjs";
+import { exercisePrivateBackupExport, exercisePrivateQaEntry, exerciseProgressProtection, exerciseSavedProgressRecovery, exerciseQaPlacementDraftEntry } from "./adult-boundary-journey.mjs";
 import { readFile } from "node:fs/promises";
-import { baseUi } from "../tests/session-fixtures.mjs";
 import {
   designTokenProjectionProperties,
   expectedRuntimeConsumers,
@@ -56,6 +56,30 @@ const EXPECTED_RUNTIME_TOKEN_CONSUMERS = Object.freeze(expectedRuntimeConsumers(
   ...record,
 })).sort((left, right) => `${left.origin}\u0000${left.selector}\u0000${left.cssProperty}`.localeCompare(`${right.origin}\u0000${right.selector}\u0000${right.cssProperty}`, "en")));
 const EXPECTED_PROJECTED_PROPERTIES = Object.freeze(designTokenProjectionProperties(DESIGN_TOKENS).map((record) => record.name));
+
+for (const [id, mode] of [["[PW-F-19]", "success"], ["[PW-F-20]", "cancel"], ["[PW-F-21]", "reject"]]) {
+  test(`${id} private backup ${mode} preserves progress and completes its native browser effects`, async ({ page }) => {
+    await exercisePrivateBackupExport(page, mode);
+  });
+}
+
+test("[PW-F-22] unavailable progress protection blocks play before any write and ordinary startup remains usable", async ({ page, mathQuestGuard }) => {
+  await exerciseProgressProtection(page, mathQuestGuard);
+});
+
+test.describe("private QA entry", () => {
+  test.use({ qaEntryQueries: true });
+  test("[PW-F-23] private QA entry requires the exact query and an explicit grown-up action without changing progress", async ({ page, mathQuestGuard }) => {
+    await exercisePrivateQaEntry(page, mathQuestGuard);
+  });
+  test("[PW-F-25] private QA confirmation precedes a real resumable placement draft and preserves both saved records", async ({ page }) => {
+    await exerciseQaPlacementDraftEntry(page);
+  });
+});
+
+test("[PW-F-24] malformed saved progress remains intact until a labelled native import restores durable validated progress", async ({ page }) => {
+  await exerciseSavedProgressRecovery(page);
+});
 
 test("[PW-F-01] first use reaches Home and world selection is actionable", async ({ page }) => {
   await openFreshHome(page);
@@ -266,66 +290,6 @@ async function expectReteachZones(page, { viewport, touchProject }) {
   expect(reteachSnapshot.workedReferenceCount).toBeGreaterThan(0);
   expect(reteachSnapshot.workedReferenceInObservationCount).toBe(reteachSnapshot.workedReferenceCount);
   expect(artQuestionZoneIssues(reteachSnapshot), "real-reteach-phone-portrait").toEqual([]);
-}
-
-async function seedGovernedEarlyLearningSession(page, options) {
-  return page.evaluate(({ skillId, seed, sessionId, choicePlannedCounts, uiDefaults }) => {
-    const engine = window.MathQuestEngine;
-    const playDay = 20689;
-    const skill = engine.SKILL_BY_ID[skillId];
-    const slotFor = (index) => {
-      const phases = skill.phases.filter((phase) => ["C", "P", "A"].includes(phase));
-      const phase = phases[Math.min(index, Math.max(0, phases.length - 1))] || phases[0] || "P";
-      return {
-        skillId: skill.skillId,
-        ordinal: index,
-        baseOrdinal: index,
-        tier: index % 3 === 2 ? "HARD/TARGET" : "EASY",
-        representation: { C: "CONCRETE", P: "PICTORIAL", A: "ABSTRACT" }[phase] || "PICTORIAL",
-        scheduledReview: false,
-        coldTest: false,
-        choicePosition: engine.choicePositions({ stage: skill.stage, effectivePlannedCount: choicePlannedCounts[index] }).includes(index + 1),
-        mandatorySecondExposure: false,
-        obligation: "NEW",
-        preview: false,
-      };
-    };
-    const queue = [slotFor(0), slotFor(1)];
-    const question = engine.makeQuestion({ ...queue[1], theme: "ocean", seed, ordinal: 1, eligibleQuestionOrdinal: 1 });
-    const state = engine.createInitialState(playDay);
-    state.earnedLevel = Math.max(state.earnedLevel, question.level);
-    state.activeSession = {
-      sessionId,
-      playDay,
-      level: question.level,
-      stage: question.stage,
-      seed,
-      queue,
-      baseSlotCount: queue.length,
-      effectivePracticeLimit: queue.length,
-      effectivePlannedCount: queue.length,
-      effectiveTimeCapMs: 60000,
-      adultTimeReduced: true,
-      classifications: [],
-      index: 1,
-      world: "ocean",
-      servedCount: 2,
-      servedOrdinals: [0, 1],
-      elapsedMs: 0,
-      stopReason: null,
-      oneMore: false,
-      uiState: {
-        ...uiDefaults,
-        version: engine.CONSTANTS.ACTIVE_UI_VERSION,
-        question,
-        responseState: engine.createResponseState(question),
-      },
-    };
-    const issue = engine.validateState(state);
-    if (issue !== null) throw new Error(`Invalid early-learning Playwright fixture: ${issue}`);
-    localStorage.setItem(engine.CONSTANTS.STORAGE_NAMESPACE, engine.exportState(state));
-    return { questionId: question.questionId, answerOracle: Number(question.answer.value) };
-  }, { ...options, uiDefaults: baseUi(null, { choiceResolved: options.choiceResolved }) });
 }
 
 async function openGovernedEarlyCountingQuestion(page) {

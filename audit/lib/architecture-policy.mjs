@@ -49,13 +49,13 @@ function localImports(sourcePath, text) {
 // Preserve eager policy parsing at module load without an unused exported value.
 freezeDeep(JSON.parse(readFileSync(policyUrl, "utf8")));
 
-export async function validateArchitecturePolicySchema(policy, schemaUrl = new URL("../schemas/architecture-policy-v1.schema.json", import.meta.url)) {
+async function validateArchitecturePolicySchema(policy, schemaUrl = new URL("../schemas/architecture-policy-v1.schema.json", import.meta.url)) {
   const schema = JSON.parse(await readFile(schemaUrl, "utf8"));
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
   return Object.freeze(validate(policy) ? [] : (validate.errors || []).map((error) => (error.instancePath || "/") + " " + (error.message || "is invalid")));
 }
 
-export async function validateArchitecturePolicy(policy) {
+async function validateArchitecturePolicy(policy) {
   const findings = [...await validateArchitecturePolicySchema(policy)];
   if (findings.length) return Object.freeze(findings);
   if (!sortedUnique(policy.zones, "id")) findings.push("architecture zones must be unique and lexicographically ordered");

@@ -22,6 +22,7 @@ import {
   runTruffleHogWorktreeScan,
 } from "./lib/security-scans.mjs";
 import { npmAuditReportRejectionControl, runNpmAudit } from "./lib/security-command-runtime.mjs";
+import { runCiDependencyCompatibility } from "./run-ci-dependency-compatibility.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -48,7 +49,14 @@ function countPolicyFindings(policy, observations) {
   if (observations.truffleHog.worktree.findings.length > policy.truffleHog.maximumWorktreeFindings) findings.push("TruffleHog worktree findings exceed zero.");
   if (observations.truffleHog.history.findings.length > policy.truffleHog.maximumHistoryFindings) findings.push("TruffleHog history findings exceed zero.");
   if (observations.markers.length > policy.markers.maximumUntrackedMarkers) findings.push("Untracked work markers exceed zero.");
-  if (observations.negativeControls.some((control) => !control.passed)) findings.push("One or more security negative controls did not prove failure detection.");
+  findings.push(...negativeControlFindings(policy, observations.negativeControls));
+  return findings;
+}
+
+function negativeControlFindings(policy, controls) {
+  const findings = [];
+  if (!sameMembers(controls.map((item) => item.id), policy.negativeControls)) findings.push("Security negative-control evidence does not match the required inventory.");
+  if (controls.some((item) => !item.passed)) findings.push("One or more security negative controls did not prove failure detection.");
   return findings;
 }
 
@@ -69,7 +77,7 @@ async function artifactHashNegativeControl(policy, cachePath) {
   return findings.some((finding) => finding.kind === "SHA256_MISMATCH");
 }
 
-async function securityNegativeControls(policy, prepared, cachePath) {
+async function securityNegativeControls(policy, prepared, cachePath, dependencyCompatibility) {
   const semgrepIds = await runSemgrepNegativeControl({
     root, policy, executable: prepared.semgrep, temporaryRoot: prepared.temporaryRoot,
   });
@@ -85,6 +93,8 @@ async function securityNegativeControls(policy, prepared, cachePath) {
     control("NC-NPM-AUDIT-NONZERO-OR-VULNERABILITY-FAILS", vulnerabilityFindings(policy, dependencyMutant).length > 0 && malformedReports.passed, { rejectedLowSeverityCount: 1, malformedReports }),
     control(policy.negativeControls.find((id) => id.startsWith("NC-UNTRACKED-")), markerFindings(policy, markerMutant).length > 0, { rejectedUntrackedMarkers: 1 }),
     control("NC-TOOL-ARTIFACT-HASH-MISMATCH-FAILS", await artifactHashNegativeControl(policy, cachePath), { mutatedArtifactRecords: 1 }),
+    control(dependencyCompatibility.negativeControl.id, dependencyCompatibility.negativeControl.passed, dependencyCompatibility.negativeControl),
+    control(dependencyCompatibility.sourceTamperControl.id, dependencyCompatibility.sourceTamperControl.passed, dependencyCompatibility.sourceTamperControl),
   ]);
 }
 
@@ -112,8 +122,9 @@ async function securityObservations(policy, prepared, paths, cachePath, timings)
     root, policy, executable: prepared.truffleHog,
   }));
   const dependencyAudit = await measuredStage(timings, "npm-audit", () => runNpmAudit(root, policy));
+  const dependencyCompatibility = await measuredStage(timings, "dependency-compatibility", () => runCiDependencyCompatibility(root));
   const negativeControls = await measuredStage(timings, "negative-controls", () => securityNegativeControls(
-    policy, prepared, cachePath,
+    policy, prepared, cachePath, dependencyCompatibility,
   ));
   return Object.freeze({
     semgrep,
@@ -122,6 +133,7 @@ async function securityObservations(policy, prepared, paths, cachePath, timings)
       toolVersion: dependencyAudit.version,
       vulnerabilities: dependencyAudit.report.metadata.vulnerabilities,
     }),
+    dependencyCompatibility,
     markers: markerFindings(policy, markerSources),
     negativeControls,
     timingsMs: Object.freeze(timings),

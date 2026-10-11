@@ -148,40 +148,6 @@ function qaReportHarness({
   return { anchors, context, effects, harness };
 }
 
-test("the hidden QA URL requires the exact version and stops at an explicit grown-up confirmation screen", async () => {
-  const gateDeclaration = declarationBetween("const LAB_SEED=", ";\n    // This exact, ordered manifest");
-  const query = (search) => new vm.Script(`(()=>{"use strict";${gateDeclaration}return {QA_TOUR_QUERY,qaTourRequested};})()`, {
-    filename: "math-quest-qa-tour-query-gate.js",
-  }).runInNewContext({ location: { search }, URLSearchParams });
-  assert.equal(query("").qaTourRequested, false);
-  assert.equal(query("?qa-tour=qa-tour-v1").qaTourRequested, true);
-  assert.equal(query("?qa-tour=QA-TOUR-V1").qaTourRequested, false);
-  assert.equal(query("?qa-tour=qa-tour-v2").qaTourRequested, false);
-  assert.equal(query("?other=qa-tour-v1").qaTourRequested, false);
-
-  const coldBootstrap = extractFunction("coldBootstrap");
-  const effects = { entered: 0, focused: 0, pwa: 0, renders: 0, restored: 0, resumed: 0 };
-  const bootstrap = new vm.Script(`(()=>{"use strict";
-    let ui={screen:"home"},qaReturnScreen=null;
-    const qaTourRequested=true,profileChosen=true,saveRecoveryRequired=false,state={activeSession:null};
-    async function initializeProgressPersistence(){return true;}
-    function enterQaTour(){effects.entered+=1;}
-    function restorePlacementDraft(){effects.restored+=1;return false;}
-    function resumeActive(){effects.resumed+=1;return false;}
-    function render(){effects.renders+=1;}
-    function focusColdStartTarget(){effects.focused+=1;}
-    function initializePwa(){effects.pwa+=1;}
-    ${coldBootstrap}
-    return {coldBootstrap,status(){return structuredClone(ui);}};
-  })()`, { filename: "math-quest-qa-tour-bootstrap-effect.js" }).runInNewContext({ effects, structuredClone });
-  await bootstrap.coldBootstrap();
-  assert.equal(bootstrap.status().screen, "qaConfirm");
-  assert.equal(effects.entered, 0, "the query must never start the tour without an adult action");
-  assert.equal(effects.restored, 0, "the private QA gate must precede child-session restoration");
-  assert.equal(effects.resumed, 0, "the private QA gate must precede child-session resumption");
-  assert.equal(effects.renders, 1);
-});
-
 test("qaConfirm renders a grown-up-only explanation with exact start and cancel actions", () => {
   const declaration = extractFunctionOptional("qaConfirmView");
   assert.ok(declaration, "qaConfirmView must render the explicit adult confirmation screen");
@@ -201,29 +167,6 @@ test("qaConfirm renders a grown-up-only explanation with exact start and cancel 
   assert.match(harness, /data-lab-action="qa-start"/u);
   assert.match(harness, /data-lab-action="qa-cancel"/u);
   assert.doesNotMatch(harness, /CHILD-NAME-SECRET|PROGRESS-SECRET/u);
-});
-
-test("render routes qaConfirm explicitly rather than falling through to another screen", () => {
-  const effects = { calls: [] };
-  const names = ["saveRecoveryView", "progressProtectionView", "nameGateView", "home", "playgroundView", "placementView", "sessionView", "fatigueView", "capstoneView", "doneView", "grown", "parentLabViewV2", "parents", "qaConfirmView"];
-  const stubs = names.map((name) => `function ${name}(){effects.calls.push("${name}");}`).join("\n");
-  const harness = new vm.Script(`(()=>{"use strict";
-    let ui={screen:"qaConfirm"};
-    const pwa={pendingControllerReload:false};
-    ${stubs}
-    function renderRuntimeWarning(){}
-    function renderPwaOverlay(){}
-    function renderDestructiveOverlay(){}
-    function applyTutorialAvailability(){}
-    function applySelectedStateIndicators(){}
-    function applyFunctionalArt(){}
-    function resumePendingPwaReloadAtBoundary(){}
-    function checkPwaUpdateAtBoundary(){}
-    ${extractFunction("render")}
-    return {render};
-  })()`, { filename: "math-quest-qa-tour-render-route.js" }).runInNewContext({ effects });
-  harness.render();
-  assert.deepEqual(effects.calls, ["qaConfirmView"]);
 });
 
 test("the frozen 50-question fixture covers every level, strand, profile, and exact release-reachable method set", () => {

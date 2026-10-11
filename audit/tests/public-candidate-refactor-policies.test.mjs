@@ -46,7 +46,7 @@ test("extended quality and security tool records validate beside the unchanged l
   const mutant = structuredClone(register);
   mutant.toolchain[13].version = "0.0.0-mutant";
   assert.match(extendedToolchainFindings(mutant, blobs).join("\n"), /toolchain\[13\]/u);
-  assert.match(extendedToolchainFindings({ ...register, toolchain: register.toolchain.slice(0, 22) }, blobs).join("\n"), /twenty-three/u);
+  assert.match(extendedToolchainFindings({ ...register, toolchain: register.toolchain.slice(0, 23) }, blobs).join("\n"), /twenty-four/u);
 });
 
 async function pagesDependencyInputs() {

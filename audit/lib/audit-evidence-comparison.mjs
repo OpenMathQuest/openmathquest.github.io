@@ -144,10 +144,19 @@ function comparisonCandidateIssues(serialOrchestration, parallelOrchestration, i
   if (!serialOrchestration?.candidateId || serialOrchestration.candidateId !== parallelOrchestration?.candidateId) issues.push("reports do not bind the same public candidate");
 }
 
+function measuredDuration(orchestration, label, issues) {
+  const value = orchestration?.wallDurationMs;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 1) {
+    issues.push(`${label} wall duration must be a positive finite number`);
+    return null;
+  }
+  return roundMs(value);
+}
+
 function comparisonTiming(serialOrchestration, parallelOrchestration, minimumReductionPercent, issues) {
-  const serialWallDurationMs = roundMs(serialOrchestration?.wallDurationMs);
-  const parallelWallDurationMs = roundMs(parallelOrchestration?.wallDurationMs);
-  const measuredWallTimeReductionPercent = serialWallDurationMs > 0
+  const serialWallDurationMs = measuredDuration(serialOrchestration, "serial", issues);
+  const parallelWallDurationMs = measuredDuration(parallelOrchestration, "parallel", issues);
+  const measuredWallTimeReductionPercent = serialWallDurationMs !== null && parallelWallDurationMs !== null
     ? Math.round((1 - (parallelWallDurationMs / serialWallDurationMs)) * 10_000) / 100
     : 0;
   if (measuredWallTimeReductionPercent < minimumReductionPercent) {

@@ -63,24 +63,19 @@ async function observeArtDom(page, queries, { relations = [], includeSavedUi = f
     };
   }, { queries, relations, styleProperties: STYLE_PROPERTIES, includeSavedUi });
 }
-
 function attribute(node, name, fallback = null) {
   return node?.attributes[name] || fallback;
 }
-
 function data(node, name, fallback = null) {
   return node?.dataset[name] || fallback;
 }
-
 function rendered(node) {
   return Boolean(node && !node.hidden && node.style.display !== "none"
     && node.style.visibility !== "hidden" && node.bounds.width > 0 && node.bounds.height > 0);
 }
-
 function targetSize(node) {
   return { width: node.bounds.width, height: node.bounds.height };
 }
-
 function earlyQuestionGeometry(snapshot, controls) {
   const { observations, document, viewport } = snapshot;
   const support = observations.support[0];
@@ -92,7 +87,6 @@ function earlyQuestionGeometry(snapshot, controls) {
     nestedQuestionScroll: Boolean(support && support.scrollHeight > support.clientHeight && ["auto", "scroll"].includes(support.style.overflowY)),
   };
 }
-
 function earlyQuestionQueries(skillId, inputMethod, taskSelector) {
   return [
     { id: "question", selector: `section.question[data-skill-id="${skillId}"][data-input-method="${inputMethod}"]` },
@@ -102,22 +96,18 @@ function earlyQuestionQueries(skillId, inputMethod, taskSelector) {
     { id: "disclosures", scope: "question", selector: '[data-feedback-state],[data-correct-answer],.worked-answer,.feedback' },
   ];
 }
-
 function pressed(node) {
   return attribute(node, "aria-pressed") === "true";
 }
-
 function countedGeometricCue(node) {
   if (!node) return false;
   const cue = node.pseudos["::after"];
   return cue.content === '""' && cue.backgroundImage.split("linear-gradient").length === 3
     && Number.parseFloat(cue.width) >= 32 && Number.parseFloat(cue.height) >= 32;
 }
-
 function countedAccessibleCue(node) {
   return Boolean(node && attribute(node, "aria-label", "").includes("counted") && pressed(node));
 }
-
 function earlyCountingIdentity(snapshot) {
   const { observations, savedUi } = snapshot;
   const savedQuestion = savedUi?.question;
@@ -129,7 +119,6 @@ function earlyCountingIdentity(snapshot) {
     objectOracle: Number(savedQuestion?.answer?.value),
   };
 }
-
 export async function earlyCountingSnapshot(page, expectedTouchedCount) {
   const queries = [
     ...earlyQuestionQueries("MQ-002", "COUNT_TOUCH", '.count-touch-task[data-response-kind="COUNT_TOUCH"]'),
@@ -139,7 +128,6 @@ export async function earlyCountingSnapshot(page, expectedTouchedCount) {
   const snapshot = await observeArtDom(page, queries, { includeSavedUi: true });
   return projectEarlyCounting(snapshot, expectedTouchedCount);
 }
-
 function projectEarlyCounting(snapshot, expectedTouchedCount) {
   const { observations } = snapshot;
   const objects = observations.objects;
@@ -164,7 +152,6 @@ function projectEarlyCounting(snapshot, expectedTouchedCount) {
     ],
   };
 }
-
 function frameHasFiveByTwoCells(cells) {
   if (cells.length !== 10) return false;
   const bounds = cells.map((node) => node.bounds);
@@ -174,7 +161,6 @@ function frameHasFiveByTwoCells(cells) {
     && bounds[5].top > bounds[0].top
     && bounds.slice(0, 5).every((rect, index) => near(rect.left, bounds[index + 5].left));
 }
-
 function filledCounterCue(node) {
   if (!node) return false;
   const cue = node.pseudos["::before"];
@@ -182,13 +168,11 @@ function filledCounterCue(node) {
   const height = Number.parseFloat(cue.height) + Number.parseFloat(cue.borderTopWidth) + Number.parseFloat(cue.borderBottomWidth);
   return cue.content === '""' && cue.borderStyle === "solid" && width >= 28 && height >= 28;
 }
-
 function filledCentrePipCue(node) {
   if (!node) return false;
   const cue = node.pseudos["::after"];
   return cue.content === '""' && cue.borderStyle === "solid" && Number.parseFloat(cue.width) >= 10 && Number.parseFloat(cue.height) >= 10;
 }
-
 function earlyFrameIdentity(snapshot) {
   const { observations, savedUi } = snapshot;
   const savedQuestion = savedUi?.question;
@@ -202,7 +186,6 @@ function earlyFrameIdentity(snapshot) {
     declaredCellCount: Number(observations.task[0]?.dataset.cellCount),
   };
 }
-
 export async function earlyFrameSnapshot(page, expectedPressedCount) {
   const queries = [
     ...earlyQuestionQueries("MQ-026", "TEN_FRAME", '.ten-frame-construction[data-response-kind="TEN_FRAME"]'),
@@ -213,7 +196,6 @@ export async function earlyFrameSnapshot(page, expectedPressedCount) {
   const snapshot = await observeArtDom(page, queries, { includeSavedUi: true });
   return projectEarlyFrame(snapshot, expectedPressedCount);
 }
-
 function projectEarlyFrame(snapshot, expectedPressedCount) {
   const { observations, savedUi } = snapshot;
   const cells = observations.cells;
@@ -232,7 +214,6 @@ function projectEarlyFrame(snapshot, expectedPressedCount) {
     targets: cells.map(targetSize),
   };
 }
-
 function frameStructure(observations) {
   const { frames, cells } = observations;
   const frameCells = frames.map((frame) => observations.frameCells.filter((cell) => cell.parentIndex === frame.index));
@@ -246,27 +227,21 @@ function frameStructure(observations) {
     fiveByTwoStructure: frameCells.every(frameHasFiveByTwoCells),
   };
 }
-
 function style(node, property, fallback = "missing") {
   return node?.style[property] || fallback;
 }
-
 function cssOrder(node) {
   return Number.parseInt(style(node, "order", "0"), 10);
 }
-
 function visibleResponseControls(observations) {
   return observations.controls.filter((node) => !node.disabled && rendered(node));
 }
-
 function relation(snapshot, name) {
   return snapshot.relations[name][0] || false;
 }
-
 function controlsPrecedeConfirm(snapshot, controls) {
   return controls.length > 0 && controls.every((node) => snapshot.relations.controlsBeforeConfirm[node.index]);
 }
-
 function overlap(first, second) {
   if (!first || !second) return { width: 0, height: 0 };
   return {
@@ -274,12 +249,10 @@ function overlap(first, second) {
     height: Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top)),
   };
 }
-
 function boundsContained(inner, outer) {
   return Boolean(inner && outer && inner.left >= outer.left - 1 && inner.right <= outer.right + 1
     && inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1);
 }
-
 function targetDimensions(node) {
   return {
     ...targetSize(node),
@@ -306,7 +279,6 @@ const SHELL_RELATIONS = Object.freeze([
   { id: "controlsBeforeConfirm", from: "controls", to: "confirm", kind: "before" },
   { id: "confirmBeforeRail", from: "confirm", to: "rail", kind: "before" },
 ]);
-
 function shellControlOrder(observations, controls) {
   return {
     controlCssOrders: {
@@ -323,7 +295,6 @@ function shellControlOrder(observations, controls) {
     },
   };
 }
-
 function shellGeometry(snapshot) {
   const question = snapshot.observations.question[0];
   const rail = snapshot.observations.rail[0];
@@ -338,7 +309,6 @@ function shellGeometry(snapshot) {
     questionRailOverlapArea: commonArea.width * commonArea.height,
   };
 }
-
 export async function questionShellSnapshot(page) {
   const snapshot = await observeArtDom(page, SHELL_QUERIES, { relations: SHELL_RELATIONS });
   const { observations } = snapshot;
@@ -389,7 +359,6 @@ const ZONE_RELATIONS = Object.freeze([
   { id: "controlsBeforeConfirm", from: "controls", to: "confirm", kind: "before" },
   { id: "confirmBeforeRail", from: "confirm", to: "rail", kind: "before" },
 ]);
-
 function zoneSemantics(snapshot, controls) {
   const { observations, relations } = snapshot;
   return {
@@ -411,7 +380,6 @@ function zoneSemantics(snapshot, controls) {
     responseControlCount: controls.length,
   };
 }
-
 function zoneLayout(observation, construction) {
   const commonArea = overlap(observation, construction);
   return {
@@ -420,7 +388,6 @@ function zoneLayout(observation, construction) {
     paired: Boolean(observation && construction && construction.left >= observation.right - 1 && commonArea.height > 0),
   };
 }
-
 function zoneResponseGeometry(snapshot, controls) {
   const { observations, viewport } = snapshot;
   const firstBounds = controls[0]?.bounds;
@@ -440,7 +407,6 @@ function zoneResponseGeometry(snapshot, controls) {
     })),
   };
 }
-
 function zoneAppearance(observations) {
   const roles = { observation: "observation", construction: "construction", layout: "layout", supportScroll: "support" };
   const overflow = Object.entries(roles).flatMap(([prefix, role]) => [
@@ -455,7 +421,6 @@ function zoneAppearance(observations) {
     ...Object.fromEntries(overflow),
   };
 }
-
 function zoneScrollDimensions(snapshot) {
   const { observations, document, viewport } = snapshot;
   const dimension = (node, property) => node?.[property] || 0;
@@ -470,7 +435,6 @@ function zoneScrollDimensions(snapshot) {
     supportClientHeight: dimension(observations.support[0], "clientHeight"),
   };
 }
-
 export async function questionZoneSnapshot(page, expectedLayout, {
   requiresFirstScreenResponse = false, requiresFirstScreenTutorial = false,
 } = {}) {
@@ -486,3 +450,118 @@ export async function questionZoneSnapshot(page, expectedLayout, {
     expectedLayout, requiresFirstScreenResponse, requiresFirstScreenTutorial,
   };
 }
+
+// Read browser geometry only. Predicates below operate on these native snapshots.
+export function readVisualDefectGeometry({ kind, scope, specs, styleProperties }) {
+  const root = document.querySelector(scope);
+  if (!root) throw new Error(`Missing visible regression scope ${scope}`);
+  const rect = (r) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height });
+  const box = (element) => rect(element.getBoundingClientRect());
+  const visible = (element) => element.checkVisibility() && element.getClientRects().length > 0;
+  const select = (element, selector) => [...element.querySelectorAll(selector)].filter(visible);
+  const styleRecord = (element, pseudo) => {
+    const css = getComputedStyle(element, pseudo);
+    return Object.fromEntries(styleProperties.map((property) => [property, css.getPropertyValue(property)]).concat([["content", css.content]]));
+  };
+  const glyphs = (element) => {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT), result = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      for (let offset = 0; offset < node.textContent.length; offset += 1) {
+        if (!/\S/u.test(node.textContent[offset])) continue;
+        const range = document.createRange(); range.setStart(node, offset); range.setEnd(node, offset + 1);
+        for (const r of range.getClientRects()) if (r.width && r.height) result.push({ ...rect(r), glyph: node.textContent[offset] });
+      }
+    }
+    return result;
+  };
+  const matrixRecord = (element) => {
+    const css = getComputedStyle(element);
+    let matrix = new DOMMatrix(css.transform === "none" ? undefined : css.transform);
+    if (css.scale !== "none") { const values = css.scale.split(/\s+/u).map(Number); matrix = new DOMMatrix().scale(values[0], values[1] ?? values[0]).multiply(matrix); }
+    if (css.rotate !== "none") matrix = new DOMMatrix().rotate(Number.parseFloat(css.rotate)).multiply(matrix);
+    return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
+  };
+  const buttonRecord = (element) => {
+    const button = element.closest("button");
+    if (!button) return { button: null, buttonInterior: null };
+    const r = box(button), css = getComputedStyle(button);
+    return { button: r, buttonInterior: { left: r.left + Number.parseFloat(css.borderLeftWidth), right: r.right - Number.parseFloat(css.borderRightWidth),
+      top: r.top + Number.parseFloat(css.borderTopWidth), bottom: r.bottom - Number.parseFloat(css.borderBottomWidth) } };
+  };
+  const readAttribute = (name) => question ? question.getAttribute(name) : null;
+  const readText = (selector) => { const element = root.querySelector(selector); return element ? element.textContent.trim() : null; };
+  const readValue = (selector) => { const element = document.querySelector(selector); return element ? element.value : null; };
+  const read = (element, spec) => ({
+    text: element.textContent.trim(), box: box(element), glyphs: spec.glyphs ? glyphs(element) : [],
+    shape: element.dataset.shape || element.dataset.solid || null, crossing: element.classList.contains("fifth"),
+    value: element.getAttribute("data-value"), className: element.getAttribute("class"),
+    container: spec.closest ? box(element.closest(spec.closest) || element.parentElement) : null,
+    frame: element.closest(".shape-frame") ? box(element.closest(".shape-frame")) : null,
+    ...buttonRecord(element),
+    paint: spec.paint ? { style: styleRecord(element), matrix: matrixRecord(element) } : null,
+    pseudo: spec.pseudo ? styleRecord(element, "::before") : null,
+    children: Object.fromEntries((spec.children || []).map((child) => [child.id, select(element, child.selector).map((value) => read(value, child))])),
+  });
+  const question = root.matches("[data-skill-id]") ? root : root.querySelector("[data-skill-id]");
+  return {
+    kind, collections: Object.fromEntries(specs.map((spec) => [spec.id, select(root, spec.selector).map((element) => read(element, spec))])),
+    identity: { skillId: readAttribute("data-skill-id"), questionId: readAttribute("data-question-id"),
+      prompt: readText(".prompt"), theme: readValue("#lab-theme"), sample: readValue("#lab-sample") },
+    browserProfile: { width: innerWidth, height: innerHeight, deviceScaleFactor: devicePixelRatio, touch: navigator.maxTouchPoints > 0 },
+    cssTrigSupport: CSS.supports("width", "calc(abs(cos(30deg)) * 100px)"),
+  };
+}
+export function readOfficialVisualLabCapacity() {
+  const value = (name) => document.getElementById(`lab-${name}`).value;
+  const ordinal = Number(value("sample")) - 1;
+  const question = window.MathQuestEngine.makeQuestion({ skillId: value("skill"), tier: value("tier"), representation: value("representation"),
+    seed: 1297175628, ordinal, eligibleQuestionOrdinal: ordinal, scheduledReview: false, coldTest: false, preview: true, theme: value("theme"), scaffolded: true });
+  if (question.questionId !== document.querySelector("article.lab-question").getAttribute("data-question-id")) throw new Error("Capacity official question identity does not match native lab");
+  const target = Number(question.answer.value);
+  if (!Number.isFinite(target)) throw new Error("Capacity official target is not finite");
+  return { questionId: question.questionId, target };
+}
+function visualCapacitySurfaceBand(liquid, surface) {
+  if (surface) return surface.box;
+  return { top: liquid.box.top, bottom: liquid.box.top + Number.parseFloat(liquid.paint.style["border-top-width"]) };
+}
+export function visualCapacityAlignment(ticks, liquid, surface, target) {
+  const byValue = new Map(ticks.map((mark) => [Number(mark.value), mark.box]));
+  const maximum = Math.max(...byValue.keys()), zero = byValue.get(0), end = byValue.get(maximum), tick = byValue.get(target);
+  if (!zero || !end || !tick || !Number.isFinite(maximum) || maximum <= 0) throw new Error("Capacity target or endpoint tick witness missing");
+  const center = (box) => (box.top + box.bottom) / 2;
+  const expectedCenter = center(zero) + (center(end) - center(zero)) * target / maximum;
+  const surfaceBand = visualCapacitySurfaceBand(liquid, surface), liquidCenter = center(surfaceBand), tickCenter = center(tick);
+  const inside = (band, value) => value >= band.top && value <= band.bottom;
+  return { target, expectedCenter, tickCenter, liquidCenter, tickBand: tick, surfaceBand,
+    liquidTickDelta: liquidCenter - tickCenter, tickEndpointDelta: tickCenter - expectedCenter,
+    aligned: inside(tick, expectedCenter) && inside(tick, liquidCenter) && inside(surfaceBand, tickCenter) };
+}
+export function visualRadialClearance(face, glyphs, paint) {
+  const x = (face.left + face.right) / 2, y = (face.top + face.bottom) / 2;
+  const innerRadius = Math.min(...glyphs.map((g) => Math.hypot(Math.max(0, g.left - x, x - g.right), Math.max(0, g.top - y, y - g.bottom))));
+  const corners = [paint.left, paint.right].flatMap((px) => [paint.top, paint.bottom].map((py) => Math.hypot(px - x, py - y)));
+  return { innerRadius, handRadius: Math.max(...corners) };
+}
+
+export const visualShadowValues = (text) => text.replace(/rgba?\([^)]*\)/gu, "").match(/-?[\d.]+px/gu)?.map(Number.parseFloat) || [];
+export function visualShadowDescriptors(style) {
+  const shadows = style["box-shadow"].split(/,(?![^()]*\))/u).filter((part) => !part.includes("inset")).map(visualShadowValues).filter((values) => values.length >= 2);
+  const filters = (style.filter.match(/drop-shadow\((?:[^()]|rgba?\([^)]*\))*\)/gu) || []).map(visualShadowValues).filter((values) => values.length >= 2);
+  return shadows.map(([x, y, blur = 0, spread = 0]) => ({ x, y, radius: spread + blur / 2 })).concat(filters.map(([x, y, blur = 0]) => ({ x, y, radius: blur / 2 })));
+}
+export function visualPaintedBox(value) {
+  const r = { ...value.box }, matrix = value.paint.matrix;
+  for (const { x, y, radius } of visualShadowDescriptors(value.paint.style)) {
+    const dx = matrix.a * x + matrix.c * y, dy = matrix.b * x + matrix.d * y;
+    const rx = radius * (Math.abs(matrix.a) + Math.abs(matrix.c)), ry = radius * (Math.abs(matrix.b) + Math.abs(matrix.d));
+    r.left = Math.min(r.left, value.box.left + dx - rx); r.right = Math.max(r.right, value.box.right + dx + rx);
+    r.top = Math.min(r.top, value.box.top + dy - ry); r.bottom = Math.max(r.bottom, value.box.bottom + dy + ry);
+  }
+  return r;
+}
+
+export const visualOverlap = (a, b, tolerance = 0.5) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > tolerance && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > tolerance;
+export const visualContains = (outer, inner, tolerance = 1) => inner.left >= outer.left - tolerance && inner.right <= outer.right + tolerance && inner.top >= outer.top - tolerance && inner.bottom <= outer.bottom + tolerance;
+
+export const VISUAL_GEOMETRY_STYLES = ["width", "height", "box-sizing", "left", "top", "position", "translate", "padding-left", "padding-right", "padding-top", "padding-bottom", "border-left-width", "border-right-width", "border-top-width", "border-bottom-width", "box-shadow", "filter"];

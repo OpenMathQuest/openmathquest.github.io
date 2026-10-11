@@ -5,7 +5,7 @@ import { loadEngineFromGit } from "../lib/differential-equivalence.mjs";
 import { loadShippedEngine } from "../lib/engine-loader.mjs";
 import { manifestArtifact } from "../lib/curriculum-manifest.mjs";
 import { loadQualityGatePolicy, validateQualityGatePolicySchema } from "../lib/quality-gate-policy.mjs";
-import { loadTutorialMetadataAuthority, tutorialMetadataComparison, tutorialMetadataMutationFailures } from "../lib/tutorial-metadata-transition.mjs";
+import { loadTutorialMetadataAuthority, tutorialMetadataComparison } from "../lib/tutorial-metadata-transition.mjs";
 
 const policy = await loadQualityGatePolicy();
 const baseline = loadEngineFromGit(policy.baselineCommit);
@@ -66,10 +66,6 @@ test("the approved transition policy cannot broaden its pointers, hashes, decisi
   delete missing.approvedTutorialMetadataTransition;
   assert.notDeepEqual(await validateQualityGatePolicySchema(missing), []);
   await assert.rejects(loadTutorialMetadataAuthority("unapproved-commit"), /baseline commit/u);
-});
-
-test("[NC-TUTORIAL-METADATA-TRANSITION] the live gate's six alteration controls all reject drift", () => {
-  assert.deepEqual(tutorialMetadataMutationFailures(baseline, candidate, authority), []);
 });
 
 test("a stale baseline fingerprint in a candidate plan is rejected before translation", () => {

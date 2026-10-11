@@ -11,7 +11,7 @@
   ],
   "properties": {
     "policyId": { "const": "math-quest-security-dependency-gate" },
-    "version": { "const": "1.1.0" },
+    "version": { "const": "1.2.0" },
     "schemaVersion": { "const": 1 },
     "status": { "const": "ACTIVE" },
     "authority": { "type": "string", "minLength": 1 },
@@ -98,10 +98,15 @@
       }
     },
     "negativeControls": {
-      "type": "array",
-      "minItems": 5,
-      "uniqueItems": true,
-      "items": { "type": "string", "pattern": "^NC-[A-Z0-9-]+$" }
+      "const": [
+        "NC-SEMGREP-EACH-RULE-MATCHES",
+        "NC-TRUFFLEHOG-DETECTS-DISPOSABLE-FIXTURE",
+        "NC-NPM-AUDIT-NONZERO-OR-VULNERABILITY-FAILS",
+        "NC-UNTRACKED-TODO-FIXME-HACK-FAILS",
+        "NC-TOOL-ARTIFACT-HASH-MISMATCH-FAILS",
+        "NC-CI-GLOB-DEPTH-GUARD",
+        "NC-CI-GLOB-SOURCE-TAMPER"
+      ]
     }
   },
   "$defs": {

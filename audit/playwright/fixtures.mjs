@@ -1,16 +1,20 @@
 import { expect, test as base } from "@playwright/test";
 import { AXE_NEGATIVE_CONTROL_ID, axeManualReviewSummaries, axeViolationFindings, scanAxeAccessibility, verifyAxeNegativeControl } from "../lib/axe-accessibility.mjs";
-import { PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
+import { PLAYWRIGHT_FOCUSED_QA_ENTRY_QUERIES, PLAYWRIGHT_FOCUSED_SERVER_ROUTES } from "../lib/playwright-focused-contract.mjs";
 
 const ALLOWED_PATHS = new Set([
   ...PLAYWRIGHT_FOCUSED_SERVER_ROUTES.map(([route]) => route),
   "/__math_quest_health__",
 ]);
 
-function observeBrowserErrors(page) {
-    const pageErrors = [];
-    const consoleErrors = [];
-    const unexpectedRequests = [];
+function allowedQaEntryNavigation(page, request, url) {
+  return request.method() === "GET" && request.isNavigationRequest()
+    && request.frame() === page.mainFrame() && url.pathname === "/index.html"
+    && PLAYWRIGHT_FOCUSED_QA_ENTRY_QUERIES.includes(url.search);
+}
+
+function observeBrowserErrors(page, qaEntryQueries, observations = { pageErrors: [], consoleErrors: [], unexpectedRequests: [] }) {
+    const { pageErrors, consoleErrors, unexpectedRequests } = observations;
     page.on("pageerror", (error) => pageErrors.push(String(error?.message || error)));
     page.on("console", (message) => {
       if (message.type() === "error") consoleErrors.push(message.text());
@@ -18,12 +22,12 @@ function observeBrowserErrors(page) {
     page.on("request", (request) => {
       const url = new URL(request.url());
       if (url.origin !== "http://127.0.0.1:8771"
-          || url.search !== ""
+          || (url.search !== "" && !(qaEntryQueries && allowedQaEntryNavigation(page, request, url)))
           || !ALLOWED_PATHS.has(url.pathname)) {
         unexpectedRequests.push(`${request.method()} ${url.origin}${url.pathname}${url.search}`);
       }
     });
-    return { pageErrors, consoleErrors, unexpectedRequests };
+    return observations;
 }
 
 async function annotateBrowserIdentity(browser, testInfo) {
@@ -43,11 +47,13 @@ async function inspectFocusedAccessibility(page, testInfo) {
     expect(axeViolations, "axe-core WCAG violations").toEqual([]);
 }
 
-async function mathQuestGuard({ browser, page }, use, testInfo) {
+async function mathQuestGuard({ browser, page, qaEntryQueries }, use, testInfo) {
+    if (typeof qaEntryQueries !== "boolean") throw new Error("qaEntryQueries must be a declared boolean fixture option");
     await verifyAxeNegativeControl(browser);
     testInfo.annotations.push({ type: "axe-negative-control", description: `${AXE_NEGATIVE_CONTROL_ID}:PASS` });
     await annotateBrowserIdentity(browser, testInfo);
-    const observations = observeBrowserErrors(page);
+    const observations = observeBrowserErrors(page, qaEntryQueries);
+    observations.observePage = (tab) => observeBrowserErrors(tab, qaEntryQueries, observations);
     await use(observations);
     await inspectFocusedAccessibility(page, testInfo);
     expect(observations.pageErrors, "uncaught page errors").toEqual([]);
@@ -56,6 +62,7 @@ async function mathQuestGuard({ browser, page }, use, testInfo) {
 }
 
 export const test = base.extend({
+  qaEntryQueries: [false, { option: true }],
   mathQuestGuard: [mathQuestGuard, { auto: true }],
 });
 

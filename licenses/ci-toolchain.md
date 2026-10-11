@@ -76,7 +76,7 @@ payload.
 ## Ajv 8.20.0 transitive dependency closure
 
 - `fast-deep-equal` 3.1.3 — MIT — [source](https://github.com/epoberezkin/fast-deep-equal/tree/6d7b0967c6a3c7051ba51e236f2404db34e8b13c) — [licence](https://github.com/epoberezkin/fast-deep-equal/blob/6d7b0967c6a3c7051ba51e236f2404db34e8b13c/LICENSE) — [artifact](https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz) — SRI `sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==`
-- `fast-uri` 3.1.6 — BSD-3-Clause — [source](https://github.com/fastify/fast-uri/tree/6f970b2951fd896aa0f3a7ff28eeb6640c137d33) — [licence](https://github.com/fastify/fast-uri/blob/6f970b2951fd896aa0f3a7ff28eeb6640c137d33/LICENSE) — [artifact](https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.6.tgz) — SRI `sha512-7Ical1vFEMr0onbVzEDIreM22I4khW+fzyQPwvAFWBp1iwdshSZRsL4jjRvPG9JP1uiqMHRto+YU6R2/CzDz5Q==`
+- `fast-uri` 3.1.8 — BSD-3-Clause — [source](https://github.com/fastify/fast-uri/tree/ead3ab7bb134c989e972c8174632d0670023f269) — [licence](https://github.com/fastify/fast-uri/blob/ead3ab7bb134c989e972c8174632d0670023f269/LICENSE) — [artifact](https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz) — SRI `sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==`
 - `json-schema-traverse` 1.0.0 — MIT — [source](https://github.com/epoberezkin/json-schema-traverse/tree/a20697b59096545a52bc8050b0878135c16979d6) — [licence](https://github.com/epoberezkin/json-schema-traverse/blob/a20697b59096545a52bc8050b0878135c16979d6/LICENSE) — [artifact](https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz) — SRI `sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==`
 - `require-from-string` 2.0.2 — MIT — [source](https://github.com/floatdrop/require-from-string/tree/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13) — [licence](https://github.com/floatdrop/require-from-string/blob/bdd5c805a87c29b1a44ecf2d9ee9b22fdfca1f13/LICENSE) — [artifact](https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz) — SRI `sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==`
 
@@ -162,12 +162,10 @@ refactor baseline. Raw secret candidates are never written to reports.
 ## Complete npm closure review
 
 `package-lock.json` SHA-256
-`50c4769bf8b778e79a25b8d21f360bef9c81ae0d7ae3427653fefae75c897ed9`
+`9ff507dd7453172b9a5c1d556dcdbc271b301927fbc06e24c938ba69ffc55eef`
 contains 373 dependency entries plus the root record. Every dependency is
 development-only, resolves from the HTTPS npm registry, and has SHA-512
-integrity. The recorded licence counts are MIT 305, ISC 24, Apache-2.0 17,
-BSD-2-Clause 8, BSD-3-Clause 6, MIT-0 3, `(MIT OR CC0-1.0)` 2, CC0-1.0 2,
-and one each of 0BSD, BlueOak-1.0.0, CC-BY-3.0, and Python-2.0.
+integrity. Reviewed licence counts: (MIT OR CC0-1.0) 2, 0BSD 1, Apache-2.0 17, BSD-2-Clause 8, BSD-3-Clause 5, BlueOak-1.0.0 1, CC-BY-3.0 1, CC0-1.0 2, ISC 24, MIT 307, MIT-0 3, MPL-2.0 1, Python-2.0 1.
 
 `jsonpack` 1.1.5 and `svg-tags` 1.0.0 are the two lockfile metadata
 exceptions: each package manifest uses the legacy `licenses` field and its
@@ -181,3 +179,39 @@ BundleWatch tool. Their deprecation is recorded rather than hidden and remains
 a replacement trigger if BundleWatch publishes a compatible maintained
 release. These facts are fail-closed in
 `audit/quality-gate-policy-v1.json` and its negative controls.
+
+## Owner-approved CI dependency security repair — 2026-10-07
+
+The owner approved the exact MIT-licensed `@dieub/braces-depth-guard@3.0.3-pn.3`
+fork for CI-only file discovery, the related transitive security updates,
+compatibility checks and one bounded independent review. The fork is not an
+upstream braces release and is never included in the game payload.
+
+- [Exact source](https://github.com/dieub/braces-depth-guard/tree/305a2e4bfe324bb53c336c1b03387ee1251c926f)
+- [Original MIT licence](https://github.com/dieub/braces-depth-guard/blob/305a2e4bfe324bb53c336c1b03387ee1251c926f/LICENSE)
+- [Registry artifact](https://registry.npmjs.org/@dieub/braces-depth-guard/-/braces-depth-guard-3.0.3-pn.3.tgz)
+- Artifact SRI: `sha512-QY+Uq4s42STyIMPoRkBuUZfYyvz0uZuwuUburLwMx5N+lWqnHHaBxcKPtgKVKjTyFnS1q4ivKu9Wxi4VG7FE9Q==`
+- [Original advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+
+All ten package files match the named source commit and retain the upstream
+MIT licence and authorship. Registry publish/SLSA statements bind the same
+artifact and source commit; this inspection does not claim independent
+cryptographic verification of those statements. The package README still
+describes the published pn.3 bytes as a candidate; the registry artifact and
+source bindings identify the exact approved publication.
+
+The fork caps nesting at 100, rejects cyclic parent walks and invalid numeric
+limits, and preserves the original stringify parent handling. It does not
+guarantee bounded expansion cardinality, AST width or arbitrary object-getter
+behavior. A new package name or zero npm advisories alone is not remediation
+proof. The security gate verifies every installed file hash and runs both
+real lint CLIs against valid files, known rule failures, brace-expanded file
+selection and guarded excessive-depth rejection.
+
+The six exact override records and the installed fork binding are owned by
+`audit/quality-gate-policy-v1.json#supplyChain`; its schema, manifest and lock
+projections remain closed. Other refreshed transitive artifacts repair the
+brace-expansion, fast-uri, js-yaml, KaTeX, markdown-it, smol-toml,
+postcss-selector-parser and source-map-js advisories. The twelve direct tool
+pins, existing lint rules, zero-vulnerability gate, script-disabled install
+and optional-package exclusion remain unchanged.

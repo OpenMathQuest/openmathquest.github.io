@@ -39,6 +39,30 @@ open-source label as approval to use it. If no suitable approved dependency or
 small local implementation fits, propose the substantial custom approach and
 wait for owner approval before implementing it.
 
+<!-- E2E-TEST-STRATEGY-START -->
+## Owner directive: E2E-first testing
+
+E2E tests take absolute priority. Run real browser journeys before unit tests
+in the development and release entry point. Replace existing unit tests with
+E2E checks wherever their protected effects can be covered equally or more
+strongly. Remove a unit test without replacement only when executed existing
+checks already cover its complete protected effects. Retain an existing unit
+test while unique quality coverage still lacks an adequate replacement.
+
+No new unit tests, including new unit cases in an existing file, may be added
+without the owner's approval. New E2E checks are within the authorized testing
+work. A browser wrapper that only calls an isolated function is still a unit
+test; E2E evidence must exercise the shipped application through its real
+controls or a real program entry point and its external effects.
+
+Before deleting assertions, verify the replacement or existing protection and
+record its exact effect coverage and remaining limits in the existing effect
+map. Preserve required mathematics, privacy, persistence, failure-path,
+mutation, coverage, accessibility and release protections. Diagnostic or
+incomplete E2E runs cannot authorize removal. The closed mirror is
+`audit/quality-gate-policy-v1.json#testStrategy`.
+<!-- E2E-TEST-STRATEGY-END -->
+
 <!-- AI-FIRST-DRIFT-CONTROL-START -->
 ## AI-first drift-control authority
 

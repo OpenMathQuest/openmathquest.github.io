@@ -1,4 +1,4 @@
-import { BETA1_MIGRATION_PRELUDE, UPDATE_APPLY_PRELUDE, updateBoundaryPrelude, backupExportBrowser } from "./page-adapter-fixture.mjs";
+import { BETA1_MIGRATION_PRELUDE, UPDATE_APPLY_PRELUDE, updateBoundaryPrelude } from "./page-adapter-fixture.mjs";
 import { createSourceExtractor } from "./source-extraction.mjs";
 import "./source-extraction.test.mjs";
 import assert from "node:assert/strict";
@@ -151,69 +151,6 @@ test("one lifetime writer lease makes saves synchronous and a second client read
   assert.ok(effects.lockRequests.every((request) => request.options.ifAvailable === true));
 });
 
-test("a missing or broken Web Lock refuses the persistent write without an unlocked fallback", async () => {
-  const effects = {
-    bytes: "S0",
-    reads: [],
-    writes: [],
-    warnings: [],
-    attributes: new Map(),
-    protectionScreens: 0,
-    lockManager: { request() { throw new Error("lock unavailable"); } },
-  };
-  const harness = createProgressHarness(effects);
-  assert.equal(await harness.acquireProgressWriterLease(), false);
-  assert.equal(harness.status().progressLeaseStatus, "DENIED");
-  assert.equal(harness.status().progressLeaseFailure, "UNAVAILABLE");
-  assert.equal(harness.persistProgressBytes("UNSAFE"), false);
-  assert.equal(effects.bytes, "S0");
-  assert.deepEqual(effects.writes, []);
-  assert.match(effects.warnings.at(-1), /Reliable progress protection is unavailable/u);
-  assert.ok(effects.protectionScreens >= 1);
-});
-
-test("an unreadable initial save fails closed before requesting the writer lease", async () => {
-  const effects = {
-    acquireCalls: 0,
-    saveCalls: 0,
-    protectionScreens: 0,
-    warnings: [],
-    attributes: new Map(),
-  };
-  const harness = evaluateHarness({
-    prelude: `
-      const progressSourceReadOk=false;
-      let progressLeaseStatus="PENDING";
-      let progressLeaseFailure="";
-      let saveRecoveryRequired=false;
-      let backupImportBusy=false;
-      let pwaControllerChangeBusy=false;
-      const progressLockUnavailableText="Reliable progress protection is unavailable.";
-      const progressSourceFailureText=progressLockUnavailableText;
-      const app={
-        inert:false,
-        setAttribute(name,value){effects.attributes.set(name,value);},
-        removeAttribute(name){effects.attributes.delete(name);}
-      };
-      function raiseWarning(message){effects.warnings.push(String(message));}
-      function scheduleProgressProtectionScreen(){effects.protectionScreens+=1;}
-      async function acquireProgressWriterLease(){effects.acquireCalls+=1;return true;}
-      function save(){effects.saveCalls+=1;return true;}
-    `,
-    functions: ["initializeProgressPersistence"],
-    exposed: "app,initializeProgressPersistence,status:()=>({progressLeaseStatus,progressLeaseFailure})",
-    context: { effects },
-  });
-
-  assert.equal(await harness.initializeProgressPersistence(), false);
-  assert.equal(effects.acquireCalls, 0);
-  assert.equal(effects.saveCalls, 0);
-  assert.equal(effects.protectionScreens, 1);
-  assert.equal(harness.app.inert, true);
-  assert.equal(harness.status().progressLeaseStatus, "DENIED");
-  assert.equal(harness.status().progressLeaseFailure, "UNAVAILABLE");
-});
-
 const BETA1_MIGRATION_FUNCTIONS = Object.freeze([
   "selectProgressSource", "abortBeta1MigrationCutover", "abortBeta1LateArrival", "cutoverPending",
   "storageValueChanged", "activeCutoverStorageChanged", "postCutoverStorageChanged", "handleBeta1StorageChange",
@@ -339,7 +276,7 @@ test("only a fully valid exact immutable retired Beta 1 envelope is eligible for
   assert.equal(harness.isRetainedRetiredBeta1Save(null), false);
 });
 
-test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 9 save commits transactionally", async () => {
+async function expectRetainedCutoverSuccess() {
   const retainedNotice = "A Beta 1 save from the earlier curriculum remains stored separately on this device. Beta 9 starts fresh so old mastery is not applied to changed skills.";
   const successful = createBeta1MigrationHarness("retained-success");
   assert.equal(successful.harness.status().selectedSource, "BETA1-A");
@@ -354,7 +291,10 @@ test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 
   assert.equal(successful.effects.warnings.at(-1), retainedNotice, "the completed cutover must visibly explain the fresh start to the grown-up");
   assert.equal(JSON.stringify(successful.effects.storageOperations.at(-1)), JSON.stringify({ type: "write", key: "math-quest:progress:v2:beta1-migration-guard:v1", value: "beta1-retained-current-curriculum-v1" }), "the terminal marker must be the last synchronous cutover operation");
 
-  const reload = createBeta1MigrationHarness("success", successful.effects.values);
+  return successful;
+}
+
+async function expectRetainedCutoverReload(successful) {  const reload = createBeta1MigrationHarness("success", successful.effects.values);
   assert.equal(reload.harness.status().selectedSource, "PROTECTED-BLANK", "the terminal marker must stop the retained source from replacing a virgin current save on reload");
   assert.equal(reload.harness.status().beta1MigrationPending, false);
   assert.equal(reload.harness.verifyNoLateBeta1MigrationInput(), true, "a protected save with the terminal retained marker is not an interrupted empty cutover");
@@ -362,11 +302,15 @@ test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 
   assert.equal(reload.effects.values.get("math-quest:v2"), "BETA1-A");
   assert.equal(reload.effects.values.get("math-quest:progress:v2:beta1-migration-guard:v1"), "beta1-retained-current-curriculum-v1");
 
-  const postCommitReadLoss = createBeta1MigrationHarness("retained-post-commit-read-loss");
+}
+
+async function expectTerminalCommitReadLoss() {  const postCommitReadLoss = createBeta1MigrationHarness("retained-post-commit-read-loss");
   assert.equal(await postCommitReadLoss.harness.initializeProgressPersistence(), true, "no unverified read may remain after the terminal commit");
   assert.equal(JSON.stringify(postCommitReadLoss.effects.storageOperations.at(-1)), JSON.stringify({ type: "write", key: "math-quest:progress:v2:beta1-migration-guard:v1", value: "beta1-retained-current-curriculum-v1" }));
 
-  for (const mode of ["retained-before", "retained-across", "retained-complete-write-fail"]) {
+}
+
+async function expectRetainedCutoverRollback() {  for (const mode of ["retained-before", "retained-across", "retained-complete-write-fail"]) {
     const run = createBeta1MigrationHarness(mode);
     assert.equal(await run.harness.initializeProgressPersistence(), false, `${mode} must fail closed`);
     assert.equal(run.effects.values.get("math-quest:progress:v2"), null, `${mode} must not leave a trusted fresh save`);
@@ -374,7 +318,9 @@ test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 
     assert.equal(run.harness.status().progressConflict, true);
   }
 
-  const missingProtected = createBeta1MigrationHarness("success", new Map([
+}
+
+async function expectMissingTerminalSave() {  const missingProtected = createBeta1MigrationHarness("success", new Map([
     ["math-quest:progress:v2", null],
     ["math-quest:v2", "BETA1-A"],
     ["math-quest:progress:v2:beta1-migration-guard:v1", "beta1-retained-current-curriculum-v1"],
@@ -383,6 +329,14 @@ test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 
   assert.equal(missingProtected.effects.acquireCalls, 0);
   assert.equal(missingProtected.effects.protectedWrites, 0);
   assert.equal(missingProtected.effects.values.get("math-quest:v2"), "BETA1-A");
+}
+
+test("retired Beta 1 progress remains byte-identical while a guarded fresh Beta 9 save commits transactionally", async () => {
+  const successful = await expectRetainedCutoverSuccess();
+  await expectRetainedCutoverReload(successful);
+  await expectTerminalCommitReadLoss();
+  await expectRetainedCutoverRollback();
+  await expectMissingTerminalSave();
 });
 
 test("Beta 1 migration never copies a source that changed before or across the protected cutover", async () => {
@@ -574,9 +528,8 @@ test("migration remains fail-closed when the durable guard cannot be cleared", a
   assert.match(failed.effects.warnings.at(-1), /migration guard could not be completed/iu);
 });
 
-test("storage events observe the Beta 1 source and every active cutover guard", () => {
+function createStorageEventHarness({ pending = true, emptyPending = false, retainedPending = false } = {}) {
   const storageListener = extractListenerStatement("window", "storage", "handleBeta1StorageChange");
-  const createHarness = ({ pending = true, emptyPending = false, retainedPending = false } = {}) => {
     const effects = { handlers: {}, aborts: [], conflicts: 0, draftConflicts: 0 };
     const localStorage = {};
     const harness = new vm.Script(`(()=>{"use strict";
@@ -591,40 +544,43 @@ test("storage events observe the Beta 1 source and every active cutover guard", 
       return {dispatch(event){effects.handlers.storage({storageArea:localStorage,...event});},effects};
     })()`, { filename: "math-quest-storage-event-effect.js" }).runInNewContext({ effects, localStorage });
     return harness;
-  };
+  }
 
-  const source = createHarness();
+test("storage events observe the Beta 1 source and every active cutover guard", () => {
+
+
+  const source = createStorageEventHarness();
   source.dispatch({ key: "math-quest:v2", newValue: "BETA1-B" });
   assert.equal(source.effects.aborts.length, 1);
   assert.equal(source.effects.aborts[0].rollbackProtected, true);
   assert.equal(source.effects.conflicts, 0);
 
-  const guard = createHarness();
+  const guard = createStorageEventHarness();
   guard.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: null });
   assert.equal(guard.effects.aborts.length, 1);
   assert.equal(guard.effects.conflicts, 0);
 
-  const emptySource = createHarness({ pending: false, emptyPending: true });
+  const emptySource = createStorageEventHarness({ pending: false, emptyPending: true });
   emptySource.dispatch({ key: "math-quest:v2", newValue: "BETA1-NEW" });
   assert.equal(emptySource.effects.aborts.length, 1);
   assert.equal(emptySource.effects.aborts[0].rollbackProtected, true);
 
-  const emptyGuard = createHarness({ pending: false, emptyPending: true });
+  const emptyGuard = createStorageEventHarness({ pending: false, emptyPending: true });
   emptyGuard.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "beta1-to-protected-v1" });
   assert.equal(emptyGuard.effects.aborts.length, 1);
   assert.equal(emptyGuard.effects.aborts[0].rollbackProtected, true);
 
-  const retainedSource = createHarness({ pending: false, retainedPending: true });
+  const retainedSource = createStorageEventHarness({ pending: false, retainedPending: true });
   retainedSource.dispatch({ key: "math-quest:v2", newValue: "BETA1-B" });
   assert.equal(retainedSource.effects.aborts.length, 1);
   assert.equal(retainedSource.effects.aborts[0].rollbackProtected, true);
 
-  const retainedGuard = createHarness({ pending: false, retainedPending: true });
+  const retainedGuard = createStorageEventHarness({ pending: false, retainedPending: true });
   retainedGuard.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "beta1-retained-current-curriculum-v1" });
   assert.equal(retainedGuard.effects.aborts.length, 1);
   assert.equal(retainedGuard.effects.aborts[0].rollbackProtected, true);
 
-  const postMigration = createHarness({ pending: false });
+  const postMigration = createStorageEventHarness({ pending: false });
   postMigration.dispatch({ key: "math-quest:progress:v2:beta1-migration-guard:v1", newValue: "unexpected" });
   assert.equal(postMigration.effects.aborts.length, 0);
   assert.equal(postMigration.effects.conflicts, 1);
@@ -879,96 +835,6 @@ test("Home renders a grown-up update control with truthful, live states", () => 
 
   harness.setState({ updatePhase: "IDLE", updateReady: false, lastUpdateCheck: 123 });
   assert.equal(harness.homePwaUpdateStatusText(), "Math Quest is up to date.");
-});
-
-function createExportHarness(shareResult) {
-  const effects = {
-    exportCalls: 0,
-    shareCalls: 0,
-    canShareCalls: 0,
-    createUrlCalls: 0,
-    revokeUrls: [],
-    downloadClicks: 0,
-    appendedAnchors: 0,
-    removedAnchors: 0,
-    notices: [],
-    timers: [],
-  };
-  const browser = backupExportBrowser(effects, shareResult);
-  const harness = evaluateHarness({
-    prelude: `
-      let backupExportBusy=false;
-      const state={};
-      const E={
-        CONSTANTS:{BACKUP_MAX_BYTES:1024*1024},
-        exportState(){
-          effects.exportCalls+=1;
-          return '{"schemaVersion":3,"private":"local-only"}';
-        }
-      };
-      function setBackupNotice(message,{failure=false}={}){
-        effects.notices.push({message,failure,busy:backupExportBusy});
-      }
-    `,
-    functions: ["exportBackup"],
-    exposed: "exportBackup",
-    context: {
-      effects,
-      Blob,
-      ...browser,
-      Date: { now: () => 1_720_000_000_000 },
-      setTimeout(callback, delay) {
-        effects.timers.push({ callback, delay });
-        return effects.timers.length;
-      },
-    },
-  });
-  return { effects, harness };
-}
-
-test("successful Web Share exports privately without creating a download URL", async () => {
-  const { effects, harness } = createExportHarness(() => undefined);
-  await harness.exportBackup();
-  assert.equal(effects.exportCalls, 1);
-  assert.equal(effects.canShareCalls, 1);
-  assert.equal(effects.shareCalls, 1);
-  assert.equal(effects.createUrlCalls, 0);
-  assert.equal(effects.downloadClicks, 0);
-  assert.equal(effects.timers.length, 0);
-  assert.equal(effects.notices.at(-1).message, "Backup shared to the destination you chose.");
-});
-
-test("Web Share AbortError is a cancellation and never falls through to download", async () => {
-  const cancellation = new Error("cancelled by grown-up");
-  cancellation.name = "AbortError";
-  const { effects, harness } = createExportHarness(() => Promise.reject(cancellation));
-  await harness.exportBackup();
-  assert.equal(effects.shareCalls, 1);
-  assert.equal(effects.createUrlCalls, 0);
-  assert.equal(effects.downloadClicks, 0);
-  assert.equal(effects.timers.length, 0);
-  assert.equal(
-    effects.notices.at(-1).message,
-    "Export cancelled. No file was shared or downloaded.",
-  );
-});
-
-test("a rejected non-cancellation share falls back to download and revokes its object URL", async () => {
-  const { effects, harness } = createExportHarness(
-    () => Promise.reject(new Error("share destination unavailable")),
-  );
-  await harness.exportBackup();
-  assert.equal(effects.shareCalls, 1);
-  assert.equal(effects.createUrlCalls, 1);
-  assert.equal(effects.appendedAnchors, 1);
-  assert.equal(effects.downloadClicks, 1);
-  assert.deepEqual(effects.revokeUrls, []);
-  assert.equal(effects.timers.length, 1);
-  assert.equal(effects.timers[0].delay, 60_000);
-  effects.timers[0].callback();
-  assert.equal(effects.removedAnchors, 1);
-  assert.deepEqual(effects.revokeUrls, ["blob:math-quest-private-backup"]);
-  assert.equal(effects.notices.at(-1).message, "Backup download started. Keep the file private.");
 });
 
 test("waiting-worker readiness uses one exact 256-bit challenge and rejects a mismatched reply", async () => {

@@ -17,7 +17,10 @@ import {
   interactionFuzzAllowedActionFindings,
   interactionFuzzCanonicalReplayPath,
   interactionFuzzEffectFindings,
+  interactionFuzzFailureDiagnostic,
+  interactionFuzzFailureRecorder,
   interactionFuzzMinimizedFailureEvidence,
+  interactionFuzzOriginalFailureFindings,
   interactionFuzzReplayPath,
   playwrightInteractionFuzzArtifactFindings,
   playwrightInteractionFuzzReportFindings,
@@ -53,23 +56,8 @@ function validShard(project) {
   };
 }
 
-function validFailedShard(project) {
-  const message = "native activation produced no visible DOM effect";
-  return {
-    ...validShard(project),
-    status: "failed",
-    path: "0:1",
-    replayPath: "A:A",
-    numRuns: 1,
-    numShrinks: 0,
-    propertyEvaluations: 1,
-    browserActionExecutions: 2,
-    failure: {
-      message,
-      replayMessage: message,
-      replayVerified: true,
-      counterexample: 'activateAny(0) /*replayPath="A:A"*/',
-      minimizedActionTrace: [{
+function failedActionTrace(message) {
+  return [{
         actionIndex: 0,
         familyId: "answer",
         generatedOrdinal: 0,
@@ -86,7 +74,33 @@ function validFailedShard(project) {
         locationPath: "/index.html",
         outcome: "failed",
         findings: [message],
-      }],
+  }];
+}
+
+function validFailedShard(project) {
+  const message = "native activation produced no visible DOM effect";
+  return {
+    ...validShard(project),
+    status: "failed",
+    path: "0:1",
+    replayPath: "A:A",
+    numRuns: 1,
+    numShrinks: 0,
+    propertyEvaluations: 1,
+    browserActionExecutions: 2,
+    failure: {
+      message,
+      replayMessage: message,
+      replayVerified: true,
+      counterexample: 'activateAny(0) /*replayPath="A:A"*/',
+      minimizedActionTrace: failedActionTrace(message),
+      replayActionTrace: failedActionTrace(message),
+      originalFailure: {
+        message,
+        actionTrace: failedActionTrace(message),
+        screenshotPath: `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`,
+        captureError: null,
+      },
       screenshotPath: `audit/.tmp-playwright-interaction-fuzz/${project.id}-failure.png`,
     },
   };
@@ -141,11 +155,18 @@ test("command replay paths use fast-check's canonical run-length and bit encodin
   assert.equal(interactionFuzzCanonicalReplayPath("not-a-path"), null);
 });
 
-test("minimized evidence replays the retained failure instead of trusting a later passing shrink probe", async () => {
+test("minimized evidence preserves the original failure across a later passing shrink and replay", async () => {
   let mutableFinalProbe = null;
-  const details = fc.check(fc.property(fc.integer({ min: 6, max: 7 }), (value) => {
+  const captures = [];
+  const recorder = interactionFuzzFailureRecorder(async (original) => {
+    original.screenshotPath = "synthetic-original-image";
+    captures.push(structuredClone(original));
+  });
+  const details = await fc.check(fc.asyncProperty(fc.integer({ min: 6, max: 7 }), async (value) => {
     mutableFinalProbe = value;
-    if (value === 7) throw new Error("retained failure 7");
+    const error = value === 7 ? new Error("retained failure 7") : null;
+    await recorder.record({ trace: [value], error });
+    if (error) throw error;
   }), { seed: 5, numRuns: 1, verbose: 2 });
   assert.equal(details.failed, true);
   assert.equal(mutableFinalProbe, 6, "the final mutable probe must demonstrate the original evidence bug");
@@ -162,9 +183,13 @@ test("minimized evidence replays the retained failure instead of trusting a late
       }
       return { trace, error };
     },
+    recorder.snapshot(),
   );
   assert.equal(evidence.replayVerified, true);
   assert.deepEqual(evidence.minimizedActionTrace, [7]);
+  assert.deepEqual(evidence.replayActionTrace, [7]);
+  assert.deepEqual(evidence.originalFailure, captures[0]);
+  assert.equal(captures.length, 1);
   assert.equal(evidence.message, "retained failure 7");
   assert.equal(evidence.replayMessage, evidence.message);
 });
@@ -190,6 +215,90 @@ test("interaction-fuzz action policy rejects a destructive-action mutation", () 
     dataAction: "response",
     responseAction: "future-unknown-action",
   }).join("\n"), /unknown or forbidden data-response-action/u);
+});
+
+function assertDiagnosticIncludes(diagnostic, expected) {
+  for (const message of expected) assert.ok(diagnostic.includes(message));
+}
+
+test("a passing replay cannot replace original or minimized failure evidence or pass validation", async () => {
+  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0];
+  const shard = validFailedShard(project);
+  const captured = [];
+  const recorder = interactionFuzzFailureRecorder(async (original) => {
+    original.screenshotPath = shard.failure.screenshotPath;
+    captured.push(structuredClone(original));
+  });
+  const first = { trace: failedActionTrace("original failure"), error: new Error("original failure") };
+  await recorder.record(first);
+  first.trace[0].findings = ["later mutation"];
+  await recorder.record({ trace: failedActionTrace("minimized failure"), error: new Error("minimized failure") });
+  await recorder.record({ trace: [], error: null });
+  const details = { failed: true, counterexample: ["commands"], errorInstance: new Error("minimized failure") };
+  const evidence = await interactionFuzzMinimizedFailureEvidence(details, shard.failure.counterexample,
+    async () => ({ trace: [], error: null }), recorder.snapshot());
+  assert.equal(captured.length, 1, "capture must precede and never be replaced by shrink/replay");
+  assert.deepEqual(evidence.originalFailure, captured[0]);
+  assert.deepEqual(evidence.originalFailure.actionTrace[0].findings, ["original failure"]);
+  assert.deepEqual(evidence.minimizedActionTrace[0].findings, ["minimized failure"]);
+  assert.deepEqual(evidence.replayActionTrace, []);
+  assert.equal(evidence.replayVerified, false);
+  shard.failure = { ...evidence, screenshotPath: captured[0].screenshotPath };
+  const findings = playwrightInteractionFuzzShardFindings(shard);
+  assert.match(findings.join("\n"), /replay is not verified/u);
+  const diagnostic = interactionFuzzFailureDiagnostic("ORIGINAL_FAST_CHECK_REPORT", shard, findings);
+  assertDiagnosticIncludes(diagnostic, ["ORIGINAL_FAST_CHECK_REPORT", "original failure", "minimized failure", "replay is not verified"]);
+});
+
+test("original failure records are closed and failed capture retains its trace while failing validation", async () => {
+  const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0];
+  const shard = validFailedShard(project);
+  const record = {
+    schemaVersion: PLAYWRIGHT_INTERACTION_FUZZ_SCHEMA_VERSION,
+    contractId: PLAYWRIGHT_INTERACTION_FUZZ_CONTRACT_ID,
+    projectId: project.id,
+    originalFailure: shard.failure.originalFailure,
+  };
+  assert.deepEqual(interactionFuzzOriginalFailureFindings(record), []);
+  assert.match(interactionFuzzOriginalFailureFindings({ ...record, extra: true }).join("\n"), /unknown or missing/u);
+  const recorder = interactionFuzzFailureRecorder(async () => { throw new Error("screenshot unavailable"); });
+  await recorder.record({ trace: shard.failure.originalFailure.actionTrace, error: new Error("original failure") });
+  record.originalFailure = recorder.snapshot().original;
+  assert.equal(record.originalFailure.message, "original failure");
+  assert.equal(record.originalFailure.captureError, "screenshot unavailable");
+  assert.deepEqual(record.originalFailure.actionTrace, shard.failure.originalFailure.actionTrace);
+  assert.match(interactionFuzzOriginalFailureFindings(record).join("\n"), /capture was incomplete/u);
+});
+
+test("a thrown replay executor retains the original diagnostic and cannot verify replay", async () => {
+  const shard = validFailedShard(PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0]);
+  const evidence = await interactionFuzzMinimizedFailureEvidence(
+    { failed: true, counterexample: ["commands"], errorInstance: new Error(shard.failure.message) },
+    shard.failure.counterexample,
+    async () => { throw new Error("replay setup failed"); },
+    { original: shard.failure.originalFailure, latest: { actionTrace: shard.failure.minimizedActionTrace } },
+  );
+  assert.equal(evidence.replayVerified, false);
+  assert.equal(evidence.replayMessage, "replay setup failed");
+  assert.deepEqual(evidence.originalFailure, shard.failure.originalFailure);
+});
+
+test("CI failure artifacts are restricted to exact synthetic fuzz reports and original captures", async () => {
+  const workflow = await readFile(new URL("../../.github/workflows/audit.yml", import.meta.url), "utf8");
+  const block = workflow.split("      - name: Retain synthetic interaction-fuzz failure evidence\n")[1].split("\n  full-audit:")[0];
+  assert.match(block, /if: failure\(\)/u);
+  assert.match(block, /actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/u);
+  assert.match(block, /include-hidden-files: true/u);
+  const paths = block.split("          path: |\n")[1].split("          include-hidden-files:")[0].trim().split("\n").map((value) => value.trim());
+  assert.deepEqual(paths, [
+    "audit/.tmp-playwright-interaction-fuzz-report.json",
+    "audit/.tmp-playwright-interaction-fuzz/edge-desktop.json",
+    "audit/.tmp-playwright-interaction-fuzz/edge-phone.json",
+    "audit/.tmp-playwright-interaction-fuzz/edge-desktop-original-failure.json",
+    "audit/.tmp-playwright-interaction-fuzz/edge-phone-original-failure.json",
+    "audit/.tmp-playwright-interaction-fuzz/edge-desktop-failure.png",
+    "audit/.tmp-playwright-interaction-fuzz/edge-phone-failure.png",
+  ]);
 });
 
 test("closed response-action allowlist matches every statically declared child response control", async () => {
@@ -228,7 +337,9 @@ test("failed shard evidence is closed, replay-bound, feasible, and artifact-boun
   const project = PLAYWRIGHT_INTERACTION_FUZZ_PROJECTS[0];
   const shard = validFailedShard(project);
   assert.deepEqual(playwrightInteractionFuzzShardFindings(shard), []);
-  assert.deepEqual(playwrightInteractionFuzzArtifactFindings([shard], new Set([`${project.id}-failure.png`])), []);
+  assert.deepEqual(playwrightInteractionFuzzArtifactFindings([shard], new Set([
+    `${project.id}-failure.png`, `${project.id}-original-failure.json`,
+  ])), []);
 
   const mutations = [
     { pattern: /closed project seed/u, mutate: (value) => { value.seed = 999; } },

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { readFile as readFileAsync } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import Ajv2020 from "ajv/dist/2020.js";
+import { compileClosedSchema } from "./closed-schema-compiler.mjs";
 
 
 const repositoryRoot = path.resolve(fileURLToPath(new URL("../../", import.meta.url)));
@@ -103,8 +103,7 @@ export function requiredOutcomeStatuses(records, { containerStatus, expectedCoun
 }
 
 export async function validateGateIntegrityPolicySchema(policy, schemaPathOrUrl = new URL("../schemas/gate-integrity-policy-v1.schema.json", import.meta.url)) {
-  const schema = JSON.parse(await readFileAsync(schemaPathOrUrl, "utf8"));
-  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+  const validate = compileClosedSchema(await readFileAsync(schemaPathOrUrl, "utf8"));
   return Object.freeze(validate(policy) ? [] : (validate.errors || []).map(schemaIssue));
 }
 

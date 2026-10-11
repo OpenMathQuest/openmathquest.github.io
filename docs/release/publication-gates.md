@@ -144,8 +144,8 @@ workflow cannot succeed unless both required jobs succeed. It inventories all
 plan across six viewports and applicable states, and uploads only its compact
 report plus synthetic anomaly evidence on failure. A local 100-cell benchmark,
 an odd-numbered beta, or a clean direct-journey result cannot impersonate the
-scheduled census. The census neither changes the 304-result gauntlet count nor
-replaces browser, mathematical, human, accessibility, PWA, or device evidence.
+scheduled census. The census is a separate gate and does not replace browser,
+mathematical, human, accessibility, PWA, or device evidence.
 Beta 9 is not scheduled; record the cadence exclusion without claiming a census pass. The local balanced
 100-cell benchmark remains non-certifying and cannot satisfy, replace, or
 strengthen the release gate.

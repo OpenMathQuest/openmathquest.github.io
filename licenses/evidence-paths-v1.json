@@ -55,7 +55,7 @@
       "origin": "mixed-open",
       "licenceExpression": "AGPL-3.0-only AND Apache-2.0 AND BSD-3-Clause AND ISC AND LGPL-2.1-or-later AND MIT AND MPL-2.0",
       "purpose": "Reviewed source, licence, immutable revisions, and integrity pins for non-distributed CI-only browser, accessibility, contract, quality, size, and security tools.",
-      "sha256": "dde274e46076f6fbb88e096f7d0fd00d682b68d728d2d5b166243f2a722d94ff"
+      "sha256": "8974c2c9e904dbea5d90142100a8beb3c645dec2f38504fdb5e74e6e8099863a"
     },
     {
       "path": "licenses/design-tokens.md",

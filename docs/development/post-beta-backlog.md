@@ -1417,6 +1417,221 @@ remain unchanged. The projection rejects an unreviewed input or an unsupported
 platform-specific, nested, optional, peer or lifecycle-script package. Focused
 checks bind the projection and mandatory installation before the Pages guard.
 
+The subsequent Beta 9 evidence pull request failed its browser interaction
+fuzz stage in hosted run `34223740439`. The desktop property's minimized replay
+did not reproduce its failure. The harness discarded the original action trace
+and captured its screenshot after replay; CI retained no diagnostic artifact.
+The original browser failure remains unresolved. A local diagnostic pass does
+not clear it. The repair retains the original failure before shrinking, keeps
+the minimized and replay traces separate, and uploads bounded synthetic failure
+evidence even when later shard validation fails. Focused negative controls must
+prove that a later passing execution cannot erase or pass the original failure.
+Further diagnosis and a reviewed resolution remain necessary before release;
+this evidence repair alone does not establish a product or environment cause.
+The focused size-ratchet check also exposed ceilings 23 bytes above the already
+committed runtime: JavaScript measured 1,044,905 bytes and the production payload
+2,701,404 bytes. `index.html` and `sw.js` were byte-identical to qualification
+commit `a3bfa95d88a10df985465d3d937d6e6c25e8ce33`; the correction tightens these
+stale ceilings to the measurements. The evidence helper simplification also
+reduces JavaScript ABC exceptions from 56 to 55, with that ceiling tightened.
+Three predeclared local diagnostic attempts with the repaired capture code each
+passed both profiles and 184 native actions. Every log and report is retained;
+the preceding launcher interruption produced no browser verdict. These local
+observations did not reproduce or resolve hosted run `34223740439` and provide
+no release clearance.
+Hosted repair run `34234323417` likewise passed the browser-fuzz stage (both
+profiles, 184 actions), along with the preceding compiler, architecture, tests,
+and differential checks and subsequent mutation and security checks. It then
+failed the source-size gate because the repaired module had 627 lines against
+the unchanged 600-line limit. The correction removes duplicated action/selector
+declarations by deriving ordinary selectors from their existing action lists.
+The module is 589 lines; all 11 exported constants, including selector bytes,
+action ordering and frozen action records, match the failed candidate exactly.
+Focused verification of the correction passed 26 tests and the quality stage;
+coverage input for that focused stage came from the retained hosted run only
+after its engine SHA-256 matched the unchanged current engine. The original
+browser-failure risk remains pending the owner's release decision.
+
+### Owner-directed E2E-first migration — 2026-10-03
+
+The owner directed that E2E tests take absolute priority, that existing unit
+tests be replaced or removed where quality coverage is preserved, and that no
+new unit tests be added without approval. This work begins from
+`ba575daaff417c8d907d2df7571d53b5b8331cd4`. Acceptance requires the normal
+development/release entry point to execute the real browser journeys before
+unit checks, an exact protected-effect mapping before each unit removal, no
+new unit cases, and unchanged independent mathematical, mutation, failure-path,
+privacy, persistence, accessibility, coverage and release protections. All 62
+existing Node test entries were inspected by their actual execution boundary;
+file names alone do not classify a real Git, HTTP, filesystem or child-process
+test as a unit test.
+
+The initial browser additions exercise native backup export, platform share
+success/cancellation/rejection, actual download and object-URL cleanup, blocked
+startup under unavailable progress protection, exact private-QA query gating
+with a real saved session, and native recovery import from malformed progress.
+Platform failure outcomes are deliberately injected at the browser boundary;
+they do not qualify a physical operating-system share sheet. Existing unique
+malformed-save, grading, report-forgery, migration-race, parser and fixture-oracle
+coverage remains while no equivalent executed E2E replacement exists.
+
+Browser development exposed an actual accessibility defect in `#importFile`.
+The two import screens now reuse one input component labelled with the existing
+“Import a backup” wording. A single-use sound-setting forwarder was inlined
+with its identical Boolean expression. Source lines remain unchanged and the
+page is 56 bytes smaller; the PWA manifest/worker binding is regenerated.
+Neither art assets, geometry nor CSS were changed. Existing art governance and
+functional DOM checks remain required; this task creates no new art candidate
+or new visual-approval claim. Art-consistency intake used the current decision
+register and Atelier v005; historical accepted screenshot folders are empty
+locally, so no new style or visual-plausibility verdict is inferred from them.
+
+The first local attempt could not connect to its sandboxed loopback server.
+Later diagnostics verified the exact server root and payload identity. Two
+prototype backup selectors were corrected against the actual DOM before the
+accessibility defect was found. Failed/interrupted logs and synthetic traces
+are retained outside the repository. These are not passing development or
+release evidence. Browser-clock cleanup now resumes time in a finally block
+before accessibility scanning. Private-QA comparison begins after native Home
+has committed the real paused session; Cancel removes the query and re-entry
+uses the exact private URL. These correct harness boundaries without changing
+the game's QA behavior.
+
+The initial 48-result desktop/phone matrix and real compiler, architecture,
+differential and property/fuzz CLI gates supported a 13-case removal proposal.
+Independent review found the QA bootstrap replacement incomplete, so that
+original assertion was retained until the corrected 50-result matrix passed.
+The existing effect map records the 13 removed unit cases and their exact
+replacement or already-executed coverage. The architecture unit entry is removed, its Code
+Map validator references point to the real CLI, and its path has a tombstone.
+All other distinct malformed-state, mathematical, secrecy, report-forgery,
+parser and migration-race oracles remain. No new unit cases are added. Two
+retained migration callbacks use cohesive helpers while preserving every
+assertion and scenario; the new journey helpers satisfy the unchanged native
+function limits. The JavaScript ABC violation ceiling tightens from 55 to 53,
+and the reduced source and shipped-byte ceilings tighten to actual values.
+The normal entry-point verification, bounded independent review and frozen
+nine-stage slice loop remain required before advancement. This work makes no
+Beta 9 publication-clearance or resolution claim for the earlier lost fuzz
+failure.
+
+Focused verification passes 132 retained checks and twelve blast-radius
+controls. The normal entry-point run passes all 48 real browser journeys
+before its first unit output; it then exposes a source-contract mismatch for
+three loop-generated case labels, corrected by declaring the same complete
+literal identifiers. The corrected focused contract passes without adding or
+weakening a unit case. A separate real-entry-point negative control supplies a
+foreign loopback server identity and verifies nonzero E2E-stage exit with no
+unit output. Its intentionally failing CLI run is negative-control evidence,
+not a passing complete development run.
+
+The same independent reviewer found two bounded gaps: the QA query exception
+also admitted background requests, and the saved-session journey could not
+exercise placement restoration with a null active session. The exception now
+requires a declared main-frame GET navigation. A native background-request
+control requires exact rejection by the same observer; its temporary response
+uses an existing first-party PNG and is removed before the real application
+journey. Earlier fetch and HTML-as-image probes caused intentional CSP console
+errors; those failed attempts remain retained and do not count as passes.
+`PW-F-25` creates a real placement draft through native controls, preserves
+both records through QA confirmation/Cancel and proves ordinary reload resumes
+the same question. The corrected 25-case desktop/phone matrix passes all 50
+results before the bootstrap wrapper is removed. No new unit cases are added.
+
+The unchanged early-learning fixture moved into the existing functional-art
+journey module, reducing the main spec from above its 426-line ceiling to 390
+lines. Its parsed function declaration is byte-identical before and after;
+the source ceiling tightens to 390. Ownership/dependency records follow the
+move. Neither the fixture's question semantics nor the game's art changes.
+These focused corrections still require the same reviewer's verification and
+the frozen nine-stage development loop before advancement.
+
+The real development-stage failure control also exposes a related diagnostic
+gap: its stderr-first selection discards E2E stdout whenever stderr exists.
+The caller now reuses the existing process-result formatter. The actual
+foreign-server control fails its diagnostic expectation before the change
+and passes afterward with both labelled streams retained. Its production
+stage remains intentionally failed. Existing formatter unit cases are reused;
+none are added. This prevents another evidence-retention loss and does not
+resolve the original Beta 9 fuzz failure. The frozen slice will use the
+required hosted nine-stage development check; release certification remains
+a separate, later boundary.
+
+The correction review clears both findings on tree
+`a4317ce9c5a190cbb36be2ca2b3434f636cda8a0`. The first hosted run
+([37615452916](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37615452916))
+passes compiler, architecture and all 50 browser journeys, then fails the
+existing canary supply-chain test because its closed policy mirror still
+expects version 1.3.0 without `testStrategy`. The two expectation literals now
+match the approved 1.4.0 owner; exact-key rejection and all supply-chain checks
+remain. The failed run is retained, and later stages were not run. All 25
+existing canary/public-candidate checks pass after the correction; a new
+hosted loop on the corrected tree remains required before integration. This
+narrow mirror correction adds no unit cases and does not resolve the
+historical Beta 9 fuzz failure.
+
+The second hosted run
+([37617775349](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37617775349))
+passes compiler and architecture, then records 49 passing browser results and
+one `ERR_NO_BUFFER_SPACE` console failure in the desktop progress-protection
+journey. Chromium defines this as unavailable socket-buffer space. Its
+product assertions completed, but the console guard correctly rejects the
+result; unit checks and later stages were not started. The original log is
+retained. The hosted job did not retain the focused lane's trace, so the exact
+failed request and cause of resource exhaustion remain unknown. A local
+diagnostic could not start its restricted loopback server; an unrestricted
+attempt then timed out during fixture setup and was stopped with its trace
+retained. Neither diagnostic is passing evidence.
+
+Inspection also found that `PW-F-21` advanced its cleanup clock after the
+download-start event without awaiting completion. It now waits for the saved
+file and compares its bytes with the exact backup before checking cleanup.
+This strengthens native download coverage and removes that timing overlap;
+it does not establish the cause of the hosted resource error. The unchanged
+console guard, zero retries, all 50 journeys and complete nine-stage loop
+remain required on the corrected tree before integration.
+
+The next frozen run
+([37683965570](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37683965570))
+passes compiler/types, architecture, tests including all 50 native journeys,
+differential equivalence, property/fuzz and mutation. Security then fails on
+16 npm affected-package entries; complexity/size and performance were not run.
+The raw report remains retained. The owner approved the exact MIT-licensed
+`@dieub/braces-depth-guard@3.0.3-pn.3` CI-only replacement and related security
+updates, compatibility checks and one independent review on 2026-10-07.
+
+The closed supply-chain owner now binds six exact overrides, the complete
+373-package dependency closure and all ten installed fork files. The source
+and archive match commit `305a2e4bfe324bb53c336c1b03387ee1251c926f`.
+Both actual lint CLIs pass normal file discovery, brace expansion and genuine
+rule-error controls with the patched dependency, and reject a 4,000-level
+pattern at the declared depth cap. The unpatched CLI diagnostic timed out
+within its 60-second bound instead of reproducing a stack-overflow message;
+it remains failed diagnostic evidence. The installed-byte check and native
+controls preserve visibility of the original advisory; package renaming alone
+never qualifies as remediation. No new unit cases are added. Focused compiler,
+function-quality, Markdown and driftless checks pass, along with all 55 retained
+policy tests and all 24 driftless tests, without skips. The security gate passes
+with zero npm advisories, no scanner findings, and all seven negative controls,
+including rejection of a changed installed source file. Independent review and
+a complete new frozen nine-stage loop remain required before integration.
+
+The approved repair passes independent review on tree
+`5dbd66ded4c84358dc55558976ce40f6a3fa810e`, repair diff SHA-256
+`661e619962e498743017c0e4dbf8b166ba3be06139e5324bbdcda3252e806083`.
+The reviewer independently passes the complete compatibility CLI and verifies
+the closure, source, archive and licence bindings. The subsequent hosted run
+([37695887287](https://github.com/OpenMathQuest/openmathquest.github.io/actions/runs/37695887287))
+passes the first seven stages, including all 50 browser journeys and security,
+then fails the zero-unused-export check with two exports. Performance was not
+run. The architecture schema and policy validators lost their only external
+callers when redundant unit wrappers were removed; their live policy loader
+still executes both. They are now private functions with otherwise identical
+source. Restricted and unrestricted local Knip diagnostics stalled and were
+stopped; neither is passing evidence. A supplementary local stylesheet
+diagnostic was also stopped without a result. The hosted report remains
+retained, and the complete required loop must pass on the corrected tree.
+
 ### Objective and preserved contracts
 
 Refactor production code, tests, and automated quality gates into smaller,
@@ -2973,21 +3188,29 @@ context, and effect-sensitive protection against its declared false passes.
 
 ## Certification-cycle efficiency review
 
-**Status:** Cadence decision approved on 2026-08-02 and encoded in `AGENTS.md`
-and `audit/certification-cadence-v1.json`. Ordinary development now uses
-focused effect-sensitive checks. The complete certification system runs once
-after an immutable candidate freeze and immediately before publication; an
-early complete run requires explicit owner approval. Detailed audit-stage
-performance telemetry remains a future optimization task.
+**Status:** On 2026-10-07 the owner authorized overnight implementation from
+the verified E2E-first candidate while PR 97's merge remains pending. The
+target is a 50-percent reduction in complete-gauntlet wall-clock time; the
+owner prefers a thoroughly verified 40 percent over a faulty 50 percent.
+The existing cadence decision remains approved and encoded in `AGENTS.md`
+and `audit/certification-cadence-v1.json`: ordinary development uses focused
+checks, and the complete certification system runs once after an immutable
+candidate freeze immediately before publication. An early complete run still
+requires explicit owner approval.
 
 ### Objective
 
-Investigate why complete release certification consumes so much elapsed time
-and model usage without weakening the permanent fail-closed release policy.
-Determine whether full gates are being restarted before a candidate is
-actually frozen, which evidence can be reused safely, and which focused checks
-should run during development before exactly one complete final candidate
-gate.
+Measure the complete-gauntlet baseline and its stage costs, then implement
+safe execution improvements that cut comparable end-to-end wall-clock time
+by at least half. Bind before/after measurements to exact candidates and
+comparable runner, browser, workload and cache conditions. Preserve every
+required gate, protected effect, negative control, mathematical oracle,
+browser profile, fuzz/mutation workload, coverage floor and evidence
+freshness rule. Do not obtain the target by skipping checks, weakening
+thresholds, hiding failures or moving work outside the measured boundary.
+Retain the E2E-first strategy and the owner's prohibition on new unit cases.
+Use existing approved utilities and governed concurrency; qualify any changed
+execution plan against serial results and candidate invalidation rules.
 
 ### Remaining performance questions
 
@@ -3006,10 +3229,122 @@ gate.
 7. How should timing and invalidation telemetry be added so future
    optimization is evidence-based?
 
-The deliverable should be a proposed development/release test cadence, an
-evidence invalidation matrix, audit-stage timing data, and a prioritized list
-of safe efficiency improvements for owner approval.
+Deliver working testing/gate optimizations, stage timing evidence and a
+comparable before/after report assessing the target with equivalent quality
+coverage. Record any shortfall honestly. This implementation authorization
+does not relax certification cadence or authorize a new dependency, weakened
+gate or publication-clearance decision.
+
+### Schema-compilation work in progress
+
+The first change reuses the existing approved Ajv compiler for unchanged
+schema text in eight validators: quality policy, Code Map, Feature Map,
+Tutorial Manifest, gate-integrity policy, refactor baseline and the two
+governed art-record validators. Each call still rereads its schema and validates its
+input; no input, validation decision or release evidence is cached. Exact
+schema text keys and an eight-entry process-local FIFO limit bound reuse.
+Changed or malformed schema text must take the original parse/compile path.
+Ajv's strict and all-errors options and the callers' error formatting remain
+unchanged. Existing valid and malformed-data cases remain in their original
+test modules; no unit cases or dependencies were added. Validators with
+additional registered schemas or different format options retain their
+existing compilers.
+
+The pre-edit Ajv symbol lookup completed against commit `e047427` and exposed
+a broad dependency hypothesis, which remains bounded by the canonical maps.
+Earlier stalled lookup attempts were cancelled without results. A local
+four-suite baseline passed the six Feature Map cases, then stalled between
+suites and was cancelled; it is incomplete, non-passing evidence. It cannot
+establish a timing improvement. The local machine had about 850 MB of free
+memory. Candidate checks, independent review and comparable hosted timing
+remain pending. No complete-gauntlet speed reduction is claimed.
+
+Tracked-text discovery now rereads the complete declared inventory in batches
+of at most eight. It settles each batch and preserves declared projection
+order and the first declared read failure; it caches no file contents. The
+18 existing Code Map and blast-radius cases passed with zero skips before
+the final ownership additions. Canonical differential hashing also retains
+at most 128 sorted key lists, keyed by the exact original key array. It
+caches no questions, values, observations or digests. Every generator call,
+value traversal, immutable digest and mutation workload still executes;
+the differential checks remain required on the final candidate.
+
+The E2E entry block is extracted into `audit/run-e2e-checks.ps1`: all 50
+shipped browser journeys run first, followed by the real comparison-program
+E2E cases, before any unit entry. The main PowerShell file falls from 611 to
+602 lines; quality-policy version 1.6.0 tightens its ceiling to 602 and updates
+the existing closed schema and compatibility mirror together.
+
+### Timing-integrity repair and measurement boundary
+
+The existing comparator converted a missing bounded-run duration into zero,
+which could falsely report a 100-percent improvement. A real CLI E2E
+regression reproduced this: its valid file-fed control succeeded, and the
+missing-duration command also returned success instead of the required
+failure. The pre-fix run is retained as one failed E2E case. Missing, zero,
+negative and non-numeric durations now fail closed.
+
+The non-release qualification workflow now measures the entire technical
+PowerShell entry point, including runtime setup, preceding checks, browser
+journeys, inner audit lanes and cleanup. It retains separate closed timing
+records outside the audited checkout, bound to the exact report bytes and
+Node executable digest. The comparator requires both records, equivalent
+gate evidence, matching candidates and executables, valid elapsed time and
+the existing 20-percent adoption floor for both the inner lanes and whole
+entry point. Its CLI result identifies the measured boundary and uses
+schema version 2. Legacy API comparisons retain their inner-lane scope.
+
+New E2E cases execute the actual comparison program through report files,
+stdout and exit codes. They protect duration rejection, a whole-entry-point
+shortfall despite faster inner lanes, valid whole timing and stale report
+bindings. Their first repair run failed because the general lane supervisor
+treated expected nonzero CLI exits as unverified cleanup after trying to kill
+already-exited processes. The checks now use the standard bounded subprocess
+API for this leaf CLI; production process-tree cleanup rules are unchanged.
+The earlier cancelled setup attempt and failed repair run remain non-passes.
+The two repaired CLI E2E cases subsequently passed with zero skips; final
+candidate checks and independent review remain required.
+
+This timing boundary excludes dependency installation, human and physical-
+device certification work and optional census work. It does not establish a
+complete-release gauntlet reduction or replace the final frozen-candidate
+certification. Protected-main dispatch, the non-release sentinel, serial
+default, disqualified bounded-adoption state and certification cadence remain
+in force. Comparable complete-gauntlet timing and the owner's target remain
+open.
 
 The Pages dependency regression stays in the existing public-candidate
 dependency-policy test module. Its relocation preserves all assertions and
 the PWA test file’s downward source-size limit; no quality ceiling is raised.
+
+The first hosted optimization loop, run `37719540651` on tree
+`d3d081a0535143f1bd64847a0c065bdb039cd2bb`, failed the function-quality
+stage. The preceding seven stages passed, including 90.50 percent engine
+branch coverage, but the performance stage did not run. New timing-validation
+and E2E scenario functions exceeded the existing complexity limits; the
+legacy report-reader metrics also regressed. The correction separates byte
+reading, parsing, timing identity validation and the existing external CLI
+scenarios without deleting assertions or changing limits. Run the focused
+function-quality gate before the next freeze to catch this defect earlier.
+The tests and differential stages took 522,114 and 335,690 ms, respectively,
+against 521,561 and 331,561 ms in the prior hosted candidate. These observations
+show no useful speed gain in those stages and are not a complete-loop or
+complete-gauntlet improvement claim. Retain the failed report; a corrected
+candidate requires fresh review verification and its own complete loop.
+
+A historical engine CPU profile identified VM hashing as a performance
+hypothesis. A temporary ordinary-global-context loader then measured the same
+unmodified engine bytes on Node 24.14.0, with 1,008 generation/support/tutorial
+requests per round in original/candidate/candidate/original order. The rounds
+took 7,040/675/669/1,810 ms and produced the same corpus digest
+`33e71fcfedb74e32cc97b2b7e14f541a32b6753c5d2f9e8173f938abb0facd8b`.
+These local iteration-only observations exclude loading and the remaining
+gauntlet, include a large cold-start difference, and make no complete speed
+claim. The initial diagnostic used an unnormalized manifest skill shape and
+failed before a measurement; it remains a non-pass.
+The implementation now uses the Node standard-library context option while
+retaining frozen Math, ambient proxies, disabled dynamic code generation,
+unchanged extracted bytes, the one-expression boundary and existing deadline.
+The canonical Code Map registers the context owner and its consumers. Existing
+engine/oracle/coverage/mutation checks, focused quality, independent correction
+verification and a fresh hosted loop remain required on the final candidate.

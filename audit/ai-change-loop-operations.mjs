@@ -10,7 +10,7 @@ import { runCoverage } from "./run-coverage.mjs";
 import { runDifferentialEquivalence } from "./run-differential-equivalence.mjs";
 import { runFunctionQualityGate } from "./run-function-quality-gate.mjs";
 import { runPerformanceBudgets } from "./run-performance-budgets.mjs";
-import { runPropertyFuzzStage } from "./run-property-fuzz-stage.mjs";
+import { propertyFuzzResultFinding, runPropertyFuzzStage } from "./run-property-fuzz-stage.mjs";
 import { runQualityGates } from "./run-quality-gates.mjs";
 import { runSecurityDependencyGate } from "./run-security-dependency-gate.mjs";
 
@@ -67,9 +67,8 @@ function runDevelopmentAudit() {
       maxBuffer: 64 * 1024 * 1024,
       windowsHide: true,
     });
-    if (result.error) throw result.error;
-    if (result.status === 0) return Object.freeze({ status: "PASS", findings: Object.freeze([]) });
-    const output = (result.stderr || result.stdout || "development audit failed").trim();
+    const output = propertyFuzzResultFinding("development audit", result);
+    if (output === null) return Object.freeze({ status: "PASS", findings: Object.freeze([]) });
     return Object.freeze({ status: "FAIL", findings: Object.freeze([output]) });
   } finally {
     removeTemporaryNodeSource(nodeSource.directory);

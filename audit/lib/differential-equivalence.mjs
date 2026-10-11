@@ -96,11 +96,25 @@ const SEMANTIC_SUPPORT_CASES = Object.freeze([
   Object.freeze({ id: "question.timeReadDigital", params: { hour: 9, minuteText: "05" }, answer: "9:05", answerKind: "text" }),
 ]);
 
+const sortedObjectKeys = new Map();
+
+function canonicalKeys(item) {
+  const keys = Object.keys(item);
+  const signature = JSON.stringify(keys);
+  let sorted = sortedObjectKeys.get(signature);
+  if (!sorted) {
+    sorted = Object.freeze(keys.sort());
+    if (sortedObjectKeys.size === 128) sortedObjectKeys.delete(sortedObjectKeys.keys().next().value);
+    sortedObjectKeys.set(signature, sorted);
+  }
+  return sorted;
+}
+
 function stableJson(value) {
   const visit = (item) => {
     if (Array.isArray(item)) return item.map(visit);
     if (!item || typeof item !== "object") return item;
-    return Object.fromEntries(Object.keys(item).sort().map((key) => [key, visit(item[key])]));
+    return Object.fromEntries(canonicalKeys(item).map((key) => [key, visit(item[key])]));
   };
   return JSON.stringify(visit(value));
 }
