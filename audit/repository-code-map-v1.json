@@ -1805,7 +1805,9 @@
       "owns": [
         "testing.art-dom-observations.atomic-dom-capture",
         "testing.art-dom-observations.geometry-projections",
-        "testing.art-dom-observations.missing-node-observations"
+        "testing.art-dom-observations.missing-node-observations",
+        "testing.art-dom-observations.visual-defect-geometry-reader",
+        "testing.art-dom-observations.visual-defect-paint-bounds"
       ],
       "copyPolicy": "REFERENCES_ONLY",
       "copyDiscovery": "NONE",
@@ -2603,11 +2605,19 @@
       "owner": "audit/playwright/parent-lab-journey.mjs",
       "owns": [
         "testing.parent-lab-journey.isolated-parent-lab",
-        "testing.parent-lab-journey.keyboard-mechanics"
+        "testing.parent-lab-journey.keyboard-mechanics",
+        "testing.parent-lab-journey.visual-defect-case-bindings",
+        "testing.parent-lab-journey.visual-defect-predicates",
+        "testing.parent-lab-journey.visual-defect-real-control-journeys"
       ],
-      "copyPolicy": "REFERENCES_ONLY",
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
       "copyDiscovery": "NONE",
-      "projections": [],
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
       "validators": [
         "audit/playwright/critical-journeys.spec.mjs",
         "audit/tests/playwright-focused-contract.test.mjs"
@@ -4790,6 +4800,18 @@
       "id": "playwright.journey.functional-art-journey.saved-ui-fixture",
       "source": "audit/tests/session-fixtures.mjs",
       "target": "audit/playwright/functional-art-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.art-dom",
+      "source": "audit/playwright/art-dom-observations.mjs",
+      "target": "audit/playwright/parent-lab-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.parent-lab-journey.census-viewports",
+      "source": "audit/lib/playwright-deep-ux-census.mjs",
+      "target": "audit/playwright/parent-lab-journey.mjs",
       "kind": "CONSUMES"
     },
     {
