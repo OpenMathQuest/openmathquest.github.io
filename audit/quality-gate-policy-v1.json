@@ -612,8 +612,8 @@
         "maximumLines": 538
       },
       {
-          "path": "audit/run-audit.ps1",
-          "maximumLines": 602
+        "path": "audit/run-audit.ps1",
+        "maximumLines": 602
       },
       {
         "path": "audit/run-trusted-https-canary.mjs",
@@ -665,7 +665,7 @@
       },
       {
         "path": "index.html",
-        "maximumLines": 3750
+        "maximumLines": 3746
       }
     ]
   },

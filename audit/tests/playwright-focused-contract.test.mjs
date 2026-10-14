@@ -34,6 +34,7 @@ test("[NC-PLAYWRIGHT-HELPER-RIGHTS-BINDING] extracted browser helper bytes remai
     "audit/playwright/design-token-observations.mjs",
     "audit/playwright/functional-art-journey.mjs",
     "audit/playwright/parent-lab-journey.mjs",
+    "audit/playwright/visual-defect-regressions.mjs",
     "audit/playwright/tutorial-observations.mjs",
   ]);
 });

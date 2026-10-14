@@ -158,6 +158,7 @@
     "audit/playwright/interaction-fuzz.spec.mjs",
     "audit/playwright/parent-lab-journey.mjs",
     "audit/playwright/tutorial-observations.mjs",
+    "audit/playwright/visual-defect-regressions.mjs",
     "audit/public-candidate-guard.mjs",
     "audit/quality-gate-policy-v1.json",
     "audit/refactor-baseline-v2.json",
