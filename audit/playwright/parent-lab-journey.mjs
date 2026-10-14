@@ -281,6 +281,14 @@ export const VISUAL_DEFECT_LAB_CASES = Object.freeze([
   { evidence: "C02P0313", questionId: "MQ-024-11-3602879940", kind: "solid", level: 4, skill: "MQ-024", tier: "EASY", representation: "CONCRETE", theme: "forest", sample: 12 },
   { evidence: "C01P0050", questionId: "MQ-114-1-3208058340", kind: "numeral", level: 19, skill: "MQ-114", tier: "HARD/TARGET", representation: "PICTORIAL", theme: "ocean", sample: 2 },
   { evidence: "C02P0370", questionId: "MQ-027-2-2825557952", kind: "endpoint", level: 5, skill: "MQ-027", tier: "EASY", representation: "PICTORIAL", theme: "forest", sample: 3 },
+  { evidence: "C03P0547", questionId: "MQ-057-11-4233681801", kind: "number-line-labels", level: 10, skill: "MQ-057", tier: "HARD/TARGET", representation: "PICTORIAL", theme: "forest", sample: 12,
+    numberLine: { min: 203, max: 303, markers: ["245"], labels: ["203", "213", "223", "233", "243", "253", "263", "273", "283", "293", "303", "245"] } },
+  { evidence: "C03P0553", questionId: "MQ-057-8-513695998", kind: "number-line-labels", level: 10, skill: "MQ-057", tier: "EASY", representation: "ABSTRACT", theme: "ocean", sample: 9,
+    numberLine: { min: 340, max: 440, markers: ["353", "436"], labels: ["340", "350", "360", "370", "380", "390", "400", "410", "420", "430", "440", "436", "353"] } },
+  { evidence: "C03P0925", questionId: "MQ-057-26-1247411311", kind: "number-line-labels", level: 10, skill: "MQ-057", tier: "EASY", representation: "ABSTRACT", theme: "ocean", sample: 27,
+    numberLine: { min: 641, max: 741, markers: ["642", "665"], labels: ["641", "651", "661", "671", "681", "691", "701", "711", "721", "731", "741", "665", "642"] } },
+  { evidence: "C02P0370-teaching-jump-neighbor", questionId: "MQ-027-2-2825557952", kind: "number-line-jump", level: 5, skill: "MQ-027", tier: "EASY", representation: "PICTORIAL", theme: "forest", sample: 3, teachingShown: true,
+    numberLine: { min: 17, max: 18, markers: [], labels: ["?", "18"], positions: { "?": 17, "18": 18 }, jumping: true, jump: { from: 18, to: 17, label: "less" } } },
   { evidence: "C01P0757", questionId: "MQ-087-20-3400714769", kind: "clear", level: 15, skill: "MQ-087", tier: "HARD/TARGET", representation: "PICTORIAL", theme: "ocean", sample: 21 },
   { evidence: "C01P0867", questionId: "MQ-079-11-1591344857", kind: "tally-six", level: 14, skill: "MQ-079", tier: "EASY", representation: "ABSTRACT", theme: "space", sample: 12 },
   { evidence: "C02P0409", questionId: "MQ-029-17-97618109", kind: "tally-five-ten", level: 5, skill: "MQ-029", tier: "HARD/TARGET", representation: "ABSTRACT", theme: "space", sample: 18 },
@@ -315,6 +323,11 @@ const VISUAL_GEOMETRY_SPECS = Object.freeze({
     visualSpec("ticks", ".metric-capacity-scale .metric-scale-mark"), visualSpec("liquids", ".metric-capacity-liquid", { paint: true }), visualSpec("surfaces", ".metric-capacity-surface")],
   numeral: [visualSpec("values", ".visual-number,.model-value,.array-total,.array-summary b", { glyphs: true, closest: ".visual-item,.model-card,.array-summary" })],
   endpoint: [visualSpec("values", ".number-line-point b", { glyphs: true, closest: ".math-model,.model,.stimulus" })],
+  "number-line-labels": [visualSpec("values", ".number-line-point b", { glyphs: true, closest: ".number-line-exact" }), visualSpec("track", ".number-line-track"),
+    visualSpec("points", ".number-line-point", { children: [visualSpec("stem", "i", { paint: true }), visualSpec("label", "b")] })],
+  "number-line-jump": [visualSpec("values", ".model .number-line-point b", { glyphs: true, closest: ".number-line-exact" }), visualSpec("track", ".model .number-line-track"),
+    visualSpec("points", ".model .number-line-point", { children: [visualSpec("stem", "i", { paint: true }), visualSpec("label", "b")] }),
+    visualSpec("jumps", ".model .number-line-jump", { children: [visualSpec("caption", "span", GLYPH_SPEC)] })],
   clear: [visualSpec("keys", ".key", GLYPH_SPEC)],
   shape: [visualSpec("shapes", ".shape-visual", { paint: true, closest: ".option-visual,.visual-item,.sort-bin-cue" }), visualSpec("labels", ".prompt,.model-label,.sort-bin-heading strong,.choice>span:last-child", GLYPH_SPEC)],
   solid: [visualSpec("shapes", ".sort-item .solid-visual", { paint: true, closest: ".option-visual,.visual-item,.sort-bin-cue" }), visualSpec("labels", ".prompt,.model-label,.sort-bin-heading strong,.choice>span:last-child", GLYPH_SPEC)],
@@ -375,6 +388,68 @@ function checkVisualNumerals(result) {
     if (value.glyphs.some((glyph) => !visualContains(value.container, glyph))) visualFailure(result, family, `${value.text} leaves display`);
   }
   if (endpoint) checkSeparatedVisualGlyphs(result, values, family);
+}
+function checkVisualNumberLine(result) {
+  const family = "NEW-C03-NUMBER-LINE-TICK-AND-MARKER-LABEL-COLLISION", expected = result.expectedNumberLine;
+  const values = requireVisualRecords(result, "values"), track = requireVisualRecords(result, "track")[0].box;
+  if (!expected || result.collections.track.length !== 1) throw new Error("Number-line source descriptor or unique native track missing");
+  if (JSON.stringify(values.map((value) => value.text).sort()) !== JSON.stringify([...expected.labels].sort())) visualFailure(result, family, "source tick/marker labels missing, duplicated or changed");
+  for (const value of values) {
+    const tops = value.glyphs.map((glyph) => glyph.top);
+    if (!tops.length) throw new Error(`Number-line ${value.text} glyph witness missing`);
+    if (Math.max(...tops) - Math.min(...tops) > 1) visualFailure(result, family, `${value.text} wraps between digits`);
+    if (value.glyphs.some((glyph) => !visualContains(value.container, glyph))) visualFailure(result, family, `${value.text} leaves number-line display`);
+    const expectedX = visualNumberLineExpectedX(value.text, expected, track), actualX = (value.box.left + value.box.right) / 2;
+    result.witnesses.push({ label: value.text, expectedX, actualX });
+    if (!Number.isFinite(expectedX) || Math.abs(actualX - expectedX) > 1) visualFailure(result, family, `${value.text} loses source-value x position`);
+  }
+  checkSeparatedVisualGlyphs(result, values, family);
+  checkVisualNumberLineStems(result, values, track, family);
+}
+function visualNumberLineExpectedX(text, source, track) {
+  const value = source.positions?.[text] ?? Number(text);
+  return track.left + track.width * (value - source.min) / (source.max - source.min);
+}
+function checkVisualNumberLineStems(result, values, track, family) {
+  const points = requireVisualRecords(result, "points");
+  if (points.length !== result.expectedNumberLine.labels.length) visualFailure(result, family, "source tick/marker point inventory changed");
+  for (const point of points) {
+    if (point.children.stem.length !== 1 || point.children.label.length !== 1) { visualFailure(result, family, `${point.text} native stem/label missing`); continue; }
+    const paint = visualPaintedBox(point.children.stem[0]), source = result.expectedNumberLine;
+    const expectedX = visualNumberLineExpectedX(point.text, source, track), actualX = (paint.left + paint.right) / 2;
+    if (!Number.isFinite(expectedX) || Math.abs(actualX - expectedX) > 1) visualFailure(result, family, `${point.text} stem loses source-value x position`);
+    if (values.some((value) => value.glyphs.some((glyph) => visualOverlap(paint, glyph)))) visualFailure(result, family, `${point.text} stem intersects label glyph`);
+    if (source.jumping) checkVisualJumpingLineStemSide(result, point, paint, track, family);
+    else checkVisualNumberLineStemSide(result, point, paint, track, family);
+  }
+}
+function checkVisualJumpingLineStemSide(result, point, paint, track, family) {
+  const label = point.children.label[0].box;
+  if (label.top < track.bottom) visualFailure(result, family, `${point.text} jumping-line label moved above axis`);
+  if (paint.top >= track.top || paint.bottom < track.top || paint.bottom > track.bottom + 1) visualFailure(result, family, `${point.text} original jumping-line stem/axis relationship changed`);
+  result.witnesses.push({ label: point.text, jumpingNeighbor: true, stemPaint: paint, labelBox: label, axis: track });
+}
+function checkVisualNumberLineJump(result) {
+  checkVisualNumberLine(result);
+  const jumps = requireVisualRecords(result, "jumps"), track = result.collections.track[0].box, source = result.expectedNumberLine;
+  const jump = jumps[0], expectedLeft = visualNumberLineExpectedX(String(Math.min(source.jump.from, source.jump.to)), source, track);
+  const expectedRight = visualNumberLineExpectedX(String(Math.max(source.jump.from, source.jump.to)), source, track), family = "NEW-C03-NUMBER-LINE-TICK-AND-MARKER-LABEL-COLLISION";
+  if (jumps.length !== 1 || jump.text !== source.jump.label) visualFailure(result, family, "source jumping-line arc/caption changed");
+  if (Math.abs(jump.box.left - expectedLeft) > 1 || Math.abs(jump.box.right - expectedRight) > 1) visualFailure(result, family, "jump arc loses source endpoints");
+  for (const point of result.collections.points) {
+    if (!point.children.stem.length) continue;
+    const paint = visualPaintedBox(point.children.stem[0]);
+    if (jump.children.caption.some((caption) => caption.glyphs.some((glyph) => visualOverlap(paint, glyph)))) visualFailure(result, family, `${point.text} stem crosses jump caption glyph`);
+  }
+}
+function checkVisualNumberLineStemSide(result, point, paint, track, family) {
+  const marker = result.expectedNumberLine.markers.includes(point.text), label = point.children.label[0].box;
+  const labelClear = marker ? label.bottom <= track.top : label.top >= track.bottom;
+  const correctHalf = marker ? paint.bottom <= track.bottom && paint.top < track.top : paint.top >= track.top && paint.bottom > track.bottom;
+  if (!labelClear || !correctHalf) visualFailure(result, family, `${point.text} label/stem crosses its required side of axis`);
+  const attachment = marker ? paint.bottom : paint.top;
+  if (attachment < track.top - 1 || attachment > track.bottom + 1) visualFailure(result, family, `${point.text} stem is detached from axis`);
+  result.witnesses.push({ label: point.text, sourceOffGridMarker: marker, stemPaint: paint, labelBox: label, axis: track });
 }
 function checkVisualCapacity(result) {
   const labels = requireVisualRecords(result, "labels", 2);
@@ -469,6 +544,8 @@ function checkVisualAction(result) {
 const VISUAL_GEOMETRY_CHECKS = Object.freeze({
   clock: checkVisualClock, capacity: checkVisualCapacity,
   numeral: checkVisualNumerals, endpoint: checkVisualNumerals, clear: checkVisualKeys, shape: checkVisualShapes, solid: checkVisualShapes,
+  "number-line-labels": checkVisualNumberLine,
+  "number-line-jump": checkVisualNumberLineJump,
   "sort-label": checkVisualSortLabels, tally: (result) => requireVisualRecords(result, "sets").forEach((set) => checkVisualTallySet(result, set)),
   session: (result) => checkSeparatedVisualGlyphs(result, requireVisualRecords(result, "labels", 2), "KNOWN-SESSION-LABEL-OVERLAP"),
   header: checkVisualHeader, tutorial: checkVisualTutorial, action: checkVisualAction,
@@ -533,13 +610,14 @@ async function openExistingHome(page) {
 }
 export async function exerciseVisualDefectRegressions(page, { openHome = openExistingHome, record = () => {}, profiles = VISUAL_DEFECT_PROFILES } = {}) {
   const observations = [];
-  const observe = async (kind, evidence, profile, scope) => {
+  const observe = async (kind, evidence, profile, scope, viewportState = "INITIAL") => {
     const specKind = kind.startsWith("tally") ? "tally" : kind;
     const geometry = await page.evaluate(readVisualDefectGeometry, { kind, scope: scope || "article.lab-question", specs: VISUAL_GEOMETRY_SPECS[specKind], styleProperties: VISUAL_GEOMETRY_STYLES });
     if (kind === "capacity") geometry.expectedCapacity = await page.evaluate(readOfficialVisualLabCapacity);
+    if (kind.startsWith("number-line-")) geometry.expectedNumberLine = VISUAL_DEFECT_LAB_CASES.find((fixture) => fixture.evidence === evidence).numberLine;
     const result = visualDefectObservation(geometry);
     if (kind.startsWith("tally")) result.failures.push(...await observePaintedTallyContours(page));
-    observations.push({ evidence, profile: profile.id, ...result });
+    observations.push({ evidence, profile: profile.id, viewportState, ...result });
     await record(observations, page);
   };
   for (const profile of profiles) await exerciseVisualDefectProfile(page, profile, observe, openHome);
@@ -559,11 +637,27 @@ async function exerciseVisualDefectProfile(page, profile, observe, openHome) {
   await observe("header", "W090/parent-view-header", profile, "#app");
   await activateNamedButton(page, "Parent test lab");
   for (const fixture of VISUAL_DEFECT_LAB_CASES) {
-    await selectVisualDefectLabCase(page, fixture);
-    await observe(fixture.kind, fixture.evidence, profile);
+    await exerciseVisualDefectLabFixture(page, profile, fixture, observe);
   }
   await activateNamedButton(page, "Exit test lab");
   for (const level of [1, 3, 4]) await exerciseVisualDefectPreview(page, profile, level, observe);
+}
+
+async function exerciseVisualDefectLabFixture(page, profile, fixture, observe) {
+    await selectVisualDefectLabCase(page, fixture);
+    if (fixture.teachingShown) { await activate(page.locator('[data-lab-action="model"]'), page); await settled(page); }
+    await observe(fixture.kind, fixture.evidence, profile);
+    if (fixture.kind === "number-line-labels") await exerciseVisualNumberLineResize(page, profile, fixture, observe);
+  }
+async function exerciseVisualNumberLineResize(page, profile, fixture, observe) {
+  const narrowWidth = profile.width <= 390 ? profile.width - 40 : 390;
+  for (const [width, state] of [[narrowWidth, "RESIZED"], [profile.width, "RESIZE_RESTORED"]]) {
+    await page.setViewportSize({ width, height: profile.height });
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await settled(page);
+    await expectVisualLabIdentity(page, fixture);
+    await observe(fixture.kind, fixture.evidence, profile, "article.lab-question", state);
+  }
 }
 async function exerciseVisualDefectPreview(page, profile, level, observe) {
   await openVisualDefectPreview(page, level);
