@@ -2605,19 +2605,11 @@
       "owner": "audit/playwright/parent-lab-journey.mjs",
       "owns": [
         "testing.parent-lab-journey.isolated-parent-lab",
-        "testing.parent-lab-journey.keyboard-mechanics",
-        "testing.parent-lab-journey.visual-defect-case-bindings",
-        "testing.parent-lab-journey.visual-defect-predicates",
-        "testing.parent-lab-journey.visual-defect-real-control-journeys"
+        "testing.parent-lab-journey.keyboard-mechanics"
       ],
-      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyPolicy": "REFERENCES_ONLY",
       "copyDiscovery": "NONE",
-      "projections": [
-        {
-          "path": "docs/testing/test-to-branch-effect-map.md",
-          "relationship": "DOCUMENTED_REFERENCE"
-        }
-      ],
+      "projections": [],
       "validators": [
         "audit/playwright/critical-journeys.spec.mjs",
         "audit/tests/playwright-focused-contract.test.mjs"
@@ -3508,6 +3500,27 @@
       "copyPolicy": "REFERENCES_ONLY",
       "copyDiscovery": "NONE",
       "projections": [],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.visual-defect-regressions",
+      "owner": "audit/playwright/visual-defect-regressions.mjs",
+      "owns": [
+        "testing.parent-lab-journey.visual-defect-case-bindings",
+        "testing.parent-lab-journey.visual-defect-predicates",
+        "testing.parent-lab-journey.visual-defect-real-control-journeys"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
       "validators": [
         "audit/playwright/critical-journeys.spec.mjs",
         "audit/tests/playwright-focused-contract.test.mjs"
@@ -4803,18 +4816,6 @@
       "kind": "CONSUMES"
     },
     {
-      "id": "playwright.journey.parent-lab-journey.art-dom",
-      "source": "audit/playwright/art-dom-observations.mjs",
-      "target": "audit/playwright/parent-lab-journey.mjs",
-      "kind": "CONSUMES"
-    },
-    {
-      "id": "playwright.journey.parent-lab-journey.census-viewports",
-      "source": "audit/lib/playwright-deep-ux-census.mjs",
-      "target": "audit/playwright/parent-lab-journey.mjs",
-      "kind": "CONSUMES"
-    },
-    {
       "id": "playwright.journey.parent-lab-journey.entry",
       "source": "audit/playwright/parent-lab-journey.mjs",
       "target": "audit/playwright/critical-journeys.spec.mjs",
@@ -4859,6 +4860,36 @@
     {
       "id": "playwright.journey.tutorial-observations.rights",
       "source": "audit/playwright/tutorial-observations.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.art-dom",
+      "source": "audit/playwright/art-dom-observations.mjs",
+      "target": "audit/playwright/visual-defect-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.census-viewports",
+      "source": "audit/lib/playwright-deep-ux-census.mjs",
+      "target": "audit/playwright/visual-defect-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.entry",
+      "source": "audit/playwright/visual-defect-regressions.mjs",
+      "target": "audit/playwright/parent-lab-journey.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/visual-defect-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.rights",
+      "source": "audit/playwright/visual-defect-regressions.mjs",
       "target": "audit/lib/rights-state.mjs",
       "kind": "CONSUMES"
     },

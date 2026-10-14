@@ -38,6 +38,7 @@ const RIGHTS_STATE_PATHS = Object.freeze([
   "audit/playwright/design-token-observations.mjs",
   "audit/playwright/functional-art-journey.mjs",
   "audit/playwright/parent-lab-journey.mjs",
+  "audit/playwright/visual-defect-regressions.mjs",
   "audit/playwright/tutorial-observations.mjs",
   "audit/playwright/fixtures.mjs",
   "audit/playwright/deep-ux-census.spec.mjs",
