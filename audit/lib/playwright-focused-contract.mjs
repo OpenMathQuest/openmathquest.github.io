@@ -42,6 +42,7 @@ export const PLAYWRIGHT_FOCUSED_CASE_IDS = Object.freeze([
   "PW-F-23",
   "PW-F-24",
   "PW-F-25",
+  "PW-F-26",
 ]);
 
 export const PLAYWRIGHT_FOCUSED_QA_ENTRY_QUERIES = Object.freeze([

@@ -20,6 +20,7 @@ export async function runDifferentialEquivalence() {
     semanticWitnessRegistrySha256: comparison.semanticWitnessRegistrySha256,
     explicitSemanticSupportCases: comparison.semanticSupportCaseIds,
     approvedMetadataTransition: comparison.approvedMetadataTransition,
+    approvedChildWordingTransition: comparison.approvedChildWordingTransition,
     findings,
   });
 }

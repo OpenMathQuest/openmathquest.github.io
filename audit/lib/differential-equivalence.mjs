@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { loadReleaseVersionComparison, comparableReleaseConstants, comparableReleaseState, comparableReleaseExport } from "./release-version-comparison.mjs";
 import { fileURLToPath } from "node:url";
-import { evaluateEngine, extractEngineFromPageBytes, loadShippedEngine } from "./engine-loader.mjs";
+import { evaluateEngine, extractEngineFromPageBytes } from "./engine-loader.mjs";
+import { loadApprovedComparisonEngine } from "./child-strings.mjs";
 import { hermeticGit } from "./repository-code-map.mjs";
 import { loadTutorialMetadataAuthority, tutorialMetadataComparison, tutorialMetadataMutationFailures } from "./tutorial-metadata-transition.mjs";
 import { completePlacement } from "./placement-fixtures.mjs";
@@ -454,8 +455,8 @@ export function loadEngineFromGit(commit, relativePath = "index.html") {
 
 export async function compareWithBaseline(commit, indexPath = path.join(root, "index.html")) {
   const baselineEngine = loadEngineFromGit(commit);
-  const { engine: candidateEngine } = await loadShippedEngine(indexPath);
-  return differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit));
+  const { engine: candidateEngine, approvedChildWordingTransition } = await loadApprovedComparisonEngine(indexPath, baselineEngine);
+  return { ...differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit)), approvedChildWordingTransition };
 }
 
 function mutationDetected(context, mutant, observationPrefix) {
@@ -574,7 +575,7 @@ function responseMutationFailures(context, engine) {
 
 export async function differentialMutationFailures(commit) {
   const baselineEngine = loadEngineFromGit(commit);
-  const { engine } = await loadShippedEngine(path.join(root, "index.html"));
+  const { engine } = await loadApprovedComparisonEngine(path.join(root, "index.html"), baselineEngine);
   const context = differentialContext(baselineEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit));
   return Object.freeze([
     ...tutorialMetadataMutationFailures(baselineEngine, engine, context.tutorialAuthority),

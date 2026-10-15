@@ -141,11 +141,10 @@ candidate commit are frozen. Focused development checks may exercise the same
 effects earlier, but do not constitute another complete cycle.
 
 - [ ] Record the exact canonical manifest SHA-256 and exact engine SHA-256.
-- [x] Project owner approved the complete 441-record `child-strings-v1`
-  candidate, including the 34 tutorial and visual-clarity records added to the
-  last approved 407-record table, and its exact SHA-256
-  `a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`
-  on 2026-08-20.
+- [x] Project owner approved the 441-record `child-strings-v1` candidate's
+  revised division wording and rendered C05 repairs on 2026-10-15. The other
+  440 records retain their existing approval. Exact candidate SHA-256:
+  `53607fd8a77a73abeab575d91cd3d4f19420fc31abf45f7b6131cd325720b91f`.
 - [ ] Run the complete deterministic engine and grading suite.
 - [ ] Exercise all 126 skills through generator, grader, model, and Parent Test
   paths.

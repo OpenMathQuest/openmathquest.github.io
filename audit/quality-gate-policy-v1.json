@@ -1,6 +1,6 @@
 {
   "policyId": "math-quest-refactor-quality-gates",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "schemaVersion": 1,
   "status": "ACTIVE",
   "authority": "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
@@ -16,6 +16,20 @@
     "candidateTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
     "manifestChangedPointer": "/artDesignBinding/sha256",
     "planChangedPointer": "/manifestSha256"
+  },
+  "approvedChildWordingTransition": {
+    "contractId": "C05_APPROVED_DIVISION_WORDING_V1",
+    "baselineCommit": "2078625b407d5189f579e94e716c86dce86ae90f",
+    "approvalPath": "docs/release/child-string-approval-candidate-2026-07-30.md",
+    "approvalDate": "2026-10-15",
+    "baselineChildStringsSha256": "a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e",
+    "candidateChildStringsSha256": "53607fd8a77a73abeab575d91cd3d4f19420fc31abf45f7b6131cd325720b91f",
+    "candidateEngineSha256": "3389747ce8269ba2611d7dc2a993413ada444f26b57951ad8cf8bbb1b0955c61",
+    "comparisonEngineSha256": "7caf1353035f1881eaf0cbd902d8d07647ecf5589812ce66496d76555bc30b58",
+    "recordCount": 441,
+    "changedRecordId": "question.quotientRemainder",
+    "beforeText": "Share {total} objects into groups of {divisor}. Which answer gives the quotient and remainder?",
+    "afterText": "Share {total} objects equally among {divisor} groups. Which answer gives the quotient and remainder?"
   },
   "testStrategy": {
     "authority": {
@@ -531,7 +545,7 @@
           "maxNesting": 0
         },
         "javascriptInlineHtml": {
-          "cyclomatic": 175,
+          "cyclomatic": 174,
           "abcMagnitude": 92,
           "cognitive": 84,
           "functionLines": 13,
@@ -601,7 +615,7 @@
       },
       {
         "path": "audit/playwright/critical-journeys.spec.mjs",
-        "maximumLines": 390
+        "maximumLines": 388
       },
       {
         "path": "audit/public-candidate-guard.mjs",
@@ -670,10 +684,10 @@
     ]
   },
   "performanceBudgets": {
-    "stylesheetMaximumBytes": 234386,
-    "javascriptMaximumBytes": 1038043,
+    "stylesheetMaximumBytes": 234382,
+    "javascriptMaximumBytes": 1037646,
     "compiledAssetMaximumBytes": 932443,
-    "productionPayloadMaximumBytes": 2694159,
+    "productionPayloadMaximumBytes": 2693758,
     "engineScenarioMaximumWallTimeMs": 12000,
     "qualityGateMaximumWallTimeMs": 120000
   },

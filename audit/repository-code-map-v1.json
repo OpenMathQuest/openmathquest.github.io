@@ -1,6 +1,6 @@
 {
   "mapId": "math-quest-repository-code-map",
-  "version": "1.57.0",
+  "version": "1.58.0",
   "schemaVersion": 1,
   "licence": {
     "spdx": "MIT",
@@ -1125,6 +1125,7 @@
       "owns": [
         "quality.gates.ai-change-loop",
         "quality.gates.analysis-ratchets",
+        "quality.gates.approved-child-wording-transition",
         "quality.gates.approved-tutorial-metadata-transition",
         "quality.gates.candidate-binding",
         "quality.gates.finish-line",
@@ -1806,6 +1807,7 @@
         "testing.art-dom-observations.atomic-dom-capture",
         "testing.art-dom-observations.geometry-projections",
         "testing.art-dom-observations.missing-node-observations",
+        "testing.art-dom-observations.selected-label-paint-reader",
         "testing.art-dom-observations.visual-defect-geometry-reader",
         "testing.art-dom-observations.visual-defect-paint-bounds"
       ],
@@ -2073,6 +2075,8 @@
       "id": "testing.child-string-validation",
       "owner": "audit/lib/child-strings.mjs",
       "owns": [
+        "testing.child-string-validation.approved-comparison-copy",
+        "testing.child-string-validation.approved-transition-rejection-controls",
         "testing.child-string-validation.ordered-pools",
         "testing.child-string-validation.record-shape"
       ],
@@ -2080,6 +2084,7 @@
       "copyDiscovery": "NONE",
       "projections": [],
       "validators": [
+        "audit/run-differential-equivalence.mjs",
         "audit/tests/child-string-validation.test.mjs",
         "audit/tests/node-engine.test.mjs"
       ]
@@ -4168,6 +4173,24 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "child-string-validation.approval-policy",
+      "source": "audit/quality-gate-policy-v1.json",
+      "target": "audit/lib/child-strings.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "child-string-validation.approved-comparison",
+      "source": "audit/lib/child-strings.mjs",
+      "target": "audit/lib/differential-equivalence.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "child-string-validation.engine-loader",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/lib/child-strings.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "child-string-validation.test",
       "source": "audit/lib/child-strings.mjs",
       "target": "audit/tests/child-string-validation.test.mjs",
@@ -4873,6 +4896,12 @@
       "id": "playwright.journey.visual-defect-regressions.census-viewports",
       "source": "audit/lib/playwright-deep-ux-census.mjs",
       "target": "audit/playwright/visual-defect-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.visual-defect-regressions.direct-entry",
+      "source": "audit/playwright/visual-defect-regressions.mjs",
+      "target": "audit/playwright/critical-journeys.spec.mjs",
       "kind": "CONSUMES"
     },
     {

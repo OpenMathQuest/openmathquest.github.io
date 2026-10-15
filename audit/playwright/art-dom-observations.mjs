@@ -565,3 +565,29 @@ export const visualOverlap = (a, b, tolerance = 0.5) => Math.min(a.right, b.righ
 export const visualContains = (outer, inner, tolerance = 1) => inner.left >= outer.left - tolerance && inner.right <= outer.right + tolerance && inner.top >= outer.top - tolerance && inner.bottom <= outer.bottom + tolerance;
 
 export const VISUAL_GEOMETRY_STYLES = ["width", "height", "box-sizing", "left", "top", "position", "translate", "padding-left", "padding-right", "padding-top", "padding-bottom", "border-left-width", "border-right-width", "border-top-width", "border-bottom-width", "box-shadow", "filter"];
+
+export async function compareSelectedLabelPaint({ painted, unobscured, glyphs }) {
+  const pixels = async (png) => {
+    const image = new Image(); image.src = `data:image/png;base64,${png}`; await image.decode();
+    const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true }); context.drawImage(image, 0, 0);
+    return { data: context.getImageData(0, 0, image.width, image.height).data, width: image.width, height: image.height };
+  };
+  const before = await pixels(unobscured), after = await pixels(painted);
+  if (before.width !== after.width || before.height !== after.height) throw new Error("Selected paint comparison changed dimensions");
+  const countGlyph = (glyph) => {
+    let inkPixels = 0, lostInkPixels = 0;
+    for (let y = Math.max(0, Math.ceil(glyph.top / glyphs.height * before.height)); y < Math.min(before.height, Math.floor(glyph.bottom / glyphs.height * before.height)); y += 1) {
+      for (let x = Math.max(0, Math.ceil(glyph.left / glyphs.width * before.width)); x < Math.min(before.width, Math.floor(glyph.right / glyphs.width * before.width)); x += 1) {
+        const offset = (y * before.width + x) * 4, ink = glyph.colour.every((colour, channel) => Math.abs(before.data[offset + channel] - colour) < 4);
+        if (!ink) continue; inkPixels += 1;
+        if (glyph.colour.some((colour, channel) => Math.abs(after.data[offset + channel] - colour) > 12)) lostInkPixels += 1;
+      }
+    }
+    return { inkPixels, lostInkPixels };
+  };
+  const counts = glyphs.glyphs.map(countGlyph);
+  const inkPixels = counts.reduce((sum, count) => sum + count.inkPixels, 0), lostInkPixels = counts.reduce((sum, count) => sum + count.lostInkPixels, 0);
+  if (!inkPixels) throw new Error("Selected label has no observed native ink");
+  return { inkPixels, lostInkPixels };
+}
