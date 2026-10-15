@@ -1,4 +1,4 @@
-import { readVisualDefectGeometry, readOfficialVisualLabCapacity, VISUAL_GEOMETRY_STYLES, visualContains, visualOverlap, visualPaintedBox, visualShadowValues, visualCapacityAlignment, visualRadialClearance } from "./art-dom-observations.mjs";
+import { compareSelectedLabelPaint, readVisualDefectGeometry, readOfficialVisualLabCapacity, VISUAL_GEOMETRY_STYLES, visualContains, visualOverlap, visualPaintedBox, visualShadowValues, visualCapacityAlignment, visualRadialClearance } from "./art-dom-observations.mjs";
 import { activate, activateNamedButton, expect } from "./fixtures.mjs";
 import { DEEP_UX_CENSUS_VIEWPORTS } from "../lib/playwright-deep-ux-census.mjs";
 export async function exerciseFocusedVisualDefects(page) {
@@ -462,4 +462,130 @@ async function exerciseVisualDefectTutorial(page, profile, observe) {
   await observe("tutorial", "W065/tutorial-step-2", profile, "section.question");
   await activateNamedButton(page, "Back to your question");
   await expect(question.locator(".prompt")).toHaveText(originalPrompt);
+}
+
+// Frozen discovery witnesses. These controls reproduce shipped rendering,
+// including long/wrapped answers and the narrow-screen money-label boundary.
+export const JEV_VISUAL_CASES = Object.freeze([
+  { evidence: "C05P0108", questionId: "MQ-106-4104-3696377708", family: "selected", level: 18, skill: "MQ-106", sample: 4105, state: "select" },
+  { evidence: "C05P0079", questionId: "MQ-109-3001-4004944682", family: "selected", level: 19, skill: "MQ-109", sample: 3002, state: "select" },
+  { evidence: "C05P0519", questionId: "MQ-088-9721-3257827129", family: "check", level: 15, skill: "MQ-088", sample: 9722, state: "model" },
+  { evidence: "C05P0528", questionId: "MQ-079-63-3963651101", family: "tutorial", level: 14, skill: "MQ-079", sample: 64, state: "tutorial", step: 1 },
+  { evidence: "C05P0530", questionId: "MQ-092-139-1371700508", family: "tutorial", level: 16, skill: "MQ-092", sample: 140, state: "tutorial", step: 1 },
+  { evidence: "C05P0661", questionId: "MQ-102-5117-2121216153", family: "money", level: 17, skill: "MQ-102", sample: 5118, state: "tutorial", step: 2 },
+  { evidence: "C05P0498", questionId: "MQ-080-8923-1522025788", family: "division", level: 14, skill: "MQ-080", sample: 8924, state: "model" },
+]);
+export async function reachJevVisualCase(page, fixture) {
+  await selectJevLabConfiguration(page, fixture);
+  await page.locator("#lab-sample").fill(String(fixture.sample));
+  await page.locator("#lab-sample").press("Tab"); await settled(page);
+  await expect(page.locator("article.lab-question")).toHaveAttribute("data-skill-id", fixture.skill);
+  if (fixture.questionId) await expect(page.locator("article.lab-question")).toHaveAttribute("data-question-id", fixture.questionId);
+  await enterJevVisualState(page, fixture);
+  await settled(page); await page.evaluate(() => document.fonts.ready);
+}
+async function selectJevLabConfiguration(page, fixture) {
+  for (const [selector, value] of [["#lab-level", fixture.level], ["#lab-skill", fixture.skill], ["#lab-tier", fixture.tier || "EASY"], ["#lab-representation", fixture.representation || "PICTORIAL"], ["#lab-theme", fixture.theme || "ocean"]]) {
+    if (await page.locator(selector).inputValue() === String(value)) continue;
+    await page.locator(selector).selectOption(String(value)); await settled(page);
+  }
+}
+async function enterJevVisualState(page, fixture) {
+  if (fixture.state === "select") await activate(page.locator('[data-lab-action="select"]').first(), page);
+  if (fixture.state === "model") await activate(page.locator('[data-lab-action="model"]'), page);
+  if (fixture.state === "tutorial") {
+    await activate(page.locator('[data-lab-action="tutorial"]'), page);
+    for (let step = 1; step < fixture.step; step += 1) await activate(page.locator('[data-lab-action="tutorial-next"]'), page);
+  }
+}
+export async function jevVisualObservation(page, fixture) {
+  if (fixture.family === "division") return divisionPictureObservation(page, fixture);
+  const geometry = await page.evaluate(readVisualDefectGeometry, { kind: fixture.family, scope: "article.lab-question", styleProperties: [...VISUAL_GEOMETRY_STYLES, "background-color"], specs: [
+    visualSpec("labels", ".prompt,.model-label,.math-model__caption,.visual-number,.place-value-source,.proportional-label-key span,svg text", GLYPH_SPEC),
+    visualSpec("markers", ".tutorial-anchor-overlay,.attribute-match-mark"),
+    visualSpec("tracks", ".proportional-track", { children: [visualSpec("labels", ".proportional-segment", GLYPH_SPEC)] }),
+    visualSpec("barContents", ".proportional-content", { children: [
+      visualSpec("segments", ".proportional-segment", { paint: true }),
+      visualSpec("keys", ".proportional-label-key span", { glyphs: true, closest: ".proportional-label-key", children: [visualSpec("swatches", "i", { paint: true })] }),
+    ] }),
+  ] });
+  const { markers, tracks } = geometry.collections;
+  const failures = jevGeometryFailures(geometry.collections);
+  if (fixture.family === "money") failures.push(...geometry.collections.barContents.flatMap(jevMoneyKeyFailures));
+  const selected = fixture.family === "selected" ? await observeSelectedLabelPaint(page) : [];
+  for (const observation of selected) if (observation.lostInkPixels > 0) failures.push(`selected badge removes ${observation.lostInkPixels} label pixels`);
+  const required = fixture.family === "selected" ? selected.length : fixture.family === "money" ? tracks.length : markers.length;
+  if (!required) throw new Error(`${fixture.evidence}: required visual witness missing`);
+  return { evidence: fixture.evidence, identity: geometry.identity, browserProfile: geometry.browserProfile, geometry, selected, failures };
+}
+function jevGeometryFailures({ labels, markers, tracks }) {
+  const overlaps = markers.flatMap((marker) => labels.filter((label) => label.glyphs.some((glyph) => visualOverlap(marker.box, glyph))).map((label) => `marker overlaps ${label.text}`));
+  const clipped = tracks.flatMap((track) => track.children.labels.filter((label) => label.glyphs.some((glyph) => !visualContains(track.box, glyph))).map((label) => `bar clips ${label.text}`));
+  return overlaps.concat(clipped);
+}
+function jevMoneyKeyFailures(bar) {
+  const { keys, segments } = bar.children, failures = [];
+  if (segments.length !== 2 || keys.length !== segments.length || keys.map((key) => key.text).join("|") !== "cost|change") return ["money part key identities/count missing or reordered"];
+  for (const [index, key] of keys.entries()) {
+    if (!key.glyphs.length || key.glyphs.some((glyph) => !visualContains(key.container, glyph) || !visualContains(bar.box, glyph))) failures.push(`key clips ${key.text}`);
+    const swatches = key.children.swatches;
+    if (swatches.length !== 1 || swatches[0].paint.style["background-color"] !== segments[index].paint.style["background-color"]) failures.push(`key colour does not identify ${key.text} segment`);
+  }
+  return failures;
+}
+async function divisionPictureObservation(page, fixture) {
+  const observed = await page.locator("article.lab-question").evaluate((element) => ({
+    prompt: element.querySelector(".prompt").textContent,
+    groups: [...element.querySelectorAll(".model .array-group")].map((group) => group.querySelectorAll("i").length),
+    facts: Object.fromEntries([...element.querySelectorAll(".model .array-summary .model-card")].map((card) => [card.querySelector(".model-label").textContent, Number(card.querySelector("b").textContent)])),
+  }));
+  const match = observed.prompt.match(/Share (\d+) objects (into groups of|equally among) (\d+)/u);
+  if (!match || !observed.groups.length) throw new Error("Division prompt and worked grouping witness missing");
+  const total = Number(match[1]), divisor = Number(match[3]), quotient = Math.floor(total / divisor), remainder = total % divisor;
+  const groupCount = match[2] === "into groups of" ? quotient : divisor, groupSize = match[2] === "into groups of" ? divisor : quotient;
+  const expected = Array.from({ length: groupCount }, () => groupSize).concat(remainder ? [remainder] : []);
+  const failures = JSON.stringify(observed.groups) !== JSON.stringify(expected) || observed.facts.groups !== groupCount || observed.facts["in each group"] !== groupSize || observed.facts.remainder !== remainder ? ["prompt grouping disagrees with visible worked groups"] : [];
+  return { evidence: fixture.evidence, observed, expected, failures };
+}
+async function observeSelectedLabelPaint(page) {
+  const selected = page.locator('article.lab-question button.selected-state--labelled[aria-pressed="true"]');
+  const results = [];
+  for (let index = 0; index < await selected.count(); index += 1) {
+    const control = selected.nth(index); await control.scrollIntoViewIfNeeded();
+    const glyphs = await control.evaluate(selectedLabelGlyphs);
+    const painted = (await control.screenshot()).toString("base64");
+    const hidden = await page.addStyleTag({ content: 'button.selected-state--labelled[aria-pressed="true"]::after{visibility:hidden!important}' });
+    let unobscured;
+    try { unobscured = (await control.screenshot()).toString("base64"); } finally { await hidden.evaluate((element) => element.remove()); }
+    results.push(await page.evaluate(compareSelectedLabelPaint, { painted, unobscured, glyphs }));
+  }
+  return results;
+}
+function selectedLabelGlyphs(element) {
+  const outer = element.getBoundingClientRect(), walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT), glyphs = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) for (let offset = 0; offset < node.textContent.length; offset += 1) {
+    if (!/\S/u.test(node.textContent[offset])) continue;
+    const range = document.createRange(); range.setStart(node, offset); range.setEnd(node, offset + 1);
+    const colour = getComputedStyle(node.parentElement).color.match(/[\d.]+/gu).slice(0, 3).map(Number);
+    for (const rect of range.getClientRects()) glyphs.push({ left: rect.left - outer.left, top: rect.top - outer.top, right: rect.right - outer.left, bottom: rect.bottom - outer.top, colour });
+  }
+  return { width: outer.width, height: outer.height, glyphs };
+}
+
+export async function exerciseJevVisualRegressions(page) {
+  await openExistingHome(page);
+  await activateNamedButton(page, "Grown-ups corner"); await activateNamedButton(page, "Parent test lab");
+  for (const fixture of JEV_VISUAL_CASES) {
+    await reachJevVisualCase(page, fixture);
+    expect((await jevVisualObservation(page, fixture)).failures, fixture.evidence).toEqual([]);
+    if (fixture.family === "money") await verifyJevMoneyKeyNegativeControl(page, fixture);
+  }
+}
+async function verifyJevMoneyKeyNegativeControl(page, fixture) {
+  const hidden = await page.addStyleTag({ content: ".proportional-label-key{display:none!important}" });
+  try {
+    const result = await jevVisualObservation(page, fixture);
+    expect(result.failures, "NC-JEV-MISSING-MONEY-KEY-DETECTED").toContain("money part key identities/count missing or reordered");
+  } finally { await hidden.evaluate((element) => element.remove()); }
+  expect((await jevVisualObservation(page, fixture)).failures, "restored valid money key").toEqual([]);
 }

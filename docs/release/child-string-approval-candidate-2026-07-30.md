@@ -1,17 +1,29 @@
-# Child-string approval candidate — updated 2026-08-20
+# Child-string approval candidate — updated 2026-10-15
 
 Canonicalization: `child-strings-v1`
 Complete table: 441 records
-Current candidate SHA-256: `a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`
-Current engine SHA-256: `26e75cd042fee62ba01a3fb1608b2b847ae6b0b8ade5e6b09d26cc37b461c871`
+Current candidate SHA-256: `53607fd8a77a73abeab575d91cd3d4f19420fc31abf45f7b6131cd325720b91f`
+Current engine SHA-256: `3389747ce8269ba2611d7dc2a993413ada444f26b57951ad8cf8bbb1b0955c61`
 Extraction validation errors: 0
 
-Owner decision: **Approved on 2026-08-20**
+Owner decision: **Approved on 2026-10-15**
 
-The current 441-record candidate retains the complete owner-approved 407-record
-table unchanged and adds 34 exact tutorial and visual-clarity records. The
-project owner approved this complete candidate and exact SHA-256 on
-2026-08-20.
+The owner approved the rendered C05 repairs and revised division wording,
+then authorized validation and integration. This 441-record candidate retains
+440 records from the approved 2026-08-20 table unchanged and revises only
+`question.quotientRemainder`:
+
+> Share {total} objects equally among {divisor} groups. Which answer gives the quotient and remainder?
+
+The former wording said “into groups of {divisor}.” The new wording agrees
+with the existing picture of recipient groups, quotient, and remainder;
+slot definitions, quantities, grading, and record count are unchanged.
+
+The previous 441-record approval remains historical: on 2026-08-20 the owner
+approved SHA-256
+`a7d942177f0b9097dee92a4ffe2028bd6db359015742d0a57fe095df00a86e3e`,
+which retained the 407-record table and added the 34 tutorial and
+visual-clarity records described below.
 
 ## Approved visual-clarity wording
 

@@ -1,3 +1,4 @@
+import { exerciseJevVisualRegressions, VISUAL_DEFECT_PROFILES } from "./visual-defect-regressions.mjs";
 import { exerciseAssistedRetry, exerciseDifferentExampleTutorial, exerciseTutorialKeyboard, exerciseTutorialReload } from "./assisted-learning-journey.mjs";
 import { exerciseActivatedDesignTokens } from "./design-token-observations.mjs";
 import { exerciseFunctionalArt, seedGovernedEarlyLearningSession } from "./functional-art-journey.mjs";
@@ -35,14 +36,7 @@ import {
   test,
 } from "./fixtures.mjs";
 
-const GOVERNED_ART_VIEWPORTS = Object.freeze([
-    { id: "phone-portrait", width: 390, height: 844 },
-    { id: "phone-landscape", width: 844, height: 390 },
-    { id: "tablet-portrait", width: 820, height: 1180 },
-    { id: "tablet-landscape", width: 1024, height: 768 },
-    { id: "large-tablet-landscape", width: 1180, height: 820 },
-    { id: "desktop", width: 1366, height: 768 },
-]);
+const GOVERNED_ART_VIEWPORTS = VISUAL_DEFECT_PROFILES.map(({ id, width, height }) => ({ id, width, height }));
 
 const DESIGN_TOKENS = JSON.parse(await readFile(new URL("../../assets/design/math-quest-design-tokens-v1.json", import.meta.url), "utf8"));
 const FUNCTIONAL_ART_STYLE_ORIGINS = Object.freeze({
@@ -388,3 +382,7 @@ async function expectWrappedFrameCellRejected(page, question) {
     await wrapper.dispose();
   }
 }
+
+test("[PW-F-26] Jev visual defect witnesses preserve label ink, tutorial cues, money keys and grouping meaning", async ({ page }) => {
+  await exerciseJevVisualRegressions(page);
+});

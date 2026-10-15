@@ -142,7 +142,7 @@ This non-authoritative section is generated from `audit/repository-code-map-v1.j
 | `testing.canary-runner-browser` | `audit/lib/trusted-https-canary-runner-browser.mjs` | — | `audit/tests/canary-runner-effects.test.mjs`<br>`audit/tests/trusted-https-canary.test.mjs` |
 | `testing.canary-runner-platform` | `audit/lib/trusted-https-canary-runner-platform.mjs` | — | `audit/tests/canary-runner-effects.test.mjs`<br>`audit/tests/trusted-https-canary.test.mjs` |
 | `testing.canary-runner-report` | `audit/lib/trusted-https-canary-runner-report.mjs` | — | `audit/tests/canary-runner-effects.test.mjs`<br>`audit/tests/trusted-https-canary.test.mjs` |
-| `testing.child-string-validation` | `audit/lib/child-strings.mjs` | — | `audit/tests/child-string-validation.test.mjs`<br>`audit/tests/node-engine.test.mjs` |
+| `testing.child-string-validation` | `audit/lib/child-strings.mjs` | — | `audit/run-differential-equivalence.mjs`<br>`audit/tests/child-string-validation.test.mjs`<br>`audit/tests/node-engine.test.mjs` |
 | `testing.ci-dependency-compatibility` | `audit/run-ci-dependency-compatibility.mjs` | `audit/run-security-dependency-gate.mjs`<br>`docs/testing/test-to-branch-effect-map.md` | `audit/run-security-dependency-gate.mjs` |
 | `testing.css-fixtures` | `audit/tests/css-fixtures.mjs` | `docs/testing/test-to-branch-effect-map.md` | `audit/tests/holistic-child-ux-regressions.test.mjs` |
 | `testing.deep-ux-dom-observations` | `audit/playwright/deep-ux-dom-observations.mjs` | — | `audit/tests/playwright-deep-ux-census.test.mjs`<br>`audit/tests/playwright-focused-contract.test.mjs` |

@@ -88,8 +88,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "2a800f637b125d59ef0ff514627dc3ad80b7b216797b561dcc2d8ddb7f31e6b5",
-      "bytes": 1252753,
+      "sha256": "7718b9ad96b4cc343dcbf48cfa45683505115e2cb55fb78adb5d92eae8938905",
+      "bytes": 1252645,
       "mime": "text/html",
       "status": 200
     },
