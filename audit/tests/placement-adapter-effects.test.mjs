@@ -6,7 +6,7 @@ import test from "node:test";
 import vm from "node:vm";
 import { extractEngine, evaluateEngine } from "../lib/engine-loader.mjs";
 
-const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+const [html, teachingDisplaySource] = ["../../index.html", "../../assets/js/math-quest-teaching-display.js"].map(relativePath => readFileSync(new URL(relativePath, import.meta.url), "utf8"));
 const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)].map((match) => match[1]);
 assert.equal(scripts.length, 2);
 const adapter = scripts[1];
@@ -31,7 +31,7 @@ function extractSetDeclaration(name) {
 const extractListenerStatement = (target, eventName, marker) => extraction.listenerStatement(target, eventName, marker);
 
 function evaluate({ prelude = "", functions = [], body = "", exposed = "", context = {} }) {
-  return new vm.Script(`(()=>{"use strict";${prelude}${functions.map(extractFunction).join("\n")}${body}return {${exposed}};})()`, {
+  return new vm.Script(`${teachingDisplaySource}\n(()=>{"use strict";${prelude}${functions.map(extractFunction).join("\n")}${body}return {${exposed}};})()`, {
     filename: "math-quest-placement-adapter-effects.js",
   }).runInNewContext(context);
 }
@@ -591,7 +591,7 @@ test("placement speech uses evidence-rich prompts, visible option positions, and
       "clockHandStimulusDescription",
       "unlabelledTickRunDescription",
       "stimulusOperandDescription",
-      "durationEvidenceSpeech",
+      "displayModelDescriptor", "correctedStimulusSpeech", "durationEvidenceSpeech",
       "questionSpeechText",
       "placementFeedbackPresentation",
       "placementFeedbackText",

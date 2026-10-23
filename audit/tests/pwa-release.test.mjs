@@ -18,7 +18,7 @@ import "./page-adapter-effects.test.mjs";
 import { releaseCertificationRunEligible } from "../lib/gate-integrity-policy.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const pwaStatusSource = await readFile(path.join(root, "assets", "js", "math-quest-pwa-status.js"), "utf8");
+const [pwaStatusSource, teachingDisplaySource] = await Promise.all(["math-quest-pwa-status.js", "math-quest-teaching-display.js"].map(name => readFile(path.join(root, "assets", "js", name), "utf8")));
 const execFile = promisify(execFileCallback);
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -30,7 +30,7 @@ const RELEASE_ENTRY_SPECS = Object.freeze([
   ["./assets/icons/apple-touch-icon.png", "image/png"],
   ["./assets/icons/icon-192.png", "image/png"],
   ["./assets/icons/icon-512.png", "image/png"],
-  ["./assets/js/math-quest-progress-source.js", "text/javascript"], ["./assets/js/math-quest-pwa-status.js", "text/javascript"],
+  ["./assets/js/math-quest-progress-source.js", "text/javascript"], ["./assets/js/math-quest-pwa-status.js", "text/javascript"], ["./assets/js/math-quest-teaching-display.js", "text/javascript"],
   ["./assets/sounds/close.wav", "audio/wav"],
   ["./assets/sounds/confirm.wav", "audio/wav"],
   ["./assets/sounds/incorrect.wav", "audio/wav"],
@@ -48,7 +48,7 @@ const PAGES_TAGGED_ARTIFACT_SPECS = Object.freeze([
   ["assets/icons/apple-touch-icon.png", "image/png"],
   ["assets/icons/icon-192.png", "image/png"],
   ["assets/icons/icon-512.png", "image/png"],
-  ["assets/js/math-quest-progress-source.js", "text/javascript"], ["assets/js/math-quest-pwa-status.js", "text/javascript"],
+  ["assets/js/math-quest-progress-source.js", "text/javascript"], ["assets/js/math-quest-pwa-status.js", "text/javascript"], ["assets/js/math-quest-teaching-display.js", "text/javascript"],
   ["assets/sounds/close.wav", "audio/wav"],
   ["assets/sounds/confirm.wav", "audio/wav"],
   ["assets/sounds/incorrect.wav", "audio/wav"],
@@ -124,7 +124,7 @@ function adapterPwaStatusFunctions(adapter) {
   assert.notEqual(start, -1, "the shipped PWA dialog-state boundary must exist");
   assert.notEqual(end, -1, "validateReadiness must have one shipped declaration");
   assert.ok(end > start, "PWA status helpers must precede validateReadiness");
-  return `${pwaStatusSource}\n${adapter.slice(start, end)}`;
+  return `${teachingDisplaySource}\n${pwaStatusSource}\n${adapter.slice(start, end)}`;
 }
 
 test("legacy recovery links remain one-use but the current page exposes no forced-navigation responder", async () => {

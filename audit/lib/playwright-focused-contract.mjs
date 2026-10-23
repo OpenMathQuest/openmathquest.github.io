@@ -63,6 +63,7 @@ export const PLAYWRIGHT_FOCUSED_SERVER_ROUTES = Object.freeze([
   ["/assets/icons/icon-512.png", "assets/icons/icon-512.png"],
   ["/assets/js/math-quest-progress-source.js", "assets/js/math-quest-progress-source.js"],
   ["/assets/js/math-quest-pwa-status.js", "assets/js/math-quest-pwa-status.js"],
+  ["/assets/js/math-quest-teaching-display.js", "assets/js/math-quest-teaching-display.js"],
   ["/assets/sounds/close.wav", "assets/sounds/close.wav"],
   ["/assets/sounds/confirm.wav", "assets/sounds/confirm.wav"],
   ["/assets/sounds/incorrect.wav", "assets/sounds/incorrect.wav"],

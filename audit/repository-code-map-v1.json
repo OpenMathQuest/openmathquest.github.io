@@ -1127,6 +1127,7 @@
         "quality.gates.analysis-ratchets",
         "quality.gates.approved-child-wording-transition",
         "quality.gates.approved-tutorial-metadata-transition",
+        "quality.gates.authorized-tutorial-profile-repair-transition",
         "quality.gates.candidate-binding",
         "quality.gates.finish-line",
         "quality.gates.guarded-dependency-source",
@@ -1151,6 +1152,10 @@
         },
         {
           "path": "audit/lib/axe-accessibility.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit/lib/child-strings.mjs",
           "relationship": "OPERATIONAL_CONFIG"
         },
         {
@@ -1546,6 +1551,10 @@
         {
           "path": "licenses/first-party-paths-v1.txt",
           "relationship": "GENERATED"
+        },
+        {
+          "path": "licenses/runtime-components.md",
+          "relationship": "DOCUMENTED_REFERENCE"
         }
       ],
       "validators": [
@@ -1719,6 +1728,91 @@
         "audit/tests/pwa-release.test.mjs",
         "audit/tests/pwa-status.test.mjs"
       ]
+    },
+    {
+      "id": "runtime.teaching-display",
+      "owner": "assets/js/math-quest-teaching-display.js",
+      "owns": [
+        "runtime.teaching-display.array-summary-facts",
+        "runtime.teaching-display.display-model-projection",
+        "runtime.teaching-display.graph-html-projection"
+      ],
+      "projections": [
+        {
+          "path": ".github/workflows/pages.yml",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "audit.html",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/architecture-policy-v1.json",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/playwright-focused-contract.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/lib/trusted-https-canary-runner-platform.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/test-launcher-identity.ps1",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/canary-runner-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/page-adapter-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/placement-adapter-effects.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/pwa-release.test.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "audit/tests/visual-stimulus-fixture.mjs",
+          "relationship": "VALIDATION_EXPECTATION"
+        },
+        {
+          "path": "index.html",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "release-shell-v1.json",
+          "relationship": "GENERATED_METADATA"
+        },
+        {
+          "path": "Serve-MathQuest.ps1",
+          "relationship": "OPERATIONAL_CONFIG"
+        },
+        {
+          "path": "sw.js",
+          "relationship": "RUNTIME_EMBED"
+        },
+        {
+          "path": "tools/build-pwa-release-manifest.mjs",
+          "relationship": "OPERATIONAL_CONFIG"
+        }
+      ],
+      "validators": [
+        "audit/run-architecture-gate.mjs",
+        "audit/test-launcher-identity.ps1",
+        "audit/tests/canary-runner-effects.test.mjs",
+        "audit/tests/page-adapter-effects.test.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs",
+        "audit/tests/pwa-release.test.mjs"
+      ],
+      "copyPolicy": "REFERENCES_ONLY",
+      "copyDiscovery": "NONE"
     },
     {
       "id": "security.gates",
@@ -1979,6 +2073,27 @@
       ],
       "validators": [
         "audit/tests/holistic-child-ux-regressions.test.mjs"
+      ]
+    },
+    {
+      "id": "testing.c06-teaching-regressions",
+      "owner": "audit/playwright/c06-teaching-regressions.mjs",
+      "owns": [
+        "testing.c06-teaching-regressions.family-case-bindings",
+        "testing.c06-teaching-regressions.native-assertions",
+        "testing.c06-teaching-regressions.real-control-journeys"
+      ],
+      "copyPolicy": "DECLARED_PROJECTIONS_ONLY",
+      "copyDiscovery": "NONE",
+      "projections": [
+        {
+          "path": "docs/testing/test-to-branch-effect-map.md",
+          "relationship": "DOCUMENTED_REFERENCE"
+        }
+      ],
+      "validators": [
+        "audit/playwright/critical-journeys.spec.mjs",
+        "audit/tests/playwright-focused-contract.test.mjs"
       ]
     },
     {
@@ -4797,6 +4912,42 @@
       "kind": "CONSUMES"
     },
     {
+      "id": "playwright.journey.c06-teaching-regressions.engine-loader",
+      "source": "audit/lib/engine-loader.mjs",
+      "target": "audit/playwright/c06-teaching-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.c06-teaching-regressions.entry",
+      "source": "audit/playwright/c06-teaching-regressions.mjs",
+      "target": "audit/playwright/visual-defect-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.c06-teaching-regressions.fixtures",
+      "source": "audit/playwright/fixtures.mjs",
+      "target": "audit/playwright/c06-teaching-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.c06-teaching-regressions.rights",
+      "source": "audit/playwright/c06-teaching-regressions.mjs",
+      "target": "audit/lib/rights-state.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.c06-teaching-regressions.saved-ui-fixture",
+      "source": "audit/tests/session-fixtures.mjs",
+      "target": "audit/playwright/c06-teaching-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "playwright.journey.c06-teaching-regressions.speech-session-fixture",
+      "source": "audit/playwright/functional-art-journey.mjs",
+      "target": "audit/playwright/c06-teaching-regressions.mjs",
+      "kind": "CONSUMES"
+    },
+    {
       "id": "playwright.journey.design-token-observations.entry",
       "source": "audit/playwright/design-token-observations.mjs",
       "target": "audit/playwright/critical-journeys.spec.mjs",
@@ -5532,6 +5683,114 @@
       "id": "strategy-boundary.runner",
       "source": "audit/tests/engine-strategy-boundary-contract.mjs",
       "target": "audit/tests/tutorial-engine-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.architecture-policy",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/architecture-policy-v1.json",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "teaching-display.audit-route-list",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit.html",
+      "kind": "VALIDATES"
+    },
+    {
+      "id": "teaching-display.canary-runtime",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/lib/trusted-https-canary-runner-platform.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.canary-runtime-test",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/canary-runner-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.component-register",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "licenses/component-register-v1.json",
+      "kind": "DOCUMENTS"
+    },
+    {
+      "id": "teaching-display.launcher",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "Serve-MathQuest.ps1",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.launcher-fixture",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/test-launcher-identity.ps1",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.page-adapter-test",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/page-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.pages",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": ".github/workflows/pages.yml",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.placement-speech-test",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/placement-adapter-effects.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.playwright-identity",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/lib/playwright-focused-contract.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.playwright-test",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/playwright-focused-contract.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.pwa-release-test",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/pwa-release.test.mjs",
+      "kind": "TESTS"
+    },
+    {
+      "id": "teaching-display.release-generator",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "tools/build-pwa-release-manifest.mjs",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.runtime",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "index.html",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.runtime-components-doc",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "licenses/runtime-components.md",
+      "kind": "DOCUMENTS"
+    },
+    {
+      "id": "teaching-display.service-worker",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "sw.js",
+      "kind": "CONSUMES"
+    },
+    {
+      "id": "teaching-display.visual-stimulus-fixture",
+      "source": "assets/js/math-quest-teaching-display.js",
+      "target": "audit/tests/visual-stimulus-fixture.mjs",
       "kind": "CONSUMES"
     },
     {

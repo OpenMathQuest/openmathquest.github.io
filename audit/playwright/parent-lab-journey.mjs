@@ -93,16 +93,20 @@ async function expectLabAreaModelUniqueIds(page) {
   expect(new Set(areaIds).size).toBe(areaIds.length);
   await expectContentFits(areaQuestion);
 }
+function readPrismPresentation(element) {
+  const labels = [...element.parentElement.querySelectorAll("text,.model-label")];
+  return {
+    contained: element.getBoundingClientRect().width <= element.parentElement.getBoundingClientRect().width + 1,
+    labelCount: labels.length,
+    minimumLabelFontSize: Math.min(...labels.map(label => Number.parseFloat(getComputedStyle(label).fontSize))),
+    separatorsUnfilled: [...element.querySelectorAll("polyline")].every(line => getComputedStyle(line).fill === "none"),
+  };
+}
 async function expectLabPrismLegibility(page) {
   await selectLabSkill(page, 21, "MQ-122");
   const volumeQuestion = page.locator('article.lab-question[data-skill-id="MQ-122"]');
   await expect(volumeQuestion.locator(".isometric-prism")).toBeVisible();
-  const prismPresentation = await volumeQuestion.locator(".isometric-prism").evaluate((element) => ({
-    contained: element.getBoundingClientRect().width <= element.parentElement.getBoundingClientRect().width + 1,
-    labelCount: element.querySelectorAll("text").length,
-    minimumLabelFontSize: Math.min(...[...element.querySelectorAll("text")].map((label) => Number.parseFloat(getComputedStyle(label).fontSize))),
-    separatorsUnfilled: [...element.querySelectorAll("polyline")].every((line) => getComputedStyle(line).fill === "none"),
-  }));
+  const prismPresentation = await volumeQuestion.locator(".isometric-prism").evaluate(readPrismPresentation);
   expect(prismPresentation.contained).toBe(true);
   expect(prismPresentation.labelCount).toBeGreaterThan(0);
   expect(prismPresentation.minimumLabelFontSize).toBeGreaterThanOrEqual(16);

@@ -71,7 +71,7 @@
       "origin": "original-project",
       "licenceExpression": "MIT",
       "purpose": "Original authorship, purpose, and exact hashes for separately shipped Math Quest runtime source components.",
-      "sha256": "0aa802846b5bc8822dc5295f76fd6def799e375fb9cd5bb31aa101368631ec54"
+      "sha256": "589f4d8bca0092fb64aa4f2a09b40c9f5a0a12973165fba5d39174c816292f88"
     },
     {
       "path": "licenses/sound-effects.md",

@@ -56,7 +56,7 @@ function validatePolicyIdentity(policy, findings) {
     authority: "docs/development/post-beta-backlog.md#agent-refactor-code-tests-and-quality-gates",
     baselineCommit: "2078625b407d5189f579e94e716c86dce86ae90f",
   };
-  const keys = ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "approvedChildWordingTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"];
+  const keys = ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "approvedChildWordingTransition", "authorizedTutorialProfileRepairTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"];
   if (!exactKeys(policy, keys)) findings.push("audit/quality-gate-policy-v1.json: policy must use the exact closed schema");
   if (!objectMatches(policy, identity)) findings.push("audit/quality-gate-policy-v1.json: policy identity and authority must remain exact");
 }
@@ -153,7 +153,7 @@ function validatePolicyExceptions(supplyChain, findings) {
 function validatePolicyOverride(supplyChain, findings) {
   const binding = { overrides: supplyChain.dependencyOverrides, guarded: supplyChain.guardedBraces };
   const digest = createHash("sha256").update(JSON.stringify(binding)).digest("hex");
-  if (digest !== "fac22c8bbe1fbba146922991a7f1bc799dad88964006dffbc9e0cdb0f5c3cf40") {
+  if (digest !== "2b213534c3a8c3cbcc22a749b79874f05238905c3a329e15c36e3ddc251d4258") {
     findings.push("audit/quality-gate-policy-v1.json: the approved security overrides and fork source binding must remain exact");
   }
 }

@@ -34,6 +34,7 @@ assets/icons/icon-512.png
 assets/icons/math-quest-icon.svg
 assets/js/math-quest-progress-source.js
 assets/js/math-quest-pwa-status.js
+assets/js/math-quest-teaching-display.js
 assets/sounds/close.wav
 assets/sounds/confirm.wav
 assets/sounds/generate-sounds.ps1
@@ -143,6 +144,7 @@ audit/on-change-audit.ps1
 audit/playwright/adult-boundary-journey.mjs
 audit/playwright/art-dom-observations.mjs
 audit/playwright/assisted-learning-journey.mjs
+audit/playwright/c06-teaching-regressions.mjs
 audit/playwright/compact-reporter.mjs
 audit/playwright/critical-journeys.spec.mjs
 audit/playwright/deep-ux-census.spec.mjs

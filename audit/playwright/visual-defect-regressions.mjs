@@ -1,3 +1,5 @@
+import { exerciseC06TeachingRepairs } from "./c06-teaching-regressions.mjs";
+export { assertC06TeachingState } from "./c06-teaching-regressions.mjs";
 import { compareSelectedLabelPaint, readVisualDefectGeometry, readOfficialVisualLabCapacity, VISUAL_GEOMETRY_STYLES, visualContains, visualOverlap, visualPaintedBox, visualShadowValues, visualCapacityAlignment, visualRadialClearance } from "./art-dom-observations.mjs";
 import { activate, activateNamedButton, expect } from "./fixtures.mjs";
 import { DEEP_UX_CENSUS_VIEWPORTS } from "../lib/playwright-deep-ux-census.mjs";
@@ -580,7 +582,9 @@ export async function exerciseJevVisualRegressions(page) {
     expect((await jevVisualObservation(page, fixture)).failures, fixture.evidence).toEqual([]);
     if (fixture.family === "money") await verifyJevMoneyKeyNegativeControl(page, fixture);
   }
+  await exerciseC06TeachingRepairs(page, reachJevVisualCase);
 }
+
 async function verifyJevMoneyKeyNegativeControl(page, fixture) {
   const hidden = await page.addStyleTag({ content: ".proportional-label-key{display:none!important}" });
   try {

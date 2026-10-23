@@ -21,6 +21,7 @@ export async function runDifferentialEquivalence() {
     explicitSemanticSupportCases: comparison.semanticSupportCaseIds,
     approvedMetadataTransition: comparison.approvedMetadataTransition,
     approvedChildWordingTransition: comparison.approvedChildWordingTransition,
+    authorizedTutorialProfileRepairTransition: comparison.authorizedTutorialProfileRepairTransition,
     findings,
   });
 }

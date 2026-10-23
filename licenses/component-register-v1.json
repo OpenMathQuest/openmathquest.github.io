@@ -148,6 +148,7 @@
     "audit/playwright/adult-boundary-journey.mjs",
     "audit/playwright/art-dom-observations.mjs",
     "audit/playwright/assisted-learning-journey.mjs",
+    "audit/playwright/c06-teaching-regressions.mjs",
     "audit/playwright/compact-reporter.mjs",
     "audit/playwright/critical-journeys.spec.mjs",
     "audit/playwright/deep-ux-census.spec.mjs",
@@ -539,6 +540,23 @@
       "creator": "Math Quest contributors",
       "copyright": "Math Quest contributors",
       "sourceUrl": "assets/js/math-quest-pwa-status.js",
+      "licenceEvidence": "LICENSE",
+      "attributionRecord": "licenses/runtime-components.md",
+      "modified": false
+    },
+    {
+      "id": "math-quest-teaching-display",
+      "kind": "runtime-source",
+      "origin": "original-project",
+      "paths": [
+        "assets/js/math-quest-teaching-display.js"
+      ],
+      "sha256": "39f5c0aeba7918eef591ca8e8a99cbc230d8c53594e7da94681169f20d669033",
+      "licence": "MIT",
+      "version": "1",
+      "creator": "Math Quest contributors",
+      "copyright": "Math Quest contributors",
+      "sourceUrl": "assets/js/math-quest-teaching-display.js",
       "licenceEvidence": "LICENSE",
       "attributionRecord": "licenses/runtime-components.md",
       "modified": false

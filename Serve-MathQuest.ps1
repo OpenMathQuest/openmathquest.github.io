@@ -28,7 +28,7 @@ foreach ($entry in @(
     @('/assets/fonts/Inter-Variable.ttf', 'assets/fonts/Inter-Variable.ttf'),
     @('/assets/icons/apple-touch-icon.png', 'assets/icons/apple-touch-icon.png'),
     @('/assets/icons/icon-192.png', 'assets/icons/icon-192.png'),
-    @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'), @('/assets/js/math-quest-progress-source.js', 'assets/js/math-quest-progress-source.js'), @('/assets/js/math-quest-pwa-status.js', 'assets/js/math-quest-pwa-status.js'),
+    @('/assets/icons/icon-512.png', 'assets/icons/icon-512.png'), @('/assets/js/math-quest-progress-source.js', 'assets/js/math-quest-progress-source.js'), @('/assets/js/math-quest-pwa-status.js', 'assets/js/math-quest-pwa-status.js'), @('/assets/js/math-quest-teaching-display.js', 'assets/js/math-quest-teaching-display.js'),
     @('/assets/sounds/close.wav', 'assets/sounds/close.wav'),
     @('/assets/sounds/confirm.wav', 'assets/sounds/confirm.wav'),
     @('/assets/sounds/incorrect.wav', 'assets/sounds/incorrect.wav'),
@@ -79,11 +79,11 @@ function Test-NoReparsePoint {
             continue
         }
         $cursor = [System.IO.Path]::Combine($cursor, $segment)
-        if (Test-Path -LiteralPath $cursor) {
-            $item = Get-Item -LiteralPath $cursor -Force
-            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-                return $false
-            }
+        try {
+            $attributes = [System.IO.File]::GetAttributes($cursor)
+        } catch { return $false }
+        if (($attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            return $false
         }
     }
     return $true

@@ -8,7 +8,7 @@ import vm from "node:vm";
 import { loadShippedEngine } from "../lib/engine-loader.mjs";
 
 const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
-const progressSourceSource = readFileSync(new URL("../../assets/js/math-quest-progress-source.js", import.meta.url), "utf8"), pwaStatusSource = readFileSync(new URL("../../assets/js/math-quest-pwa-status.js", import.meta.url), "utf8");
+const progressSourceSource = readFileSync(new URL("../../assets/js/math-quest-progress-source.js", import.meta.url), "utf8"), pwaStatusSource = readFileSync(new URL("../../assets/js/math-quest-pwa-status.js", import.meta.url), "utf8"), teachingDisplaySource = readFileSync(new URL("../../assets/js/math-quest-teaching-display.js", import.meta.url), "utf8");
 const scripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)(?:\s[^>]*)?>([\s\S]*?)<\/script>/giu)]
   .map((match) => match[1]);
 assert.equal(scripts.length, 2, "the shipped page must retain its engine and adapter scripts");
@@ -32,7 +32,7 @@ function extractActionBranch(action) {
 const extractListenerStatement = (target, eventName, marker) => extraction.listenerStatement(target, eventName, marker);
 
 function evaluateHarness({ prelude, functions, body, exposed, context = {} }) {
-  const source = `${progressSourceSource}\n${pwaStatusSource}\n(()=>{
+  const source = `${progressSourceSource}\n${pwaStatusSource}\n${teachingDisplaySource}\n(()=>{
     "use strict";
     ${prelude}
     ${functions.map(extractFunction).join("\n")}

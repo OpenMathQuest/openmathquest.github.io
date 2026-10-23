@@ -1,7 +1,7 @@
 import { baseUi } from "../tests/session-fixtures.mjs";
 import { activate, expect, expectMinimumTarget, expectSelectedState, openFreshHome, tabUntilFocused } from "./fixtures.mjs";
 
-async function installSpeechFixture(page) {
+export async function installSpeechFixture(page) {
   await page.addInitScript(() => {
     const utterances = [];
     let cancelCount = 0;
@@ -27,6 +27,7 @@ async function installSpeechFixture(page) {
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: synthesis });
     Object.defineProperty(window, "__mqSpeechTest", { configurable: true, value: {
       count: () => utterances.length,
+      texts: () => utterances.map(utterance => utterance.text),
       cancelCount: () => cancelCount,
       start: (index = utterances.length - 1) => utterances[index]?.onstart?.(),
       end: (index = utterances.length - 1) => utterances[index]?.onend?.(),

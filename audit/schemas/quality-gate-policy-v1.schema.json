@@ -4,7 +4,7 @@
   "title": "Math Quest refactor quality-gate policy v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "approvedChildWordingTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
+  "required": ["policyId", "version", "schemaVersion", "status", "authority", "baselineCommit", "approvedTutorialMetadataTransition", "approvedChildWordingTransition", "authorizedTutorialProfileRepairTransition", "testStrategy", "runtime", "sliceLifecycle", "candidateBinding", "aiChangeLoop", "qualityToolComponents", "supplyChain", "analysisRatchets", "sourceBudgets", "performanceBudgets", "performanceEvidence", "finishLine"],
   "properties": {
     "policyId": { "const": "math-quest-refactor-quality-gates" },
     "version": { "const": "1.7.0" },
@@ -40,6 +40,25 @@
         "changedRecordId": "question.quotientRemainder",
         "beforeText": "Share {total} objects into groups of {divisor}. Which answer gives the quotient and remainder?",
         "afterText": "Share {total} objects equally among {divisor} groups. Which answer gives the quotient and remainder?"
+      }
+    },
+    "authorizedTutorialProfileRepairTransition": {
+      "const": {
+        "contractId": "C06_MONEY_PROFILE_COMPARISON_V1",
+        "status": "OWNER_AUTHORIZED_REPAIR_ONLY",
+        "authorityPath": "docs/testing/test-to-branch-effect-map.md#c06-profile-comparison-authority",
+        "authorityDate": "2026-10-20",
+        "parentCommit": "d84288259d61ef4465e29fdb9763aafd73624aee",
+        "candidateEngineSha256": "df21797ca964feb94e5b53cd28eba0265e6cf60650e6f27aa388a8f8347a2048",
+        "comparisonEngineSha256": "3389747ce8269ba2611d7dc2a993413ada444f26b57951ad8cf8bbb1b0955c61",
+        "candidateTutorialSha256": "fa644329f7cf7ab73243ab87192a8c8063a1b22e7ac896dfe5026d2a35e6b5a9",
+        "comparisonTutorialSha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874",
+        "changedPointer": "/profileBindings/13/familyId",
+        "profileIndex": 13,
+        "generatorProfile": "money-model",
+        "beforeFamilyId": "GROUPS_PROPORTION_MONEY",
+        "afterFamilyId": "OPERATIONS_EQUATIONS_PLACE_VALUE",
+        "boundary": "COMPARISON_COPY_ONLY_NO_ART_OR_INTEGRATION_APPROVAL"
       }
     },
     "testStrategy": {
@@ -287,14 +306,14 @@
                 "requester": "markdownlint-cli2",
                 "dependency": "markdown-it",
                 "declaredRange": "14.3.0",
-                "specifier": "14.3.1",
+                "specifier": "14.3.3",
                 "packageName": "markdown-it",
                 "resolvedPath": "node_modules/markdown-it",
-                "version": "14.3.1",
+                "version": "14.3.3",
                 "licence": "MIT",
-                "resolved": "https://registry.npmjs.org/markdown-it/-/markdown-it-14.3.1.tgz",
-                "integrity": "sha512-4Ej49aYTDFIQ+uBkfX8GBvJGccoARxxPep+7aWTs55ozbjQJpW9M26Fe53vnGgvLeVzva/amzjQQaQu9w0vMhA==",
-                "reason": "Owner-approved CI-only patch for GHSA-253c-mchw-3w2r repairs quadratic linkification without changing the pinned Markdownlint CLI, its rule configuration or selected source files."
+                "resolved": "https://registry.npmjs.org/markdown-it/-/markdown-it-14.3.3.tgz",
+                "integrity": "sha512-L//tDAkjTjJCU6pBUSBTgs3Kg4InVaZuUZog/b6V12UKhcDQ7S78877ibbCanRExwPuYP1CZD7Gd2dxSy1GXRg==",
+                "reason": "CI-only security patch for GHSA-r7fv-28h4-cvq7, GHSA-vfgh-jcmw-g37q and GHSA-gfr2-rv44-r23c; retains the pinned Markdownlint CLI, existing Markdown rules, zero-vulnerability requirement and no child-facing runtime dependency."
               }
             },
             {

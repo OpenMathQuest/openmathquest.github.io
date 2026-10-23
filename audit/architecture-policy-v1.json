@@ -174,6 +174,76 @@
       "claim": "The page adapter delegates PWA update wording to its single runtime policy owner."
     },
     {
+      "id": "runtime.teaching-display-array-summary-call",
+      "path": "index.html",
+      "pattern": "MathQuestTeachingDisplay\\.arraySummaryFacts\\(",
+      "expectedCount": 1,
+      "claim": "The page delegates arraySummaryFacts to the extracted teaching-display runtime."
+    },
+    {
+      "id": "runtime.teaching-display-display-model-call",
+      "path": "index.html",
+      "pattern": "MathQuestTeachingDisplay\\.displayModelDescriptor\\(",
+      "expectedCount": 1,
+      "claim": "The page delegates displayModelDescriptor to the extracted teaching-display runtime."
+    },
+    {
+      "id": "runtime.teaching-display-global-api",
+      "path": "assets/js/math-quest-teaching-display.js",
+      "pattern": "root\\.MathQuestTeachingDisplay=Object\\.freeze\\(\\{displayModelDescriptor,arraySummaryFacts,graphDisplayHtml\\}\\)",
+      "expectedCount": 1,
+      "claim": "The extracted teaching-display adapter installs its single immutable runtime global with the reviewed three-function API."
+    },
+    {
+      "id": "runtime.teaching-display-graph-html-call",
+      "path": "index.html",
+      "pattern": "MathQuestTeachingDisplay\\.graphDisplayHtml\\(",
+      "expectedCount": 1,
+      "claim": "The page delegates graphDisplayHtml to the extracted teaching-display runtime."
+    },
+    {
+      "id": "runtime.teaching-display-launcher-fixture-route",
+      "path": "audit/test-launcher-identity.ps1",
+      "pattern": "@\\('/assets/js/math-quest-teaching-display\\.js', 'assets/js/math-quest-teaching-display\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The isolated launcher identity fixture copies and binds the teaching-display runtime bytes."
+    },
+    {
+      "id": "runtime.teaching-display-launcher-route",
+      "path": "Serve-MathQuest.ps1",
+      "pattern": "@\\('/assets/js/math-quest-teaching-display\\.js', 'assets/js/math-quest-teaching-display\\.js'\\)",
+      "expectedCount": 1,
+      "claim": "The local launcher serves the teaching-display runtime from its immutable startup snapshot."
+    },
+    {
+      "id": "runtime.teaching-display-loader",
+      "path": "index.html",
+      "pattern": "<script src=\"assets/js/math-quest-teaching-display\\.js\"></script>",
+      "expectedCount": 1,
+      "claim": "The shipped child page loads the extracted teaching-display adapter exactly once."
+    },
+    {
+      "id": "runtime.teaching-display-no-browser-state",
+      "path": "assets/js/math-quest-teaching-display.js",
+      "pattern": "\\b(?:document|localStorage|navigator|window)\\b",
+      "expectedCount": 0,
+      "claim": "The deterministic teaching-display adapter does not read browser or persistent state."
+    },
+    {
+      "id": "runtime.teaching-display-playwright-identity-route",
+      "path": "audit/lib/playwright-focused-contract.mjs",
+      "pattern": "\\[\"/assets/js/math-quest-teaching-display\\.js\", \"assets/js/math-quest-teaching-display\\.js\"\\]",
+      "expectedCount": 1,
+      "claim": "Focused browser journeys bind the served identity to the teaching-display runtime bytes."
+    },
+    {
+      "id": "runtime.teaching-display-release-entry",
+      "path": "tools/build-pwa-release-manifest.mjs",
+      "pattern": "\\[\"\\./assets/js/math-quest-teaching-display\\.js\", \"text/javascript\"\\]",
+      "expectedCount": 1,
+      "claim": "The frozen PWA runtime manifest includes the teaching-display adapter as a JavaScript release entry."
+    },
+    {
       "id": "runtime.validation-before-persistence",
       "path": "index.html",
       "pattern": "function save\\(\\)\\{const bytes=prepareProgressBytes\\(\\);return bytes!==null&&persistProgressBytes\\(bytes\\);\\}",

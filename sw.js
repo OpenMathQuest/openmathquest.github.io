@@ -4,7 +4,7 @@ const RELEASE = "1.0.0-beta.9";
 const BUILD_ID = "math-quest-pwa-v1.0.0-beta.9";
 const CACHE_NAME = "math-quest-static-v1.0.0-beta.9";
 const RELEASE_MANIFEST_URL = "./release-shell-v1.json";
-const RELEASE_MANIFEST_SHA256 = "448d11d1862aa2736b6a9a21b5c8243f1fb54235d0d8c51dc6ac5f65aabda2fc";
+const RELEASE_MANIFEST_SHA256 = "10d2a7a519d2d91aa5c1e7ca64488a987fa8b8b8d653c462996e2743983f19a6";
 const CACHE_STORAGE_NAME = `${CACHE_NAME}-${RELEASE_MANIFEST_SHA256}`;
 function freshStagingCacheName() {
   const nonce = new Uint8Array(16);
@@ -31,6 +31,7 @@ const SHELL_RELATIVE_PATHS = Object.freeze([
   "./assets/icons/icon-512.png",
   "./assets/js/math-quest-progress-source.js",
   "./assets/js/math-quest-pwa-status.js",
+  "./assets/js/math-quest-teaching-display.js",
   "./assets/sounds/close.wav",
   "./assets/sounds/confirm.wav",
   "./assets/sounds/incorrect.wav",
