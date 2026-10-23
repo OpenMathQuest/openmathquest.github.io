@@ -34,7 +34,7 @@ test("[NC-CANARY-RUNTIME-ALLOWLIST] missing helpers and altered runtime entries 
   const verify = await canarySnapshotManifestValidator();
   const manifest = JSON.parse(await readFile(new URL("../../release-shell-v1.json", import.meta.url), "utf8"));
   assert.doesNotThrow(() => verify(manifest));
-  for (const helper of ["math-quest-progress-source.js", "math-quest-pwa-status.js"]) {
+  for (const helper of ["math-quest-progress-source.js", "math-quest-pwa-status.js", "math-quest-teaching-display.js"]) {
     const missing = structuredClone(manifest);
     missing.entries = missing.entries.filter((entry) => !entry.path.endsWith(helper));
     assert.notDeepEqual(missing, manifest);

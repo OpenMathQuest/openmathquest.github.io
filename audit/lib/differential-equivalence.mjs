@@ -455,8 +455,8 @@ export function loadEngineFromGit(commit, relativePath = "index.html") {
 
 export async function compareWithBaseline(commit, indexPath = path.join(root, "index.html")) {
   const baselineEngine = loadEngineFromGit(commit);
-  const { engine: candidateEngine, approvedChildWordingTransition } = await loadApprovedComparisonEngine(indexPath, baselineEngine);
-  return { ...differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit)), approvedChildWordingTransition };
+  const { engine: candidateEngine, approvedChildWordingTransition, authorizedTutorialProfileRepairTransition } = await loadApprovedComparisonEngine(indexPath, baselineEngine);
+  return { ...differentialFindings(baselineEngine, candidateEngine, await loadTutorialMetadataAuthority(commit), await loadReleaseVersionComparison(commit)), approvedChildWordingTransition, authorizedTutorialProfileRepairTransition };
 }
 
 function mutationDetected(context, mutant, observationPrefix) {

@@ -59,6 +59,13 @@
       "status": 200
     },
     {
+      "path": "./assets/js/math-quest-teaching-display.js",
+      "sha256": "39f5c0aeba7918eef591ca8e8a99cbc230d8c53594e7da94681169f20d669033",
+      "bytes": 4341,
+      "mime": "text/javascript",
+      "status": 200
+    },
+    {
       "path": "./assets/sounds/close.wav",
       "sha256": "cb059c9481fc88c3c97598e205f2c91d68e8ac459bb91e68d65d33a639d07a16",
       "bytes": 11068,
@@ -88,8 +95,8 @@
     },
     {
       "path": "./index.html",
-      "sha256": "7718b9ad96b4cc343dcbf48cfa45683505115e2cb55fb78adb5d92eae8938905",
-      "bytes": 1252645,
+      "sha256": "2804615fcd22330b0f6da7b5920ac0d9fc0522c6b23649f761b2e3de096e8c74",
+      "bytes": 1254974,
       "mime": "text/html",
       "status": 200
     },
@@ -102,8 +109,8 @@
     },
     {
       "path": "./curriculum/math-quest-tutorial-manifest-v1.json",
-      "sha256": "87e25e20206b133869a7107c6ffe7f2841d00b67328bce621d656f5a53289f9a",
-      "bytes": 73387,
+      "sha256": "a051c0e0f98e813b6302413dc173cae65c63716d8e81f3cfa47ccc1c60a2a88d",
+      "bytes": 73396,
       "mime": "application/json",
       "status": 200
     },

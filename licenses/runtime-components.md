@@ -25,3 +25,14 @@ third-party source code or expression.
   caregiver-facing status text, plus fail-closed canonical validation of exact
   release-bound readiness replies, path completeness, freshness, worker state,
   and activation challenges.
+
+## Teaching-display projections
+
+- Shipped file: `math-quest-teaching-display.js`
+- Repository path: `assets/js/math-quest-teaching-display.js`
+- SHA-256: `39f5c0aeba7918eef591ca8e8a99cbc230d8c53594e7da94681169f20d669033`
+- Origin: original Math Quest project source
+- Licence: MIT
+- Purpose: pure deterministic display-model projections, compact array-summary
+  facts, and accessible markup for discrete and continuous graph displays. It
+  does not read browser or persistent state.

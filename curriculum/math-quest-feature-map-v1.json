@@ -38,7 +38,7 @@
   },
   "tutorialBinding": {
     "path": "curriculum/math-quest-tutorial-manifest-v1.json",
-    "sha256": "9f24b5d99d984e58aff0a4dc97307bd8305aba2c63179631ed3681974a464874"
+    "sha256": "fa644329f7cf7ab73243ab87192a8c8063a1b22e7ac896dfe5026d2a35e6b5a9"
   },
   "artDesignBinding": {
     "path": "audit/art-design-decision-register-v1.json",

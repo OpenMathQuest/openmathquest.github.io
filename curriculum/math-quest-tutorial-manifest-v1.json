@@ -720,7 +720,7 @@
     },
     {
       "generatorProfile": "money-model",
-      "familyId": "GROUPS_PROPORTION_MONEY"
+      "familyId": "OPERATIONS_EQUATIONS_PLACE_VALUE"
     },
     {
       "generatorProfile": "operation-equation",

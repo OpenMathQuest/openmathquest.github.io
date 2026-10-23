@@ -114,9 +114,37 @@ function verifyApprovedEngineSources(actual, comparison, transition) {
   assert.equal(hash(comparison), transition.comparisonEngineSha256, "unapproved comparison engine source");
 }
 
+function authorizedProfileComparison(loaded, transition) {
+  const hash = (source) => createHash("sha256").update(source).digest("hex");
+  assert.equal(hash(loaded.source), transition.candidateEngineSha256, "unauthorized tutorial-repair engine source");
+  const manifest = structuredClone(loaded.engine.TUTORIAL_MANIFEST);
+  const currentJson = JSON.stringify(manifest);
+  assert.equal(hash(currentJson), transition.candidateTutorialSha256, "unauthorized tutorial-repair manifest");
+  assert.equal(loaded.engine.TUTORIAL_MANIFEST_SHA256, transition.candidateTutorialSha256, "tutorial-repair manifest binding differs");
+  const profile = manifest.profileBindings[transition.profileIndex];
+  assert.equal(profile.generatorProfile, transition.generatorProfile, "tutorial-repair profile identity differs");
+  assert.equal(profile.familyId, transition.afterFamilyId, "tutorial-repair family differs");
+  profile.familyId = transition.beforeFamilyId;
+  const comparisonJson = JSON.stringify(manifest);
+  assert.equal(hash(comparisonJson), transition.comparisonTutorialSha256, "tutorial repair changed other metadata");
+  const declaration = replaceApprovedDeclaration(loaded.source,
+    `const value=${currentJson}`, `const value=${comparisonJson}`);
+  const source = replaceApprovedDeclaration(declaration,
+    `TUTORIAL_MANIFEST_SHA256=${JSON.stringify(transition.candidateTutorialSha256)}`,
+    `TUTORIAL_MANIFEST_SHA256=${JSON.stringify(transition.comparisonTutorialSha256)}`);
+  assert.equal(hash(source), transition.comparisonEngineSha256, "tutorial repair changed other engine source");
+  return Object.freeze({
+    ...loaded, source, engine: evaluateEngine(source, { filename: "authorized-profile-comparison.engine.js" }),
+    evidence: Object.freeze({ ...transition, authorizationStatus: transition.status,
+      status: "VERIFIED_OWNER_AUTHORIZED_C06_PROFILE_REPAIR" }),
+  });
+}
+
 export async function loadApprovedComparisonEngine(indexPath, baseline) {
-  const loaded = await loadShippedEngine(indexPath);
-  const { approvedChildWordingTransition: transition } = await loadQualityGatePolicy();
+  const actual = await loadShippedEngine(indexPath);
+  const policy = await loadQualityGatePolicy();
+  const loaded = authorizedProfileComparison(actual, policy.authorizedTutorialProfileRepairTransition);
+  const transition = policy.approvedChildWordingTransition;
   const source = approvedWordingSource(loaded, baseline, transition);
   wordingTransitionControls(loaded, baseline, transition);
   verifyApprovedEngineSources(loaded.source, source, transition);
@@ -124,7 +152,8 @@ export async function loadApprovedComparisonEngine(indexPath, baseline) {
   assert.throws(() => verifyApprovedEngineSources(loaded.source, `${source}\n/* unapproved */`, transition), /unapproved comparison engine source/u);
   const engine = evaluateEngine(source, { filename: "approved-wording-comparison.engine.js" });
   assert.equal(childStringArtifact(engine.CHILD_STRINGS).sha256, transition.baselineChildStringsSha256);
-  return Object.freeze({ ...loaded, engine, approvedChildWordingTransition: Object.freeze({
+  return Object.freeze({ ...actual, engine, authorizedTutorialProfileRepairTransition: loaded.evidence,
+    approvedChildWordingTransition: Object.freeze({
     status: "VERIFIED_OWNER_APPROVED_WORDING_TRANSITION", ...transition, rejectionControls: 8,
     boundary: "COMPARISON_COPY_ONLY; shipped engine and actual new prompt remain unchanged",
   }) });

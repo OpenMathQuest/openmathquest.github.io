@@ -48,8 +48,8 @@
     },
     "sourceContracts": {
       "type": "array",
-      "minItems": 19,
-      "maxItems": 19,
+      "minItems": 29,
+      "maxItems": 29,
       "uniqueItems": true,
       "items": {
         "type": "object",
@@ -57,7 +57,7 @@
         "required": ["id", "path", "pattern", "expectedCount", "claim"],
         "properties": {
           "id": { "type": "string", "pattern": "^runtime\\.[a-z0-9-]+$" },
-          "path": { "enum": ["Serve-MathQuest.ps1", "assets/js/math-quest-progress-source.js", "assets/js/math-quest-pwa-status.js", "audit/lib/playwright-focused-contract.mjs", "audit/playwright/fixtures.mjs", "audit/run-audit.ps1", "audit/test-launcher-identity.ps1", "index.html"] },
+          "path": { "enum": ["Serve-MathQuest.ps1", "assets/js/math-quest-progress-source.js", "assets/js/math-quest-pwa-status.js", "assets/js/math-quest-teaching-display.js", "audit/lib/playwright-focused-contract.mjs", "audit/playwright/fixtures.mjs", "audit/run-audit.ps1", "audit/test-launcher-identity.ps1", "index.html", "tools/build-pwa-release-manifest.mjs"] },
           "pattern": { "type": "string", "minLength": 8 },
           "expectedCount": { "type": "integer", "minimum": 0, "maximum": 2 },
           "claim": { "type": "string", "minLength": 40 }

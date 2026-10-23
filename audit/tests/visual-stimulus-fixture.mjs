@@ -1,4 +1,7 @@
 import vm from "node:vm";
+import { readFileSync } from "node:fs";
+
+const teachingDisplaySource = readFileSync(new URL("../../assets/js/math-quest-teaching-display.js", import.meta.url), "utf8");
 
 function* themedVisualQuestions(engine, options) {
   for (const theme of ["ocean", "forest", "space"]) {
@@ -19,7 +22,7 @@ export function* assessedVisualQuestions(engine, skillIds) {
 }
 
 export function visualStimulusHarness(extractFunction) {
-  const source = `(()=>{
+  const source = `${teachingDisplaySource}\n(()=>{
     "use strict";
     const MODEL_FAMILIES=new Set(["attributeSet","comparison","numberBond","tenFrame","array","fractionPair","placeValue","numberLine","proportionalBar","areaGrid","clockSpan","visualPrompt"]);
     const escape=value=>String(value).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -42,11 +45,16 @@ export function visualStimulusHarness(extractFunction) {
     ${extractFunction("clockHandStimulusDescription")}
     ${extractFunction("unlabelledTickRunDescription")}
     ${extractFunction("stimulusOperandDescription")}
+    ${extractFunction("displayModelDescriptor")}
     ${extractFunction("semanticModel")}
+    ${extractFunction("fillWorkedBond")}
     ${extractFunction("workedTeachingDescriptor")}
     ${extractFunction("workedResultText")}
+    ${extractFunction("workedTeachingResultText")}
+    ${extractFunction("factFamilyWorkedText")}
     ${extractFunction("teachingSupportSpeech")}
     ${extractFunction("durationEvidenceSpeech")}
+    ${extractFunction("correctedStimulusSpeech")}
     ${extractFunction("replayText")}
     return {modelOperandDescription,stimulusOperandDescription,semanticModel,workedTeachingDescriptor,teachingSupportSpeech,durationEvidenceSpeech,replayText};
   })()`;
